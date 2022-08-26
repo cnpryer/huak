@@ -1,0 +1,66 @@
+repos:
+  - repo: local
+    hooks:
+      # Rust
+      - id: rustfmt
+        name: rustfmt
+        description: Check Rust fmt.
+        entry: cargo fmt
+        language: system
+        types: [rust]
+        files: Cargo\.toml|\.rs$
+        pass_filenames: false
+        args: ["--all", "--", "--check"]
+      - id: cargo-test
+        name: cargo test
+        description: Run Rust tests.
+        entry: cargo test
+        language: system
+        types: [rust]
+        files: Cargo\.toml|\.rs$
+        pass_filenames: false
+        args: ["--all-features"]
+      - id: clippy
+        name: clippy
+        description: Run Rust lints.
+        entry: cargo clippy
+        language: system
+        types: [rust]
+        files: Cargo\.toml|\.rs$
+        pass_filenames: false
+        args: ["--all-features", "--", "-D", "warnings"]
+        
+      # Python
+      - id: pyfmt
+        name: pyfmt
+        description: Check Python fmt.
+        entry: cd huak-py && make fmt-check
+        language: system
+        types: [python]
+        files: pyproject\.toml|\.py$
+        pass_filenames: false
+      - id: flake8
+        name: flake8
+        description: Run Python lints.
+        entry: cd huak-py && make lint
+        language: system
+        types: [python]
+        files: pyproject\.toml|\.py$
+        pass_filenames: false
+      - id: mypy
+        name: mypy
+        description: Check Python types.
+        entry: cd huak-py && make lint-types
+        language: system
+        types: [python]
+        files: pyproject\.toml|\.py$
+        pass_filenames: false
+      - id: pytest
+        name: pytest
+        description: Run Python tests.
+        entry: cd huak-py && test
+        language: system
+        types: [python]
+        files: pyproject\.toml|\.py$
+        pass_filenames: false
+      
