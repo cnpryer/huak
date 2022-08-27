@@ -1,3 +1,8 @@
-fn main() {
-    println!("Hello, world!");
+use huak::errors::CliResult;
+
+mod cli;
+mod commands;
+
+fn main() -> CliResult {
+    cli::main()
 }
