@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'huak-py/**'
+      - '.github/workflows/ci-python.yaml'
 
 jobs:
   tests:
