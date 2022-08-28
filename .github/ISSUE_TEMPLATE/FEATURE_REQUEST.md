@@ -6,7 +6,7 @@ labels: 'enhancement'
 assignees: ''
 ---
 
-##Feature Request
+## Feature Request
 
 **Name:** Feature Request
 
