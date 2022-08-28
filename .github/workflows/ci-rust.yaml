@@ -3,8 +3,7 @@ name: ci-rust
 on:
   pull_request:
     paths:
-      - 'huak-cli/**'
-      - 'huak-core/**'
+      - 'src/**'
       - 'Cargo.toml'
       - '.github/workflows/ci-rust.yaml'
 
