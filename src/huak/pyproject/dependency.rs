@@ -27,6 +27,14 @@ impl Dependency {
     pub fn new(name: String, version: String) -> Dependency {
         Dependency { name, version }
     }
+
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn version(&self) -> &String {
+        &self.version
+    }
 }
 
 impl fmt::Display for Dependency {
@@ -63,8 +71,8 @@ impl Dependencies {
         &self.list
     }
 
-    pub fn add_dependency(&mut self, name: String, version: String) {
-        self.list.push(Dependency::new(name, version))
+    pub fn add_dependency(&mut self, dependency: Dependency) {
+        self.list.push(dependency)
     }
 }
 
