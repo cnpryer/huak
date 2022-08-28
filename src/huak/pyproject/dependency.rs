@@ -2,15 +2,31 @@ use std::fmt;
 
 #[allow(dead_code)]
 #[derive(Clone, PartialEq, Eq, Debug)]
-enum DependencyKind {
+pub(crate) enum DependencyKind {
     Main,
     Dev,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
-struct Dependency {
+#[allow(dead_code)]
+fn match_dependency_kind(kind: &str) -> DependencyKind {
+    if let "main" = kind {
+        DependencyKind::Main
+    } else {
+        DependencyKind::Dev
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
+pub(crate) struct Dependency {
     name: String,
     version: String,
+}
+
+#[allow(dead_code)]
+impl Dependency {
+    pub fn new(name: String, version: String) -> Dependency {
+        Dependency { name, version }
+    }
 }
 
 impl fmt::Display for Dependency {
@@ -24,6 +40,41 @@ type DependencyList = Vec<Dependency>;
 pub(crate) struct Dependencies {
     kind: DependencyKind,
     list: DependencyList,
+}
+
+#[allow(dead_code)]
+impl Dependencies {
+    pub fn new(kind: &str) -> Dependencies {
+        Dependencies {
+            kind: match_dependency_kind(kind),
+            list: vec![],
+        }
+    }
+
+    pub fn kind(&self) -> &DependencyKind {
+        &self.kind
+    }
+
+    pub fn set_kind(&mut self, kind: &str) {
+        self.kind = match_dependency_kind(kind)
+    }
+
+    pub fn list(&self) -> &DependencyList {
+        &self.list
+    }
+
+    pub fn add_dependency(&mut self, name: String, version: String) {
+        self.list.push(Dependency::new(name, version))
+    }
+}
+
+impl Default for Dependencies {
+    fn default() -> Dependencies {
+        Dependencies {
+            kind: DependencyKind::Main,
+            list: vec![],
+        }
+    }
 }
 
 impl fmt::Display for Dependencies {
