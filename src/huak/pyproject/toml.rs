@@ -1,6 +1,10 @@
 use std::fmt;
 
-use super::{build_system::BuildSystem, dependency::Dependencies, main::Main};
+use super::{
+    build_system::BuildSystem,
+    dependency::{Dependencies, Dependency},
+    main::Main,
+};
 
 struct Toml {
     main: Main,
@@ -17,6 +21,30 @@ impl Toml {
             dependencies: Dependencies::default(),
             dev_dependencies: Dependencies::new("dev"),
             build_system: BuildSystem::default(),
+        }
+    }
+
+    pub fn main(&self) -> &Main {
+        &self.main
+    }
+
+    pub fn set_main(&mut self, main: Main) {
+        self.main = main
+    }
+
+    pub fn dependencies(&self) -> &Dependencies {
+        &self.dependencies
+    }
+
+    pub fn dev_dependencies(&self) -> &Dependencies {
+        &self.dev_dependencies
+    }
+
+    pub fn add_dependency(&mut self, dependency: Dependency, kind: &str) {
+        if let "main" = kind {
+            self.dependencies.add_dependency(dependency)
+        } else {
+            self.dev_dependencies.add_dependency(dependency)
         }
     }
 }
