@@ -6,7 +6,7 @@ use super::{
     main::Main,
 };
 
-struct Toml {
+pub struct Toml {
     main: Main,
     dependencies: Dependencies,
     dev_dependencies: Dependencies,
