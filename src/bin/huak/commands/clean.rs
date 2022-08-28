@@ -1,13 +1,12 @@
-use clap::{arg, value_parser, Arg, ArgAction, ArgMatches};
+use clap::Command;
 use huak::errors::CliResult;
 
-pub fn arg() -> Arg<'static> {
-    arg!("clean")
-        .value_parser(value_parser!(bool))
-        .action(ArgAction::SetTrue)
-        .help("Remove tarball and wheel from the built project.")
+use crate::utils::subcommand;
+
+pub fn arg() -> Command<'static> {
+    subcommand("clean").about("Remove tarball and wheel from the built project.")
 }
 
-pub fn run(_args: &ArgMatches) -> CliResult {
+pub fn run() -> CliResult {
     unimplemented!()
 }

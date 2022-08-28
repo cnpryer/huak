@@ -1,13 +1,12 @@
-use clap::{arg, value_parser, Arg, ArgAction, ArgMatches};
+use clap::Command;
 use huak::errors::CliResult;
 
-pub fn arg() -> Arg<'static> {
-    arg!("activate")
-        .value_parser(value_parser!(bool))
-        .action(ArgAction::SetTrue)
-        .help("Activate the project's virtual environment.")
+use crate::utils::subcommand;
+
+pub fn arg() -> Command<'static> {
+    subcommand("activate").about("Activate the project's virtual environment.")
 }
 
-pub fn run(_args: &ArgMatches) -> CliResult {
+pub fn run() -> CliResult {
     unimplemented!()
 }

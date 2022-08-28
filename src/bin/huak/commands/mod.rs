@@ -15,22 +15,22 @@ pub(crate) mod version;
 pub fn args() -> Command<'static> {
     let mut app = app();
 
-    let args = vec![
+    let subcommands = vec![
         activate::arg(),
         add::arg(),
-        remove::arg(),
         build::arg(),
         clean::arg(),
         help::arg(),
         init::arg(),
         new::arg(),
+        remove::arg(),
         run::arg(),
         update::arg(),
         version::arg(),
     ];
 
-    for arg in args {
-        app = app.arg(arg);
+    for cmd in subcommands {
+        app = app.subcommand(cmd)
     }
 
     app

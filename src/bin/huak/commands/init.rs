@@ -1,13 +1,12 @@
-use clap::{arg, value_parser, Arg, ArgAction, ArgMatches};
+use clap::Command;
 use huak::errors::CliResult;
 
-pub fn arg() -> Arg<'static> {
-    arg!("init")
-        .value_parser(value_parser!(bool))
-        .action(ArgAction::SetTrue)
-        .help("Initialize the existing project.")
+use crate::utils::subcommand;
+
+pub fn arg() -> Command<'static> {
+    subcommand("init").about("Initialize the existing project.")
 }
 
-pub fn run(_args: &ArgMatches) -> CliResult {
+pub fn run() -> CliResult {
     unimplemented!()
 }
