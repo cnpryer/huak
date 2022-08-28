@@ -1,3 +1,11 @@
+---
+name: Bug report
+about: Report a bug.
+title: ''
+labels: 'bug'
+assignees: ''
+---
+
 Your issue may already be reported! Please check [issue tracker](../) before creating a new one.
 
 ## Expected Behavior
