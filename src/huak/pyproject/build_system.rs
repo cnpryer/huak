@@ -1,14 +1,26 @@
 use std::fmt;
 
+const HUAK_REQUIRES: &str = "huak-core>=1.0.0";
+const HUAK_BUILD_BACKEND: &str = "huak.core.build.api";
+
 pub(crate) struct BuildSystem {
     requires: Vec<String>,
     backend: String,
 }
 
+impl Default for BuildSystem {
+    fn default() -> BuildSystem {
+        BuildSystem {
+            requires: vec![HUAK_REQUIRES.to_string()],
+            backend: HUAK_BUILD_BACKEND.to_string(),
+        }
+    }
+}
+
 impl fmt::Display for BuildSystem {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "[build-system]")?;
-        writeln!(f, "requires = {:#?}", self.requires)?;
+        writeln!(f, "requires = {:?}", self.requires)?;
         writeln!(f, "build-backend = \"{}\"", self.backend)
     }
 }
