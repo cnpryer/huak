@@ -9,10 +9,10 @@ pub(crate) enum DependencyKind {
 
 #[allow(dead_code)]
 fn match_dependency_kind(kind: &str) -> DependencyKind {
-    if let "main" = kind {
-        DependencyKind::Main
-    } else {
+    if let "dev" = kind {
         DependencyKind::Dev
+    } else {
+        DependencyKind::Main
     }
 }
 
