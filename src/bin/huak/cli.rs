@@ -28,7 +28,7 @@ fn run(args: ArgMatches) -> CliResult {
         "run" => commands::run::run(subargs),
         "update" => commands::update::run(subargs),
         "version" => commands::version::run(),
-        "clean-pycache" => commands::clean_pycache::run(),
+        "cleanpy" => commands::clean_pycache::run(),
         _ => Err(CliError::new(
             anyhow::format_err!("unrecognized command"),
             2,
