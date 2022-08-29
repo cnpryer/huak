@@ -3,7 +3,7 @@ Contributing
 
 We appriciate your interest in contributing to our project! 
 
-To contribute first check the [issues](https://github.com/cnpryer/huak/issues) for an existing issue, or create a new issue
+To contribute first check the [issues](https://github.com/huak-rs/huak/issues) for an existing issue, or create a new issue
 yourself. Make sure that if you are trying to contribute that noone is already working on the issue.
 You can also join our [discord server](https://discord.gg/KjHdBaBGhm) for more resources, and to ask questions.
 
