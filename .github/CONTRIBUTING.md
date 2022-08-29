@@ -7,6 +7,8 @@ To contribute first check the [issues](https://github.com/cnpryer/huak/issues) f
 yourself. Make sure that if you are trying to contribute that noone is already working on the issue.
 You can also join our [discord server](https://discord.gg/KjHdBaBGhm) for more resources, and to ask questions.
 
+We follow the standard [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow) when making contributions to Huak.
+
 **1.** After assigning yourself to an issue, make a fork of the repository for your work
 **2.** When ready to create your PR, please make sure to use one of our templates, and wait until one of our team review it
 
