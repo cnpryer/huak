@@ -16,6 +16,6 @@ Commit Naming Conventions
 --------------------------
 Please keep commit messages clearly named as to what they are changing/adding
 
-Start each commit with either [fix:] or [feat:]
+See [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for more.
 
 
