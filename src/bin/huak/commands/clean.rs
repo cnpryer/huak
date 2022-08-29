@@ -1,5 +1,5 @@
 use anyhow::Error;
-use std::fs::remove_dir_all;
+use std::{fs::remove_dir_all, path::Path};
 
 use clap::Command;
 use huak::errors::{CliError, CliResult};
@@ -11,11 +11,15 @@ pub fn arg() -> Command<'static> {
 }
 
 pub fn run() -> CliResult {
-    match remove_dir_all("dist") {
-        Ok(_) => Ok(()),
-        Err(e) => Err(CliError {
-            exit_code: 2,
-            error: Some(Error::new(e)),
-        }),
+    if !Path::new("dist").is_dir() {
+        Ok(())
+    } else {
+        match remove_dir_all("dist") {
+            Ok(_) => Ok(()),
+            Err(e) => Err(CliError {
+                exit_code: 2,
+                error: Some(Error::new(e)),
+            }),
+        }
     }
 }
