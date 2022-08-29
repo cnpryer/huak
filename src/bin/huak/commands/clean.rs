@@ -2,7 +2,7 @@ use anyhow::Error;
 use std::fs::remove_dir_all;
 
 use clap::Command;
-use huak::errors::{CliResult, CliError};
+use huak::errors::{CliError, CliResult};
 
 use crate::utils::subcommand;
 
