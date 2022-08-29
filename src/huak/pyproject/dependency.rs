@@ -2,7 +2,7 @@ use std::fmt;
 
 #[allow(dead_code)]
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub(crate) enum DependencyKind {
+pub enum DependencyKind {
     Main,
     Dev,
 }
@@ -17,7 +17,7 @@ fn match_dependency_kind(kind: &str) -> DependencyKind {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
-pub(crate) struct Dependency {
+pub struct Dependency {
     name: String,
     version: String,
 }
@@ -43,9 +43,9 @@ impl fmt::Display for Dependency {
     }
 }
 
-type DependencyList = Vec<Dependency>;
+pub type DependencyList = Vec<Dependency>;
 
-pub(crate) struct Dependencies {
+pub struct Dependencies {
     kind: DependencyKind,
     list: DependencyList,
 }

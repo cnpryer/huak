@@ -1,6 +1,6 @@
 use std::fmt;
 
-pub(crate) struct Main {
+pub struct Main {
     name: String,
     version: String,
     description: String,
