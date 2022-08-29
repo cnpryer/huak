@@ -1,9 +1,8 @@
-use clap::Command;
-use huak::errors::CliResult;
 use anyhow::Error;
 use std::fs::remove_dir_all;
 
-use huak::errors::{CliError};
+use clap::Command;
+use huak::errors::{CliResult, CliError};
 
 use crate::utils::subcommand;
 
