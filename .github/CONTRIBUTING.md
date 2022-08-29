@@ -14,7 +14,7 @@ We follow the standard [GitHub flow](https://docs.github.com/en/get-started/quic
 
 Commit Naming Conventions
 --------------------------
-Please keep commit messages clearly named as to what they are changing/adding
+Please keep commit messages clearly named as to what they are changing/adding.
 
 See [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for more.
 
