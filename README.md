@@ -17,4 +17,4 @@ Coordinating work on Huak is currently done on [Discord](https://discord.gg/KjHd
 Contributing
 ------------
 
-Please read our [contributing guide](https://github.com/GearBoxFox/huak/blob/patch-1/.github/CONTRIBUTING.md) before you start contributing.
+Please read our [contributing guide](./CONTRIBUTING.md) before you start contributing.
