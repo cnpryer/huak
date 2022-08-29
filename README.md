@@ -1,3 +1,6 @@
+[![ci-rust](https://github.com/huak-rs/huak/actions/workflows/ci-rust.yaml/badge.svg)](https://github.com/huak-rs/huak/actions/workflows/ci-rust.yaml)
+[![ci-python](https://github.com/huak-rs/huak/actions/workflows/ci-python.yaml/badge.svg)](https://github.com/huak-rs/huak/actions/workflows/ci-python.yaml)
+
 # huak
 
 <div align="center">
