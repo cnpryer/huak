@@ -9,7 +9,7 @@ You can also join our [discord server](https://discord.gg/KjHdBaBGhm) for more r
 
 We follow the standard [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow) when making contributions to Huak.
 
-**1.** After assigning yourself to an issue, make a fork of the repository for your work
+**1.** After being assigned to an issue, make a fork of the repository for your work
 **2.** When ready to create your PR, please make sure to use one of our templates, and wait until one of our team review it
 
 Commit Naming Conventions
