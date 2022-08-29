@@ -4,6 +4,7 @@ pub(crate) mod activate;
 pub(crate) mod add;
 pub(crate) mod build;
 pub(crate) mod clean;
+pub(crate) mod clean_pycache;
 pub(crate) mod help;
 pub(crate) mod init;
 pub(crate) mod new;
@@ -20,6 +21,7 @@ pub fn args() -> Command<'static> {
         add::arg(),
         build::arg(),
         clean::arg(),
+        clean_pycache::arg(),
         help::arg(),
         init::arg(),
         new::arg(),
