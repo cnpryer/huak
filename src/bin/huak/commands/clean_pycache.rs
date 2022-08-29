@@ -17,7 +17,7 @@ struct DeletePath {
 }
 
 pub fn arg() -> Command<'static> {
-    subcommand("cleanpy").about("Remove all .pyc files and __pycache__ directories.")
+    subcommand("clean-pycache").about("Remove all .pyc files and __pycache__ directories.")
 }
 
 pub fn run() -> CliResult {
