@@ -86,3 +86,29 @@ fn get_delete_patterns() -> Vec<DeletePath> {
         },
     ]
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{env::set_current_dir, path::PathBuf};
+
+    use super::*;
+    use tempfile::tempdir;
+
+    use crate::test_utils::create_py_project_sample;
+    use glob::glob;
+
+    #[test]
+    pub fn assert_no_pyc() {
+        let directory: PathBuf = tempdir().unwrap().into_path().to_path_buf();
+
+        create_py_project_sample(&PathBuf::from("./resources/test.zip"), &directory);
+        set_current_dir(&directory).unwrap();
+
+        let _ = run();
+        let i = glob("**/*.pyc").unwrap().count();
+        assert!(i == 0 as usize);
+
+        // remove the resulting dir.
+        _ = remove_dir_all(directory);
+    }
+}
