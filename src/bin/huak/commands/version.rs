@@ -1,5 +1,10 @@
+use std::fs;
+
 use clap::Command;
-use huak::errors::CliResult;
+use huak::{
+    errors::{CliError, CliResult},
+    pyproject::toml::Toml,
+};
 
 use crate::utils::subcommand;
 
@@ -8,5 +13,26 @@ pub fn arg() -> Command<'static> {
 }
 
 pub fn run() -> CliResult {
-    unimplemented!()
+    let string = match fs::read_to_string("pyproject.toml") {
+        Ok(s) => s,
+        Err(_) => return Err(CliError::new(anyhow::format_err!("failed to read toml"), 2)),
+    };
+
+    let toml = match Toml::from(&string) {
+        Ok(t) => t,
+        Err(_) => {
+            return Err(CliError::new(
+                anyhow::format_err!("failed to build toml"),
+                2,
+            ))
+        }
+    };
+
+    println!(
+        "{}-{}",
+        toml.tool().huak().name(),
+        toml.tool().huak().version()
+    );
+
+    Ok(())
 }
