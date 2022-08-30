@@ -1,8 +1,9 @@
 use std::{fs, path::Path};
 
 use clap::Command;
-use huak::{errors::CliResult, pyproject};
+use huak::errors::{CliError, CliResult};
 
+use crate::pyproject;
 use crate::utils::subcommand;
 
 pub fn arg() -> Command<'static> {
@@ -10,21 +11,30 @@ pub fn arg() -> Command<'static> {
 }
 
 pub fn run() -> CliResult {
-    let toml = pyproject::create()?;
+    let toml = pyproject::toml::create()?;
     // Creates project directory. TODO: Allow current dir ".".
-    let path = Path::new(toml.main().name());
+    let path = Path::new(toml.tool().huak().name());
 
     fs::create_dir_all(path)?;
-    fs::write(path.join("pyproject.toml"), toml.to_string())?;
+    let string = match toml.to_string() {
+        Ok(s) => s,
+        Err(_) => {
+            return Err(CliError::new(
+                anyhow::format_err!("unrecognized command"),
+                2,
+            ))
+        }
+    };
+    fs::write(path.join("pyproject.toml"), string)?;
 
     // Create src subdirectory with standard project namespace.
     fs::create_dir_all(path.join("src"))?;
-    fs::create_dir_all(path.join("src").join(toml.main().name()))?;
+    fs::create_dir_all(path.join("src").join(toml.tool().huak().name()))?;
 
     // Add __init__.py to main project namespace.
     fs::write(
         path.join("src")
-            .join(toml.main().name())
+            .join(toml.tool().huak().name())
             .join("__init__.py"),
         "",
     )?;
