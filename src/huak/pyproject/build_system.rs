@@ -1,10 +1,13 @@
+use serde_derive::{Deserialize, Serialize};
 use std::fmt;
 
 const HUAK_REQUIRES: &str = "huak-core>=1.0.0";
 const HUAK_BUILD_BACKEND: &str = "huak.core.build.api";
 
-pub(crate) struct BuildSystem {
+#[derive(Serialize, Deserialize)]
+pub struct BuildSystem {
     requires: Vec<String>,
+    #[serde(rename = "build-backend")]
     backend: String,
 }
 
