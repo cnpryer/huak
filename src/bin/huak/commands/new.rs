@@ -20,7 +20,7 @@ pub fn run() -> CliResult {
         Ok(s) => s,
         Err(_) => {
             return Err(CliError::new(
-                anyhow::format_err!("unrecognized command"),
+                anyhow::format_err!("failed to serialize toml"),
                 2,
             ))
         }

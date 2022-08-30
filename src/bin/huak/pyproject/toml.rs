@@ -40,6 +40,10 @@ fn create_huak() -> Result<Huak, CliError> {
 
     io::stdin().read_line(&mut version)?;
 
+    if version == "\n" {
+        version = "0.0.1".to_string();
+    }
+
     // Get the description for the project.
     let mut description = String::new();
 
@@ -60,10 +64,19 @@ fn create_huak() -> Result<Huak, CliError> {
     io::stdin().read_line(&mut authors)?;
 
     // Remove \n from strings.
-    name.pop();
-    version.pop();
-    description.pop();
-    authors.pop(); // TODO: Handle collection with future vector.
+    if name.ends_with('\n') {
+        name.pop();
+    }
+    if version.ends_with('\n') {
+        version.pop();
+    }
+    if description.ends_with('\n') {
+        description.pop();
+    }
+    // TODO: Handle collection with future vector.
+    if authors.ends_with('\n') {
+        authors.pop();
+    }
 
     let mut huak_table = Huak::new();
     huak_table.set_name(name);
