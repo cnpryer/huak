@@ -1,0 +1,10 @@
+This directory will contain zip files of sample projects for testing purposes.
+
+I have elected to zip these so that 
+1) it does not muddy the project
+2) it does not interfere with a future .gitignore stipulation regarding excluding *.pyc files.
+
+Since zip files are binary, this means no line by line versioning can be done by git.
+As such, DO NOT MODIFY ANY FILE IN THIS DIRECTORY.
+
+If you need one changed, create another.
