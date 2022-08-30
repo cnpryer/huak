@@ -1,4 +1,4 @@
-Fixes #
+Closes #
 
 ## Summary of changes
 
