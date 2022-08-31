@@ -1,9 +1,8 @@
-use std::io::{self, Write};
-
 use huak::{
     errors::CliError,
     pyproject::toml::{Huak, Toml},
 };
+use std::io::{self, Write};
 
 /// Create a pyproject.toml from scratch in a directory `path`.
 pub fn create() -> Result<Toml, CliError> {
@@ -14,17 +13,11 @@ pub fn create() -> Result<Toml, CliError> {
 }
 
 fn create_huak() -> Result<Huak, CliError> {
-    // Get the project's name.
-    let mut name = String::new();
-
-    print!("Enter a name: ");
-
-    let _ = io::stdout().flush();
-
-    io::stdin().read_line(&mut name)?;
+    let mut name = get_string_input("Enter a name: ")?;
+    name = strip_newline(&name);
 
     // If a name isn't entered return an error.
-    if name == "\n" {
+    if name.is_empty() {
         return Err(CliError::new(
             anyhow::format_err!("a project name is required"),
             2,
@@ -32,51 +25,21 @@ fn create_huak() -> Result<Huak, CliError> {
     }
 
     // Get the version of the project.
-    let mut version = String::new();
+    let mut version = get_string_input("Please enter a version (0.0.1): ")?;
+    version = strip_newline(&version);
 
-    print!("Please enter a version (0.0.1): ");
-
-    let _ = io::stdout().flush();
-
-    io::stdin().read_line(&mut version)?;
-
-    if version == "\n" {
+    if version.is_empty() {
         version = "0.0.1".to_string();
     }
 
     // Get the description for the project.
-    let mut description = String::new();
-
-    print!("Please enter a description (\"\"): ");
-
-    let _ = io::stdout().flush();
-
-    io::stdin().read_line(&mut description)?;
+    let mut description = get_string_input("Please enter a description (\"\"): ")?;
+    description = strip_newline(&description);
 
     // Get the project authors.
     // TODO: Add individually.
-    let mut authors = String::new();
-
-    print!("Please enter authors ([\"\"]): ");
-
-    let _ = io::stdout().flush();
-
-    io::stdin().read_line(&mut authors)?;
-
-    // Remove \n from strings.
-    if name.ends_with('\n') {
-        name.pop();
-    }
-    if version.ends_with('\n') {
-        version.pop();
-    }
-    if description.ends_with('\n') {
-        description.pop();
-    }
-    // TODO: Handle collection with future vector.
-    if authors.ends_with('\n') {
-        authors.pop();
-    }
+    let mut authors = get_string_input("Please enter authors ([\"\"]): ")?;
+    authors = strip_newline(&authors);
 
     let mut huak_table = Huak::new();
     huak_table.set_name(name);
@@ -86,4 +49,26 @@ fn create_huak() -> Result<Huak, CliError> {
     huak_table.add_author(authors);
 
     Ok(huak_table)
+}
+
+fn get_string_input(message: &str) -> Result<String, io::Error> {
+    let mut res = String::new();
+
+    print!("{}", message);
+
+    let _ = io::stdout().flush();
+
+    io::stdin().read_line(&mut res)?;
+
+    Ok(res)
+}
+
+fn strip_newline(string: &str) -> String {
+    let mut new_string = string.to_string();
+
+    if new_string.ends_with('\n') {
+        new_string.pop();
+    }
+
+    new_string
 }
