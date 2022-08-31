@@ -1,10 +1,8 @@
+use super::utils::subcommand;
 use anyhow::Error;
-use std::{fs::remove_dir_all, path::Path};
-
 use clap::Command;
 use huak::errors::{CliError, CliResult};
-
-use crate::utils::subcommand;
+use std::{fs::remove_dir_all, path::Path};
 
 pub fn arg() -> Command<'static> {
     subcommand("clean").about("Remove tarball and wheel from the built project.")

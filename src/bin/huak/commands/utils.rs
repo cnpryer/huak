@@ -1,18 +1,31 @@
-use std::{path::Path, process::Command};
+use clap::{self, App, AppSettings};
+use huak::errors::{CliError, CliResult};
+use std::{path::Path, process};
 
-use huak::errors::CliError;
+/// Create a clap subcommand.
+pub fn subcommand(name: &'static str) -> clap::Command<'static> {
+    App::new(name)
+        .dont_collapse_args_in_usage(true)
+        .setting(AppSettings::DeriveDisplayOrder)
+}
 
-/// Creates a venv using
-pub fn create_venv(python_target: &str, dir_path: &Path, name: &str) -> Result<(), CliError> {
-    // While creating the lib path, we're creating the __pypackages__ structure.
-    let output = Command::new(python_target)
-        .args(&["-m", "venv", name])
-        .current_dir(dir_path)
+/// Creates a venv using python -m venv `name` from a given directory.
+pub fn create_venv(python_target: &str, dir: &Path, name: &str) -> CliResult {
+    run_command(python_target, &["-m", "venv", name], dir)?;
+
+    Ok(())
+}
+
+/// Run a command using std::process::Command
+pub fn run_command(command: &str, args: &[&str], dir: &Path) -> CliResult {
+    let output = process::Command::new(command)
+        .args(args)
+        .current_dir(dir)
         .output()?;
 
     if !output.status.success() {
         return Err(CliError::new(
-            anyhow::format_err!("failed to create virtual environment"),
+            anyhow::format_err!("failed to run command '{}' with {:?}", command, args),
             2,
         ));
     }
