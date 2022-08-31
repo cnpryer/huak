@@ -11,6 +11,7 @@ pub(crate) mod new;
 pub(crate) mod remove;
 pub(crate) mod run;
 pub(crate) mod update;
+pub(crate) mod utils;
 pub(crate) mod version;
 
 pub fn args() -> Command<'static> {

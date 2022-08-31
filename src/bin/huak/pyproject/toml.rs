@@ -5,6 +5,7 @@ use huak::{
 use std::io::{self, Write};
 
 /// Create a pyproject.toml from scratch in a directory `path`.
+#[allow(dead_code)]
 pub fn create() -> Result<Toml, CliError> {
     let mut toml = Toml::new();
     toml.set_huak(create_huak()?);
@@ -12,7 +13,21 @@ pub fn create() -> Result<Toml, CliError> {
     Ok(toml)
 }
 
+#[allow(dead_code)]
+/// Create huak table for toml.
 fn create_huak() -> Result<Huak, CliError> {
+    let mut huak_table = Huak::new();
+
+    huak_table.set_name(create_name()?);
+    huak_table.set_version(create_version()?);
+    huak_table.set_description(create_description()?);
+    // TODO: Add many individually.
+    huak_table.add_author(create_author()?);
+
+    Ok(huak_table)
+}
+
+pub fn create_name() -> Result<String, CliError> {
     let mut name = get_string_input("Enter a name: ")?;
     name = strip_newline(&name);
 
@@ -24,6 +39,10 @@ fn create_huak() -> Result<Huak, CliError> {
         ));
     }
 
+    Ok(name)
+}
+
+pub fn create_version() -> Result<String, io::Error> {
     // Get the version of the project.
     let mut version = get_string_input("Please enter a version (0.0.1): ")?;
     version = strip_newline(&version);
@@ -32,23 +51,23 @@ fn create_huak() -> Result<Huak, CliError> {
         version = "0.0.1".to_string();
     }
 
+    Ok(version)
+}
+
+pub fn create_description() -> Result<String, io::Error> {
     // Get the description for the project.
     let mut description = get_string_input("Please enter a description (\"\"): ")?;
     description = strip_newline(&description);
 
+    Ok(description)
+}
+
+pub fn create_author() -> Result<String, io::Error> {
     // Get the project authors.
-    // TODO: Add individually.
     let mut authors = get_string_input("Please enter authors ([\"\"]): ")?;
     authors = strip_newline(&authors);
 
-    let mut huak_table = Huak::new();
-    huak_table.set_name(name);
-    huak_table.set_version(version);
-    huak_table.set_description(description);
-    // TODO: Add individually.
-    huak_table.add_author(authors);
-
-    Ok(huak_table)
+    Ok(authors)
 }
 
 fn get_string_input(message: &str) -> Result<String, io::Error> {
