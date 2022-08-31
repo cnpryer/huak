@@ -1,6 +1,7 @@
 use super::commands;
 use clap::{self, ArgMatches};
 use huak::errors::{CliError, CliResult};
+use std::env;
 
 /// Launch Huak's cli process.
 pub fn main() -> CliResult {
@@ -16,6 +17,10 @@ fn run(args: ArgMatches) -> CliResult {
         _ => unimplemented!(),
     };
 
+    // Each command's behavior is triggered from the context of the cwd.
+    let cwd_buff = env::current_dir()?;
+    let cwd = cwd_buff.as_path();
+
     match cmd {
         "activate" => commands::activate::run(),
         "add" => commands::add::run(subargs),
@@ -23,7 +28,7 @@ fn run(args: ArgMatches) -> CliResult {
         "clean" => commands::clean::run(),
         "help" => commands::help::run(),
         "init" => commands::init::run(),
-        "new" => commands::new::run(),
+        "new" => commands::new::run(cwd, subargs),
         "remove" => commands::remove::run(subargs),
         "run" => commands::run::run(subargs),
         "update" => commands::update::run(subargs),
