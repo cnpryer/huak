@@ -1,13 +1,12 @@
-use std::{fs, path::Path};
+use std::env;
+use std::fs;
 
+use super::utils::create_venv;
+use super::utils::subcommand;
+use crate::pyproject;
 use clap::{arg, value_parser, ArgMatches, Command};
 use huak::errors::{CliError, CliResult};
 use huak::pyproject::toml::{Huak, Toml};
-
-use crate::pyproject;
-use crate::utils::subcommand;
-
-use super::utils::create_venv;
 
 pub fn arg() -> Command<'static> {
     subcommand("new")
@@ -15,7 +14,12 @@ pub fn arg() -> Command<'static> {
         .arg(arg!([PATH]).id("path").value_parser(value_parser!(String)))
 }
 
-pub fn run(dir: &Path, args: &ArgMatches) -> CliResult {
+pub fn run(args: &ArgMatches) -> CliResult {
+    // This command runs from the current working directory
+    // Each command's behavior is triggered from the context of the cwd.
+    let cwd_buff = env::current_dir()?;
+    let dir = cwd_buff.as_path();
+
     // If a path isn't passed with the `new` subcommand then use stdin.
     let target = if let Some(t) = args.get_one::<String>("path") {
         t.clone()

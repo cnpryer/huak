@@ -6,7 +6,7 @@ use huak::{
     pyproject::toml::Toml,
 };
 
-use crate::utils::subcommand;
+use super::utils::subcommand;
 
 pub fn arg() -> Command<'static> {
     subcommand("version").about("Display the version of the project.")

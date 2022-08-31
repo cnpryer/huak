@@ -1,7 +1,6 @@
+use super::utils::subcommand;
 use clap::{value_parser, Arg, ArgMatches, Command};
 use huak::errors::CliResult;
-
-use crate::utils::subcommand;
 
 pub fn arg() -> Command<'static> {
     subcommand("run")
