@@ -5,6 +5,7 @@ pub(crate) mod add;
 pub(crate) mod build;
 pub(crate) mod clean;
 pub(crate) mod clean_pycache;
+pub(crate) mod fmt;
 pub(crate) mod help;
 pub(crate) mod init;
 pub(crate) mod new;
@@ -24,6 +25,7 @@ pub fn args() -> Command<'static> {
         clean::arg(),
         clean_pycache::arg(),
         help::arg(),
+        fmt::arg(),
         init::arg(),
         new::arg(),
         remove::arg(),
