@@ -100,8 +100,11 @@ mod tests {
     #[test]
     pub fn assert_no_pyc() {
         let directory: PathBuf = tempdir().unwrap().into_path().to_path_buf();
+        let from_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("resources")
+            .join("mock-project");
 
-        create_py_project_sample(&PathBuf::from("./resources/test.zip"), &directory);
+        create_py_project_sample(&from_dir, &directory);
         set_current_dir(&directory).unwrap();
 
         let _ = run();

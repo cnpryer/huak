@@ -1,0 +1,13 @@
+[tool.huak]
+name = "mock_project"
+version = "0.0.1"
+description = ""
+authors = [""]
+
+[tool.huak.dependencies]
+
+[tool.huak.dev-dependencies]
+
+[build-system]
+requires = ["huak-core>=1.0.0"]
+build-backend = "huak.core.build.api"
