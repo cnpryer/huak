@@ -24,6 +24,7 @@ fn run(args: ArgMatches) -> CliResult {
         Some(("remove", subargs)) => commands::remove::run(subargs),
         Some(("run", subargs)) => commands::run::run(subargs),
         Some(("update", subargs)) => commands::update::run(subargs),
+        Some(("test", _)) => commands::test::run(),
         Some(("version", _)) => commands::version::run(),
         Some(("clean-pycache", _)) => commands::clean_pycache::run(),
         _ => Err(CliError::new(
