@@ -110,8 +110,24 @@ mod tests {
         let _ = run();
         let i = glob("**/*.pyc").unwrap().count();
         assert!(i == 0 as usize);
-
-        // remove the resulting dir.
-        _ = remove_dir_all(directory);
+        assert!(directory.as_path().join("mock-project").exists());
+        assert!(directory
+            .as_path()
+            .join("mock-project")
+            .join("pyproject.toml")
+            .exists());
+        assert!(directory
+            .as_path()
+            .join("mock-project")
+            .join("src")
+            .join("mock_project")
+            .exists());
+        assert!(!directory
+            .as_path()
+            .join("mock-project")
+            .join("src")
+            .join("mock_project")
+            .join("__init__.pyc")
+            .exists());
     }
 }
