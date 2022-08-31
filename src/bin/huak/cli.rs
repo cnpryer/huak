@@ -17,6 +17,7 @@ fn run(args: ArgMatches) -> CliResult {
         Some(("build", _)) => commands::build::run(),
         Some(("clean", _)) => commands::clean::run(),
         Some(("help", _)) => commands::help::run(),
+        Some(("fmt", subargs)) => commands::fmt::run(subargs),
         Some(("init", _)) => commands::init::run(),
         Some(("new", subargs)) => commands::new::run(subargs),
         Some(("remove", subargs)) => commands::remove::run(subargs),
