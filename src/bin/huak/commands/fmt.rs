@@ -1,7 +1,7 @@
 use super::utils::{run_command, subcommand};
 use clap::{arg, ArgAction, ArgMatches, Command};
-use huak::errors::{CliError, CliResult};
-use huak::utils::get_venv_bin;
+use huak::errors::CliResult;
+use huak::utils::get_venv_module_path;
 use std::env;
 
 pub fn arg() -> Command<'static> {
@@ -14,30 +14,17 @@ pub fn arg() -> Command<'static> {
     )
 }
 
+// TODO: Use pyproject.toml for configuration overrides.
 pub fn run(args: &ArgMatches) -> CliResult {
     // This command runs from the context of the cwd.
     let cwd_buff = env::current_dir()?;
-    let dir = cwd_buff.as_path();
+    let cwd = cwd_buff.as_path();
 
-    // TODO: Use environment management to determine venv target.
-    //       This assumes there is a .venv in cwd.
-    let black_path = dir.join(".venv").join(get_venv_bin()).join("black");
-    let black_path = black_path.as_os_str().to_str();
-
-    if black_path.is_none() {
-        return Err(CliError::new(
-            anyhow::format_err!("failed to create flake8 path"),
-            2,
-        ));
-    }
+    let black_path = get_venv_module_path("black")?;
 
     match args.get_one::<bool>("check").unwrap() {
-        true => run_command(
-            black_path.unwrap(),
-            &[".", "--line-length", "79", "--check"],
-            dir,
-        )?,
-        false => run_command(black_path.unwrap(), &[".", "--line-length", "79"], dir)?,
+        true => run_command(&black_path, &[".", "--line-length", "79", "--check"], cwd)?,
+        false => run_command(&black_path, &[".", "--line-length", "79"], cwd)?,
     };
 
     Ok(())
