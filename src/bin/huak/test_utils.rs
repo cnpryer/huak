@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 
 use huak::dir_copy;
-use fs_extra::dir;
 
 /// copies the mock-project into temp.
 /// this command only works the CURRENT DIRECTORY is unchchanged.
@@ -19,11 +18,7 @@ pub fn create_py_project_sample(resource_archive: &PathBuf, target_directory: &P
     }
 
     // Copy mock project dir to target dir
-    dir_copy(
-        resource_archive.as_path(),
-        target_directory.as_path(),
-    )
-    .unwrap();
+    dir_copy(resource_archive.as_path(), target_directory.as_path(),).unwrap();
 
     true
 }
