@@ -119,7 +119,7 @@ impl Huak {
     }
 
     pub fn add_dependency(&mut self, dependency: Dependency) {
-        self.dev_dependencies
+        self.dependencies
             .insert(dependency.name, Value::String(dependency.version));
     }
 
