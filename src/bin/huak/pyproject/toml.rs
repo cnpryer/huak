@@ -1,6 +1,7 @@
 use huak::{
     errors::CliError,
     pyproject::toml::{Huak, Toml},
+    Dependency,
 };
 use std::io::{self, Write};
 
@@ -28,8 +29,7 @@ fn create_huak() -> Result<Huak, CliError> {
 }
 
 pub fn create_name() -> Result<String, CliError> {
-    let mut name = get_string_input("Enter a name: ")?;
-    name = strip_newline(&name);
+    let name = get_string_input("Enter a name: ")?;
 
     // If a name isn't entered return an error.
     if name.is_empty() {
@@ -45,7 +45,6 @@ pub fn create_name() -> Result<String, CliError> {
 pub fn create_version() -> Result<String, io::Error> {
     // Get the version of the project.
     let mut version = get_string_input("Please enter a version (0.0.1): ")?;
-    version = strip_newline(&version);
 
     if version.is_empty() {
         version = "0.0.1".to_string();
@@ -56,18 +55,59 @@ pub fn create_version() -> Result<String, io::Error> {
 
 pub fn create_description() -> Result<String, io::Error> {
     // Get the description for the project.
-    let mut description = get_string_input("Please enter a description (\"\"): ")?;
-    description = strip_newline(&description);
+    let description = get_string_input("Please enter a description (\"\"): ")?;
 
     Ok(description)
 }
 
-pub fn create_author() -> Result<String, io::Error> {
-    // Get the project authors.
-    let mut authors = get_string_input("Please enter authors ([\"\"]): ")?;
-    authors = strip_newline(&authors);
+pub fn create_authors() -> Result<Vec<String>, io::Error> {
+    let mut authors = Vec::new();
+
+    loop {
+        let author = create_author()?;
+
+        match author.is_empty() {
+            true => break,
+            false => authors.push(author),
+        }
+    }
 
     Ok(authors)
+}
+
+pub fn create_author() -> Result<String, io::Error> {
+    let author = get_string_input("Please enter an author (\"\"): ")?;
+
+    Ok(author)
+}
+
+pub fn create_dependencies(kind: &str) -> Result<Vec<Dependency>, CliError> {
+    let mut dependencies = Vec::new();
+
+    loop {
+        let dependency = &create_dependency(kind)?;
+
+        match dependency {
+            Some(dep) => dependencies.push(dep.clone()),
+            _ => break,
+        }
+    }
+
+    Ok(dependencies)
+}
+
+pub fn create_dependency(kind: &str) -> Result<Option<Dependency>, CliError> {
+    let message = format!("Enter a {} dependency (package): ", kind);
+    let name = get_string_input(&message)?;
+
+    if name.is_empty() {
+        return Ok(None);
+    }
+
+    let message = format!("Enter a version for {} (x.x.x): ", name);
+    let version = get_string_input(&message)?;
+
+    Ok(Some(Dependency { name, version }))
 }
 
 fn get_string_input(message: &str) -> Result<String, io::Error> {
@@ -78,6 +118,8 @@ fn get_string_input(message: &str) -> Result<String, io::Error> {
     let _ = io::stdout().flush();
 
     io::stdin().read_line(&mut res)?;
+
+    res = strip_newline(&res);
 
     Ok(res)
 }
