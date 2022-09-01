@@ -3,7 +3,9 @@ use std::fs;
 
 use super::utils::create_venv;
 use super::utils::subcommand;
-use crate::pyproject;
+use crate::pyproject::toml::{
+    create_authors, create_dependencies, create_description, create_name, create_version,
+};
 use clap::{arg, value_parser, ArgMatches, Command};
 use huak::errors::{CliError, CliResult};
 use huak::pyproject::toml::{Huak, Toml};
@@ -24,7 +26,7 @@ pub fn run(args: &ArgMatches) -> CliResult {
     let target = if let Some(t) = args.get_one::<String>("path") {
         t.clone()
     } else {
-        let name = &pyproject::toml::create_name()?;
+        let name = &create_name()?;
         name.clone()
     };
 
@@ -63,9 +65,11 @@ pub fn run(args: &ArgMatches) -> CliResult {
     // Create the huak spanning table of the toml file.
     let mut huak_table = Huak::new();
     huak_table.set_name(name.unwrap().to_string());
-    huak_table.set_version(pyproject::toml::create_version()?);
-    huak_table.set_description(pyproject::toml::create_description()?);
-    huak_table.add_author(pyproject::toml::create_author()?);
+    huak_table.set_version(create_version()?);
+    huak_table.set_description(create_description()?);
+    huak_table.set_authors(create_authors()?);
+    huak_table.set_dependencies(create_dependencies("main")?);
+    huak_table.set_dev_dependencies(create_dependencies("dev")?);
 
     let mut toml = Toml::new();
     toml.set_huak(huak_table);
