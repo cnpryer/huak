@@ -1,6 +1,8 @@
 use serde_derive::{Deserialize, Serialize};
 use toml::{value::Map, Value};
 
+use crate::Dependency;
+
 use super::build_system::BuildSystem;
 
 #[derive(Serialize, Deserialize, Default)]
@@ -104,6 +106,10 @@ impl Huak {
         &self.authors
     }
 
+    pub fn set_authors(&mut self, authors: Vec<String>) {
+        self.authors = authors;
+    }
+
     pub fn add_author(&mut self, author: String) {
         self.authors.push(author);
     }
@@ -112,8 +118,30 @@ impl Huak {
         &self.dependencies
     }
 
+    pub fn add_dependency(&mut self, dependency: Dependency) {
+        self.dev_dependencies
+            .insert(dependency.name, Value::String(dependency.version));
+    }
+
+    pub fn set_dependencies(&mut self, dependencies: Vec<Dependency>) {
+        for dependency in dependencies {
+            self.add_dependency(dependency);
+        }
+    }
+
     pub fn dev_dependencies(&self) -> &Map<String, Value> {
         &self.dev_dependencies
+    }
+
+    pub fn add_dev_dependency(&mut self, dependency: Dependency) {
+        self.dev_dependencies
+            .insert(dependency.name, Value::String(dependency.version));
+    }
+
+    pub fn set_dev_dependencies(&mut self, dependencies: Vec<Dependency>) {
+        for dependency in dependencies {
+            self.add_dev_dependency(dependency);
+        }
     }
 }
 
