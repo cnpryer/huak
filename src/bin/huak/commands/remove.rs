@@ -53,8 +53,7 @@ pub fn run(args: &ArgMatches) -> CliResult {
         }
     };
 
-    toml.remove_dependency(dependency, "dev");
-    toml.remove_dependency(dependency, "main");
+    toml.tool.huak.remove_dependency(dependency);
 
     // Attempt to prepare the serialization of pyproject.toml constructed.
     let string = match toml.to_string() {

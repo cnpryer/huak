@@ -1,6 +1,6 @@
 use huak::{
     errors::CliError,
-    pyproject::toml::{Huak, Toml},
+    pyproject::{toml::Toml, tools::huak::Huak},
     Dependency,
 };
 use std::io::{self, Write};
@@ -8,13 +8,13 @@ use std::io::{self, Write};
 /// Create a pyproject.toml from scratch in a directory `path`.
 #[allow(dead_code)]
 pub fn create() -> Result<Toml, CliError> {
+    // Update tool with huak table defined using stdin.
     let mut toml = Toml::new();
-    toml.set_huak(create_huak()?);
+    toml.tool.set_huak(create_huak()?);
 
     Ok(toml)
 }
 
-#[allow(dead_code)]
 /// Create huak table for toml.
 fn create_huak() -> Result<Huak, CliError> {
     let mut huak_table = Huak::new();
