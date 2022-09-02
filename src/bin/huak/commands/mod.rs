@@ -8,6 +8,7 @@ pub(crate) mod clean_pycache;
 pub(crate) mod fmt;
 pub(crate) mod help;
 pub(crate) mod init;
+pub(crate) mod install;
 pub(crate) mod lint;
 pub(crate) mod new;
 pub(crate) mod remove;
@@ -29,6 +30,7 @@ pub fn args() -> Command<'static> {
         help::arg(),
         fmt::arg(),
         init::arg(),
+        install::arg(),
         lint::arg(),
         new::arg(),
         remove::arg(),
