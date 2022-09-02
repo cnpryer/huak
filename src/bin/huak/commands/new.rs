@@ -1,15 +1,16 @@
 use std::env;
 use std::fs;
-use std::path::Path;
 
 use super::utils::create_venv;
 use super::utils::subcommand;
-use crate::pyproject::toml::{
-    create_authors, create_dependencies, create_description, create_name, create_version,
-};
+use crate::pyproject::toml::create_authors;
+use crate::pyproject::toml::create_dependencies;
+use crate::pyproject::toml::create_description;
+use crate::pyproject::toml::create_name;
+use crate::pyproject::toml::create_version;
 use clap::{arg, value_parser, ArgMatches, Command};
 use huak::errors::{CliError, CliResult};
-use huak::pyproject::toml::{Huak, Toml};
+use huak::pyproject::toml::Toml;
 
 pub fn arg() -> Command<'static> {
     subcommand("new")
@@ -44,8 +45,17 @@ pub fn run(args: &ArgMatches) -> CliResult {
         ));
     }
 
-    let name = get_filename_from_path(&project_path)?;
-    let toml = create_toml_from_name(name)?;
+    let name = huak::utils::get_filename_from_path(&project_path)?;
+    let mut toml = Toml::new();
+
+    toml.tool.huak.set_name(name);
+    toml.tool.huak.set_version(create_version()?);
+    toml.tool.huak.set_description(create_description()?);
+    toml.tool.huak.set_authors(create_authors()?);
+    toml.tool
+        .huak
+        .set_dependencies(create_dependencies("main")?);
+    toml.tool.huak.set_dependencies(create_dependencies("dev")?);
 
     // Create project directory.
     fs::create_dir_all(&project_path)?;
@@ -81,43 +91,4 @@ pub fn run(args: &ArgMatches) -> CliResult {
     create_venv("python", &project_path, ".venv")?;
 
     Ok(())
-}
-
-fn create_toml_from_name(name: String) -> Result<Toml, CliError> {
-    // Create the huak spanning table of the toml file.
-    let mut huak_table = Huak::new();
-    huak_table.set_name(name);
-    huak_table.set_version(create_version()?);
-    huak_table.set_description(create_description()?);
-    huak_table.set_authors(create_authors()?);
-    huak_table.set_dependencies(create_dependencies("main")?);
-    huak_table.set_dev_dependencies(create_dependencies("dev")?);
-
-    let mut toml = Toml::new();
-    toml.set_huak(huak_table);
-
-    Ok(toml)
-}
-
-fn get_filename_from_path(path: &Path) -> Result<String, CliError> {
-    // Attempt to convert OsStr to str.
-    let name = match path.file_name() {
-        Some(f) => f.to_str(),
-        _ => {
-            return Err(CliError::new(
-                anyhow::format_err!("failed to read name from path"),
-                2,
-            ))
-        }
-    };
-
-    // If a str was failed to be parsed error.
-    if name.is_none() {
-        return Err(CliError::new(
-            anyhow::format_err!("failed to read name from path"),
-            2,
-        ));
-    }
-
-    Ok(name.unwrap().to_string())
 }

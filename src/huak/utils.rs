@@ -1,7 +1,7 @@
 use crate::errors::CliError;
 use std::{
     env::{self, consts::OS},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 /// Get module filepath from .venv. This function assumes the .venv is in
@@ -29,4 +29,28 @@ pub fn get_venv_bin() -> String {
         "windows" => "Scripts".to_string(),
         _ => "bin".to_string(),
     }
+}
+
+/// Return the filename from a `Path`.
+pub fn get_filename_from_path(path: &Path) -> Result<String, CliError> {
+    // Attempt to convert OsStr to str.
+    let name = match path.file_name() {
+        Some(f) => f.to_str(),
+        _ => {
+            return Err(CliError::new(
+                anyhow::format_err!("failed to read name from path"),
+                2,
+            ))
+        }
+    };
+
+    // If a str was failed to be parsed error.
+    if name.is_none() {
+        return Err(CliError::new(
+            anyhow::format_err!("failed to read name from path"),
+            2,
+        ));
+    }
+
+    Ok(name.unwrap().to_string())
 }
