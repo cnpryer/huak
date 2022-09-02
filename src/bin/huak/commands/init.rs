@@ -8,7 +8,7 @@ use super::utils::subcommand;
 use clap::Command;
 use huak::{
     errors::{CliError, CliResult},
-    pyproject::toml::{Huak, Toml},
+    pyproject::toml::Toml,
 };
 
 pub fn arg() -> Command<'static> {
@@ -46,16 +46,18 @@ pub fn run() -> CliResult {
         ));
     }
 
-    let mut huak_table = Huak::new();
-    huak_table.set_name(name.unwrap().to_string());
-    huak_table.set_version(create_version()?);
-    huak_table.set_description(create_description()?);
-    huak_table.set_authors(create_authors()?);
-    huak_table.set_dependencies(create_dependencies("main")?);
-    huak_table.set_dev_dependencies(create_dependencies("dev")?);
-
     let mut toml = Toml::new();
-    toml.set_huak(huak_table);
+
+    toml.tool.huak.set_name(name.unwrap().to_string());
+    toml.tool.huak.set_version(create_version()?);
+    toml.tool.huak.set_description(create_description()?);
+    toml.tool.huak.set_authors(create_authors()?);
+    toml.tool
+        .huak
+        .set_dependencies(create_dependencies("main")?);
+    toml.tool
+        .huak
+        .set_dev_dependencies(create_dependencies("dev")?);
 
     let string = match toml.to_string() {
         Ok(s) => s,

@@ -28,11 +28,7 @@ pub fn run() -> CliResult {
         }
     };
 
-    println!(
-        "{}-{}",
-        toml.tool().huak().name(),
-        toml.tool().huak().version()
-    );
+    println!("{}-{}", toml.tool.huak.name(), toml.tool.huak.version());
 
     Ok(())
 }
