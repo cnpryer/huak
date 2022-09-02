@@ -25,6 +25,13 @@ impl Toml {
         &self.tool
     }
 
+    pub fn remove_dependency(&mut self, name: &str, kind: &str) {
+        match kind {
+            "dev" => self.tool.huak.remove_dev_dependency(name),
+            _ => self.tool.huak.remove_dependency(name),
+        };
+    }
+
     pub fn set_huak(&mut self, huak: Huak) {
         self.tool.huak = huak
     }
@@ -129,6 +136,10 @@ impl Huak {
         }
     }
 
+    pub fn remove_dependency(&mut self, name: &str) {
+        self.dependencies.remove(name);
+    }
+
     pub fn dev_dependencies(&self) -> &Map<String, Value> {
         &self.dev_dependencies
     }
@@ -142,6 +153,10 @@ impl Huak {
         for dependency in dependencies {
             self.add_dev_dependency(dependency);
         }
+    }
+
+    pub fn remove_dev_dependency(&mut self, name: &str) {
+        self.dev_dependencies.remove(name);
     }
 }
 
