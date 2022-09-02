@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::path::Path;
 
 use super::utils::create_venv;
 use super::utils::subcommand;
@@ -38,41 +39,13 @@ pub fn run(args: &ArgMatches) -> CliResult {
     // Make sure there isn't already a path we would override.
     if project_path.exists() {
         return Err(CliError::new(
-            anyhow::format_err!("a path already exists"),
+            anyhow::format_err!("a directory already exists"),
             2,
         ));
     }
 
-    // Attempt to convert OsStr to str.
-    let name = match project_path.file_name() {
-        Some(f) => f.to_str(),
-        _ => {
-            return Err(CliError::new(
-                anyhow::format_err!("failed to read name from path"),
-                2,
-            ))
-        }
-    };
-
-    // If a str was failed to be parsed error.
-    if name.is_none() {
-        return Err(CliError::new(
-            anyhow::format_err!("failed to read name from path"),
-            2,
-        ));
-    }
-
-    // Create the huak spanning table of the toml file.
-    let mut huak_table = Huak::new();
-    huak_table.set_name(name.unwrap().to_string());
-    huak_table.set_version(create_version()?);
-    huak_table.set_description(create_description()?);
-    huak_table.set_authors(create_authors()?);
-    huak_table.set_dependencies(create_dependencies("main")?);
-    huak_table.set_dev_dependencies(create_dependencies("dev")?);
-
-    let mut toml = Toml::new();
-    toml.set_huak(huak_table);
+    let name = get_filename_from_path(&project_path)?;
+    let toml = create_toml_from_name(name)?;
 
     // Create project directory.
     fs::create_dir_all(&project_path)?;
@@ -108,4 +81,43 @@ pub fn run(args: &ArgMatches) -> CliResult {
     create_venv("python", &project_path, ".venv")?;
 
     Ok(())
+}
+
+fn create_toml_from_name(name: String) -> Result<Toml, CliError> {
+    // Create the huak spanning table of the toml file.
+    let mut huak_table = Huak::new();
+    huak_table.set_name(name);
+    huak_table.set_version(create_version()?);
+    huak_table.set_description(create_description()?);
+    huak_table.set_authors(create_authors()?);
+    huak_table.set_dependencies(create_dependencies("main")?);
+    huak_table.set_dev_dependencies(create_dependencies("dev")?);
+
+    let mut toml = Toml::new();
+    toml.set_huak(huak_table);
+
+    Ok(toml)
+}
+
+fn get_filename_from_path(path: &Path) -> Result<String, CliError> {
+    // Attempt to convert OsStr to str.
+    let name = match path.file_name() {
+        Some(f) => f.to_str(),
+        _ => {
+            return Err(CliError::new(
+                anyhow::format_err!("failed to read name from path"),
+                2,
+            ))
+        }
+    };
+
+    // If a str was failed to be parsed error.
+    if name.is_none() {
+        return Err(CliError::new(
+            anyhow::format_err!("failed to read name from path"),
+            2,
+        ));
+    }
+
+    Ok(name.unwrap().to_string())
 }
