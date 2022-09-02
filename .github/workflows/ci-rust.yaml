@@ -1,7 +1,12 @@
 name: ci-rust
 
 on:
+  push:
+    branches:
+      - "master"
   pull_request:
+    branches:
+      - "master"  
     paths:
       - 'src/**'
       - 'Cargo.toml'
