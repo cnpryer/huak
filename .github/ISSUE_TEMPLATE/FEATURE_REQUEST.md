@@ -6,8 +6,4 @@ labels: 'enhancement'
 assignees: ''
 ---
 
-## Feature Request
-
-**Name:** Feature Request
-
-**About:** Suggest an idea for this project
+## Description of request
