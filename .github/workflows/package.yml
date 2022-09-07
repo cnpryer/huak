@@ -1,0 +1,36 @@
+name: 📦 Package
+
+on:
+    pull_request:
+    push:
+        branches: ["main", "develop", "release"]
+
+env:
+    CARGO_TERM_COLOR: always
+
+jobs:
+    license:
+        name: 🏫License check
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - name: 🏫Check license
+              run: |
+                  cargo install cargo-deny
+                  cargo deny check
+
+    cargo_check:
+        name: 📦 Check package integrity
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - name: Check package integrity
+              run: cargo package --verbose
+
+    publish_dry_run:
+        name: 📢 Publish dry-run
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+            - name: Publish dry run
+              run: cargo publish --dry-run --verbose

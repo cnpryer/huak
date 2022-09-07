@@ -1,0 +1,41 @@
+[tasks.all]
+dependencies = ["format", "build", "clippy", "test", "doc"]
+
+[tasks.format]
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--", "--emit=files"]
+
+[tasks.rust-fmt-check]
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--", "--verbose", "--color", "auto"]
+
+[tasks.toml-fmt-check]
+install_crate = { crate_name = "taplo-cli", binary = "taplo", test_arg = "--help" }
+command = "taplo"
+args = ["fmt", "--check", "*.toml"]
+
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
+[tasks.build]
+command = "cargo"
+args = ["build"]
+dependencies = ["clean"]
+
+[tasks.clippy]
+command = "cargo"
+args = ["clippy"]
+dependencies = ["clean"]
+
+[tasks.test]
+command = "cargo"
+args = ["test"]
+dependencies = ["clean"]
+
+[tasks.doc]
+command = "cargo"
+args = ["doc"]
+dependencies = ["clean"]
