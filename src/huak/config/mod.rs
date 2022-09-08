@@ -40,7 +40,7 @@ impl Config {
             .into_iter()
             .map(|d| PythonPackage {
                 name: d.0,
-                version: d.1.to_string(),
+                version: d.1.as_str().unwrap().to_string(),
             })
             .collect();
 
@@ -51,7 +51,7 @@ impl Config {
             .into_iter()
             .map(|d| PythonPackage {
                 name: d.0,
-                version: d.1.to_string(),
+                version: d.1.as_str().unwrap().to_string(),
             })
             .collect();
 
