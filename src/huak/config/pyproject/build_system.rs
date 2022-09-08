@@ -1,14 +1,13 @@
 use serde_derive::{Deserialize, Serialize};
-use std::fmt;
 
 const HUAK_REQUIRES: &str = "huak-core>=1.0.0";
 const HUAK_BUILD_BACKEND: &str = "huak.core.build.api";
 
 #[derive(Serialize, Deserialize)]
-pub struct BuildSystem {
-    requires: Vec<String>,
+pub(crate) struct BuildSystem {
+    pub(crate) requires: Vec<String>,
     #[serde(rename = "build-backend")]
-    backend: String,
+    pub(crate) backend: String,
 }
 
 impl Default for BuildSystem {
@@ -20,27 +19,18 @@ impl Default for BuildSystem {
     }
 }
 
-impl fmt::Display for BuildSystem {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "[build-system]")?;
-        writeln!(f, "requires = {:?}", self.requires)?;
-        writeln!(f, "build-backend = \"{}\"", self.backend)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use toml;
 
     #[test]
     fn build_system() {
         let requires = vec![];
         let backend = "".to_string();
-        let string = "\
-[build-system]
-requires = []
-build-backend = \"\"
-";
+        let string = r#"requires = []
+build-backend = ""
+"#;
 
         let data = BuildSystem {
             requires: requires.clone(),
@@ -49,6 +39,6 @@ build-backend = \"\"
 
         assert_eq!(data.requires, requires);
         assert_eq!(data.backend, backend);
-        assert_eq!(data.to_string(), string);
+        assert_eq!(toml::to_string(&data).unwrap(), string);
     }
 }
