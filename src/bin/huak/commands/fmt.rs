@@ -19,7 +19,7 @@ pub fn run(args: &ArgMatches) -> CliResult {
     let project = Project::new(cwd);
     let is_check = args.get_one::<bool>("check").unwrap();
 
-    ops::fmt::fmt_project(&project, is_check);
+    ops::fmt::fmt_project(&project, is_check)?;
 
     Ok(())
 }
