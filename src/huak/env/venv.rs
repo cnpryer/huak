@@ -119,7 +119,7 @@ impl PythonEnvironment for Venv {
     /// Install a dependency from the venv.
     fn uninstall_package(&self, name: &str) -> Result<(), CliError> {
         let module = "pip";
-        let args = ["uninstall", name];
+        let args = ["uninstall", name, "-y"];
 
         self.exec_module(module, &args)?;
 
