@@ -15,6 +15,6 @@ pub fn run() -> CliResult {
 
     let project = Project::new(cwd);
 
-    ops::init::create_toml(&project)?;
+    ops::init::create_project_toml(&project)?;
     Ok(())
 }
