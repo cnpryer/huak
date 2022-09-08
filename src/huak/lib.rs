@@ -1,12 +1,7 @@
-use serde_derive::Deserialize;
-
+pub mod config;
+pub mod env;
 pub mod errors;
-pub mod pyproject;
+pub mod ops;
+pub mod package;
+pub mod project;
 pub mod utils;
-
-/// Struct containing dependency information.
-#[derive(Clone, Deserialize, Debug)]
-pub struct Dependency {
-    pub name: String,
-    pub version: String,
-}
