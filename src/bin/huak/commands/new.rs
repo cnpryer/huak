@@ -13,6 +13,7 @@ pub fn arg() -> Command<'static> {
         .arg(arg!([PATH]).id("path").value_parser(value_parser!(String)))
 }
 
+// TODO: Ops should hanlde the path creation step in addition to the project creation.
 pub fn run(args: &ArgMatches) -> CliResult {
     // This command runs from the current working directory
     // Each command's behavior is triggered from the context of the cwd.
