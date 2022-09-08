@@ -13,6 +13,7 @@ pub struct Config {
     pub name: String,
     pub version: String,
     dependencies: Vec<PythonPackage>,
+    dev_dependencies: Vec<PythonPackage>,
 }
 
 impl Config {
@@ -32,7 +33,7 @@ impl Config {
         let version = toml.tool.huak.version;
 
         // Build a vector of dependencies. TODO: Main vs dev if needed.
-        let mut dependencies: Vec<PythonPackage> = toml
+        let dependencies = toml
             .tool
             .huak
             .dependencies
@@ -43,21 +44,22 @@ impl Config {
             })
             .collect();
 
-        dependencies.extend(
-            toml.tool
-                .huak
-                .dev_dependencies
-                .into_iter()
-                .map(|d| PythonPackage {
-                    name: d.0,
-                    version: d.1.to_string(),
-                }),
-        );
+        let dev_dependencies = toml
+            .tool
+            .huak
+            .dev_dependencies
+            .into_iter()
+            .map(|d| PythonPackage {
+                name: d.0,
+                version: d.1.to_string(),
+            })
+            .collect();
 
         Ok(Config {
             name,
             version,
             dependencies,
+            dev_dependencies,
         })
     }
 }
@@ -65,5 +67,9 @@ impl Config {
 impl PythonConfig for Config {
     fn dependencies(&self) -> &Vec<PythonPackage> {
         &self.dependencies
+    }
+
+    fn dev_dependencies(&self) -> &Vec<PythonPackage> {
+        &self.dev_dependencies
     }
 }

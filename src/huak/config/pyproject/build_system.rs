@@ -28,11 +28,9 @@ mod tests {
     fn build_system() {
         let requires = vec![];
         let backend = "".to_string();
-        let string = "\
-[build-system]
-requires = []
-build-backend = \"\"
-";
+        let string = r#"requires = []
+build-backend = ""
+"#;
 
         let data = BuildSystem {
             requires: requires.clone(),
