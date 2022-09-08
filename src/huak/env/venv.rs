@@ -40,9 +40,33 @@ impl Venv {
 
     /// Get the name of the Venv (ex: ".venv").
     pub fn name(&self) -> Result<&str, anyhow::Error> {
-        let name = crate::utils::path::parse_filename(&self.path.as_path())?;
+        let name = crate::utils::path::parse_filename(self.path.as_path())?;
 
         Ok(name)
+    }
+
+    /// Create the venv at its path.
+    pub fn create(&self) -> Result<(), anyhow::Error> {
+        if self.path.exists() {
+            return Err(anyhow::format_err!("venv already exists"));
+        }
+
+        let from = match self.path.parent() {
+            Some(p) => p,
+            _ => return Err(anyhow::format_err!("invalid venv path")),
+        };
+
+        let name = self.name()?;
+        let args = ["-m", "venv", name];
+
+        // Create venv using system's Python alias.
+        if let Err(e) = crate::utils::command::run_command("python", &args, from) {
+            return Err(e
+                .error
+                .unwrap_or_else(|| anyhow::format_err!("failed to create venv")));
+        };
+
+        Ok(())
     }
 }
 
@@ -68,18 +92,36 @@ impl PythonEnvironment for Venv {
         }
     }
 
-    /// Install a dependency to
+    /// Run a module installed to the venv as an alias'd command from the current working dir.
+    fn exec_module(&self, module: &str, args: &[&str]) -> Result<(), CliError> {
+        let cwd = env::current_dir()?;
+        let module_path = self.bin_path().join(module);
+        let module_path = crate::utils::path::as_string(module_path.as_path())?;
+
+        crate::utils::command::run_command(module_path, args, &cwd)?;
+
+        Ok(())
+    }
+
+    /// Install a dependency to the venv.
     fn install_package(&self, dependency: &PythonPackage) -> Result<(), CliError> {
         let args = [
             "install",
             &format!("{}=={}", dependency.name, dependency.version),
         ];
+        let module = "pip";
 
-        let cwd = env::current_dir()?;
-        let pip_path = self.bin_path().join("pip");
-        let pip_path = crate::utils::path::as_string(&pip_path.as_path())?;
+        self.exec_module(module, &args)?;
 
-        crate::utils::command::run_command(pip_path, &args, &cwd)?;
+        Ok(())
+    }
+
+    /// Install a dependency from the venv.
+    fn uninstall_package(&self, name: &str) -> Result<(), CliError> {
+        let module = "pip";
+        let args = ["uninstall", name];
+
+        self.exec_module(module, &args)?;
 
         Ok(())
     }
