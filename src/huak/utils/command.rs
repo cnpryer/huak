@@ -1,9 +1,9 @@
-use std::{path::PathBuf, process};
+use std::{path::Path, process};
 
 use crate::errors::{CliError, CliResult};
 
 /// Run a command using process::Command and an array of args.
-pub fn run_command(cmd: &str, args: &[&str], from: &PathBuf) -> CliResult {
+pub fn run_command(cmd: &str, args: &[&str], from: &Path) -> CliResult {
     let output = process::Command::new(cmd)
         .args(args)
         .current_dir(from)
