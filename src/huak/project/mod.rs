@@ -18,13 +18,9 @@ impl Project {
     /// If a venv is found at the root of the project it will also initalize a `Venv`. A venv
     /// is expected to be either .venv or venv at the root.
     pub fn new(root: PathBuf) -> Project {
-        let config = Config::new(root.as_path()).unwrap_or(Config::default());
+        let config = Config::new(root.as_path()).unwrap_or_default();
         let venv = Venv::find(root.as_path());
-        let venv = if venv.is_err() {
-            None
-        } else {
-            Some(venv.unwrap())
-        };
+        let venv = if let Ok(v) = venv { Some(v) } else { None };
 
         Project { root, config, venv }
     }
