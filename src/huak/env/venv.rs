@@ -93,35 +93,36 @@ impl PythonEnvironment for Venv {
     }
 
     /// Run a module installed to the venv as an alias'd command from the current working dir.
-    fn exec_module(&self, module: &str, args: &[&str]) -> Result<(), CliError> {
-        let cwd = env::current_dir()?;
+    fn exec_module(&self, module: &str, args: &[&str], from: &Path) -> Result<(), CliError> {
         let module_path = self.bin_path().join(module);
         let module_path = crate::utils::path::as_string(module_path.as_path())?;
 
-        crate::utils::command::run_command(module_path, args, &cwd)?;
+        crate::utils::command::run_command(module_path, args, from)?;
 
         Ok(())
     }
 
     /// Install a dependency to the venv.
     fn install_package(&self, dependency: &PythonPackage) -> Result<(), CliError> {
+        let cwd = env::current_dir()?;
         let args = [
             "install",
             &format!("{}=={}", dependency.name, dependency.version),
         ];
         let module = "pip";
 
-        self.exec_module(module, &args)?;
+        self.exec_module(module, &args, cwd.as_path())?;
 
         Ok(())
     }
 
     /// Install a dependency from the venv.
     fn uninstall_package(&self, name: &str) -> Result<(), CliError> {
+        let cwd = env::current_dir()?;
         let module = "pip";
         let args = ["uninstall", name, "-y"];
 
-        self.exec_module(module, &args)?;
+        self.exec_module(module, &args, cwd.as_path())?;
 
         Ok(())
     }

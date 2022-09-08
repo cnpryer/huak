@@ -13,7 +13,7 @@ pub fn test_project(project: &Project) -> CliResult {
         _ => return Err(CliError::new(anyhow::format_err!("no venv found"), 2)),
     };
 
-    venv.exec_module(module, &args)?;
+    venv.exec_module(module, &args, &project.root)?;
 
     Ok(())
 }

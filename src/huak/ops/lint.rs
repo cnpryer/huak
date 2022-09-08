@@ -19,7 +19,7 @@ pub fn lint_project(project: &Project) -> CliResult {
 
     let args = ["--ignore", "E203,W503", "--exclude", venv.name()?];
 
-    venv.exec_module(module, &args)?;
+    venv.exec_module(module, &args, &project.root)?;
 
     Ok(())
 }
