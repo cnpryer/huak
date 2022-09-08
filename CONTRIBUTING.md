@@ -3,7 +3,7 @@ Contributing
 
 We appriciate your interest in contributing to our project!
 
-You can contribute to Huak by checking for unassigned issues on our [Issue Board](https://github.com/orgs/cnpryer/projects/1) or even just documenting features and bugs by creating new issues. You can also join our [Discord server](https://discord.gg/KjHdBaBGhm) to reach out.
+You can contribute to Huak by checking for unassigned issues on our [Issue Board](https://github.com/orgs/cnpryer/projects/1) or even just documenting features and bugs by creating new issues.
 
 We follow the standard [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow) when making contributions to Huak.
 
