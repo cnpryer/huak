@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - "master"
+    paths:
+      - 'src/**'
+      - 'Cargo.toml'
+      - '.github/workflows/ci-rust.yaml'
   pull_request:
     branches:
       - "master"  
