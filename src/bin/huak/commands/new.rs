@@ -21,11 +21,11 @@ pub fn run(args: &ArgMatches) -> CliResult {
     // If a user passes a path
     let path = match args.get_one::<String>("path") {
         Some(p) => cwd.join(p),
-        _ => cwd,
+        _ => cwd.clone(),
     };
 
     // Make sure there isn't already a path we would override.
-    if path.exists() && path != cwd {
+    if path.exists() && path == cwd {
         return Err(CliError::new(
             anyhow::format_err!("a directory already exists"),
             2,
@@ -47,7 +47,7 @@ pub fn run(args: &ArgMatches) -> CliResult {
 
     let project = Project::new(path);
 
-    ops::new::create_project(&project);
+    ops::new::create_project(&project)?;
 
     Ok(())
 }
