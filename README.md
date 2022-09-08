@@ -1,5 +1,5 @@
-[![ci-rust](https://github.com/huak-rs/huak/actions/workflows/ci-rust.yaml/badge.svg)](https://github.com/huak-rs/huak/actions/workflows/ci-rust.yaml)
-[![ci-python](https://github.com/huak-rs/huak/actions/workflows/ci-python.yaml/badge.svg)](https://github.com/huak-rs/huak/actions/workflows/ci-python.yaml)
+[![ci-rust](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml)
+[![ci-python](https://github.com/cnpryer/huak/actions/workflows/ci-python.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci-python.yaml)
 
 # huak
 
@@ -13,7 +13,7 @@
 
 A Python package manager written in Rust. The [Cargo](https://github.com/rust-lang/cargo) for Python.
 
-See either [this milestone list](https://github.com/huak-rs/huak/milestones) or [the issue board](https://github.com/orgs/huak-rs/projects/1) to check the status of this project at any point in time.
+See either [this milestone list](https://github.com/cnpryer/huak/milestones) or [the issue board](https://github.com/orgs/cnpryer/projects/1) to check the status of this project at any point in time.
 
 Coordinating work on Huak is currently done on [Discord](https://discord.gg/KjHdBaBGhm).
 
