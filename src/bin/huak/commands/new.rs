@@ -26,7 +26,7 @@ pub fn run(args: &ArgMatches) -> CliResult {
     };
 
     // Make sure there isn't already a path we would override.
-    if path.exists() && path == cwd {
+    if path.exists() && path != cwd {
         return Err(CliError::new(
             anyhow::format_err!("a directory already exists"),
             2,
