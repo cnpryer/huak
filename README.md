@@ -31,7 +31,7 @@ My goal is to build a package manager to standardize Python dev-tooling for comm
 
 I believe there's tons of room for faster tooling in the Python ecosystem. I'm a fan of snappy, responsive software, so one of the guiding principles will be "Is this the fastest it can be?"
 
-### 4. Supporting Python and Rust interop ☯
+### 4. Contribute to Python and Rust interop ☯
 
 As with the JavaScript ecosystem, I think Rust has a lot of potential in the Python space. One key ingredient will be sustainability and the community's role. Through Huak I hope to support this emerging community in order to help boost long-term sustainability.
 
