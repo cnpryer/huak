@@ -31,22 +31,21 @@ pub fn fmt_project(project: &Project, is_check: &bool) -> CliResult {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::PathBuf};
+    use std::fs;
 
     use tempfile::tempdir;
 
     use super::*;
 
-    use crate::utils::test_utils::{copy_dir, create_mock_project};
+    use crate::utils::test_utils::{
+        copy_dir, create_mock_project, get_resource_dir,
+    };
 
     #[test]
     fn fmt() {
         let directory = tempdir().unwrap().into_path().to_path_buf();
-        let from_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("resources")
-            .join("mock-project");
-
-        copy_dir(&from_dir, &directory);
+        let mock_project_dir = get_resource_dir().join("mock-project");
+        copy_dir(&mock_project_dir, &directory);
 
         let project_path = directory.join("mock-project");
         let project = create_mock_project(project_path.clone()).unwrap();
