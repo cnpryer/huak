@@ -6,10 +6,11 @@ use crate::{
 };
 
 pub fn clean_project(project: &Project) -> CliResult {
-    if !project.root.join("dist").is_dir() {
+    let dist_path = project.root.join("dist");
+    if !dist_path.is_dir() {
         Ok(())
     } else {
-        match remove_dir_all("dist") {
+        match remove_dir_all(dist_path) {
             Ok(_) => Ok(()),
             Err(e) => Err(CliError::new(anyhow::format_err!(e), 2)),
         }
@@ -18,14 +19,13 @@ pub fn clean_project(project: &Project) -> CliResult {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
+    use super::*;
+
+    use std::{env, path::PathBuf};
 
     use tempfile::tempdir;
 
-    use crate::{
-        ops::clean::clean_project, project::Project,
-        test_utils::create_mock_project_from_dir,
-    };
+    use crate::utils::test_utils::{copy_dir, create_mock_project};
 
     #[test]
     pub fn clean() {
@@ -34,13 +34,15 @@ mod tests {
             .join("resources")
             .join("mock-project");
 
-        create_mock_project_from_dir(&from_dir, &directory);
-        let project = Project::new(directory.join("mock-project"));
-        // let had_dist = project.root.join("dist").exists();
+        copy_dir(&from_dir, &directory);
 
-        let _ = clean_project(&project);
+        let project =
+            create_mock_project(directory.join("mock-project")).unwrap();
+        let had_dist = project.root.join("dist").exists();
 
-        // assert!(had_dist);
+        clean_project(&project).unwrap();
+
+        assert!(had_dist);
         assert!(project.root.as_path().exists());
         assert!(project.root.as_path().join("pyproject.toml").exists());
         assert!(project

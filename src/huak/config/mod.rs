@@ -8,7 +8,7 @@ use python::PythonConfig;
 
 use self::{pyproject::toml::Toml, requirements::PythonPackage};
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Config {
     pub name: String,
     pub version: String,

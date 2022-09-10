@@ -37,7 +37,7 @@ mod tests {
 
     use super::*;
 
-    use crate::{env::venv::Venv, test_utils::create_mock_project_from_dir};
+    use crate::utils::test_utils::{copy_dir, create_mock_project};
 
     #[test]
     fn fmt() {
@@ -46,14 +46,15 @@ mod tests {
             .join("resources")
             .join("mock-project");
 
-        create_mock_project_from_dir(&from_dir, &directory);
+        copy_dir(&from_dir, &directory);
 
         let project_path = directory.join("mock-project");
-        let venv = Venv::new(project_path.join(".venv"));
-        venv.create().unwrap();
-        venv.exec_module("pip", &["install", "black"], &project_path)
-            .unwrap();
-        let project = Project::new(project_path);
+        let project = create_mock_project(project_path.clone()).unwrap();
+        let venv = project.venv();
+        if let Some(v) = venv {
+            v.exec_module("pip", &["install", "black"], &project.root)
+                .unwrap();
+        }
 
         let fmt_filepath = project
             .root

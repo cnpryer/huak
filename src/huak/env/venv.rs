@@ -12,6 +12,7 @@ const BIN_NAME: &str = "bin";
 const WINDOWS_BIN_NAME: &str = "Scripts";
 
 /// A struct for Python venv.
+#[derive(Clone)]
 pub struct Venv {
     pub path: PathBuf,
 }
