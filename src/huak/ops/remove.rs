@@ -29,3 +29,35 @@ pub fn remove_project_dependency(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use tempfile::tempdir;
+
+    use super::*;
+
+    use crate::utils::test_utils::{
+        copy_dir, create_mock_project, get_resource_dir,
+    };
+
+    #[test]
+    fn removes_dependencies() {
+        let directory = tempdir().unwrap().into_path().to_path_buf();
+        let mock_project_path = get_resource_dir().join("mock-project");
+        copy_dir(&mock_project_path, &directory);
+
+        let project =
+            create_mock_project(directory.join("mock-project")).unwrap();
+        let toml_path = project.root.join("pyproject.toml");
+        let toml = Toml::open(&toml_path).unwrap();
+        let had_path = toml.tool.huak.dependencies.contains_key("click");
+
+        remove_project_dependency(&project, "click").unwrap();
+
+        let toml = Toml::open(&toml_path).unwrap();
+        let has_path = toml.tool.huak.dependencies.contains_key("click");
+
+        assert!(had_path);
+        assert!(!has_path);
+    }
+}
