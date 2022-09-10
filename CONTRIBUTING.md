@@ -4,6 +4,10 @@ We appriciate your interest in contributing to our project!
 
 You can contribute to Huak by checking for unassigned issues on our [issue board](https://github.com/users/cnpryer/projects/5) or even just documenting features and bugs by creating new issues.
 
+## Testing
+
+During the early stages of Huak's development, we'll use `cargo test -- --test-threads=1` to allow manipulation of one .venv. An issue to improve on this in the future has been opened at #123. This is set in .cargo/config.toml as well.
+
 ## Making a contribution
 
 We follow the standard [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow) when making contributions to Huak.

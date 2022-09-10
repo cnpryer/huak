@@ -19,7 +19,7 @@ repos:
         types: [rust]
         files: Cargo\.toml|\.rs$
         pass_filenames: false
-        args: ["--all-features"]
+        args: ["--all-features", "--", "--test-threads=1"]
       - id: clippy
         name: clippy
         description: Run Rust lints.

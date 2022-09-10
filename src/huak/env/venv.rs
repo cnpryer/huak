@@ -12,6 +12,7 @@ const BIN_NAME: &str = "bin";
 const WINDOWS_BIN_NAME: &str = "Scripts";
 
 /// A struct for Python venv.
+#[derive(Clone)]
 pub struct Venv {
     pub path: PathBuf,
 }
@@ -48,7 +49,7 @@ impl Venv {
     /// Create the venv at its path.
     pub fn create(&self) -> Result<(), anyhow::Error> {
         if self.path.exists() {
-            return Err(anyhow::format_err!("venv already exists"));
+            return Ok(());
         }
 
         let from = match self.path.parent() {

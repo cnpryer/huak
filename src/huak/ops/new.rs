@@ -26,3 +26,27 @@ pub fn create_project(project: &Project) -> Result<(), anyhow::Error> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use tempfile::tempdir;
+
+    use super::*;
+
+    use crate::utils::test_utils::create_mock_project;
+
+    // TODO
+    #[test]
+    fn creates_project() {
+        let directory = tempdir().unwrap().into_path().to_path_buf();
+        let project = create_mock_project(directory).unwrap();
+
+        let toml_path = project.root.join("pyproject.toml");
+        let had_toml = toml_path.exists();
+
+        create_project(&project).unwrap();
+
+        assert!(!had_toml);
+        assert!(toml_path.exists());
+    }
+}

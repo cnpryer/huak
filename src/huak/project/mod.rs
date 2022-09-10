@@ -5,7 +5,7 @@ use crate::{config::Config, env::venv::Venv};
 
 use self::python::PythonProject;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Project {
     pub root: PathBuf,
     config: Config,
@@ -33,5 +33,9 @@ impl PythonProject for Project {
 
     fn venv(&self) -> &Option<Venv> {
         &self.venv
+    }
+
+    fn set_venv(&mut self, venv: Venv) {
+        self.venv = Some(venv);
     }
 }
