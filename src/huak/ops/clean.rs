@@ -24,7 +24,7 @@ mod tests {
 
     use crate::{
         ops::clean::clean_project, project::Project,
-        test_utils::create_py_project_sample,
+        test_utils::create_mock_project_from_dir,
     };
 
     #[test]
@@ -34,22 +34,18 @@ mod tests {
             .join("resources")
             .join("mock-project");
 
-        create_py_project_sample(&from_dir, &directory);
-        let project = Project::new(directory.clone());
+        create_mock_project_from_dir(&from_dir, &directory);
+        let project = Project::new(directory.join("mock-project"));
         // let had_dist = project.root.join("dist").exists();
 
         let _ = clean_project(&project);
 
         // assert!(had_dist);
-        assert!(directory.as_path().join("mock-project").exists());
-        assert!(directory
+        assert!(project.root.as_path().exists());
+        assert!(project.root.as_path().join("pyproject.toml").exists());
+        assert!(project
+            .root
             .as_path()
-            .join("mock-project")
-            .join("pyproject.toml")
-            .exists());
-        assert!(directory
-            .as_path()
-            .join("mock-project")
             .join("src")
             .join("mock_project")
             .join("__init__.pyc")
