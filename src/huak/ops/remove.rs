@@ -6,7 +6,10 @@ use crate::{
     project::{python::PythonProject, Project},
 };
 
-pub fn remove_project_dependency(project: &Project, dependency: &str) -> Result<(), anyhow::Error> {
+pub fn remove_project_dependency(
+    project: &Project,
+    dependency: &str,
+) -> Result<(), anyhow::Error> {
     let venv = match project.venv() {
         Some(v) => v,
         _ => return Err(anyhow::format_err!("no venv found")),

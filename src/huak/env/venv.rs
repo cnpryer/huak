@@ -60,10 +60,12 @@ impl Venv {
         let args = ["-m", "venv", name];
 
         // Create venv using system's Python alias.
-        if let Err(e) = crate::utils::command::run_command("python", &args, from) {
-            return Err(e
-                .error
-                .unwrap_or_else(|| anyhow::format_err!("failed to create venv")));
+        if let Err(e) =
+            crate::utils::command::run_command("python", &args, from)
+        {
+            return Err(e.error.unwrap_or_else(|| {
+                anyhow::format_err!("failed to create venv")
+            }));
         };
 
         Ok(())
@@ -93,7 +95,12 @@ impl PythonEnvironment for Venv {
     }
 
     /// Run a module installed to the venv as an alias'd command from the current working dir.
-    fn exec_module(&self, module: &str, args: &[&str], from: &Path) -> Result<(), CliError> {
+    fn exec_module(
+        &self,
+        module: &str,
+        args: &[&str],
+        from: &Path,
+    ) -> Result<(), CliError> {
         let module_path = self.bin_path().join(module);
         let module_path = crate::utils::path::as_string(module_path.as_path())?;
 
@@ -103,7 +110,10 @@ impl PythonEnvironment for Venv {
     }
 
     /// Install a dependency to the venv.
-    fn install_package(&self, dependency: &PythonPackage) -> Result<(), CliError> {
+    fn install_package(
+        &self,
+        dependency: &PythonPackage,
+    ) -> Result<(), CliError> {
         let cwd = env::current_dir()?;
         let args = [
             "install",

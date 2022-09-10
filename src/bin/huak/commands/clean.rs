@@ -5,7 +5,8 @@ use clap::Command;
 use huak::{errors::CliResult, ops, project::Project};
 
 pub fn arg() -> Command<'static> {
-    subcommand("clean").about("Remove tarball and wheel from the built project.")
+    subcommand("clean")
+        .about("Remove tarball and wheel from the built project.")
 }
 
 pub fn run() -> CliResult {
