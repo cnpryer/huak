@@ -5,7 +5,8 @@ use huak::errors::{CliError, CliResult};
 use std::{fs::remove_dir_all, path::Path};
 
 pub fn arg() -> Command<'static> {
-    subcommand("clean").about("Remove tarball and wheel from the built project.")
+    subcommand("clean")
+        .about("Remove tarball and wheel from the built project.")
 }
 
 pub fn run() -> CliResult {

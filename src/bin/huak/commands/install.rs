@@ -7,7 +7,8 @@ use huak::ops;
 use huak::project::Project;
 
 pub fn arg() -> Command<'static> {
-    subcommand("install").about("Install the dependencies of an existing project.")
+    subcommand("install")
+        .about("Install the dependencies of an existing project.")
 }
 
 pub fn run() -> CliResult {

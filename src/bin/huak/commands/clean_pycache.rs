@@ -16,7 +16,8 @@ struct DeletePath {
 }
 
 pub fn arg() -> Command<'static> {
-    subcommand("clean-pycache").about("Remove all .pyc files and __pycache__ directories.")
+    subcommand("clean-pycache")
+        .about("Remove all .pyc files and __pycache__ directories.")
 }
 
 pub fn run() -> CliResult {
@@ -33,13 +34,15 @@ pub fn run() -> CliResult {
                     for path in paths {
                         match path {
                             Ok(p) => match i.path_type {
-                                PathType::Directory => match remove_dir_all(p) {
-                                    Ok(_) => (),
-                                    Err(e) => {
-                                        file_level_success = false;
-                                        error = Some(Error::new(e));
+                                PathType::Directory => {
+                                    match remove_dir_all(p) {
+                                        Ok(_) => (),
+                                        Err(e) => {
+                                            file_level_success = false;
+                                            error = Some(Error::new(e));
+                                        }
                                     }
-                                },
+                                }
                                 PathType::File => match remove_file(p) {
                                     Ok(_) => (),
                                     Err(e) => {

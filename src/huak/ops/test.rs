@@ -10,7 +10,9 @@ pub fn test_project(project: &Project) -> CliResult {
 
     let venv = match project.venv() {
         Some(v) => v,
-        _ => return Err(CliError::new(anyhow::format_err!("no venv found"), 2)),
+        _ => {
+            return Err(CliError::new(anyhow::format_err!("no venv found"), 2))
+        }
     };
 
     venv.exec_module(module, &args, &project.root)?;

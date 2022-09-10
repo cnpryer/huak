@@ -11,7 +11,11 @@ pub fn run_command(cmd: &str, args: &[&str], from: &Path) -> CliResult {
 
     if !output.status.success() {
         return Err(CliError::new(
-            anyhow::format_err!("failed to run command '{}' with {:?}", cmd, args),
+            anyhow::format_err!(
+                "failed to run command '{}' with {:?}",
+                cmd,
+                args
+            ),
             2,
         ));
     }
