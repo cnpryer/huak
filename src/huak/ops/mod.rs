@@ -1,3 +1,4 @@
+pub mod clean;
 pub mod fmt;
 pub mod init;
 pub mod install;
