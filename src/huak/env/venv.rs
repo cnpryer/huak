@@ -25,14 +25,14 @@ impl Venv {
     /// Initialize a `Venv` by searching a directory for a venv. This function will only check for
     /// .venv and venv at the root.
     // TODO: Improve the directory search.
-    pub fn find(from: &Path) -> Result<Venv, anyhow::Error> {
+    pub fn find(from: &Path) -> Result<Option<Venv>, anyhow::Error> {
         let paths = vec![from.join(".venv"), from.join("venv")];
 
         for path in &paths {
             if path.exists() {
-                return Ok(Venv {
+                return Ok(Some(Venv {
                     path: path.to_path_buf(),
-                });
+                }));
             }
         }
 
