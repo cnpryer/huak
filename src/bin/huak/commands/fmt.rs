@@ -16,7 +16,7 @@ pub fn arg() -> Command<'static> {
 pub fn run(args: &ArgMatches) -> CliResult {
     // This command runs from the context of the cwd.
     let cwd = env::current_dir()?;
-    let project = Project::new(cwd);
+    let project = Project::from(cwd)?;
     let is_check = args.get_one::<bool>("check").unwrap();
 
     ops::fmt::fmt_project(&project, is_check)?;

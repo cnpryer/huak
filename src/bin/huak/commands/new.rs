@@ -46,7 +46,7 @@ pub fn run(args: &ArgMatches) -> CliResult {
         fs::create_dir_all(&path)?;
     }
 
-    let project = Project::new(path);
+    let project = Project::from(path)?;
 
     ops::new::create_project(&project)?;
 

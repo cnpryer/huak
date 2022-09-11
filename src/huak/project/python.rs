@@ -1,4 +1,5 @@
-use crate::{config::Config, env::venv::Venv};
+use super::config::Config;
+use crate::env::venv::Venv;
 
 pub trait PythonProject {
     fn config(&self) -> &Config;

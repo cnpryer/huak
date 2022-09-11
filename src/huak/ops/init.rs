@@ -25,7 +25,7 @@ mod tests {
     #[test]
     fn toml() {
         let directory = tempdir().unwrap().into_path().to_path_buf();
-        let project = Project::new(directory);
+        let project = Project::from(directory).unwrap();
 
         create_project_toml(&project).unwrap();
 

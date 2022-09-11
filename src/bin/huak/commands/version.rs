@@ -15,10 +15,10 @@ pub fn arg() -> Command<'static> {
 
 pub fn run() -> CliResult {
     let cwd = env::current_dir()?;
-    let project = Project::new(cwd);
+    let project = Project::from(cwd)?;
 
     let version = ops::version::get_project_version(&project)?;
-    let name = &project.config().name;
+    let name = &project.config().project_name();
 
     println!("Version: {name}-{version}");
 
