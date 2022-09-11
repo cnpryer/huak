@@ -13,7 +13,7 @@ pub fn arg() -> Command<'static> {
 
 pub fn run() -> CliResult {
     let cwd = env::current_dir()?;
-    let project = Project::new(cwd);
+    let project = Project::from(cwd)?;
 
     ops::install::install_project_dependencies(&project)?;
 

@@ -1,11 +1,13 @@
+pub mod config;
 pub mod python;
 use std::path::PathBuf;
 
-use crate::{config::Config, env::venv::Venv};
+use crate::env::venv::Venv;
 
+use self::config::Config;
 use self::python::PythonProject;
 
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub struct Project {
     pub root: PathBuf,
     config: Config,
@@ -13,15 +15,19 @@ pub struct Project {
 }
 
 impl Project {
-    /// Initializes `Project` from a `root` path. This function attempts to generate a `Config`
-    /// by scanning the root of the project for configuration files such as pyproject.toml.
-    /// If a venv is found at the root of the project it will also initalize a `Venv`. A venv
-    /// is expected to be either .venv or venv at the root.
-    pub fn new(root: PathBuf) -> Project {
-        let config = Config::new(&root).unwrap_or_default();
-        let venv = Venv::find(&root).unwrap_or(None);
+    // Initialize `Project` from a given path. If a manifest isn't found
+    // at the path, then we search for a manifest and set the project root
+    // if it's found.
+    pub fn from(path: PathBuf) -> Result<Project, anyhow::Error> {
+        let config = Config::from(&path)?;
+        let venv = Venv::find(&path)?;
+        let manifest_path = &config.manifest.path;
+        let mut root = path;
+        if let Some(parent) = manifest_path.parent() {
+            root = parent.to_path_buf()
+        }
 
-        Project { root, config, venv }
+        Ok(Project { root, config, venv })
     }
 }
 

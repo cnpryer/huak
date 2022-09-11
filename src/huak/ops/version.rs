@@ -11,7 +11,7 @@ pub fn get_project_version(project: &Project) -> Result<&str, CliError> {
         ));
     }
 
-    let version = &project.config().version;
+    let version = project.config().project_version();
 
     Ok(version)
 }

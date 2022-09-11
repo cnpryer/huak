@@ -28,7 +28,7 @@ pub fn create_mock_project(path: PathBuf) -> Result<Project, anyhow::Error> {
     let cwd = env::current_dir()?;
     let venv = create_venv(cwd.join(".venv"))?;
 
-    let mut mock_project = Project::new(path);
+    let mut mock_project = Project::from(path)?;
     mock_project.set_venv(venv);
 
     Ok(mock_project)

@@ -29,7 +29,7 @@ pub fn run(args: &ArgMatches) -> CliResult {
         }
     };
     let cwd = env::current_dir()?;
-    let project = Project::new(cwd);
+    let project = Project::from(cwd)?;
 
     ops::remove::remove_project_dependency(&project, dependency)?;
 

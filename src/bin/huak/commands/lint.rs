@@ -12,7 +12,7 @@ pub fn arg() -> Command<'static> {
 pub fn run() -> CliResult {
     // This command runs from the context of the cwd.
     let cwd = env::current_dir()?;
-    let project = Project::new(cwd);
+    let project = Project::from(cwd)?;
 
     ops::lint::lint_project(&project)?;
 

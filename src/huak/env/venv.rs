@@ -24,7 +24,7 @@ impl Venv {
 
     /// Initialize a `Venv` by searching a directory for a venv. This function will only check for
     /// .venv and venv at the root.
-    // TODO: Improve the directory search.
+    // TODO: Improve the directory search (refactor manifest search into search utility).
     pub fn find(from: &Path) -> Result<Option<Venv>, anyhow::Error> {
         let paths = vec![from.join(".venv"), from.join("venv")];
 
@@ -36,7 +36,7 @@ impl Venv {
             }
         }
 
-        Err(anyhow::format_err!("no venv found"))
+        Ok(Some(Venv::default()))
     }
 
     /// Get the name of the Venv (ex: ".venv").
