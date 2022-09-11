@@ -15,26 +15,36 @@ A Python package manager written in Rust. The [Cargo](https://github.com/rust-la
 
 See either [this milestone list](https://github.com/cnpryer/huak/milestones) or [the issue board](https://github.com/users/cnpryer/projects/5) to check the status of this project at any point in time.
 
+- [Goals and Motivation](#goals)
+- [Contributing](#contributing)
+- [Architecture and Design](#architecture-and-design)
+
 ## Goals
 
 There are a few guiding principles steering the development of Huak:
 
 ### 1. Serve as a learning instrument 📚
 
-This project is meant to invite curiosity and remain friendly to Rust or open source newcomers. I'd like to learn to use Rust and how package managers work, so it's a nice blend for a project.
+- Python packaging is a very interesting topic right now.
+- It's challenging and dev tools are some of my favorite products, I'm curious of how they work.
+- Learn Rust and about building fast, snappy, and opinionated software.
 
-### 2. All-in-one ✨
+### 2. Just use `huak` ✨
 
-My goal is to build a package manager to standardize Python dev-tooling for common developer needs. Similar to Cargo, I'd love to build a package manager that invites Python newcomers and centralizes a lot of its dev-tooling for an enjoyable onboarding experience.
+I love Rust's onboarding experience. Cargo has played a large role. It's a great tool for newcomers to use to get their feet wet. Huak can provide the same experience for Python.
 
 ### 3. Fast ⚡️
 
-I believe there's tons of room for faster tooling in the Python ecosystem. I'm a fan of snappy, responsive software, so one of the guiding principles will be "Is this the fastest it can be?"
+There's room for faster tooling in the Python ecosystem. One of the guiding principles will be "Is this the fastest it can be?"
 
 ### 4. Python 🤝 Rust
 
-As with the JavaScript ecosystem, I think Rust has a lot of potential in the Python space. One key ingredient will be sustainability and the community's role. Through Huak I hope to support this emerging community in order to help boost long-term sustainability.
+JavaScript has seen a "Going Rust" sub-community pop up. Python seems to be getting one too. Huak would be able to fuel contributions to the intersection of these two languages.
 
-## Contributing 
+## Contributing
 
 Please read our [contributing guide](./CONTRIBUTING.md) before you start contributing.
+
+## Architecture and Design
+
+See [architecture.md](./architecture.md).
