@@ -1,7 +1,15 @@
 name: ci-python
 
 on:
+  push:
+    branches:
+      - "master"
+    paths:
+      - 'huak-py/**'
+      - '.github/workflows/ci-python.yaml'
   pull_request:
+    branches:
+      - "master"
     paths:
       - 'huak-py/**'
       - '.github/workflows/ci-python.yaml'

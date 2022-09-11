@@ -18,3 +18,5 @@ workspace.code-workspace
 
 # macOS
 .DS_Store
+
+.venv

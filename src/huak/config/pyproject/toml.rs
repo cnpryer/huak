@@ -1,31 +1,40 @@
+use std::{fs, path::Path};
+
 use super::{build_system::BuildSystem, tools::Tool};
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct Toml {
-    pub tool: Tool,
+    pub(crate) tool: Tool,
     #[serde(rename = "build-system")]
-    pub build_system: BuildSystem,
+    pub(crate) build_system: BuildSystem,
 }
 
 impl Toml {
-    pub fn new() -> Toml {
-        Toml::default()
-    }
-
-    pub fn from(string: &str) -> Result<Toml, toml::de::Error> {
+    pub(crate) fn from(string: &str) -> Result<Toml, toml::de::Error> {
         toml::from_str(string)
     }
 
-    pub fn tool(&self) -> &Tool {
-        &self.tool
+    pub(crate) fn open(path: &Path) -> Result<Toml, anyhow::Error> {
+        let toml = match fs::read_to_string(path) {
+            Ok(s) => s,
+            Err(_) => {
+                return Err(anyhow::format_err!(
+                    "failed to read toml file from {}",
+                    path.display()
+                ))
+            }
+        };
+
+        let toml = match Toml::from(&toml) {
+            Ok(t) => t,
+            Err(_) => return Err(anyhow::format_err!("failed to build toml")),
+        };
+
+        Ok(toml)
     }
 
-    pub fn set_tool(&mut self, tool: Tool) {
-        self.tool = tool;
-    }
-
-    pub fn to_string(&self) -> Result<String, toml::ser::Error> {
+    pub(crate) fn to_string(&self) -> Result<String, toml::ser::Error> {
         toml::to_string(&self)
     }
 }
@@ -73,6 +82,6 @@ build-backend = "huak.core.build.api"
 "#;
         let toml = Toml::from(string).unwrap();
 
-        assert_eq!(toml.tool.huak.name(), "Test");
+        assert_eq!(toml.tool.huak.name, "Test");
     }
 }

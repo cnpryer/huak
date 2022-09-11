@@ -1,7 +1,16 @@
 name: ci-rust
 
 on:
+  push:
+    branches:
+      - "master"
+    paths:
+      - 'src/**'
+      - 'Cargo.toml'
+      - '.github/workflows/ci-rust.yaml'
   pull_request:
+    branches:
+      - "master"  
     paths:
       - 'src/**'
       - 'Cargo.toml'
@@ -39,4 +48,4 @@ jobs:
             cargo clippy -- -D warnings
       - name: Run tests
         run: |
-          cargo test --all-features
+          cargo test --all-features -- --test-threads=1
