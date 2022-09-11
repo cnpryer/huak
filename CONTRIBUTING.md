@@ -12,8 +12,10 @@ During the early stages of Huak's development, we'll use `cargo test -- --test-t
 
 We follow the standard [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow) when making contributions to Huak.
 
+Please make sure your PR is associated with an issue. Create one [here](https://github.com/cnpryer/huak/issues/new).
+
 1. After being assigned to an issue or communicating your interest, fork the repository and get started by creating a new branch for your work.
-2. When you're ready to create your PR, feel free to use our PULL_REQUEST_TEMPLATE.md to indicate what issue your PR is closing and the changes made to close it. Please make sure your PR is associated with an issue.
+2. When you're ready to create your PR, feel free to use our PULL_REQUEST_TEMPLATE.md to indicate what issue your PR is closing and the changes made to close it.
 
 We also use `pre-commit` to ensure changes will pass CI from our local environments. We recommend using it.
 
