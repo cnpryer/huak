@@ -29,7 +29,7 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use crate::utils::test_utils::{copy_dir, create_mock_project};
+    use crate::utils::{path::copy_dir, test_utils::create_mock_project};
 
     #[test]
     pub fn clean() {

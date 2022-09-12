@@ -3,13 +3,17 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{errors::CliError, package::python::PythonPackage};
+use crate::{
+    errors::CliError, package::python::PythonPackage,
+    utils::path::search_parents_for_filepath,
+};
 
 use super::python::PythonEnvironment;
 
-const DEFAULT_VENV_NAME: &str = ".venv";
-const BIN_NAME: &str = "bin";
-const WINDOWS_BIN_NAME: &str = "Scripts";
+const DEFUALT_SEARCH_STEPS: usize = 5;
+pub(crate) const DEFAULT_VENV_NAME: &str = ".venv";
+pub(crate) const BIN_NAME: &str = "bin";
+pub(crate) const WINDOWS_BIN_NAME: &str = "Scripts";
 
 /// A struct for Python venv.
 #[derive(Clone)]
@@ -23,21 +27,25 @@ impl Venv {
         Venv { path }
     }
 
-    /// Initialize a `Venv` by searching a directory for a venv. This function will only check for
-    /// .venv and venv at the root.
+    /// Initialize a `Venv` by searching a directory for a venv. `find()` will search
+    /// the parents directory for a configured number of recursive steps.
     // TODO: Improve the directory search (refactor manifest search into search utility).
-    pub fn find(from: &Path) -> Result<Option<Venv>, anyhow::Error> {
-        let paths = vec![from.join(".venv"), from.join("venv")];
+    pub fn find(from: &Path) -> Result<Venv, anyhow::Error> {
+        let names = vec![".venv", "venv"];
 
-        for path in &paths {
-            if path.exists() {
-                return Ok(Some(Venv {
-                    path: path.to_path_buf(),
-                }));
-            }
+        // TODO: Redundancy.
+        for name in &names {
+            if let Ok(Some(path)) =
+                search_parents_for_filepath(from, name, DEFUALT_SEARCH_STEPS)
+            {
+                return Ok(Venv::new(path));
+            };
         }
 
-        Ok(Some(Venv::default()))
+        Err(anyhow::format_err!(
+            "could not find venv from {}",
+            from.display()
+        ))
     }
 
     /// Get the name of the Venv (ex: ".venv").
@@ -103,7 +111,16 @@ impl PythonEnvironment for Venv {
         args: &[&str],
         from: &Path,
     ) -> Result<(), CliError> {
+        // Create the venv if it doesn't exist.
+        // TODO: Fix this.
+        self.create()?;
+
         let module_path = self.bin_path().join(module);
+
+        if !module_path.exists() {
+            self.install_package(&PythonPackage::new(module.to_string()))?;
+        }
+
         let module_path = crate::utils::path::to_string(module_path.as_path())?;
 
         crate::utils::command::run_command(module_path, args, from)?;
@@ -117,10 +134,11 @@ impl PythonEnvironment for Venv {
         dependency: &PythonPackage,
     ) -> Result<(), CliError> {
         let cwd = env::current_dir()?;
-        let args = [
-            "install",
-            &format!("{}=={}", dependency.name, dependency.version),
-        ];
+        let module_str = match dependency.version.is_empty() {
+            true => dependency.name.to_string(),
+            false => format!("{}=={}", dependency.name, dependency.version),
+        };
+        let args = ["install", &module_str];
         let module = "pip";
 
         self.exec_module(module, &args, cwd.as_path())?;
@@ -137,5 +155,32 @@ impl PythonEnvironment for Venv {
         self.exec_module(module, &args, cwd.as_path())?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tempfile::tempdir;
+
+    use super::*;
+
+    #[test]
+    fn default() {
+        let venv = Venv::default();
+
+        assert!(venv.path.ends_with(DEFAULT_VENV_NAME));
+    }
+
+    #[test]
+    fn find() {
+        let directory = tempdir().unwrap().into_path().to_path_buf();
+        let first_venv = Venv::new(directory.join(".venv"));
+        first_venv.create().unwrap();
+
+        let second_venv = Venv::find(&directory).unwrap();
+
+        assert!(second_venv.path.exists());
+        assert!(second_venv.bin_path().join("pip").exists());
+        assert_eq!(first_venv.path, second_venv.path);
     }
 }

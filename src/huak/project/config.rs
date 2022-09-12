@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use crate::config::pyproject::toml::Toml;
 
 use crate::package::python::PythonPackage;
+use crate::utils;
 
 // TODO: Env/programatically.
 const DEFAULT_SEARCH_STEPS: usize = 5;
@@ -50,7 +51,11 @@ impl Config {
     //       - Improve scan. Initialy `new` will only expect pyproject.toml at the root of `from`.
     //       - Add other setup file types like requirements.txt.
     pub fn from(path: &Path) -> Result<Config, anyhow::Error> {
-        let manifest_path = utils::find_manifest(path, DEFAULT_SEARCH_STEPS)?;
+        let manifest_path = utils::path::search_parents_for_filepath(
+            path,
+            "pyproject.toml",
+            DEFAULT_SEARCH_STEPS,
+        )?;
 
         if manifest_path.is_none() {
             eprintln!("no manifest found");
@@ -109,32 +114,5 @@ impl PythonConfig for Config {
                 version: d.1.as_str().unwrap().to_string(),
             })
             .collect()
-    }
-}
-
-mod utils {
-    use std::path::{Path, PathBuf};
-
-    /// Search for manifest files using a path `from` to start from and
-    /// `steps` to recurse.
-    pub fn find_manifest(
-        from: &Path,
-        steps: usize,
-    ) -> Result<Option<PathBuf>, anyhow::Error> {
-        if steps == 0 {
-            return Ok(None);
-        }
-
-        let filename = "pyproject.toml";
-
-        if from.join(filename).exists() {
-            return Ok(Some(from.join(filename)));
-        }
-
-        if let Some(parent) = from.parent() {
-            return find_manifest(parent, steps - 1);
-        }
-
-        Ok(None)
     }
 }
