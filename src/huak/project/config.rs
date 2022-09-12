@@ -2,39 +2,46 @@ use std::path::{Path, PathBuf};
 
 use crate::config::pyproject::toml::Toml;
 
-use crate::config::requirements::PythonPackage;
+use crate::package::python::PythonPackage;
 
 // TODO: Env/programatically.
 const DEFAULT_SEARCH_STEPS: usize = 5;
 
+/// Traits for Python-specific configuration.
 pub trait PythonConfig {
     fn dependency_list(&self, kind: &str) -> Vec<PythonPackage>;
 }
 
+/// `Manifest` data the configuration uses to manage standard configuration
+/// information.
+// TODO: Isolated container of information.
 #[derive(Default)]
 pub struct Manifest {
-    pub path: PathBuf,
-    pub toml: Toml,
+    pub(crate) path: PathBuf,
+    pub(crate) toml: Toml,
 }
 
 impl Manifest {
-    fn new(path: PathBuf) -> Manifest {
+    /// Initialize a `Manifest` from a `path` pointing to a manifest file.
+    /// Use `new()` to intitate from files including: pyproject.toml.
+    // TODO: More than just toml.
+    fn new(path: PathBuf) -> Result<Manifest, anyhow::Error> {
+        // TODO
         if !path.ends_with("pyproject.toml") {
-            return Manifest::default();
+            return Ok(Manifest::default());
         }
 
         // Just use the toml for now.
-        // TODO: Manage failure to open.
-        let toml = Toml::open(&path).unwrap_or_default();
+        let toml = Toml::open(&path)?;
 
-        Manifest { path, toml }
+        Ok(Manifest { path, toml })
     }
 }
 
 // TODO: PythonConfig?
 #[derive(Default)]
 pub struct Config {
-    pub manifest: Manifest,
+    manifest: Manifest,
 }
 
 impl Config {
@@ -55,19 +62,26 @@ impl Config {
         }
 
         let manifest_path = manifest_path.unwrap();
-        let manifest = Manifest::new(manifest_path);
+        let manifest = Manifest::new(manifest_path)?;
 
         Ok(Config { manifest })
     }
 
-    // Get project name from manifest data. TODO: Use more than toml.
+    /// Get a reference to the `Manifest`.
+    pub(crate) fn manifest(&self) -> &Manifest {
+        &self.manifest
+    }
+
+    /// Get a reference to the project name from manifest data.
+    // TODO: Use more than toml.
     pub fn project_name(&self) -> &String {
         let table = &self.manifest.toml.tool.huak;
 
         &table.name
     }
 
-    // Get project version from manifest data. TODO: Use more than toml.
+    /// Get a reference to the project version from manifest data.
+    // TODO: Use more than toml.
     pub fn project_version(&self) -> &String {
         let table = &self.manifest.toml.tool.huak;
 
@@ -79,13 +93,16 @@ impl PythonConfig for Config {
     // Get vec of dependencies from the manifest.
     // TODO: More than toml.
     fn dependency_list(&self, kind: &str) -> Vec<PythonPackage> {
+        // Get huak's spanned table found in the Toml.
         let table = &self.manifest.toml.tool.huak;
 
+        // Dependencies to list from.
         let from = match kind {
             "dev" => &table.dev_dependencies,
             _ => &table.dependencies,
         };
 
+        // Collect into vector of owned `PythonPackage` data.
         from.into_iter()
             .map(|d| PythonPackage {
                 name: d.0.to_string(),
@@ -98,7 +115,8 @@ impl PythonConfig for Config {
 mod utils {
     use std::path::{Path, PathBuf};
 
-    // Only checks for toml right now. TODO
+    /// Search for manifest files using a path `from` to start from and
+    /// `steps` to recurse.
     pub fn find_manifest(
         from: &Path,
         steps: usize,

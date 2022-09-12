@@ -4,7 +4,9 @@ use crate::project::Project;
 
 use super::project_utils;
 
+/// Create an intialized project (TODO) in an environment.
 pub fn create_project(project: &Project) -> Result<(), anyhow::Error> {
+    // TODO: Use available toml from manifest.
     let toml = project_utils::create_toml(project)?;
     let toml_path = project.root.join("pyproject.toml");
 
@@ -15,6 +17,7 @@ pub fn create_project(project: &Project) -> Result<(), anyhow::Error> {
     // Serialize pyproject.toml.
     fs::write(&toml_path, toml.to_string()?)?;
 
+    // Use name from the toml config.
     let name = &toml.tool.huak.name;
 
     // Create src subdirectory with standard project namespace.

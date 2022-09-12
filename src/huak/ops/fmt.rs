@@ -4,8 +4,10 @@ use crate::{
     project::{python::PythonProject, Project},
 };
 
-/// Format Python code from the project's root.
+/// Format Python code from the `Project`'s root.
+// TODO: From root or cwd?
 pub fn fmt_project(project: &Project, is_check: &bool) -> CliResult {
+    // Use the project's venv to run `black` from the project root.
     let venv = match project.venv() {
         Some(v) => v,
         None => {
@@ -13,6 +15,7 @@ pub fn fmt_project(project: &Project, is_check: &bool) -> CliResult {
         }
     };
 
+    // Run `black` with or without --check.
     match is_check {
         true => venv.exec_module(
             "black",

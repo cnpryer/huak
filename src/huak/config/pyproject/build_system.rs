@@ -3,6 +3,11 @@ use serde_derive::{Deserialize, Serialize};
 const HUAK_REQUIRES: &str = "huak-core>=1.0.0";
 const HUAK_BUILD_BACKEND: &str = "huak.core.build.api";
 
+/// Build System data.
+/// ```toml
+/// [tool.build-system]
+/// # ...
+/// ```
 #[derive(Serialize, Deserialize)]
 pub(crate) struct BuildSystem {
     pub(crate) requires: Vec<String>,

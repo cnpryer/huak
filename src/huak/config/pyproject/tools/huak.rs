@@ -2,6 +2,9 @@ use serde_derive::{Deserialize, Serialize};
 use toml::{value::Map, Value};
 
 /// Struct containing dependency information.
+/// ```toml
+/// name = version
+/// ```
 #[allow(dead_code)]
 #[derive(Clone, Deserialize, Debug)]
 pub(crate) struct Dependency {
@@ -9,6 +12,15 @@ pub(crate) struct Dependency {
     pub(crate) version: String,
 }
 
+/// Huak table data.
+/// ```toml
+/// [tool.huak]
+/// name = "Huak"
+/// version = "0.0.1"
+/// description = ""
+/// authors = []
+/// # ...
+/// ```
 #[derive(Serialize, Deserialize)]
 pub(crate) struct Huak {
     pub(crate) name: String,

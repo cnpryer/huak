@@ -2,7 +2,8 @@ use super::utils::subcommand;
 use clap::{value_parser, Arg, ArgMatches, Command};
 use huak::errors::CliResult;
 
-pub fn arg() -> Command<'static> {
+/// Get the `add` subcommand.
+pub fn cmd() -> Command<'static> {
     subcommand("add")
         .arg(
             Arg::new("dependency")
@@ -12,6 +13,7 @@ pub fn arg() -> Command<'static> {
         .about("Add a Python module to the existing project.")
 }
 
+/// Run the `add` subcommand.
 pub fn run(args: &ArgMatches) -> CliResult {
     let _ = args.get_one::<String>("dependency");
 

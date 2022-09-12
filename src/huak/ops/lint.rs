@@ -4,7 +4,9 @@ use crate::{
     project::{python::PythonProject, Project},
 };
 
+/// Lint the project using `flake8`.
 pub fn lint_project(project: &Project) -> CliResult {
+    // Use the `flake` module for now.
     let module = "flake8";
 
     let venv = match project.venv() {
@@ -17,6 +19,7 @@ pub fn lint_project(project: &Project) -> CliResult {
         }
     };
 
+    // TODO
     let args = ["--ignore", "E203,W503", "--exclude", venv.name()?];
 
     venv.exec_module(module, &args, &project.root)?;

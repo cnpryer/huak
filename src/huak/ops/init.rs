@@ -3,7 +3,10 @@ use std::fs;
 use super::project_utils;
 use crate::project::Project;
 
-pub fn create_project_toml(project: &Project) -> Result<(), anyhow::Error> {
+/// Initialize a project by adding a pyproject.toml to the dir.
+pub fn init_project(project: &Project) -> Result<(), anyhow::Error> {
+    // Create a toml setting the name to the project dir's name.
+    // TODO: Don't do this with a utility function.
     let toml = project_utils::create_toml(project)?;
 
     if project.root.join("pyproject.toml").exists() {
@@ -27,7 +30,7 @@ mod tests {
         let directory = tempdir().unwrap().into_path().to_path_buf();
         let project = Project::from(directory).unwrap();
 
-        create_project_toml(&project).unwrap();
+        init_project(&project).unwrap();
 
         assert!(project.root.join("pyproject.toml").exists());
     }

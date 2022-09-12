@@ -22,7 +22,7 @@ pub fn parse_filename(path: &Path) -> Result<&str, Error> {
 }
 
 /// Convert a `Path` to a &str.
-pub fn as_string(path: &Path) -> Result<&str, anyhow::Error> {
+pub fn to_string(path: &Path) -> Result<&str, anyhow::Error> {
     let pip_path = match path.to_str() {
         Some(s) => s,
         None => {

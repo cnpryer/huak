@@ -6,11 +6,13 @@ use huak::errors::CliResult;
 use huak::ops;
 use huak::project::Project;
 
-pub fn arg() -> Command<'static> {
+/// Get the `install` subcommand.
+pub fn cmd() -> Command<'static> {
     subcommand("install")
         .about("Install the dependencies of an existing project.")
 }
 
+/// Run the `install` command.
 pub fn run() -> CliResult {
     let cwd = env::current_dir()?;
     let project = Project::from(cwd)?;

@@ -7,12 +7,14 @@ use huak::errors::{CliError, CliResult};
 use huak::ops;
 use huak::project::Project;
 
-pub fn arg() -> Command<'static> {
+/// Get the `new` subcommand.
+pub fn cmd() -> Command<'static> {
     subcommand("new")
         .about("Create a project from scratch.")
         .arg(arg!([PATH]).id("path").value_parser(value_parser!(String)))
 }
 
+/// Run the `new` command.
 // TODO: Ops should hanlde the path creation step in addition to the project creation.
 pub fn run(args: &ArgMatches) -> CliResult {
     // This command runs from the current working directory

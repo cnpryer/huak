@@ -4,10 +4,12 @@ use huak::ops;
 use huak::{errors::CliResult, project::Project};
 use std::env;
 
-pub fn arg() -> Command<'static> {
+/// Get the `lint` subcommand.
+pub fn cmd() -> Command<'static> {
     subcommand("lint").about("Lint Python code.")
 }
 
+/// Run the `lint` command.
 // TODO: Use pyproject.toml or .flake8 to override configuration.
 pub fn run() -> CliResult {
     // This command runs from the context of the cwd.

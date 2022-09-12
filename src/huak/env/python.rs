@@ -1,4 +1,4 @@
-use crate::{config::requirements::PythonPackage, errors::CliError};
+use crate::{errors::CliError, package::python::PythonPackage};
 use std::path::{Path, PathBuf};
 
 pub trait PythonEnvironment {

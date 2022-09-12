@@ -6,6 +6,8 @@ use crate::{
     project::{python::PythonProject, Project},
 };
 
+/// Remove a dependency from a project by uninstalling it and updating the
+/// project's config.
 pub fn remove_project_dependency(
     project: &Project,
     dependency: &str,
