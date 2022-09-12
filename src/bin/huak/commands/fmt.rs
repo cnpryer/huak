@@ -3,7 +3,8 @@ use clap::{arg, ArgAction, ArgMatches, Command};
 use huak::{errors::CliResult, ops, project::Project};
 use std::env;
 
-pub fn arg() -> Command<'static> {
+/// Get the `fmt` subcommand.
+pub fn cmd() -> Command<'static> {
     subcommand("fmt").about("Format Python code.").arg(
         arg!(--check)
             .id("check")
@@ -13,6 +14,7 @@ pub fn arg() -> Command<'static> {
     )
 }
 
+/// Run the `fmt` command.
 pub fn run(args: &ArgMatches) -> CliResult {
     // This command runs from the context of the cwd.
     let cwd = env::current_dir()?;

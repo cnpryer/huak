@@ -8,7 +8,8 @@ use huak::{
     project::Project,
 };
 
-pub fn arg() -> Command<'static> {
+/// Get the `remove` subcommand.
+pub fn cmd() -> Command<'static> {
     subcommand("remove")
         .arg(
             Arg::new("dependency")
@@ -18,6 +19,7 @@ pub fn arg() -> Command<'static> {
         .about("Remove a dependency from the project.")
 }
 
+/// Run the `remove` command.
 pub fn run(args: &ArgMatches) -> CliResult {
     let dependency = match args.get_one::<String>("dependency") {
         Some(d) => d,

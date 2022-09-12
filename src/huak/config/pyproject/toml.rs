@@ -3,6 +3,17 @@ use std::{fs, path::Path};
 use super::{build_system::BuildSystem, tools::Tool};
 use serde_derive::{Deserialize, Serialize};
 
+/// Toml configuration deser and ser structure.
+/// ```toml
+/// [tool.huak]
+/// # ...
+/// [tool.huak.dependencies]
+/// # ...
+/// [tool.huak.dev-dependencies]
+/// # ...
+/// [tool.build-system]
+/// # ...
+/// ```
 #[derive(Serialize, Deserialize, Default)]
 pub struct Toml {
     pub(crate) tool: Tool,

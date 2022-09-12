@@ -4,6 +4,7 @@ use crate::{
     project::{config::PythonConfig, python::PythonProject, Project},
 };
 
+/// Install all of the projects defined dependencies.
 pub fn install_project_dependencies(project: &Project) -> CliResult {
     // TODO: Doing this venv handling seems hacky.
     if !project.root.join("pyproject.toml").exists() {
@@ -13,6 +14,7 @@ pub fn install_project_dependencies(project: &Project) -> CliResult {
         ));
     }
 
+    // If there is a Venv for the project, install all of its dependencies.
     if let Some(venv) = project.venv() {
         for dependency in &project.config().dependency_list("main") {
             venv.install_package(dependency)?;

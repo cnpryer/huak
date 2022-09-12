@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{config::requirements::PythonPackage, errors::CliError};
+use crate::{errors::CliError, package::python::PythonPackage};
 
 use super::python::PythonEnvironment;
 
@@ -18,6 +18,7 @@ pub struct Venv {
 }
 
 impl Venv {
+    /// Initialize a `Venv`.
     pub fn new(path: PathBuf) -> Venv {
         Venv { path }
     }
@@ -103,7 +104,7 @@ impl PythonEnvironment for Venv {
         from: &Path,
     ) -> Result<(), CliError> {
         let module_path = self.bin_path().join(module);
-        let module_path = crate::utils::path::as_string(module_path.as_path())?;
+        let module_path = crate::utils::path::to_string(module_path.as_path())?;
 
         crate::utils::command::run_command(module_path, args, from)?;
 

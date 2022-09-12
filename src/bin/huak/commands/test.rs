@@ -4,10 +4,12 @@ use huak::ops;
 use huak::{errors::CliResult, project::Project};
 use std::env;
 
-pub fn arg() -> Command<'static> {
+/// Get the `test` subcommand.
+pub fn cmd() -> Command<'static> {
     subcommand("test").about("Test Python code.")
 }
 
+/// Run the `test` command.
 // TODO: Use pyproject.toml for configuration overrides.
 pub fn run() -> CliResult {
     // This command runs from the context of the cwd.

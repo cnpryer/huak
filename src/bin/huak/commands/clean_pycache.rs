@@ -15,7 +15,7 @@ struct DeletePath {
     glob: String,
 }
 
-pub fn arg() -> Command<'static> {
+pub fn cmd() -> Command<'static> {
     subcommand("clean-pycache")
         .about("Remove all .pyc files and __pycache__ directories.")
 }

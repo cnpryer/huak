@@ -3,6 +3,7 @@ use crate::{
     project::{python::PythonProject, Project},
 };
 
+/// Get the version of a project.
 pub fn get_project_version(project: &Project) -> Result<&str, CliError> {
     if !project.root.join("pyproject.toml").exists() {
         return Err(CliError::new(

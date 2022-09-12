@@ -1,4 +1,7 @@
-pub mod command;
-pub mod path;
+/// Additional command utilities.
+pub(crate) mod command;
+/// Additional path utilities.
+pub(crate) mod path;
+/// Common test utilities.
 #[cfg(test)]
-pub mod test_utils;
+pub(crate) mod test_utils;
