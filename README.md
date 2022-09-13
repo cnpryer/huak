@@ -21,13 +21,11 @@ See either [this milestone list](https://github.com/cnpryer/huak/milestones) or 
 
 ## Goals
 
-There are a few guiding principles steering the development of Huak:
+Besides some of my own experience with the Python ecosystem, there are a few additional guiding principles steering the development of Huak:
 
-### 1. Serve as a learning instrument 📚
+### 1. Open to open source 📚
 
-- Python packaging is a very interesting topic right now.
-- It's challenging and dev tools are some of my favorite products, I'm curious of how they work.
-- Learn Rust and about building fast, snappy, and opinionated software.
+Open source has done a lot for me both from a tooling and professional development perspective. I'd love to offer Huak as a way to help onboard the absolute and relative newcomers (like myself).
 
 ### 2. Just use `huak` ✨
 
