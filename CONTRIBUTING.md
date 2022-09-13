@@ -1,8 +1,12 @@
 # Contributing
 
-We appriciate your interest in contributing to our project!
+We appreciate your interest in contributing to our project!
 
 You can contribute to Huak by checking for unassigned issues on our [issue board](https://github.com/users/cnpryer/projects/5) or even just documenting features and bugs by creating new issues.
+
+## Communication
+
+You can reach out to me on discord at cnpryer#6201 if you have any questions. Otherwise please feel free to [start a discussion](https://github.com/cnpryer/huak/discussions/new) or [open an issue](https://github.com/cnpryer/huak/issues/new/).
 
 ## Testing
 
@@ -29,6 +33,6 @@ You'll notice the main checks are:
 
 ## Commits
 
-✨ Please practice clean commit hygene.
+✨ Please practice clean commit hygiene.
 
 TODO: See [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) for more.
