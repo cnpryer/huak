@@ -12,10 +12,7 @@ pub fn remove_project_dependency(
     project: &Project,
     dependency: &str,
 ) -> Result<(), anyhow::Error> {
-    let venv = match project.venv() {
-        Some(v) => v,
-        _ => return Err(anyhow::format_err!("no venv found")),
-    };
+    let venv = project.venv();
 
     // TODO: #109
     if let Err(e) = venv.uninstall_package(dependency) {
@@ -38,8 +35,9 @@ mod tests {
 
     use super::*;
 
-    use crate::utils::test_utils::{
-        copy_dir, create_mock_project, get_resource_dir,
+    use crate::utils::{
+        path::copy_dir,
+        test_utils::{create_mock_project, get_resource_dir},
     };
 
     #[test]

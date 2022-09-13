@@ -1,28 +1,20 @@
 use crate::{
     env::python::PythonEnvironment,
-    errors::{CliError, CliResult},
+    errors::CliResult,
     project::{python::PythonProject, Project},
 };
 
 /// Format Python code from the `Project`'s root.
 // TODO: From root or cwd?
 pub fn fmt_project(project: &Project, is_check: &bool) -> CliResult {
-    // Use the project's venv to run `black` from the project root.
-    let venv = match project.venv() {
-        Some(v) => v,
-        None => {
-            return Err(CliError::new(anyhow::format_err!("invalid venv"), 2))
-        }
-    };
-
     // Run `black` with or without --check.
     match is_check {
-        true => venv.exec_module(
+        true => project.venv().exec_module(
             "black",
             &[".", "--line-length", "79", "--check"],
             &project.root,
         )?,
-        false => venv.exec_module(
+        false => project.venv().exec_module(
             "black",
             &[".", "--line-length", "79"],
             &project.root,
@@ -40,8 +32,9 @@ mod tests {
 
     use super::*;
 
-    use crate::utils::test_utils::{
-        copy_dir, create_mock_project, get_resource_dir,
+    use crate::utils::{
+        path::copy_dir,
+        test_utils::{create_mock_project, get_resource_dir},
     };
 
     #[test]
@@ -52,11 +45,10 @@ mod tests {
 
         let project_path = directory.join("mock-project");
         let project = create_mock_project(project_path.clone()).unwrap();
-        let venv = project.venv();
-        if let Some(v) = venv {
-            v.exec_module("pip", &["install", "black"], &project.root)
-                .unwrap();
-        }
+        project
+            .venv()
+            .exec_module("pip", &["install", "black"], &project.root)
+            .unwrap();
 
         let fmt_filepath = project
             .root

@@ -14,15 +14,12 @@ pub fn install_project_dependencies(project: &Project) -> CliResult {
         ));
     }
 
-    // If there is a Venv for the project, install all of its dependencies.
-    if let Some(venv) = project.venv() {
-        for dependency in &project.config().dependency_list("main") {
-            venv.install_package(dependency)?;
-        }
+    for dependency in &project.config().dependency_list("main") {
+        project.venv().install_package(dependency)?;
+    }
 
-        for dependency in &project.config().dependency_list("dev") {
-            venv.install_package(dependency)?;
-        }
+    for dependency in &project.config().dependency_list("dev") {
+        project.venv().install_package(dependency)?;
     }
 
     Ok(())
@@ -33,10 +30,12 @@ pub mod tests {
 
     use tempfile::tempdir;
 
+    use crate::utils::{
+        path::copy_dir,
+        test_utils::{create_mock_project, get_resource_dir},
+    };
     use crate::{
-        env::python::PythonEnvironment,
-        project::python::PythonProject,
-        utils::test_utils::{copy_dir, create_mock_project, get_resource_dir},
+        env::python::PythonEnvironment, project::python::PythonProject,
     };
 
     use super::install_project_dependencies;
@@ -52,20 +51,13 @@ pub mod tests {
         let project = create_mock_project(project_path.clone()).unwrap();
         let venv = project.venv();
 
-        let mut had_black = false;
-
-        if let Some(v) = venv {
-            v.uninstall_package("black").unwrap();
-            let black_path = v.bin_path().join("black");
-            had_black = black_path.exists();
-        }
+        venv.uninstall_package("black").unwrap();
+        let black_path = venv.bin_path().join("black");
+        let had_black = black_path.exists();
 
         install_project_dependencies(&project).unwrap();
 
         assert!(!had_black);
-
-        if let Some(v) = venv {
-            assert!(v.bin_path().join("black").exists());
-        }
+        assert!(venv.bin_path().join("black").exists());
     }
 }
