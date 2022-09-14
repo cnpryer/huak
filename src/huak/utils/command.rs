@@ -1,34 +1,27 @@
 use std::{path::Path, process};
 
-use crate::errors::CliResult;
+use crate::errors::CliError;
 
 /// Run a command using process::Command and an array of args. The command will
 /// execute inside a `from` dir.
-pub(crate) fn run_command(cmd: &str, args: &[&str], from: &Path) -> CliResult {
-    let output = process::Command::new(cmd)
+pub(crate) fn run_command(
+    cmd: &str,
+    args: &[&str],
+    from: &Path,
+) -> Result<i32, CliError> {
+    // Get the child from spawning the process. Child inherets this scopes
+    // stdout.
+    let mut child = process::Command::new(cmd)
         .args(args)
         .current_dir(from)
-        .output()?;
+        .spawn()?;
 
-    let stdout = buff_to_string(&output.stdout)?;
-    let stderr = buff_to_string(&output.stdout)?;
-
-    println!("{}", &stdout);
-    eprintln!("{}", &stderr);
-
-    // TODO: DEBUG-level logging.
-    // if !output.status.success() {
-    //     eprintln!("failed to run command '{}' with {:?}", cmd, args);
-    // }
-
-    Ok(())
-}
-
-fn buff_to_string(buff: &[u8]) -> Result<String, anyhow::Error> {
-    let stdout = match std::str::from_utf8(buff) {
-        Ok(v) => v,
-        Err(e) => return Err(anyhow::format_err!(e)),
+    // Get status code for process we're waiting for.
+    let status = match child.try_wait() {
+        Ok(Some(s)) => s,
+        Ok(None) => child.wait()?,
+        Err(e) => return Err(CliError::new(anyhow::format_err!(e), 2)),
     };
 
-    Ok(stdout.to_string())
+    Ok(status.code().unwrap_or_default())
 }
