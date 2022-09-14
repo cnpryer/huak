@@ -31,7 +31,7 @@ Quick and easy initilization of a project with opinions on topics like structure
 
 #### 2. Project Setup
 
-Adding dependencies, various metadata, etc.. The setup phase is vague but setups up the project for the following steps.
+Adding dependencies, various metadata, etc.. The setup phase is vague but prepares the project for the following steps.
 
 #### 3. Project Change
 
