@@ -27,10 +27,10 @@ impl Venv {
         Venv { path }
     }
 
-    /// Initialize a `Venv` by searching a directory for a venv. `find()` will search
+    /// Initialize a `Venv` by searching a directory for a venv. `from()` will search
     /// the parents directory for a configured number of recursive steps.
     // TODO: Improve the directory search (refactor manifest search into search utility).
-    pub fn find(from: &Path) -> Result<Venv, anyhow::Error> {
+    pub fn from(from: &Path) -> Result<Venv, anyhow::Error> {
         let names = vec![".venv", "venv"];
 
         // TODO: Redundancy.
@@ -172,12 +172,12 @@ mod tests {
     }
 
     #[test]
-    fn find() {
+    fn from() {
         let directory = tempdir().unwrap().into_path().to_path_buf();
         let first_venv = Venv::new(directory.join(".venv"));
         first_venv.create().unwrap();
 
-        let second_venv = Venv::find(&directory).unwrap();
+        let second_venv = Venv::from(&directory).unwrap();
 
         assert!(second_venv.path.exists());
         assert!(second_venv.bin_path().join("pip").exists());
