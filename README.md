@@ -40,13 +40,45 @@ A Huak PoC will be developed prior to 0.1.0. See [milestones](https://github.com
 
 In each phase you'll be able to:
 
-- PoC: Clone the repository and build the build the release with `cargo build --release`
+- PoC: Clone the repository and build the release with `cargo build --release`
 - 0.1.0: Install with `cargo install huak`
 - Future plans include
   - `brew install huak`
   - `pip install huak`
   - GitHub release artifacts
   - ...
+
+```console
+$ huak help
+
+A Python package manager written in Rust inspired by Cargo
+
+USAGE:
+    huak [SUBCOMMAND]
+
+OPTIONS:
+    -h, --help       Print help information
+    -V, --version    Print version information
+
+SUBCOMMANDS:
+    activate         Activate the project's virtual environment.*
+    add              Add a Python module to the existing project.*
+    build            Build tarball and wheel for the project.*
+    clean            Remove tarball and wheel from the built project.
+    clean-pycache    Remove all .pyc files and __pycache__ directories.
+    fmt              Format Python code.
+    help             Display Huak commands and general usage information.
+    init             Initialize the existing project.
+    install          Install the dependencies of an existing project.
+    lint             Lint Python code.
+    new              Create a project from scratch.
+    remove           Remove a dependency from the project.
+    run              Run a command within the project's environment context.*
+    test             Test Python code.
+    update           Update dependencies added to the project.*
+    version          Display the version of the project.
+```
+_"*" indicates incomplete first-pass but planned for PoC_
 
 ## Documentation
 
