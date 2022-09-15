@@ -15,41 +15,37 @@
 
 A Python package manager written in Rust. The [Cargo](https://github.com/rust-lang/cargo) for Python.
 
+Huak aims to be a snappy package manager for Python, supporting a standard base workflow with bootstrapping, configuration, dependency management, testing, building, and distribution tools. This package manager can be used for Python packages and projects.
+
+The goal is to create an opinionated tool to support an inviting onboarding experience to projects and the Python space, that's also responsive and snappy to use.
+
 ### Milestones and Project Board
 
 See either **[this milestone list](https://github.com/cnpryer/huak/milestones)** or **[the issue board](https://github.com/users/cnpryer/projects/5)** to check the status of this project at any point in time.
 
 ## README Contents
 
-- [A Package Manager](#a-package-manager)
-- [Try it out](#try-huak)
+- [Installation](#installation)
 - [Documentation](#documentation)
 - [Goals and Motivation](#goals)
 - [Contributing](#contributing)
 - [Architecture and Design](#architecture-and-design)
 
-## A Package Manager
+## Installation
 
-Huak aims to be a snappy package manager for Python, supporting a standard base workflow with bootstrapping, configuration, dependency management, building and publishing tools. This package manager can be used for Python packages and Python projects.
+A PoC and an 0.1.0 are expected.
 
-Onboarding and speed are focal points for Huak.
-
-## Try Huak
-
-A Huak PoC will be developed prior to 0.1.0. See [milestones](https://github.com/cnpryer/huak/milestones) for the status on those.
-
-In each phase you'll be able to:
-
-- PoC: Clone the repository and build the release with `cargo build --release`
-- 0.1.0: Install with `cargo install huak`
-- Future plans include
+- **During the PoC phase**, clone the repository and build the release with `cargo build --release` or use `cargo install --path .` to install the CLI binary to your system.
+- **As 0.1.0 is finished up**, install with `cargo install huak`.
+- At some point you will be able to:
   - `brew install huak`
   - `pip install huak`
-  - GitHub release artifacts
-  - ...
+  - Use GitHub release artifacts
 
-```console
-$ huak help
+Distribution plans will be finalized closer to 0.1.0.
+
+```
+❯ huak help
 
 A Python package manager written in Rust inspired by Cargo
 
@@ -77,8 +73,18 @@ SUBCOMMANDS:
     test             Test Python code.
     update           Update dependencies added to the project.*
     version          Display the version of the project.
+
+    # ~ Experimental ~
+
+    fix              Apply auto-fixing to your Python code.**
+    audit            Check for just vulnerable dependencies or check
+                     everything including license compatibility with
+                     your dependencies.**
+    doc              Auto-generate docs for your Python project.**
 ```
 _"*" indicates incomplete first-pass but planned for PoC_
+
+_"**" indicates incomplete first-pass but planned for 0.1.x_
 
 ## Documentation
 
