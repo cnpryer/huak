@@ -40,7 +40,7 @@ A Huak PoC will be developed prior to 0.1.0. See [milestones](https://github.com
 
 In each phase you'll be able to:
 
-- PoC: Clone the repository and build the build the release with `cargo build --release`
+- PoC: Clone the repository and build the release with `cargo build --release`
 - 0.1.0: Install with `cargo install huak`
 - Future plans include
   - `brew install huak`
