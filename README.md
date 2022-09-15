@@ -11,13 +11,46 @@
 
 </br>
 
+## About
+
 A Python package manager written in Rust. The [Cargo](https://github.com/rust-lang/cargo) for Python.
 
-See either [this milestone list](https://github.com/cnpryer/huak/milestones) or [the issue board](https://github.com/users/cnpryer/projects/5) to check the status of this project at any point in time.
+### Milestones and Project Board
 
+See either **[this milestone list](https://github.com/cnpryer/huak/milestones)** or **[the issue board](https://github.com/users/cnpryer/projects/5)** to check the status of this project at any point in time.
+
+## README Contents
+
+- [A Package Manager](#a-package-manager)
+- [Try it out](#try-huak)
+- [Documentation](#documentation)
 - [Goals and Motivation](#goals)
 - [Contributing](#contributing)
 - [Architecture and Design](#architecture-and-design)
+
+## A Package Manager
+
+Huak aims to be a snappy package manager for Python, supporting a standard base workflow with bootstrapping, configuration, dependency management, building and publishing tools. This package manager can be used for Python packages and Python projects.
+
+Onboarding and speed are focal points for Huak.
+
+## Try Huak
+
+A Huak PoC will be developed prior to 0.1.0. See [milestones](https://github.com/cnpryer/huak/milestones) for the status on those.
+
+In each phase you'll be able to:
+
+- PoC: Clone the repository and build the build the release with `cargo build --release`
+- 0.1.0: Install with `cargo install huak`
+- Future plans include
+  - `brew install huak`
+  - `pip install huak`
+  - GitHub release artifacts
+  - ...
+
+## Documentation
+
+Some documentation for 0.0.x releases will land on docs.rs. Around the 0.1.0 release I'd like to have more robust documentation about Huak for users, contributors, and the curious.
 
 ## Goals
 

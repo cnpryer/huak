@@ -14,10 +14,6 @@ categories = [
 name = "huak"
 path = "./src/huak/lib.rs"
 
-[[bin]]
-name = "huak"
-path = "./src/bin/huak/main.rs"
-
 [dependencies]
 anyhow = "1.0.62"
 clap = {version = "3.2.17", features = ["cargo"]}
