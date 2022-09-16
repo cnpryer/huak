@@ -56,27 +56,35 @@ impl Venv {
     }
 
     /// Create the venv at its path.
-    pub fn create(&self) -> Result<(), anyhow::Error> {
+    pub fn create(&self) -> Result<(), CliError> {
         if self.path.exists() {
             return Ok(());
         }
 
         let from = match self.path.parent() {
             Some(p) => p,
-            _ => return Err(anyhow::format_err!("invalid venv path")),
+            _ => {
+                return Err(CliError::new(
+                    anyhow::format_err!("invalid venv path"),
+                    2,
+                ))
+            }
         };
 
         let name = self.name()?;
         let args = ["-m", "venv", name];
 
-        // Create venv using system's Python alias.
-        if let Err(e) =
-            crate::utils::command::run_command("python", &args, from)
-        {
-            return Err(e.error.unwrap_or_else(|| {
-                anyhow::format_err!("failed to create venv")
-            }));
-        };
+        match crate::utils::command::run_command("python", &args, from)? {
+            0 => (),
+            code => {
+                return Err(CliError::new(
+                    anyhow::format_err!(
+                        "python alias command returned with code {code}"
+                    ),
+                    code,
+                ))
+            }
+        }
 
         Ok(())
     }
@@ -123,7 +131,17 @@ impl PythonEnvironment for Venv {
 
         let module_path = crate::utils::path::to_string(module_path.as_path())?;
 
-        crate::utils::command::run_command(module_path, args, from)?;
+        match crate::utils::command::run_command(module_path, args, from)? {
+            0 => (),
+            code => {
+                return Err(CliError::new(
+                    anyhow::format_err!(
+                        "{module_path} alias command returned with code {code}",
+                    ),
+                    code,
+                ))
+            }
+        }
 
         Ok(())
     }
