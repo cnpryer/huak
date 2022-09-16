@@ -9,7 +9,7 @@ pub(crate) fn run_command(
     cmd: &str,
     args: &[&str],
     from: &Path,
-) -> Result<i32, CliError> {
+) -> Result<(i32, String), CliError> {
     match should_mute() {
         true => run_command_with_output(cmd, args, from),
         false => run_command_with_spawn(cmd, args, from),
@@ -31,15 +31,20 @@ fn run_command_with_output(
     cmd: &str,
     args: &[&str],
     from: &Path,
-) -> Result<i32, CliError> {
+) -> Result<(i32, String), CliError> {
     let output = process::Command::new(cmd)
         .args(args)
         .current_dir(from)
         .output()?;
 
     let status = output.status;
+    let stdout = string_from_buff(&output.stdout)?;
+    let stderr = string_from_buff(&output.stderr)?;
+    let code = status.code().unwrap_or_default();
 
-    Ok(status.code().unwrap_or_default())
+    let msg = create_msg(&stdout, &stderr);
+
+    Ok((code, msg))
 }
 
 /// Run command and capture entire stdout.
@@ -47,7 +52,7 @@ fn run_command_with_spawn(
     cmd: &str,
     args: &[&str],
     from: &Path,
-) -> Result<i32, CliError> {
+) -> Result<(i32, String), CliError> {
     // Get the child from spawning the process. Child inherets this scopes
     // stdout.
     let mut child = process::Command::new(cmd)
@@ -62,5 +67,27 @@ fn run_command_with_spawn(
         Err(e) => return Err(CliError::new(anyhow::format_err!(e), 2)),
     };
 
-    Ok(status.code().unwrap_or_default())
+    // TODO: Capture through spawn.
+    let msg = "Spawn stdout placeholder".to_string();
+    let code = status.code().unwrap_or_default();
+
+    Ok((code, msg))
+}
+
+fn string_from_buff(buff: &[u8]) -> Result<String, anyhow::Error> {
+    let string = std::str::from_utf8(buff)?.to_string();
+
+    Ok(string)
+}
+
+fn create_msg(stdout: &str, stderr: &str) -> String {
+    // TODO: Better process context management.
+    let mut msg = stdout.to_string();
+
+    if !stderr.is_empty() {
+        msg.push('\n');
+        msg.push_str(stderr);
+    }
+
+    msg
 }

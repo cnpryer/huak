@@ -75,14 +75,9 @@ impl Venv {
         let args = ["-m", "venv", name];
 
         match crate::utils::command::run_command("python", &args, from)? {
-            0 => (),
-            code => {
-                return Err(CliError::new(
-                    anyhow::format_err!(
-                        "python alias command returned with code {code}"
-                    ),
-                    code,
-                ))
+            (0, _) => (),
+            (code, msg) => {
+                return Err(CliError::new(anyhow::format_err!(msg), code));
             }
         }
 
@@ -132,14 +127,9 @@ impl PythonEnvironment for Venv {
         let module_path = crate::utils::path::to_string(module_path.as_path())?;
 
         match crate::utils::command::run_command(module_path, args, from)? {
-            0 => (),
-            code => {
-                return Err(CliError::new(
-                    anyhow::format_err!(
-                        "{module_path} alias command returned with code {code}",
-                    ),
-                    code,
-                ))
+            (0, _) => (),
+            (code, msg) => {
+                return Err(CliError::new(anyhow::format_err!(msg), code));
             }
         }
 
