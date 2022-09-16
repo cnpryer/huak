@@ -68,7 +68,9 @@ fn run_command_with_spawn(
     };
 
     // TODO: Capture through spawn.
-    let msg = "Spawn stdout placeholder".to_string();
+    // Since spawn inherits the user's stdout and stderr, the msg can be empty since
+    // it's already displayed.
+    let msg = "".to_string();
     let code = status.code().unwrap_or_default();
 
     Ok((code, msg))
