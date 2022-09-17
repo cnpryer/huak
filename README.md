@@ -1,5 +1,6 @@
 [![ci-rust](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml)
 [![ci-python](https://github.com/cnpryer/huak/actions/workflows/ci-python.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci-python.yaml)
+[![crates.io](https://img.shields.io/crates/v/huak.svg)](https://crates.io/crates/huak)
 
 # huak
 
@@ -87,6 +88,8 @@ _"*" indicates incomplete first-pass but planned for PoC_
 _"**" indicates incomplete first-pass but planned for 0.1.x_
 
 ## Documentation
+
+If you've cloned the repository, run `cargo doc --open`.
 
 Some documentation for 0.0.x releases will land on docs.rs. Around the 0.1.0 release I'd like to have more robust documentation about Huak for users, contributors, and the curious.
 
