@@ -24,7 +24,7 @@ pub(crate) fn run_command(
         ));
     }
 
-    Ok((0, msg))
+    Ok((code, msg))
 }
 
 /// Mute command utilities with HUAK_MUTE_COMMAND ("True", "true").
