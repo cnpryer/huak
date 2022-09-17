@@ -1,5 +1,6 @@
 [![ci-rust](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml)
 [![ci-python](https://github.com/cnpryer/huak/actions/workflows/ci-python.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci-python.yaml)
+[![crates.io](https://img.shields.io/crates/v/huak.svg)](https://crates.io/crates/huak)
 
 # huak
 
