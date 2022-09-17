@@ -74,12 +74,7 @@ impl Venv {
         let name = self.name()?;
         let args = ["-m", "venv", name];
 
-        match crate::utils::command::run_command("python", &args, from)? {
-            (0, _) => (),
-            (code, msg) => {
-                return Err(CliError::new(anyhow::format_err!(msg), code));
-            }
-        }
+        crate::utils::command::run_command("python", &args, from)?;
 
         Ok(())
     }
@@ -126,12 +121,7 @@ impl PythonEnvironment for Venv {
 
         let module_path = crate::utils::path::to_string(module_path.as_path())?;
 
-        match crate::utils::command::run_command(module_path, args, from)? {
-            (0, _) => (),
-            (code, msg) => {
-                return Err(CliError::new(anyhow::format_err!(msg), code));
-            }
-        }
+        crate::utils::command::run_command(module_path, args, from)?;
 
         Ok(())
     }

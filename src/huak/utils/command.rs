@@ -10,10 +10,21 @@ pub(crate) fn run_command(
     args: &[&str],
     from: &Path,
 ) -> Result<(i32, String), CliError> {
-    match should_mute() {
-        true => run_command_with_output(cmd, args, from),
-        false => run_command_with_spawn(cmd, args, from),
+    let (code, msg) = match should_mute() {
+        true => run_command_with_output(cmd, args, from)?,
+        false => run_command_with_spawn(cmd, args, from)?,
+    };
+
+    if code != 0 {
+        // TODO: This may be redundent for expected-to-fail commands.
+        eprintln!("process stdout and stderr: {}", msg);
+        return Err(CliError::new(
+            anyhow::format_err!("{cmd} exited with {code}"),
+            code,
+        ));
     }
+
+    Ok((0, msg))
 }
 
 /// Mute command utilities with HUAK_MUTE_SUBCOMMAND ("True", "true").
