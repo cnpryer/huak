@@ -80,7 +80,7 @@ impl Config {
     /// Get a reference to the project name from manifest data.
     // TODO: Use more than toml.
     pub fn project_name(&self) -> &String {
-        let table = &self.manifest.toml.tool.huak;
+        let table = &self.manifest.toml.project;
 
         &table.name
     }
@@ -88,7 +88,7 @@ impl Config {
     /// Get a reference to the project version from manifest data.
     // TODO: Use more than toml.
     pub fn project_version(&self) -> &String {
-        let table = &self.manifest.toml.tool.huak;
+        let table = &self.manifest.toml.project;
 
         &table.version
     }
@@ -99,7 +99,7 @@ impl PythonConfig for Config {
     // TODO: More than toml.
     fn dependency_list(&self, kind: &str) -> Vec<PythonPackage> {
         // Get huak's spanned table found in the Toml.
-        let table = &self.manifest.toml.tool.huak;
+        let table = &self.manifest.toml.project;
 
         // Dependencies to list from.
         let from = match kind {

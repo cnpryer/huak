@@ -18,7 +18,7 @@ pub fn create_project(project: &Project) -> Result<(), anyhow::Error> {
     fs::write(&toml_path, toml.to_string()?)?;
 
     // Use name from the toml config.
-    let name = &toml.tool.huak.name;
+    let name = &toml.project.name;
 
     // Create src subdirectory with standard project namespace.
     fs::create_dir_all(project.root.join("src"))?;

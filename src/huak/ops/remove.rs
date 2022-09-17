@@ -20,8 +20,8 @@ pub fn remove_project_dependency(
     };
 
     let mut toml = Toml::open(&project.root.join("pyproject.toml"))?;
-    toml.tool.huak.dependencies.remove(dependency);
-    toml.tool.huak.dev_dependencies.remove(dependency);
+    toml.project.dependencies.remove(dependency);
+    toml.project.dev_dependencies.remove(dependency);
 
     // Serialize pyproject.toml.
     fs::write(&project.root.join("pyproject.toml"), toml.to_string()?)?;
@@ -50,12 +50,12 @@ mod tests {
             create_mock_project(directory.join("mock-project")).unwrap();
         let toml_path = project.root.join("pyproject.toml");
         let toml = Toml::open(&toml_path).unwrap();
-        let had_path = toml.tool.huak.dependencies.contains_key("click");
+        let had_path = toml.project.dependencies.contains_key("click");
 
         remove_project_dependency(&project, "click").unwrap();
 
         let toml = Toml::open(&toml_path).unwrap();
-        let has_path = toml.tool.huak.dependencies.contains_key("click");
+        let has_path = toml.project.dependencies.contains_key("click");
 
         assert!(had_path);
         assert!(!has_path);

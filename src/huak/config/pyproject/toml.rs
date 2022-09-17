@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-use super::{build_system::BuildSystem, tools::Tool};
+use super::{build_system::BuildSystem, project::Project};
 use serde_derive::{Deserialize, Serialize};
 
 /// Toml configuration deser and ser structure.
@@ -16,7 +16,7 @@ use serde_derive::{Deserialize, Serialize};
 /// ```
 #[derive(Serialize, Deserialize, Default)]
 pub struct Toml {
-    pub(crate) tool: Tool,
+    pub(crate) project: Project,
     #[serde(rename = "build-system")]
     pub(crate) build_system: BuildSystem,
 }
@@ -56,15 +56,15 @@ mod tests {
 
     #[test]
     fn serialize() {
-        let string = r#"[tool.huak]
+        let string = r#"[project]
 name = "Test"
 version = "0.1.0"
 description = ""
 authors = []
 
-[tool.huak.dependencies]
+[project.dependencies]
 
-[tool.huak.dev-dependencies]
+[project.dev-dependencies]
 
 [build-system]
 requires = ["huak-core>=1.0.0"]
@@ -77,15 +77,15 @@ build-backend = "huak.core.build.api"
 
     #[test]
     fn deserialize() {
-        let string = r#"[tool.huak]
+        let string = r#"[project]
 name = "Test"
 version = "0.1.0"
 description = ""
 authors = []
 
-[tool.huak.dependencies]
+[project.dependencies]
 
-[tool.huak.dev-dependencies]
+[project.dev-dependencies]
 
 [build-system]
 requires = ["huak-core>=1.0.0"]
@@ -93,6 +93,6 @@ build-backend = "huak.core.build.api"
 "#;
         let toml = Toml::from(string).unwrap();
 
-        assert_eq!(toml.tool.huak.name, "Test");
+        assert_eq!(toml.project.name, "Test");
     }
 }
