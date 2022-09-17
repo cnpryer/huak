@@ -4,7 +4,7 @@ use crate::errors::CliError;
 
 /// Run a command using process::Command and an array of args. The command will
 /// execute inside a `from` dir. Set the environment variable
-/// HUAK_MUTE_SUBCOMMAND to True to mute subcommand stdout.
+/// HUAK_MUTE_COMMAND to True to mute subcommand stdout.
 pub(crate) fn run_command(
     cmd: &str,
     args: &[&str],
@@ -27,9 +27,9 @@ pub(crate) fn run_command(
     Ok((0, msg))
 }
 
-/// Mute command utilities with HUAK_MUTE_SUBCOMMAND ("True", "true").
+/// Mute command utilities with HUAK_MUTE_COMMAND ("True", "true").
 fn should_mute() -> bool {
-    let _mute = match env::var("HUAK_MUTE_SUBCOMMAND") {
+    let _mute = match env::var("HUAK_MUTE_COMMAND") {
         Ok(m) => m,
         Err(_) => "False".to_string(),
     };
