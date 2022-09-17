@@ -89,6 +89,8 @@ _"**" indicates incomplete first-pass but planned for 0.1.x_
 
 ## Documentation
 
+If you've cloned the repository, run `cargo doc --open`.
+
 Some documentation for 0.0.x releases will land on docs.rs. Around the 0.1.0 release I'd like to have more robust documentation about Huak for users, contributors, and the curious.
 
 ## Goals
