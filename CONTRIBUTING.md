@@ -10,7 +10,7 @@ You can reach out to me on discord at cnpryer#6201 if you have any questions. Ot
 
 ## Testing
 
-During the early stages of Huak's development, we'll use `cargo test -- --test-threads=1` to allow manipulation of one .venv. An issue to improve on this in the future has been opened at #123.
+During the early stages of Huak's development, we'll use `cargo test -- --test-threads=1` to allow manipulation of one `.venv`. An issue to improve on this in the future has been opened at #123.
 
 Since we are using a hacky .venv testing strategy, you'll want to run tests using a `HUAK_MUTE_SUBCOMMAND` environment variable.
 
@@ -19,6 +19,8 @@ We set `--test-threads=1` in .cargo/config.toml so we can just run:
 ```console
 $ HUAK_MUTE_SUBCOMMAND=True cargo test
 ```
+
+Note that since we are dedicating a `.venv` to testing Huak, you should expect to have a `.venv` exist in your local project. Huak needs a Python environment (specifically a venv) to run its commands from the context of. #123 will resolve this.
 
 ## Making a contribution
 
