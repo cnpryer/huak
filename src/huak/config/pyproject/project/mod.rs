@@ -12,17 +12,17 @@ pub(crate) struct Dependency {
     pub(crate) version: String,
 }
 
-/// Huak table data.
+/// Project table data.
 /// ```toml
-/// [tool.huak]
-/// name = "Huak"
+/// [project]
+/// name = "Project"
 /// version = "0.0.1"
 /// description = ""
 /// authors = []
 /// # ...
 /// ```
 #[derive(Serialize, Deserialize)]
-pub(crate) struct Huak {
+pub(crate) struct Project {
     pub(crate) name: String,
     pub(crate) version: String,
     pub(crate) description: String,
@@ -32,9 +32,9 @@ pub(crate) struct Huak {
     pub(crate) dev_dependencies: Map<String, Value>,
 }
 
-impl Default for Huak {
-    fn default() -> Huak {
-        Huak {
+impl Default for Project {
+    fn default() -> Project {
+        Project {
             name: "".to_string(),
             version: "0.0.1".to_string(),
             description: "".to_string(),
