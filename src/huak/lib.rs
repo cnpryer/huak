@@ -49,29 +49,27 @@
 //!    build            Build tarball and wheel for the project.*
 //!    clean            Remove tarball and wheel from the built project.
 //!    clean-pycache    Remove all .pyc files and __pycache__ directories.
+//!    doc              Builds and uploads current project to a registry.*
 //!    fmt              Format Python code.
 //!    help             Display Huak commands and general usage information.
 //!    init             Initialize the existing project.
 //!    install          Install the dependencies of an existing project.
 //!    lint             Lint Python code.
 //!    new              Create a project from scratch.
+//!    publish          Build and upload current project to a registry.*
 //!    remove           Remove a dependency from the project.
 //!    run              Run a command within the project's environment context.*
 //!    test             Test Python code.
 //!    update           Update dependencies added to the project.*
 //!    version          Display the version of the project.
-
-//!    # ~ Experimental ~
-
-//!    fix              Apply auto-fixing to your Python code.**
+//!
+//!    # 0.1.0
 //!    audit            Check for just vulnerable dependencies or check
 //!                     everything including license compatibility with
-//!                     your dependencies.**
-//!    doc              Auto-generate docs for your Python project.**
+//!                     your dependencies.*
+//!    fix              Apply auto-fixing to your Python code.*
 //!```
-//!_"*" indicates incomplete first-pass but planned for PoC_
-
-//!_"**" indicates incomplete first-pass but planned for 0.1.x_
+//!_"*" indicates first-pass of implementaiton is incomplete._
 
 //!## Documentation
 

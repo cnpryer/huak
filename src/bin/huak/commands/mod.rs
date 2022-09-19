@@ -5,12 +5,14 @@ pub(crate) mod add;
 pub(crate) mod build;
 pub(crate) mod clean;
 pub(crate) mod clean_pycache;
+pub(crate) mod doc;
 pub(crate) mod fmt;
 pub(crate) mod help;
 pub(crate) mod init;
 pub(crate) mod install;
 pub(crate) mod lint;
 pub(crate) mod new;
+pub(crate) mod publish;
 pub(crate) mod remove;
 pub(crate) mod run;
 pub(crate) mod test;
@@ -30,12 +32,14 @@ pub fn args() -> Command<'static> {
         build::cmd(),
         clean::cmd(),
         clean_pycache::cmd(),
+        doc::cmd(),
         help::cmd(),
         fmt::cmd(),
         init::cmd(),
         install::cmd(),
         lint::cmd(),
         new::cmd(),
+        publish::cmd(),
         remove::cmd(),
         run::cmd(),
         test::cmd(),
