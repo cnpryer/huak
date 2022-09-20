@@ -83,7 +83,7 @@ SUBCOMMANDS:
                      your dependencies.*
     fix              Apply auto-fixing to your Python code.*
 ```
-_"*" indicates first-pass of implementaiton is incomplete._
+_"*" indicates first-pass of implementation is incomplete._
 
 ## Documentation
 
