@@ -1,31 +1,22 @@
-use super::utils::{run_command, subcommand};
+use super::utils::subcommand;
 use clap::Command;
-use huak::errors::{CliError, CliResult};
-use huak::utils::get_venv_module_path;
+use huak::ops;
+use huak::{errors::CliResult, project::Project};
 use std::env;
 
-pub fn arg() -> Command<'static> {
+/// Get the `test` subcommand.
+pub fn cmd() -> Command<'static> {
     subcommand("test").about("Test Python code.")
 }
 
+/// Run the `test` command.
 // TODO: Use pyproject.toml for configuration overrides.
 pub fn run() -> CliResult {
     // This command runs from the context of the cwd.
-    let cwd_buff = env::current_dir()?;
-    let cwd = cwd_buff.as_path();
+    let cwd = env::current_dir()?;
+    let project = Project::from(cwd)?;
 
-    let ptyest_path = get_venv_module_path("pytest")?;
-    let pytest_path = match ptyest_path.to_str() {
-        Some(p) => p,
-        None => {
-            return Err(CliError::new(
-                anyhow::format_err!("failed to construct path to pytest module"),
-                2,
-            ))
-        }
-    };
-
-    run_command(pytest_path, &[], cwd)?;
+    ops::test::test_project(&project)?;
 
     Ok(())
 }

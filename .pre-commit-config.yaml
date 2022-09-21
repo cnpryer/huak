@@ -19,7 +19,7 @@ repos:
         types: [rust]
         files: Cargo\.toml|\.rs$
         pass_filenames: false
-        args: ["--all-features"]
+        args: ["--all-features", "--", "--test-threads=1"]
       - id: clippy
         name: clippy
         description: Run Rust lints.
@@ -58,7 +58,7 @@ repos:
       - id: pytest
         name: pytest
         description: Run Python tests.
-        entry: cd huak-py && test
+        entry: cd huak-py && make test
         language: system
         types: [python]
         files: pyproject\.toml|\.py$

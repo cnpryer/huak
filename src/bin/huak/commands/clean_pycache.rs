@@ -15,8 +15,9 @@ struct DeletePath {
     glob: String,
 }
 
-pub fn arg() -> Command<'static> {
-    subcommand("clean-pycache").about("Remove all .pyc files and __pycache__ directories.")
+pub fn cmd() -> Command<'static> {
+    subcommand("clean-pycache")
+        .about("Remove all .pyc files and __pycache__ directories.")
 }
 
 pub fn run() -> CliResult {
@@ -33,13 +34,15 @@ pub fn run() -> CliResult {
                     for path in paths {
                         match path {
                             Ok(p) => match i.path_type {
-                                PathType::Directory => match remove_dir_all(p) {
-                                    Ok(_) => (),
-                                    Err(e) => {
-                                        file_level_success = false;
-                                        error = Some(Error::new(e));
+                                PathType::Directory => {
+                                    match remove_dir_all(p) {
+                                        Ok(_) => (),
+                                        Err(e) => {
+                                            file_level_success = false;
+                                            error = Some(Error::new(e));
+                                        }
                                     }
-                                },
+                                }
                                 PathType::File => match remove_file(p) {
                                     Ok(_) => (),
                                     Err(e) => {
@@ -84,49 +87,4 @@ fn get_delete_patterns() -> Vec<DeletePath> {
             glob: "**/*.pyc".to_owned(),
         },
     ]
-}
-
-#[cfg(test)]
-mod tests {
-    use std::{env::set_current_dir, path::PathBuf};
-
-    use super::*;
-    use tempfile::tempdir;
-
-    use crate::test_utils::create_py_project_sample;
-    use glob::glob;
-
-    #[test]
-    pub fn assert_no_pyc() {
-        let directory: PathBuf = tempdir().unwrap().into_path().to_path_buf();
-        let from_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("resources")
-            .join("mock-project");
-
-        create_py_project_sample(&from_dir, &directory);
-        set_current_dir(&directory).unwrap();
-
-        let _ = run();
-        let i = glob("**/*.pyc").unwrap().count();
-        assert!(i == 0 as usize);
-        assert!(directory.as_path().join("mock-project").exists());
-        assert!(directory
-            .as_path()
-            .join("mock-project")
-            .join("pyproject.toml")
-            .exists());
-        assert!(directory
-            .as_path()
-            .join("mock-project")
-            .join("src")
-            .join("mock_project")
-            .exists());
-        assert!(!directory
-            .as_path()
-            .join("mock-project")
-            .join("src")
-            .join("mock_project")
-            .join("__init__.pyc")
-            .exists());
-    }
 }

@@ -1,34 +1,28 @@
-use std::fs;
+use std::env;
 
 use clap::Command;
 use huak::{
-    errors::{CliError, CliResult},
-    pyproject::toml::Toml,
+    errors::CliResult,
+    ops,
+    project::{python::PythonProject, Project},
 };
 
 use super::utils::subcommand;
 
-pub fn arg() -> Command<'static> {
+/// Get the `version` subcommand.
+pub fn cmd() -> Command<'static> {
     subcommand("version").about("Display the version of the project.")
 }
 
+/// Run the `version` command.
 pub fn run() -> CliResult {
-    let string = match fs::read_to_string("pyproject.toml") {
-        Ok(s) => s,
-        Err(_) => return Err(CliError::new(anyhow::format_err!("failed to read toml"), 2)),
-    };
+    let cwd = env::current_dir()?;
+    let project = Project::from(cwd)?;
 
-    let toml = match Toml::from(&string) {
-        Ok(t) => t,
-        Err(_) => {
-            return Err(CliError::new(
-                anyhow::format_err!("failed to build toml"),
-                2,
-            ))
-        }
-    };
+    let version = ops::version::get_project_version(&project)?;
+    let name = &project.config().project_name();
 
-    println!("{}-{}", toml.tool.huak.name(), toml.tool.huak.version());
+    println!("Version: {name}-{version}");
 
     Ok(())
 }

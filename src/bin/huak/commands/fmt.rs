@@ -1,10 +1,10 @@
-use super::utils::{run_command, subcommand};
+use super::utils::subcommand;
 use clap::{arg, ArgAction, ArgMatches, Command};
-use huak::errors::{CliError, CliResult};
-use huak::utils::get_venv_module_path;
+use huak::{errors::CliResult, ops, project::Project};
 use std::env;
 
-pub fn arg() -> Command<'static> {
+/// Get the `fmt` subcommand.
+pub fn cmd() -> Command<'static> {
     subcommand("fmt").about("Format Python code.").arg(
         arg!(--check)
             .id("check")
@@ -14,27 +14,14 @@ pub fn arg() -> Command<'static> {
     )
 }
 
-// TODO: Use pyproject.toml for configuration overrides.
+/// Run the `fmt` command.
 pub fn run(args: &ArgMatches) -> CliResult {
     // This command runs from the context of the cwd.
-    let cwd_buff = env::current_dir()?;
-    let cwd = cwd_buff.as_path();
+    let cwd = env::current_dir()?;
+    let project = Project::from(cwd)?;
+    let is_check = args.get_one::<bool>("check").unwrap();
 
-    let black_path = get_venv_module_path("black")?;
-    let black_path = match black_path.to_str() {
-        Some(p) => p,
-        None => {
-            return Err(CliError::new(
-                anyhow::format_err!("failed to construct path to black module"),
-                2,
-            ))
-        }
-    };
-
-    match args.get_one::<bool>("check").unwrap() {
-        true => run_command(black_path, &[".", "--line-length", "79", "--check"], cwd)?,
-        false => run_command(black_path, &[".", "--line-length", "79"], cwd)?,
-    };
+    ops::fmt::fmt_project(&project, is_check)?;
 
     Ok(())
 }

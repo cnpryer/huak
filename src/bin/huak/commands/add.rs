@@ -11,7 +11,8 @@ use huak::{
     utils::get_venv_module_path,
 };
 
-pub fn arg() -> Command<'static> {
+/// Get the `add` subcommand.
+pub fn cmd() -> Command<'static> {
     subcommand("add")
         .arg(
             Arg::new("dependency")
@@ -21,6 +22,7 @@ pub fn arg() -> Command<'static> {
         .about("Add a Python module to the existing project.")
 }
 
+/// Run the `add` subcommand.
 pub fn run(args: &ArgMatches) -> CliResult {
     let dependency = args.get_one::<String>("dependency");
 

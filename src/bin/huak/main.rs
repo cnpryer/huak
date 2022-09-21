@@ -1,11 +1,10 @@
+//! The `huak` application.
+//!
+//! Huak implements a cli application with various subcommands.
 use huak::errors::CliResult;
 
 mod cli;
 mod commands;
-mod pyproject;
-
-#[cfg(test)]
-mod test_utils;
 
 fn main() -> CliResult {
     cli::main()

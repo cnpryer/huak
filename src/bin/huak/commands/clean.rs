@@ -1,23 +1,21 @@
-use super::utils::subcommand;
-use anyhow::Error;
-use clap::Command;
-use huak::errors::{CliError, CliResult};
-use std::{fs::remove_dir_all, path::Path};
+use std::env;
 
-pub fn arg() -> Command<'static> {
-    subcommand("clean").about("Remove tarball and wheel from the built project.")
+use super::utils::subcommand;
+use clap::Command;
+use huak::{errors::CliResult, ops, project::Project};
+
+/// Get the `clean` subcommand.
+pub fn cmd() -> Command<'static> {
+    subcommand("clean")
+        .about("Remove tarball and wheel from the built project.")
 }
 
+/// Run the `clean` command.
 pub fn run() -> CliResult {
-    if !Path::new("dist").is_dir() {
-        Ok(())
-    } else {
-        match remove_dir_all("dist") {
-            Ok(_) => Ok(()),
-            Err(e) => Err(CliError {
-                exit_code: 2,
-                error: Some(Error::new(e)),
-            }),
-        }
-    }
+    let cwd = env::current_dir()?;
+    let project = Project::from(cwd)?;
+
+    ops::clean::clean_project(&project)?;
+
+    Ok(())
 }
