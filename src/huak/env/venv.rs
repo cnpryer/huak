@@ -102,6 +102,23 @@ impl PythonEnvironment for Venv {
         }
     }
 
+    /// Get the path to the module passed from the venv.
+    fn module_path(&self, module: &str) -> Result<PathBuf, anyhow::Error> {
+        let bin_path = self.bin_path();
+        let mut path = bin_path.join(module);
+
+        if OS != "windows" {
+            return Ok(path);
+        }
+
+        match path.set_extension("exe") {
+            true => Ok(path),
+            false => {
+                Err(anyhow::format_err!("failed to create path for {module}"))
+            }
+        }
+    }
+
     /// Run a module installed to the venv as an alias'd command from the current working dir.
     fn exec_module(
         &self,
@@ -113,7 +130,7 @@ impl PythonEnvironment for Venv {
         // TODO: Fix this.
         self.create()?;
 
-        let module_path = self.bin_path().join(module);
+        let module_path = self.module_path(module)?;
 
         if !module_path.exists() {
             self.install_package(&PythonPackage::new(module.to_string()))?;
@@ -178,7 +195,7 @@ mod tests {
         let second_venv = Venv::from(&directory).unwrap();
 
         assert!(second_venv.path.exists());
-        assert!(second_venv.bin_path().join("pip").exists());
+        assert!(second_venv.module_path("pip").unwrap().exists());
         assert_eq!(first_venv.path, second_venv.path);
     }
 }

@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 
 pub trait PythonEnvironment {
     fn bin_path(&self) -> PathBuf;
+    fn module_path(&self, module: &str) -> Result<PathBuf, anyhow::Error>;
     fn exec_module(
         &self,
         module: &str,
