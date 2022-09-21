@@ -2,13 +2,14 @@ use std::{env, fs};
 use clap::{value_parser, Arg, ArgMatches, Command}; 
 use serde_derive::{Serialize, Deserialize}; 
 use huak::package::metadata::PyPi;
-use huak::Dependency; 
-use super::utils::{create_venv, install_dependency, subcommand};
+use super::utils::{subcommand};
 
-use huak::{
+use huak::package::python::PythonPackage;
+use huak::{ 
+    env::python::PythonEnvironment,
+    env::venv::Venv,
+    project::{python::PythonProject, Project, },
     errors::{CliError, CliResult},
-    pyproject::toml::Toml,
-    utils::get_venv_module_path,
 };
 
 /// Get the `add` subcommand.
@@ -38,43 +39,14 @@ pub fn run(args: &ArgMatches) -> CliResult {
 
     let version = json.info.version;
     let name = json.info.name;
-    let dep = Dependency{
+    let dep = PythonPackage{
         name,
         version,
-    };
-
-    // Proceed to add the Dependency to th toml file
-
-    let cwd_buff = env::current_dir()?;
-    let cwd = cwd_buff.as_path();
-    let toml_path = cwd.join("pyproject.toml");
-
-    if !toml_path.exists() {
-        create_venv("python", cwd, ".venv")?;
-    }
-
-    let string = match fs::read_to_string(toml_path) {
-        Ok(s) => s,
-        Err(_) => return Err(CliError::new(anyhow::format_err!("failed to read toml"), 2)),
-    };
-
-    let toml = match Toml::from(&string) {
-        Ok(t) => t,
-        Err(_) => {
-            return Err(CliError::new(
-                anyhow::format_err!("failed to build toml"),
-                2,
-            ))
-        }
-    };
-
-    let pip_path = get_venv_module_path("pip")?;
-    // Add to the toml file
-    install_dependency(
-        &pip_path,
-        dep,
-        cwd,
-    )?;
-
+    }; 
+     
+    //let cwd = cwd_buff.as_path();
+    let venv = Venv::default();
+    venv.install_package(&dep)?;
+ 
     Ok(())
 }
