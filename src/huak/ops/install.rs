@@ -52,12 +52,12 @@ pub mod tests {
         let venv = project.venv();
 
         venv.uninstall_package("black").unwrap();
-        let black_path = venv.bin_path().join("black");
+        let black_path = venv.module_path("black").unwrap();
         let had_black = black_path.exists();
 
         install_project_dependencies(&project).unwrap();
 
         assert!(!had_black);
-        assert!(venv.bin_path().join("black").exists());
+        assert!(venv.module_path("black").unwrap().exists());
     }
 }
