@@ -56,6 +56,12 @@ impl From<std::io::Error> for CliError {
     }
 }
 
+impl From<reqwest::Error> for CliError {
+    fn from(err: reqwest::Error) -> CliError {
+        CliError::new(err.into(), 1)
+    }
+}
+
 pub fn internal<S: fmt::Display>(error: S) -> anyhow::Error {
     InternalError::new(anyhow::format_err!("{}", error)).into()
 }
