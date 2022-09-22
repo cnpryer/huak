@@ -8,7 +8,11 @@ mod commands;
 
 /// Launch Huak's cli process.
 pub fn main() -> CliResult {
-    let args = commands::args().setting(AppSettings::ArgRequiredElseHelp);
+    let args = commands::args()
+        .version(clap::crate_version!())
+        .author(clap::crate_authors!())
+        .about("A Python package manager written in Rust inspired by Cargo")
+        .setting(AppSettings::ArgRequiredElseHelp);
 
     run(args.get_matches())
 }
