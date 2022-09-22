@@ -4,14 +4,15 @@ use crate::{
     project::{python::PythonProject, Project},
 };
 
+const MODULE: &str = "pytest";
+
 /// Test a project using `pytest`.
 pub fn test_project(project: &Project) -> CliResult {
-    let module = "pytest";
     let args = [];
 
     let venv = project.venv();
 
-    venv.exec_module(module, &args, &project.root)?;
+    venv.exec_module(MODULE, &args, &project.root)?;
 
     Ok(())
 }
