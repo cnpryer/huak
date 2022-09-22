@@ -2,7 +2,7 @@ use super::utils::subcommand;
 use anyhow::Error;
 use clap::Command;
 use glob::{glob, Paths, PatternError};
-use huak::errors::{CliError, CliResult};
+use huak::errors::{CliError, CliErrorCode, CliResult};
 use std::fs::{remove_dir_all, remove_file};
 
 #[derive(Clone, Copy)]
@@ -20,7 +20,7 @@ pub fn cmd() -> Command<'static> {
         .about("Remove all .pyc files and __pycache__ directories.")
 }
 
-pub fn run() -> CliResult {
+pub fn run() -> CliResult<()> {
     let mut success: bool = true;
 
     let mut error: Option<Error> = None;
@@ -69,10 +69,7 @@ pub fn run() -> CliResult {
     if success {
         Ok(())
     } else {
-        Err(CliError {
-            error,
-            exit_code: 2,
-        })
+        Err(CliError::new(CliErrorCode::IOError))
     }
 }
 

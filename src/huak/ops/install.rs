@@ -5,12 +5,11 @@ use crate::{
 };
 
 /// Install all of the projects defined dependencies.
-pub fn install_project_dependencies(project: &Project) -> CliResult {
+pub fn install_project_dependencies(project: &Project) -> CliResult<()> {
     // TODO: Doing this venv handling seems hacky.
     if !project.root.join("pyproject.toml").exists() {
-        return Err(CliError::new(
-            anyhow::format_err!("no pyproject.toml found"),
-            2,
+        return Err(CliError::from(
+            anyhow::format_err!("No pyproject.toml found")
         ));
     }
 

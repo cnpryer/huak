@@ -7,6 +7,7 @@ use huak::{
     errors::{CliError, CliResult},
     project::Project,
 };
+use huak::errors::CliErrorCode;
 
 /// Get the `remove` subcommand.
 pub fn cmd() -> Command<'static> {
@@ -20,13 +21,11 @@ pub fn cmd() -> Command<'static> {
 }
 
 /// Run the `remove` command.
-pub fn run(args: &ArgMatches) -> CliResult {
+pub fn run(args: &ArgMatches) -> CliResult<()> {
     let dependency = match args.get_one::<String>("dependency") {
         Some(d) => d,
         None => {
-            return Err(CliError::new(
-                anyhow::format_err!("no dependency was provided"),
-                2,
+            return Err(CliError::new(CliErrorCode::MissingArguments
             ))
         }
     };

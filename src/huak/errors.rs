@@ -1,58 +1,77 @@
 use std::fmt;
 
 use anyhow::Error;
+use crate::errors::CliErrorCode::{AnyHowError, UnknownError};
+pub type CliResult<T> = std::result::Result<T, CliError>;
 
-/// Generic CLI Result type.
-pub type CliResult = Result<(), CliError>;
+trait BinaryError{}
+
+impl BinaryError for CliErrorCode {}
+impl BinaryError for Error {}
 
 #[derive(Debug)]
-/// The CLI error is the error type used at Huak's CLI-layer.
-///
-/// All errors from the lib side of Huak will get wrapped with this error.
-/// Other errors (such as command-line argument validation) will create this
-/// directly.
+pub enum CliErrorCode {
+    NotImplemented,
+    MissingVirtualEnv,
+    MissingArguments,
+    UnknownError,
+    IOError,
+    UnknownCommand,
+    DirectoryExists,
+    AnyHowError(Error)
+}
+
+#[derive(Debug)]
 pub struct CliError {
-    /// The error to display. This can be `None` in rare cases to exit with a
-    /// code without displaying a message.
-    pub error: Option<anyhow::Error>,
-    /// The process exit code.
-    pub exit_code: i32,
+    pub error: CliErrorCode
 }
 
 impl CliError {
-    /// Initialize a `CliError` with `anyhow`.
-    pub fn new(error: anyhow::Error, code: i32) -> CliError {
+    pub fn new(mut error_code: CliErrorCode) -> CliError {
         CliError {
-            error: Some(error),
-            exit_code: code,
+            error: error_code
         }
     }
+}
 
-    /// Create a `CliError` with an error code.
-    pub fn code(code: i32) -> CliError {
-        CliError {
-            error: None,
-            exit_code: code,
-        }
+impl fmt::Display for CliError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let error_string = match &self.error {
+            MissingArguments => "Some arguments were missing.",
+            IOError => "An IO error occured.",
+            UnknownCommand => "This is an unknown command. Please check --help",
+            DirectoryExists => "This directory already exists/is not empty!",
+            AnyHowError(error ) => "An AnyHow error occured",
+            CliErrorCode::NotImplemented => "This is not implemented.",
+            CliErrorCode::MissingVirtualEnv => "This is missing a virtual environment.",
+            CliErrorCode::UnknownError => "An unknown error was raised. Please file a bug report",
+            _ => "A strange unknown error was raised. Please file a bug report"
+        };
+        write!(f, "{}", error_string)
+    }
+}
+impl From<anyhow::Error> for CliErrorCode {
+    fn from(err: anyhow::Error) -> CliErrorCode {
+        CliErrorCode::AnyHowError(err)
     }
 }
 
 impl From<anyhow::Error> for CliError {
     fn from(err: anyhow::Error) -> CliError {
-        CliError::new(err, 101)
+        CliError::new(CliErrorCode::AnyHowError(err))
     }
 }
 
 impl From<clap::Error> for CliError {
     fn from(err: clap::Error) -> CliError {
         let code = if err.use_stderr() { 1 } else { 0 };
-        CliError::new(err.into(), code)
+        CliError::new(AnyHowError(Error::from(err)))
     }
 }
 
 impl From<std::io::Error> for CliError {
     fn from(err: std::io::Error) -> CliError {
-        CliError::new(err.into(), 1)
+        CliError::new(AnyHowError(Error::from(err)))
     }
 }
 

@@ -18,9 +18,8 @@ pub(crate) fn run_command(
     if code != 0 {
         // TODO: This may be redundent for expected-to-fail commands.
         eprintln!("process stdout and stderr: {}", msg);
-        return Err(CliError::new(
-            anyhow::format_err!("{cmd} exited with {code}"),
-            code,
+        return Err(CliError::from(
+            anyhow::format_err!("{cmd} exited with {code}")
         ));
     }
 
@@ -75,7 +74,7 @@ fn run_command_with_spawn(
     let status = match child.try_wait() {
         Ok(Some(s)) => s,
         Ok(None) => child.wait()?,
-        Err(e) => return Err(CliError::new(anyhow::format_err!(e), 2)),
+        Err(e) => return Err(CliError::from(anyhow::format_err!(e))),
     };
 
     // TODO: Capture through spawn.

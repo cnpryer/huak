@@ -12,7 +12,7 @@ pub fn cmd() -> Command<'static> {
 }
 
 /// Run the `init` command.
-pub fn run() -> CliResult {
+pub fn run() -> CliResult<()> {
     let cwd = env::current_dir()?;
 
     let project = Project::from(cwd)?;

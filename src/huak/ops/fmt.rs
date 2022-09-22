@@ -7,7 +7,7 @@ use crate::{
 const MODULE: &str = "black";
 
 /// Format Python code from the `Project`'s root.
-pub fn fmt_project(project: &Project, is_check: &bool) -> CliResult {
+pub fn fmt_project(project: &Project, is_check: &bool) -> CliResult<()> {
     match is_check {
         true => project.venv().exec_module(
             MODULE,
