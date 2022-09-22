@@ -37,11 +37,11 @@ impl CliError {
 impl fmt::Display for CliError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let error_string = match &self.error {
-            MissingArguments => "Some arguments were missing.",
-            IOError => "An IO error occured.",
-            UnknownCommand => "This is an unknown command. Please check --help",
-            DirectoryExists => "This directory already exists/is not empty!",
-            AnyHowError(error ) => "An AnyHow error occured",
+            CliErrorCode::MissingArguments => "Some arguments were missing.",
+            CliErrorCode::IOError => "An IO error occured.",
+            CliErrorCode::UnknownCommand => "This is an unknown command. Please check --help",
+            CliErrorCode::DirectoryExists => "This directory already exists/is not empty!",
+            CliErrorCode::AnyHowError(error ) => "An AnyHow error occured",
             CliErrorCode::NotImplemented => "This is not implemented.",
             CliErrorCode::MissingVirtualEnv => "This is missing a virtual environment.",
             CliErrorCode::UnknownError => "An unknown error was raised. Please file a bug report",
