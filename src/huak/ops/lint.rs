@@ -10,7 +10,7 @@ pub fn lint_project(project: &Project) -> CliResult {
     let module = "ruff";
 
     // TODO
-    let args = [".", "--exclude", project.venv().name()?];
+    let args = [".", "--extend-exclude", project.venv().name()?];
 
     project.venv().exec_module(module, &args, &project.root)?;
 
