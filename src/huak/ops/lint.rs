@@ -4,15 +4,13 @@ use crate::{
     project::{python::PythonProject, Project},
 };
 
-/// Lint the project using `ruff`.
-pub fn lint_project(project: &Project) -> CliResult {
-    // Use the `ruff` module for now.
-    let module = "ruff";
+const MODULE: &str = "ruff";
 
-    // TODO
+/// Lint the project from its root.
+pub fn lint_project(project: &Project) -> CliResult {
     let args = [".", "--extend-exclude", project.venv().name()?];
 
-    project.venv().exec_module(module, &args, &project.root)?;
+    project.venv().exec_module(MODULE, &args, &project.root)?;
 
     Ok(())
 }

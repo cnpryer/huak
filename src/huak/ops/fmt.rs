@@ -4,18 +4,18 @@ use crate::{
     project::{python::PythonProject, Project},
 };
 
+const MODULE: &str = "black";
+
 /// Format Python code from the `Project`'s root.
-// TODO: From root or cwd?
 pub fn fmt_project(project: &Project, is_check: &bool) -> CliResult {
-    // Run `black` with or without --check.
     match is_check {
         true => project.venv().exec_module(
-            "black",
+            MODULE,
             &[".", "--line-length", "79", "--check"],
             &project.root,
         )?,
         false => project.venv().exec_module(
-            "black",
+            MODULE,
             &[".", "--line-length", "79"],
             &project.root,
         )?,
@@ -47,7 +47,7 @@ mod tests {
         let project = create_mock_project(project_path.clone()).unwrap();
         project
             .venv()
-            .exec_module("pip", &["install", "black"], &project.root)
+            .exec_module("pip", &["install", MODULE], &project.root)
             .unwrap();
 
         let fmt_filepath = project
