@@ -1,14 +1,14 @@
 //! The `huak` application.
 //!
 //! Huak implements a cli application with various subcommands.
-use clap::{self, ArgMatches};
+use clap::{self, AppSettings, ArgMatches};
 use huak::errors::{CliError, CliResult};
 
 mod commands;
 
 /// Launch Huak's cli process.
 pub fn main() -> CliResult {
-    let args = commands::args();
+    let args = commands::args().setting(AppSettings::ArgRequiredElseHelp);
 
     run(args.get_matches())
 }
