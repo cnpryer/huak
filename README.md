@@ -39,7 +39,7 @@ A PoC and an 0.1.0 are expected.
 
 During the [PoC phase](https://github.com/cnpryer/huak/milestones) you'll need to explicitly install the latest pre-release available.
 
-`❯ cargo install --version` [![crates.io](https://img.shields.io/crates/v/huak.svg)](https://crates.io/crates/huak)
+`❯ cargo install --version` [![crates.io](https://img.shields.io/crates/v/huak.svg?label="")](https://crates.io/crates/huak)
 
 
 Around 0.1.0 you'll be able to install `huak` using `brew` or `pip`. Distribution plans will be finalized closer to 0.1.0.
