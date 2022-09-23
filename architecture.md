@@ -49,13 +49,13 @@ The project is distributed for use. This can be publishing to a registry or simp
 
 Currently the project is structured using the following components:
 
-```
-.
+```bash
+src
 ├── bin  # CLI binary `huak`
 │   ├── commands  # Application subcommand layer
 │   │   └── ...
 │   └── main  # Main application
-└── lib
+└── huak  # Huak's library
     ├── config  # Configuration formats
     ├── env  # Environment contexts
     ├── ops  # Huak operation implementation layer
