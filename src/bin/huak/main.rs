@@ -2,7 +2,7 @@
 //!
 //! Huak implements a cli application with various subcommands.
 use clap::{self, ArgMatches};
-use huak::errors::{CliError, CliErrorCode, CliResult};
+use huak::errors::{CliError, CliErrorType, CliResult};
 
 mod commands;
 
@@ -13,7 +13,7 @@ pub fn main() {
     let res = run(args.get_matches());
     match res {
         Ok(_) => (),
-        Err(err) => eprintln!("{}", err)
+        Err(err) => eprintln!("{}", err),
     }
 }
 
@@ -38,6 +38,6 @@ fn run(args: ArgMatches) -> CliResult<()> {
         Some(("update", subargs)) => commands::update::run(subargs),
         Some(("test", _)) => commands::test::run(),
         Some(("version", _)) => commands::version::run(),
-        _ => Err(CliError::new(CliErrorCode::UnknownCommand)),
+        _ => Err(CliError::new(CliErrorType::UnknownCommand)),
     }
 }

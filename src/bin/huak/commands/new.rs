@@ -3,7 +3,7 @@ use std::fs;
 
 use super::utils::subcommand;
 use clap::{arg, value_parser, ArgMatches, Command};
-use huak::errors::{CliError, CliErrorCode, CliResult};
+use huak::errors::{CliError, CliErrorType, CliResult};
 use huak::ops;
 use huak::project::Project;
 
@@ -29,14 +29,12 @@ pub fn run(args: &ArgMatches) -> CliResult<()> {
 
     // Make sure there isn't already a path we would override.
     if path.exists() && path != cwd {
-        return Err(CliError::new(CliErrorCode::DirectoryExists
-        ));
+        return Err(CliError::new(CliErrorType::DirectoryExists));
     }
 
     // If the current directory is used it must be empty. User should use init.
     if path == cwd && path.read_dir()?.count() > 0 {
-        return Err(CliError::new(CliErrorCode::DirectoryExists
-        ));
+        return Err(CliError::new(CliErrorType::DirectoryExists));
     }
 
     // Create project directory.

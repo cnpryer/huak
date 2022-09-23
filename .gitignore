@@ -11,7 +11,4 @@ Cargo.lock
 
 .venv
 
-.github
-.cargo
 .idea
-/docs

@@ -2,12 +2,12 @@ use std::env;
 
 use super::utils::subcommand;
 use clap::{value_parser, Arg, ArgMatches, Command};
+use huak::errors::CliErrorType;
 use huak::ops;
 use huak::{
     errors::{CliError, CliResult},
     project::Project,
 };
-use huak::errors::CliErrorCode;
 
 /// Get the `remove` subcommand.
 pub fn cmd() -> Command<'static> {
@@ -24,10 +24,7 @@ pub fn cmd() -> Command<'static> {
 pub fn run(args: &ArgMatches) -> CliResult<()> {
     let dependency = match args.get_one::<String>("dependency") {
         Some(d) => d,
-        None => {
-            return Err(CliError::new(CliErrorCode::MissingArguments
-            ))
-        }
+        None => return Err(CliError::new(CliErrorType::MissingArguments)),
     };
     let cwd = env::current_dir()?;
     let project = Project::from(cwd)?;
