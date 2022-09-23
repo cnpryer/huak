@@ -12,7 +12,7 @@ pub fn main() {
 
     let res = run(args.get_matches());
     match res {
-        Ok(_) => println!("Exited correctly."),
+        Ok(_) => (),
         Err(err) => eprintln!("{}", err)
     }
 }
