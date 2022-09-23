@@ -2,7 +2,10 @@
 name = "mock_project"
 version = "0.0.1"
 description = ""
-authors = [""]
+
+[[project.authors]]
+name = "Chris Pryer"
+email = "cnpryer@gmail.com"
 
 [project.dependencies]
 click = "8.1.3"
