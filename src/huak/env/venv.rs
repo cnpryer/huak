@@ -149,11 +149,8 @@ impl PythonEnvironment for Venv {
         dependency: &PythonPackage,
     ) -> Result<(), CliError> {
         let cwd = env::current_dir()?;
-        let module_str = match dependency.version.is_empty() {
-            true => dependency.name.to_string(),
-            false => format!("{}=={}", dependency.name, dependency.version),
-        };
-        let args = ["install", &module_str];
+        let module_str = &dependency.string();
+        let args = ["install", module_str];
         let module = "pip";
 
         self.exec_module(module, &args, cwd.as_path())?;

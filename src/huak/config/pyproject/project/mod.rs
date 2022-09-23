@@ -1,16 +1,4 @@
 use serde_derive::{Deserialize, Serialize};
-use toml::value::{Map, Value};
-
-/// Struct containing dependency information.
-/// ```toml
-/// name = version
-/// ```
-#[allow(dead_code)]
-#[derive(Clone, Deserialize, Debug)]
-pub(crate) struct Dependency {
-    pub(crate) name: String,
-    pub(crate) version: String,
-}
 
 /// Struct containing Author information.
 /// ```toml
@@ -37,10 +25,8 @@ pub(crate) struct Project {
     pub(crate) name: String,
     pub(crate) version: String,
     pub(crate) description: String,
+    pub(crate) dependencies: Vec<String>,
     pub(crate) authors: Vec<Author>,
-    pub(crate) dependencies: Map<String, Value>,
-    #[serde(rename = "dev-dependencies")]
-    pub(crate) dev_dependencies: Map<String, Value>,
 }
 
 impl Default for Project {
@@ -50,8 +36,7 @@ impl Default for Project {
             version: "0.0.1".to_string(),
             description: "".to_string(),
             authors: vec![],
-            dependencies: Map::new(),
-            dev_dependencies: Map::new(),
+            dependencies: vec![],
         }
     }
 }
