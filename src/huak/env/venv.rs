@@ -10,7 +10,7 @@ use crate::{
 
 use super::python::PythonEnvironment;
 
-const DEFUALT_SEARCH_STEPS: usize = 5;
+const DEFAULT_SEARCH_STEPS: usize = 5;
 pub(crate) const DEFAULT_VENV_NAME: &str = ".venv";
 pub(crate) const BIN_NAME: &str = "bin";
 pub(crate) const WINDOWS_BIN_NAME: &str = "Scripts";
@@ -36,7 +36,7 @@ impl Venv {
         // TODO: Redundancy.
         for name in &names {
             if let Ok(Some(path)) =
-                search_parents_for_filepath(from, name, DEFUALT_SEARCH_STEPS)
+                search_parents_for_filepath(from, name, DEFAULT_SEARCH_STEPS)
             {
                 return Ok(Venv::new(path));
             };

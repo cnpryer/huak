@@ -2,7 +2,7 @@
 
 This document is constantly changing while Huak is fresh.
 
-As I become more comfortable with Rust and knowledgeable of the packaging domain, I'll flesh out the general design for Huak more concretely. Until then I want to leave its design open to influence.
+As I become more comfortable with Rust and knowledgeable of the packaging domain, I'll flesh out the general design for Huak more concretely. Until then, I want to leave its design open to influence.
 
 - [Design](#design)
   - [Project Workflows](#linear-project-workflows)
@@ -11,7 +11,7 @@ As I become more comfortable with Rust and knowledgeable of the packaging domain
 
 ## Design
 
-Currently this only covers high level influence for design of the project.
+Currently, this only covers high level influence for design of the project.
 
 ### Linear project workflows
 
@@ -27,11 +27,11 @@ graph LR
 
 #### 1. Project Bootstrap
 
-Quick and easy initilization of a project with opinions on topics like structure and configuration.
+Quick and easy initialization of a project with opinions on topics like structure and configuration.
 
 #### 2. Project Setup
 
-Adding dependencies, various metadata, etc.. The setup phase is vague but prepares the project for the following steps.
+Adding dependencies, various metadata, etc. The setup phase is vague but prepares the project for the following steps.
 
 #### 3. Project Change
 
@@ -47,7 +47,7 @@ The project is distributed for use. This can be publishing to a registry or simp
 
 ## The Code
 
-Currently the project is structured using the following components:
+Currently, the project is structured using the following components:
 
 ```bash
 src
@@ -66,4 +66,4 @@ src
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md).
+See [CONTRIBUTING.md](/docs/CONTRIBUTING.md).

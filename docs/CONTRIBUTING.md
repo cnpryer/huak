@@ -6,7 +6,7 @@ You can contribute to Huak by checking for unassigned issues on our [issue board
 
 ## Communication
 
-You can reach out to me on discord at cnpryer#6201 if you have any questions. Otherwise please feel free to [start a discussion](https://github.com/cnpryer/huak/discussions/new) or [open an issue](https://github.com/cnpryer/huak/issues/new/).
+You can reach out to me on discord at cnpryer#6201 if you have any questions. Otherwise, please feel free to [start a discussion](https://github.com/cnpryer/huak/discussions/new) or [open an issue](https://github.com/cnpryer/huak/issues/new/).
 
 ## Testing
 
@@ -14,7 +14,7 @@ During the early stages of Huak's development, we'll use `cargo test -- --test-t
 
 Since we are using a hacky .venv testing strategy, you'll want to run tests using a `HUAK_MUTE_COMMAND` environment variable.
 
-We set `--test-threads=1` in .cargo/config.toml so we can just run:
+We set `--test-threads=1` in .cargo/config.toml, so we can just run:
 
 ```console
 $ HUAK_MUTE_COMMAND=True cargo test
