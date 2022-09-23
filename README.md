@@ -37,14 +37,13 @@ See either **[this milestone list](https://github.com/cnpryer/huak/milestones)**
 
 A PoC and an 0.1.0 are expected.
 
-- **During the PoC phase**, clone the repository and build the release with `cargo build --release` or use `cargo install --path .` to install the CLI binary to your system.
-- **As 0.1.0 is finished up**, install with `cargo install huak`.
-- At some point you will be able to:
-  - `brew install huak`
-  - `pip install huak`
-  - Use GitHub release artifacts
+During the [PoC phase](https://github.com/cnpryer/huak/milestones) you'll need to explicitly install the latest pre-release available.
 
-Distribution plans will be finalized closer to 0.1.0.
+```
+❯ cargo install --version 0.0.3-alpha.1
+```
+
+Around 0.1.0 you'll be able to install `huak` using `brew` or `pip`. Distribution plans will be finalized closer to 0.1.0.
 
 ```
 ❯ huak help
