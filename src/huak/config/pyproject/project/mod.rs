@@ -20,8 +20,8 @@ pub(crate) struct Dependency {
 /// ```
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub(crate) struct Author {
-    pub(crate) name: String,
-    pub(crate) email: String,
+    pub(crate) name: Option<String>,
+    pub(crate) email: Option<String>,
 }
 
 /// Project table data.

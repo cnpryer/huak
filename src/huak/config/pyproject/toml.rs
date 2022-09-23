@@ -103,6 +103,6 @@ build-backend = "huak.core.build.api"
         let toml = Toml::from(string).unwrap();
 
         assert_eq!(toml.project.name, "Test");
-        assert_eq!(toml.project.authors[0].name, "Chris Pryer")
+        assert_eq!(toml.project.authors[0].clone().name.unwrap(), "Chris Pryer")
     }
 }
