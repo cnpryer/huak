@@ -21,10 +21,7 @@ pub(crate) mod utils;
 pub(crate) mod version;
 
 pub fn args() -> Command<'static> {
-    let mut app = Command::new("huak")
-        .version(clap::crate_version!())
-        .author(clap::crate_authors!())
-        .about("A Python package manager written in Rust inspired by Cargo");
+    let mut app = Command::new("huak");
 
     let subcommands = vec![
         activate::cmd(),
