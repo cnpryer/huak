@@ -30,7 +30,7 @@ pub struct CliError {
 }
 
 impl CliError {
-    pub fn new(mut error: CliErrorType) -> CliError {
+    pub fn new(error: CliErrorType) -> CliError {
         CliError { error }
     }
 }
@@ -65,7 +65,6 @@ impl fmt::Display for CliError {
             CliErrorType::RuffError(error) => error.as_str(),
             CliErrorType::PyBlackError(error) => error.as_str(),
             CliErrorType::PyTest(error) => error.as_str(),
-            _ => "A strange unknown error was raised. Please file a bug report",
         };
         write!(f, "{}", error_string)
     }
@@ -84,7 +83,6 @@ impl From<anyhow::Error> for CliError {
 
 impl From<clap::Error> for CliError {
     fn from(err: clap::Error) -> CliError {
-        let code = if err.use_stderr() { 1 } else { 0 };
         CliError::new(CliErrorType::AnyHowError(Error::from(err)))
     }
 }

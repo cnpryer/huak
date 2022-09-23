@@ -23,7 +23,7 @@ pub fn cmd() -> Command<'static> {
 pub fn run() -> CliResult<()> {
     let mut success: bool = true;
 
-    let mut error: Option<Error> = None;
+    let mut _error: Option<Error> = None;
     for i in get_delete_patterns() {
         let files: Result<Paths, PatternError> = glob(&i.glob);
 
@@ -39,7 +39,7 @@ pub fn run() -> CliResult<()> {
                                         Ok(_) => (),
                                         Err(e) => {
                                             file_level_success = false;
-                                            error = Some(Error::new(e));
+                                            _error = Some(Error::new(e));
                                         }
                                     }
                                 }
@@ -47,13 +47,13 @@ pub fn run() -> CliResult<()> {
                                     Ok(_) => (),
                                     Err(e) => {
                                         file_level_success = false;
-                                        error = Some(Error::new(e));
+                                        _error = Some(Error::new(e));
                                     }
                                 },
                             },
                             Err(e) => {
                                 file_level_success = false;
-                                error = Some(Error::new(e))
+                                _error = Some(Error::new(e))
                             }
                         }
                     }
