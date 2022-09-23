@@ -37,14 +37,12 @@ See either **[this milestone list](https://github.com/cnpryer/huak/milestones)**
 
 A PoC and an 0.1.0 are expected.
 
-- **During the PoC phase**, clone the repository and build the release with `cargo build --release` or use `cargo install --path .` to install the CLI binary to your system.
-- **As 0.1.0 is finished up**, install with `cargo install huak`.
-- At some point you will be able to:
-  - `brew install huak`
-  - `pip install huak`
-  - Use GitHub release artifacts
+During the [PoC phase](https://github.com/cnpryer/huak/milestones) you'll need to explicitly install the latest pre-release available.
 
-Distribution plans will be finalized closer to 0.1.0.
+`❯ cargo install --version` [![crates.io](https://img.shields.io/crates/v/huak.svg)](https://crates.io/crates/huak)
+
+
+Around 0.1.0 you'll be able to install `huak` using `brew` or `pip`. Distribution plans will be finalized closer to 0.1.0.
 
 ```
 ❯ huak help
@@ -114,7 +112,7 @@ JavaScript has seen a "Going Rust" sub-community pop up. Python seems to be gett
 
 ## Contributing
 
-Please read our [contributing guide](./CONTRIBUTING.md) before you start contributing.
+Please read our [contributing guide](./CONTRIBUTING.md) before you start contributing. We also have [![discord](https://img.shields.io/discord/1022879330470199347?color=7289DA&logo=discord&style=plastic)](https://discord.gg/St3menxFZT) for more interactive assistance.
 
 ## Architecture and Design
 
