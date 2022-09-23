@@ -4,7 +4,7 @@ use crate::project::Project;
 
 use super::project_utils;
 
-/// Create an intialized project (TODO) in an environment.
+/// Create an initialized project (TODO) in an environment.
 pub fn create_project(project: &Project) -> Result<(), anyhow::Error> {
     // TODO: Use available toml from manifest.
     let toml = project_utils::create_toml(project)?;

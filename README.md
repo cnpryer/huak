@@ -11,7 +11,7 @@
 
 </div>
 
-</br>
+<br>
 
 ## About
 
@@ -114,8 +114,8 @@ JavaScript has seen a "Going Rust" sub-community pop up. Python seems to be gett
 
 ## Contributing
 
-Please read our [contributing guide](./CONTRIBUTING.md) before you start contributing. We also have [![discord](https://img.shields.io/discord/1022879330470199347?color=7289DA&logo=discord&style=plastic)](https://discord.gg/St3menxFZT) for more interactive assistance.
+Please read our [contributing guide](/docs/CONTRIBUTING.md) before you start contributing.
 
 ## Architecture and Design
 
-See [architecture.md](./architecture.md).
+See [architecture.md](/docs/architecture.md).
