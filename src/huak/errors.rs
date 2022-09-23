@@ -22,6 +22,7 @@ pub enum CliErrorType {
     RuffError(String),
     PyBlackError(String),
     PyTest(String),
+    PythonNotFound,
 }
 
 #[derive(Debug)]
@@ -65,6 +66,10 @@ impl fmt::Display for CliError {
             CliErrorType::RuffError(error) => error.as_str(),
             CliErrorType::PyBlackError(error) => error.as_str(),
             CliErrorType::PyTest(error) => error.as_str(),
+            CliErrorType::PythonNotFound => {
+                "Python was not found on your operating system. \
+                Please install Python at https://www.python.org/"
+            }
         };
         write!(f, "{}", error_string)
     }
