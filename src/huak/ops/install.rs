@@ -14,11 +14,7 @@ pub fn install_project_dependencies(project: &Project) -> CliResult {
         ));
     }
 
-    for dependency in &project.config().dependency_list("main") {
-        project.venv().install_package(dependency)?;
-    }
-
-    for dependency in &project.config().dependency_list("dev") {
+    for dependency in &project.config().dependency_list() {
         project.venv().install_package(dependency)?;
     }
 
@@ -52,12 +48,12 @@ pub mod tests {
         let venv = project.venv();
 
         venv.uninstall_package("black").unwrap();
-        let black_path = venv.bin_path().join("black");
+        let black_path = venv.module_path("black").unwrap();
         let had_black = black_path.exists();
 
         install_project_dependencies(&project).unwrap();
 
         assert!(!had_black);
-        assert!(venv.bin_path().join("black").exists());
+        assert!(venv.module_path("black").unwrap().exists());
     }
 }

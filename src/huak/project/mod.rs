@@ -19,12 +19,13 @@ impl Project {
     /// at the path, then we search for a manifest and set the project root
     /// if it's found.
     pub fn from(path: PathBuf) -> Result<Project, anyhow::Error> {
+        // TODO: Builder.
         let config = Config::from(&path)?;
-        let venv = match Venv::find(&path) {
+        let venv = match Venv::from(&path) {
             Ok(v) => v,
             Err(e) => {
                 eprintln!("{}", e);
-                eprint!("initializing project with default .venv");
+                eprintln!("initializing project with default .venv");
 
                 Venv::new(path.join(venv::DEFAULT_VENV_NAME))
             }

@@ -18,7 +18,8 @@ Your issue may already be reported! Please check [issue tracker](../) before cre
   1.
   1.
   
-## Specifications
+## Environment Details
 
  -Huak Version:
  -Operating System:
+ -Rust Version:

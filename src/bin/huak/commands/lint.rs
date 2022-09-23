@@ -10,7 +10,6 @@ pub fn cmd() -> Command<'static> {
 }
 
 /// Run the `lint` command.
-// TODO: Use pyproject.toml or .flake8 to override configuration.
 pub fn run() -> CliResult {
     // This command runs from the context of the cwd.
     let cwd = env::current_dir()?;

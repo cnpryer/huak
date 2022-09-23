@@ -4,15 +4,13 @@ use crate::{
     project::{python::PythonProject, Project},
 };
 
-/// Lint the project using `flake8`.
+const MODULE: &str = "ruff";
+
+/// Lint the project from its root.
 pub fn lint_project(project: &Project) -> CliResult {
-    // Use the `flake` module for now.
-    let module = "flake8";
+    let args = [".", "--extend-exclude", project.venv().name()?];
 
-    // TODO
-    let args = ["--ignore", "E203,W503", "--exclude", project.venv().name()?];
-
-    project.venv().exec_module(module, &args, &project.root)?;
+    project.venv().exec_module(MODULE, &args, &project.root)?;
 
     Ok(())
 }
