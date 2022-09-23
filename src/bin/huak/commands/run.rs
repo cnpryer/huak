@@ -15,7 +15,7 @@ pub fn cmd() -> Command<'static> {
 }
 
 /// Run the `run` command.
-pub fn run(args: &ArgMatches) -> CliResult {
+pub fn run(args: &ArgMatches) -> CliResult<()> {
     let _ = args.get_many::<String>("command");
 
     unimplemented!()

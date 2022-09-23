@@ -7,7 +7,7 @@ use crate::{
 const MODULE: &str = "pytest";
 
 /// Test a project using `pytest`.
-pub fn test_project(project: &Project) -> CliResult {
+pub fn test_project(project: &Project) -> CliResult<()> {
     let args = [];
 
     let venv = project.venv();

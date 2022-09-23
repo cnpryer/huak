@@ -16,7 +16,7 @@ pub fn remove_project_dependency(
 
     // TODO: #109
     if let Err(e) = venv.uninstall_package(dependency) {
-        return Err(anyhow::format_err!(e.error.unwrap()));
+        return Err(anyhow::format_err!(e));
     };
 
     let mut toml = Toml::open(&project.root.join("pyproject.toml"))?;
