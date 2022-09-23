@@ -30,8 +30,8 @@ pub struct CliError {
 }
 
 impl CliError {
-    pub fn new(mut error_code: CliErrorType) -> CliError {
-        CliError { error: error_code }
+    pub fn new(mut error: CliErrorType) -> CliError {
+        CliError { error }
     }
 }
 
