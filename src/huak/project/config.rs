@@ -10,7 +10,7 @@ const DEFAULT_SEARCH_STEPS: usize = 5;
 
 /// Traits for Python-specific configuration.
 pub trait PythonConfig {
-    fn dependency_list(&self, kind: &str) -> Vec<PythonPackage>;
+    fn dependency_list(&self) -> Vec<PythonPackage>;
 }
 
 /// `Manifest` data the configuration uses to manage standard configuration
@@ -97,22 +97,14 @@ impl Config {
 impl PythonConfig for Config {
     // Get vec of dependencies from the manifest.
     // TODO: More than toml.
-    fn dependency_list(&self, kind: &str) -> Vec<PythonPackage> {
+    fn dependency_list(&self) -> Vec<PythonPackage> {
         // Get huak's spanned table found in the Toml.
         let table = &self.manifest.toml.project;
 
         // Dependencies to list from.
-        let from = match kind {
-            "dev" => &table.dev_dependencies,
-            _ => &table.dependencies,
-        };
+        let from = &table.dependencies;
 
         // Collect into vector of owned `PythonPackage` data.
-        from.into_iter()
-            .map(|d| PythonPackage {
-                name: d.0.to_string(),
-                version: d.1.as_str().unwrap().to_string(),
-            })
-            .collect()
+        from.iter().map(|d| PythonPackage::new(d.clone())).collect()
     }
 }

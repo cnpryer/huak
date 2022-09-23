@@ -20,8 +20,9 @@ pub fn remove_project_dependency(
     };
 
     let mut toml = Toml::open(&project.root.join("pyproject.toml"))?;
-    toml.project.dependencies.remove(dependency);
-    toml.project.dev_dependencies.remove(dependency);
+    toml.project
+        .dependencies
+        .retain(|s| !s.starts_with(dependency));
 
     // Serialize pyproject.toml.
     fs::write(&project.root.join("pyproject.toml"), toml.to_string()?)?;
@@ -50,14 +51,24 @@ mod tests {
             create_mock_project(directory.join("mock-project")).unwrap();
         let toml_path = project.root.join("pyproject.toml");
         let toml = Toml::open(&toml_path).unwrap();
-        let had_path = toml.project.dependencies.contains_key("click");
+        let prev = toml
+            .project
+            .dependencies
+            .into_iter()
+            .filter(|s| s.starts_with("click"))
+            .collect::<Vec<String>>();
 
         remove_project_dependency(&project, "click").unwrap();
 
         let toml = Toml::open(&toml_path).unwrap();
-        let has_path = toml.project.dependencies.contains_key("click");
+        let curr = toml
+            .project
+            .dependencies
+            .into_iter()
+            .filter(|s| s.starts_with("click"))
+            .collect::<Vec<String>>();
 
-        assert!(had_path);
-        assert!(!has_path);
+        assert!(!prev.is_empty());
+        assert!(curr.is_empty());
     }
 }

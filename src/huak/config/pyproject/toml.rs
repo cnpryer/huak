@@ -60,14 +60,11 @@ mod tests {
 name = "Test"
 version = "0.1.0"
 description = ""
+dependencies = ["click==8.1.3", "black==22.8.0"]
 
 [[project.authors]]
 name = "Chris Pryer"
 email = "cnpryer@gmail.com"
-
-[project.dependencies]
-
-[project.dev-dependencies]
 
 [build-system]
 requires = ["huak-core>=1.0.0"]
@@ -87,14 +84,11 @@ build-backend = "huak.core.build.api"
 name = "Test"
 version = "0.1.0"
 description = ""
+dependencies = ["click==8.1.3", "black==22.8.0"]
 
 [[project.authors]]
 name = "Chris Pryer"
 email = "cnpryer@gmail.com"
-
-[project.dependencies]
-
-[project.dev-dependencies]
 
 [build-system]
 requires = ["huak-core>=1.0.0"]
