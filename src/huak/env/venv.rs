@@ -64,9 +64,9 @@ impl Venv {
         let from = match self.path.parent() {
             Some(p) => p,
             _ => {
-                return Err(CliError::from(
-                    anyhow::format_err!("Invalid venv path")
-                ))
+                return Err(CliError::from(anyhow::format_err!(
+                    "Invalid venv path"
+                )))
             }
         };
 

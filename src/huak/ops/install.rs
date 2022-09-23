@@ -8,9 +8,9 @@ use crate::{
 pub fn install_project_dependencies(project: &Project) -> CliResult<()> {
     // TODO: Doing this venv handling seems hacky.
     if !project.root.join("pyproject.toml").exists() {
-        return Err(CliError::from(
-            anyhow::format_err!("No pyproject.toml found")
-        ));
+        return Err(CliError::from(anyhow::format_err!(
+            "No pyproject.toml found"
+        )));
     }
 
     for dependency in &project.config().dependency_list() {

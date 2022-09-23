@@ -45,15 +45,23 @@ impl fmt::Display for CliError {
         let error_string = match &self.error {
             CliErrorType::MissingArguments => "Some arguments were missing.",
             CliErrorType::IOError => "An IO error occurred.",
-            CliErrorType::UnknownCommand => "This is an unknown command. Please check --help",
-            CliErrorType::DirectoryExists => "This directory already exists/is not empty!",
+            CliErrorType::UnknownCommand => {
+                "This is an unknown command. Please check --help"
+            }
+            CliErrorType::DirectoryExists => {
+                "This directory already exists/is not empty!"
+            }
             CliErrorType::AnyHowError(anyhow_error) => {
                 binding = format!("AnyHow Error: {}", anyhow_error);
                 binding.as_str()
             }
             CliErrorType::NotImplemented => "This is not implemented.",
-            CliErrorType::MissingVirtualEnv => "This is missing a virtual environment.",
-            CliErrorType::UnknownError => "An unknown error was raised. Please file a bug report",
+            CliErrorType::MissingVirtualEnv => {
+                "This is missing a virtual environment."
+            }
+            CliErrorType::UnknownError => {
+                "An unknown error was raised. Please file a bug report"
+            }
             CliErrorType::RuffError(error) => error.as_str(),
             CliErrorType::PyBlackError(error) => error.as_str(),
             CliErrorType::PyTest(error) => error.as_str(),

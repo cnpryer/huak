@@ -18,9 +18,9 @@ pub(crate) fn run_command(
     if code != 0 {
         // TODO: This may be redundent for expected-to-fail commands.
         eprintln!("process stdout and stderr: {}", msg);
-        return Err(CliError::from(
-            anyhow::format_err!("{cmd} exited with {code}")
-        ));
+        return Err(CliError::from(anyhow::format_err!(
+            "{cmd} exited with {code}"
+        )));
     }
 
     Ok((code, msg))
