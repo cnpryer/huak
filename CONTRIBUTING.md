@@ -24,7 +24,7 @@ Note that since we are dedicating a `.venv` to testing Huak, you should expect t
 
 ## Making a contribution
 
-We follow the standard [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow) when making contributions to Huak.
+We follow the standard [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow) when making contributions to Huak. Digital Ocean published another great resource for [getting started with open source](https://www.digitalocean.com/community/tutorial_series/an-introduction-to-open-source).
 
 Please make sure your PR is associated with an issue. Create one [here](https://github.com/cnpryer/huak/issues/new).
 
