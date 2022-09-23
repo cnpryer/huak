@@ -60,11 +60,11 @@ mod tests {
 name = "Test"
 version = "0.1.0"
 description = ""
-authors = []
+dependencies = ["click==8.1.3", "black==22.8.0"]
 
-[project.dependencies]
-
-[project.dev-dependencies]
+[[project.authors]]
+name = "Chris Pryer"
+email = "cnpryer@gmail.com"
 
 [build-system]
 requires = ["huak-core>=1.0.0"]
@@ -72,7 +72,10 @@ build-backend = "huak.core.build.api"
 "#;
         let toml = Toml::from(string).unwrap();
 
-        assert_eq!(toml.to_string().unwrap(), string);
+        let res = toml.to_string().unwrap();
+        dbg!(&res);
+
+        assert_eq!(res, string);
     }
 
     #[test]
@@ -81,11 +84,11 @@ build-backend = "huak.core.build.api"
 name = "Test"
 version = "0.1.0"
 description = ""
-authors = []
+dependencies = ["click==8.1.3", "black==22.8.0"]
 
-[project.dependencies]
-
-[project.dev-dependencies]
+[[project.authors]]
+name = "Chris Pryer"
+email = "cnpryer@gmail.com"
 
 [build-system]
 requires = ["huak-core>=1.0.0"]
@@ -94,5 +97,6 @@ build-backend = "huak.core.build.api"
         let toml = Toml::from(string).unwrap();
 
         assert_eq!(toml.project.name, "Test");
+        assert_eq!(toml.project.authors[0].clone().name.unwrap(), "Chris Pryer")
     }
 }

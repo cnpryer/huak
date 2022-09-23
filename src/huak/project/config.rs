@@ -5,12 +5,12 @@ use crate::config::pyproject::toml::Toml;
 use crate::package::python::PythonPackage;
 use crate::utils;
 
-// TODO: Env/programatically.
+// TODO: Env/programmatically.
 const DEFAULT_SEARCH_STEPS: usize = 5;
 
 /// Traits for Python-specific configuration.
 pub trait PythonConfig {
-    fn dependency_list(&self, kind: &str) -> Vec<PythonPackage>;
+    fn dependency_list(&self) -> Vec<PythonPackage>;
 }
 
 /// `Manifest` data the configuration uses to manage standard configuration
@@ -24,7 +24,7 @@ pub struct Manifest {
 
 impl Manifest {
     /// Initialize a `Manifest` from a `path` pointing to a manifest file.
-    /// Use `new()` to intitate from files including: pyproject.toml.
+    /// Use `new()` to initiate from files including: pyproject.toml.
     // TODO: More than just toml.
     fn new(path: PathBuf) -> Result<Manifest, anyhow::Error> {
         // TODO
@@ -48,7 +48,7 @@ pub struct Config {
 impl Config {
     /// Initialize a `Config` by scanning a directory for configuration files like pyproject.toml.
     // TODO:
-    //       - Improve scan. Initialy `new` will only expect pyproject.toml at the root of `from`.
+    //       - Improve scan. Initially `new` will only expect pyproject.toml at the root of `from`.
     //       - Add other setup file types like requirements.txt.
     pub fn from(path: &Path) -> Result<Config, anyhow::Error> {
         let manifest_path = utils::path::search_parents_for_filepath(
@@ -97,22 +97,14 @@ impl Config {
 impl PythonConfig for Config {
     // Get vec of dependencies from the manifest.
     // TODO: More than toml.
-    fn dependency_list(&self, kind: &str) -> Vec<PythonPackage> {
+    fn dependency_list(&self) -> Vec<PythonPackage> {
         // Get huak's spanned table found in the Toml.
         let table = &self.manifest.toml.project;
 
         // Dependencies to list from.
-        let from = match kind {
-            "dev" => &table.dev_dependencies,
-            _ => &table.dependencies,
-        };
+        let from = &table.dependencies;
 
         // Collect into vector of owned `PythonPackage` data.
-        from.into_iter()
-            .map(|d| PythonPackage {
-                name: d.0.to_string(),
-                version: d.1.as_str().unwrap().to_string(),
-            })
-            .collect()
+        from.iter().map(|d| PythonPackage::new(d.clone())).collect()
     }
 }

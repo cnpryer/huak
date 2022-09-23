@@ -97,11 +97,11 @@
 
 //!## Contributing
 
-//!Please read our [contributing guide](./CONTRIBUTING.md) before you start contributing.
+//!Please read our [contributing guide](/docs/CONTRIBUTING.md) before you start contributing.
 
 //!## Architecture and Design
 
-//!See [architecture.md](./architecture.md).
+//!See [architecture.md](/docs/architecture.md).
 
 /// Configuration formats for structures and contexts.
 pub mod config;

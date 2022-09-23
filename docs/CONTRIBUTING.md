@@ -6,7 +6,7 @@ You can contribute to Huak by checking for unassigned issues on our [issue board
 
 ## Communication
 
-You can reach out to me on discord at cnpryer#6201 if you have any questions. Otherwise please feel free to [start a discussion](https://github.com/cnpryer/huak/discussions/new) or [open an issue](https://github.com/cnpryer/huak/issues/new/).
+You can reach out to me on discord at cnpryer#6201 if you have any questions. Otherwise, please feel free to [start a discussion](https://github.com/cnpryer/huak/discussions/new) or [open an issue](https://github.com/cnpryer/huak/issues/new/).
 
 ## Testing
 
@@ -14,7 +14,7 @@ During the early stages of Huak's development, we'll use `cargo test -- --test-t
 
 Since we are using a hacky .venv testing strategy, you'll want to run tests using a `HUAK_MUTE_COMMAND` environment variable.
 
-We set `--test-threads=1` in .cargo/config.toml so we can just run:
+We set `--test-threads=1` in .cargo/config.toml, so we can just run:
 
 ```console
 $ HUAK_MUTE_COMMAND=True cargo test
@@ -24,7 +24,7 @@ Note that since we are dedicating a `.venv` to testing Huak, you should expect t
 
 ## Making a contribution
 
-We follow the standard [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow) when making contributions to Huak.
+We follow the standard [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow) when making contributions to Huak. Digital Ocean published another great resource for [getting started with open source](https://www.digitalocean.com/community/tutorial_series/an-introduction-to-open-source).
 
 Please make sure your PR is associated with an issue. Create one [here](https://github.com/cnpryer/huak/issues/new).
 

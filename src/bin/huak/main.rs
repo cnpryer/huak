@@ -1,14 +1,19 @@
 //! The `huak` application.
 //!
 //! Huak implements a cli application with various subcommands.
-use clap::{self, ArgMatches};
-use huak::errors::{CliError, CliErrorType, CliResult};
+use clap::{self, AppSettings, ArgMatches};
+use huak::errors::{CliError, CliResult};
 
 mod commands;
 
 /// Launch Huak's cli process.
-pub fn main() {
-    let args = commands::args();
+
+pub fn main() -> CliResult {
+    let args = commands::args()
+        .version(clap::crate_version!())
+        .author(clap::crate_authors!())
+        .about("A Python package manager written in Rust inspired by Cargo")
+        .setting(AppSettings::ArgRequiredElseHelp);
 
     let res = run(args.get_matches());
     match res {

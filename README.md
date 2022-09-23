@@ -1,6 +1,7 @@
 [![ci-rust](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml)
 [![ci-python](https://github.com/cnpryer/huak/actions/workflows/ci-python.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci-python.yaml)
 [![crates.io](https://img.shields.io/crates/v/huak.svg)](https://crates.io/crates/huak)
+[![discord](https://img.shields.io/discord/1022879330470199347?color=7289DA&logo=discord&style=plastic)](https://discord.gg/St3menxFZT)
 
 # huak
 
@@ -10,11 +11,13 @@
 
 </div>
 
-</br>
+<br>
 
 ## About
 
 A Python package manager written in Rust. The [Cargo](https://github.com/rust-lang/cargo) for Python.
+
+> ⚠️ Disclaimer: `huak` is currently in its [proof-of-concept (PoC) phase](https://github.com/cnpryer/huak/milestones).
 
 Huak aims to be a snappy package manager for Python, supporting a standard base workflow with bootstrapping, configuration, dependency management, testing, building, and distribution tools. This package manager can be used for Python packages and projects.
 
@@ -36,14 +39,12 @@ See either **[this milestone list](https://github.com/cnpryer/huak/milestones)**
 
 A PoC and an 0.1.0 are expected.
 
-- **During the PoC phase**, clone the repository and build the release with `cargo build --release` or use `cargo install --path .` to install the CLI binary to your system.
-- **As 0.1.0 is finished up**, install with `cargo install huak`.
-- At some point you will be able to:
-  - `brew install huak`
-  - `pip install huak`
-  - Use GitHub release artifacts
+During the [PoC phase](https://github.com/cnpryer/huak/milestones) you'll need to explicitly install the latest pre-release available.
 
-Distribution plans will be finalized closer to 0.1.0.
+`❯ cargo install huak --version` [![crates.io](https://img.shields.io/crates/v/huak.svg?label="")](https://crates.io/crates/huak)
+
+
+Around 0.1.0 you'll be able to install `huak` using `brew` or `pip`. Distribution plans will be finalized closer to 0.1.0.
 
 ```
 ❯ huak help
@@ -113,8 +114,8 @@ JavaScript has seen a "Going Rust" sub-community pop up. Python seems to be gett
 
 ## Contributing
 
-Please read our [contributing guide](./CONTRIBUTING.md) before you start contributing.
+Please read our [contributing guide](/docs/CONTRIBUTING.md) before you start contributing.
 
 ## Architecture and Design
 
-See [architecture.md](./architecture.md).
+See [architecture.md](/docs/architecture.md).

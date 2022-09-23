@@ -2,13 +2,11 @@
 name = "mock_project"
 version = "0.0.1"
 description = ""
-authors = [""]
+dependencies = ["click==8.1.3", "black==22.8.0"]
 
-[project.dependencies]
-click = "8.1.3"
-
-[project.dev-dependencies]
-black = "22.8.0"
+[[project.authors]]
+name = "Chris Pryer"
+email = "cnpryer@gmail.com"
 
 [build-system]
 requires = ["huak-core>=1.0.0"]

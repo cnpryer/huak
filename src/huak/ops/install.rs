@@ -13,11 +13,7 @@ pub fn install_project_dependencies(project: &Project) -> CliResult<()> {
         ));
     }
 
-    for dependency in &project.config().dependency_list("main") {
-        project.venv().install_package(dependency)?;
-    }
-
-    for dependency in &project.config().dependency_list("dev") {
+    for dependency in &project.config().dependency_list() {
         project.venv().install_package(dependency)?;
     }
 
