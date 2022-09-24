@@ -2,7 +2,7 @@
 //!
 //! Huak implements a cli application with various subcommands.
 use clap::{self, AppSettings, ArgMatches};
-use huak::errors::{CliError, CliErrorType, CliResult};
+use huak::errors::{CliError, CliResult, HuakError};
 
 mod commands;
 /// Launch Huak's cli process.
@@ -42,6 +42,6 @@ fn run(args: ArgMatches) -> CliResult<()> {
         Some(("update", subargs)) => commands::update::run(subargs),
         Some(("test", _)) => commands::test::run(),
         Some(("version", _)) => commands::version::run(),
-        _ => Err(CliError::new(CliErrorType::UnknownCommand)),
+        _ => Err(CliError::new(HuakError::UnknownCommand)),
     }
 }
