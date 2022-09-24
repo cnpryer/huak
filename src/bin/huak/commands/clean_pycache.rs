@@ -2,7 +2,7 @@ use super::utils::subcommand;
 use anyhow::Error;
 use clap::Command;
 use glob::{glob, Paths, PatternError};
-use huak::errors::{CliError, CliErrorType, CliResult};
+use huak::errors::{CliError, CliResult, HuakError};
 use std::fs::{remove_dir_all, remove_file};
 
 #[derive(Clone, Copy)]
@@ -69,7 +69,7 @@ pub fn run() -> CliResult<()> {
     if success {
         Ok(())
     } else {
-        Err(CliError::new(CliErrorType::IOError))
+        Err(CliError::new(HuakError::IOError))
     }
 }
 

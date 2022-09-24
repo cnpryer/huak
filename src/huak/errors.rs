@@ -6,11 +6,13 @@ pub type CliResult<T> = std::result::Result<T, CliError>;
 
 trait BinaryError {}
 
-impl BinaryError for CliErrorType {}
+impl BinaryError for HuakError {}
 impl BinaryError for Error {}
 
+// TODO: Slit into different types of errors. This could be
+//       based on behavior, data, tooling, etc.
 #[derive(Debug)]
-pub enum CliErrorType {
+pub enum HuakError {
     NotImplemented,
     MissingVirtualEnv,
     MissingArguments,
@@ -22,16 +24,15 @@ pub enum CliErrorType {
     RuffError(String),
     PyBlackError(String),
     PyTest(String),
-    PythonNotFound,
 }
 
 #[derive(Debug)]
 pub struct CliError {
-    pub error: CliErrorType,
+    pub error: HuakError,
 }
 
 impl CliError {
-    pub fn new(error: CliErrorType) -> CliError {
+    pub fn new(error: HuakError) -> CliError {
         CliError { error }
     }
 }
@@ -44,57 +45,53 @@ impl fmt::Display for CliError {
         let binding: String;
 
         let error_string = match &self.error {
-            CliErrorType::MissingArguments => "Some arguments were missing.",
-            CliErrorType::IOError => "An IO error occurred.",
-            CliErrorType::UnknownCommand => {
+            HuakError::MissingArguments => "Some arguments were missing.",
+            HuakError::IOError => "An IO error occurred.",
+            HuakError::UnknownCommand => {
                 "This is an unknown command. Please check --help"
             }
-            CliErrorType::DirectoryExists => {
+            HuakError::DirectoryExists => {
                 "This directory already exists/is not empty!"
             }
-            CliErrorType::AnyHowError(anyhow_error) => {
+            HuakError::AnyHowError(anyhow_error) => {
                 binding = format!("AnyHow Error: {}", anyhow_error);
                 binding.as_str()
             }
-            CliErrorType::NotImplemented => "This is not implemented.",
-            CliErrorType::MissingVirtualEnv => {
+            HuakError::NotImplemented => "This is not implemented.",
+            HuakError::MissingVirtualEnv => {
                 "This is missing a virtual environment."
             }
-            CliErrorType::UnknownError => {
+            HuakError::UnknownError => {
                 "An unknown error was raised. Please file a bug report"
             }
-            CliErrorType::RuffError(error) => error.as_str(),
-            CliErrorType::PyBlackError(error) => error.as_str(),
-            CliErrorType::PyTest(error) => error.as_str(),
-            CliErrorType::PythonNotFound => {
-                "Python was not found on your operating system. \
-                Please install Python at https://www.python.org/"
-            }
+            HuakError::RuffError(error) => error.as_str(),
+            HuakError::PyBlackError(error) => error.as_str(),
+            HuakError::PyTest(error) => error.as_str(),
         };
         write!(f, "{}", error_string)
     }
 }
-impl From<anyhow::Error> for CliErrorType {
-    fn from(err: anyhow::Error) -> CliErrorType {
-        CliErrorType::AnyHowError(err)
+impl From<anyhow::Error> for HuakError {
+    fn from(err: anyhow::Error) -> HuakError {
+        HuakError::AnyHowError(err)
     }
 }
 
 impl From<anyhow::Error> for CliError {
     fn from(err: anyhow::Error) -> CliError {
-        CliError::new(CliErrorType::AnyHowError(err))
+        CliError::new(HuakError::AnyHowError(err))
     }
 }
 
 impl From<clap::Error> for CliError {
     fn from(err: clap::Error) -> CliError {
-        CliError::new(CliErrorType::AnyHowError(Error::from(err)))
+        CliError::new(HuakError::AnyHowError(Error::from(err)))
     }
 }
 
 impl From<std::io::Error> for CliError {
     fn from(err: std::io::Error) -> CliError {
-        CliError::new(CliErrorType::AnyHowError(Error::from(err)))
+        CliError::new(HuakError::AnyHowError(Error::from(err)))
     }
 }
 

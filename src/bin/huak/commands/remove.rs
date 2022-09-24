@@ -2,7 +2,7 @@ use std::env;
 
 use super::utils::subcommand;
 use clap::{value_parser, Arg, ArgMatches, Command};
-use huak::errors::CliErrorType;
+use huak::errors::HuakError;
 use huak::ops;
 use huak::{
     errors::{CliError, CliResult},
@@ -24,7 +24,7 @@ pub fn cmd() -> Command<'static> {
 pub fn run(args: &ArgMatches) -> CliResult<()> {
     let dependency = match args.get_one::<String>("dependency") {
         Some(d) => d,
-        None => return Err(CliError::new(CliErrorType::MissingArguments)),
+        None => return Err(CliError::new(HuakError::MissingArguments)),
     };
     let cwd = env::current_dir()?;
     let project = Project::from(cwd)?;
