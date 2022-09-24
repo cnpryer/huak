@@ -1,3 +1,5 @@
+/// `add command operations.
+pub mod add;
 /// `clean` command operations.
 pub mod clean;
 /// `fmt` command operations.
