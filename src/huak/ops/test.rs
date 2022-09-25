@@ -14,7 +14,7 @@ pub fn test_project(project: &Project) -> CliResult<()> {
         Ok(_) => Ok(()),
         Err(e) => {
             let code = e.status_code;
-            Err(CliError::new(HuakError::PyBlackError(Box::new(e)), code))
+            Err(CliError::new(HuakError::PyTestError(Box::new(e)), code))
         }
     }
 }
