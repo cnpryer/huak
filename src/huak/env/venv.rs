@@ -132,7 +132,7 @@ impl PythonEnvironment for Venv {
         let module_path = self.module_path(module)?;
 
         if !module_path.exists() {
-            self.install_package(&PythonPackage::new(module.to_string()))?;
+            self.install_package(&PythonPackage::from(module.to_string()))?;
         }
 
         let module_path = crate::utils::path::to_string(module_path.as_path())?;
