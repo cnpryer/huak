@@ -1,7 +1,11 @@
 use super::utils::subcommand;
 use clap::{arg, ArgAction, ArgMatches, Command};
-use huak::{errors::CliResult, ops, project::Project};
-use std::env;
+use huak::{
+    errors::{CliError, CliResult},
+    ops,
+    project::Project,
+};
+use std::{env, process::ExitCode};
 
 /// Get the `fmt` subcommand.
 pub fn cmd() -> Command<'static> {
@@ -21,7 +25,9 @@ pub fn run(args: &ArgMatches) -> CliResult<()> {
     let project = Project::from(cwd)?;
     let is_check = args.get_one::<bool>("check").unwrap();
 
-    ops::fmt::fmt_project(&project, is_check)?;
+    if let Err(e) = ops::fmt::fmt_project(&project, is_check) {
+        return Err(CliError::new(e, ExitCode::FAILURE));
+    };
 
     Ok(())
 }

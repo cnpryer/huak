@@ -1,12 +1,12 @@
 use crate::{
-    errors::{CliError, HuakError},
+    errors::HuakError,
     project::{python::PythonProject, Project},
 };
 
 /// Get the version of a project.
-pub fn get_project_version(project: &Project) -> Result<&str, CliError> {
+pub fn get_project_version(project: &Project) -> Result<&str, HuakError> {
     if !project.root.join("pyproject.toml").exists() {
-        return Err(CliError::new(HuakError::PyProjectTomlNotFound, 1));
+        return Err(HuakError::PyProjectTomlNotFound);
     }
 
     let version = project.config().project_version();

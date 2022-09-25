@@ -1,8 +1,9 @@
 use std::env;
+use std::process::ExitCode;
 
 use super::utils::subcommand;
 use clap::Command;
-use huak::errors::CliResult;
+use huak::errors::{CliError, CliResult};
 use huak::ops;
 use huak::project::Project;
 
@@ -17,7 +18,9 @@ pub fn run() -> CliResult<()> {
 
     let project = Project::from(cwd)?;
 
-    ops::init::init_project(&project)?;
+    if let Err(e) = ops::init::init_project(&project) {
+        return Err(CliError::new(e, ExitCode::FAILURE));
+    };
 
     Ok(())
 }

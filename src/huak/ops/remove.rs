@@ -2,7 +2,7 @@ use std::fs;
 
 use crate::{
     config::pyproject::toml::Toml,
-    errors::{CliError, HuakError},
+    errors::HuakError,
     project::{python::PythonProject, Project},
 };
 
@@ -11,14 +11,19 @@ use crate::{
 pub fn remove_project_dependency(
     project: &Project,
     dependency: &str,
-) -> Result<(), CliError> {
+) -> Result<(), HuakError> {
     let venv = match project.venv() {
         Some(v) => v,
-        _ => return Err(CliError::new(HuakError::VenvNotFound, 1)),
+        _ => return Err(HuakError::VenvNotFound),
     };
 
     // TODO: #109
-    venv.uninstall_package(dependency)?;
+    if venv.uninstall_package(dependency).is_err() {
+        return Err(HuakError::AnyHowError(anyhow::format_err!(
+            "Failed to install {:?}",
+            dependency
+        )));
+    };
 
     let mut toml = Toml::open(&project.root.join("pyproject.toml"))?;
     toml.project
@@ -28,9 +33,12 @@ pub fn remove_project_dependency(
     // Serialize pyproject.toml.
     let string = match toml.to_string() {
         Ok(s) => s,
-        Err(_) => return Err(CliError::new(HuakError::IOError, 1)),
+        Err(_) => return Err(HuakError::IOError),
     };
-    fs::write(&project.root.join("pyproject.toml"), string)?;
+
+    if fs::write(&project.root.join("pyproject.toml"), string).is_err() {
+        return Err(HuakError::IOError);
+    };
 
     Ok(())
 }

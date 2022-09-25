@@ -1,23 +1,20 @@
 use crate::{
-    errors::{CliError, CliResult, HuakError},
+    errors::HuakError,
     project::{python::PythonProject, Project},
 };
 
 const MODULE: &str = "pytest";
 
 /// Test a project using `pytest`.
-pub fn test_project(project: &Project) -> CliResult<()> {
+pub fn test_project(project: &Project) -> Result<(), HuakError> {
     let args = [];
     let venv = match project.venv() {
         Some(v) => v,
-        _ => return Err(CliError::new(HuakError::VenvNotFound, 1)),
+        _ => return Err(HuakError::VenvNotFound),
     };
 
     match venv.exec_module(MODULE, &args, &project.root) {
         Ok(_) => Ok(()),
-        Err(e) => {
-            let code = e.status_code;
-            Err(CliError::new(HuakError::PyTestError(Box::new(e)), code))
-        }
+        Err(e) => Err(HuakError::PyTestError(Box::new(e))),
     }
 }

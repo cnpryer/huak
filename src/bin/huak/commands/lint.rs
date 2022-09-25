@@ -1,8 +1,10 @@
 use super::utils::subcommand;
 use clap::Command;
+use huak::errors::CliError;
 use huak::ops;
 use huak::{errors::CliResult, project::Project};
 use std::env;
+use std::process::ExitCode;
 
 /// Get the `lint` subcommand.
 pub fn cmd() -> Command<'static> {
@@ -15,7 +17,9 @@ pub fn run() -> CliResult<()> {
     let cwd = env::current_dir()?;
     let project = Project::from(cwd)?;
 
-    ops::lint::lint_project(&project)?;
+    if let Err(e) = ops::lint::lint_project(&project) {
+        return Err(CliError::new(e, ExitCode::FAILURE));
+    };
 
     Ok(())
 }

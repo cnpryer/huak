@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, process::ExitCode};
 
 use anyhow::Error;
 
@@ -9,7 +9,7 @@ trait BinaryError {}
 impl BinaryError for HuakError {}
 impl BinaryError for Error {}
 
-const BASIC_ERROR_CODE: i32 = 1;
+const BASIC_ERROR_CODE: ExitCode = ExitCode::FAILURE;
 
 // TODO: Slit into different types of errors. This could be
 //       based on behavior, data, tooling, etc.
@@ -34,12 +34,17 @@ pub enum HuakError {
 #[derive(Debug)]
 pub struct CliError {
     pub error: HuakError,
-    pub status_code: i32,
+    pub exit_code: ExitCode,
+    pub status_code: Option<i32>,
 }
 
 impl CliError {
-    pub fn new(error: HuakError, status_code: i32) -> CliError {
-        CliError { error, status_code }
+    pub fn new(error: HuakError, exit_code: ExitCode) -> CliError {
+        CliError {
+            error,
+            exit_code,
+            status_code: None,
+        }
     }
 }
 

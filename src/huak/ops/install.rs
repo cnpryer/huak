@@ -1,22 +1,33 @@
 use crate::{
-    errors::{CliError, CliResult, HuakError},
+    errors::HuakError,
     project::{config::PythonConfig, python::PythonProject, Project},
 };
 
 /// Install all of the projects defined dependencies.
-pub fn install_project_dependencies(project: &Project) -> CliResult<()> {
+pub fn install_project_dependencies(
+    project: &Project,
+) -> Result<(), HuakError> {
     // TODO: Doing this venv handling seems hacky.
     if !project.root.join("pyproject.toml").exists() {
-        return Err(CliError::new(HuakError::PyProjectTomlNotFound, 1));
+        return Err(HuakError::PyProjectTomlNotFound);
     }
 
     let venv = match project.venv() {
         Some(v) => v,
-        _ => return Err(CliError::new(HuakError::VenvNotFound, 1)),
+        _ => return Err(HuakError::VenvNotFound),
     };
 
     for dependency in &project.config().dependency_list() {
-        venv.install_package(dependency)?;
+        match venv.install_package(dependency) {
+            Ok(_) => (),
+            Err(_) => {
+                // TODO: Level logging for capturing more internal errors.
+                return Err(HuakError::AnyHowError(anyhow::format_err!(
+                    "Failed to install dependency {:?}",
+                    dependency.string()
+                )));
+            }
+        };
     }
 
     Ok(())
