@@ -9,31 +9,36 @@ trait BinaryError {}
 impl BinaryError for HuakError {}
 impl BinaryError for Error {}
 
+const BASIC_ERROR_CODE: i32 = 1;
+
 // TODO: Slit into different types of errors. This could be
 //       based on behavior, data, tooling, etc.
 #[derive(Debug)]
 pub enum HuakError {
     NotImplemented,
-    MissingVirtualEnv,
     MissingArguments,
     UnknownError,
     IOError,
     UnknownCommand,
     DirectoryExists,
     AnyHowError(anyhow::Error),
-    RuffError(String),
-    PyBlackError(String),
-    PyTest(String),
+    // TODO: Abstract out wrapped cli errors.
+    RuffError(Box<CliError>),
+    PyBlackError(Box<CliError>),
+    PyTest(Box<CliError>),
+    PythonNotFound,
+    VenvNotFound,
 }
 
 #[derive(Debug)]
 pub struct CliError {
     pub error: HuakError,
+    pub status_code: i32,
 }
 
 impl CliError {
-    pub fn new(error: HuakError) -> CliError {
-        CliError { error }
+    pub fn new(error: HuakError, status_code: i32) -> CliError {
+        CliError { error, status_code }
     }
 }
 
@@ -48,25 +53,41 @@ impl fmt::Display for CliError {
             HuakError::MissingArguments => "Some arguments were missing.",
             HuakError::IOError => "An IO error occurred.",
             HuakError::UnknownCommand => {
-                "This is an unknown command. Please check --help"
+                "This is an unknown command. Please check --help."
             }
             HuakError::DirectoryExists => {
-                "This directory already exists/is not empty!"
+                "This directory already exists and may not be empty!"
             }
             HuakError::AnyHowError(anyhow_error) => {
                 binding = format!("AnyHow Error: {}", anyhow_error);
                 binding.as_str()
             }
-            HuakError::NotImplemented => "This is not implemented.",
-            HuakError::MissingVirtualEnv => {
-                "This is missing a virtual environment."
+            HuakError::NotImplemented => {
+                "This feature is not implemented. \
+                See https://github.com/cnpryer/huak/milestones."
             }
+            HuakError::VenvNotFound => "No venv was found.",
             HuakError::UnknownError => {
-                "An unknown error was raised. Please file a bug report"
+                "An unknown error occurred. Please file a bug report here \
+                https://github.com/cnpryer/huak/issues/new?\
+                assignees=&labels=bug&template=BUG_REPORT.md&title="
             }
-            HuakError::RuffError(error) => error.as_str(),
-            HuakError::PyBlackError(error) => error.as_str(),
-            HuakError::PyTest(error) => error.as_str(),
+            HuakError::RuffError(err) => {
+                binding = format!("Ruff Error: {err}");
+                binding.as_str()
+            }
+            HuakError::PyBlackError(err) => {
+                binding = format!("Black Error: {err}");
+                binding.as_str()
+            }
+            HuakError::PyTest(err) => {
+                binding = format!("Pytest Error: {err}");
+                binding.as_str()
+            }
+            HuakError::PythonNotFound => {
+                "Python was not found on your operating system. \
+                Please install Python at https://www.python.org/."
+            }
         };
         write!(f, "{}", error_string)
     }
@@ -79,19 +100,25 @@ impl From<anyhow::Error> for HuakError {
 
 impl From<anyhow::Error> for CliError {
     fn from(err: anyhow::Error) -> CliError {
-        CliError::new(HuakError::AnyHowError(err))
+        CliError::new(HuakError::AnyHowError(err), BASIC_ERROR_CODE)
     }
 }
 
 impl From<clap::Error> for CliError {
     fn from(err: clap::Error) -> CliError {
-        CliError::new(HuakError::AnyHowError(Error::from(err)))
+        CliError::new(
+            HuakError::AnyHowError(Error::from(err)),
+            BASIC_ERROR_CODE,
+        )
     }
 }
 
 impl From<std::io::Error> for CliError {
     fn from(err: std::io::Error) -> CliError {
-        CliError::new(HuakError::AnyHowError(Error::from(err)))
+        CliError::new(
+            HuakError::AnyHowError(Error::from(err)),
+            BASIC_ERROR_CODE,
+        )
     }
 }
 

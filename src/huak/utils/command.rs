@@ -1,6 +1,6 @@
 use std::{env, path::Path, process};
 
-use crate::errors::CliError;
+use crate::errors::{CliError, HuakError};
 
 /// Run a command using process::Command and an array of args. The command will
 /// execute inside a `from` dir. Set the environment variable
@@ -17,10 +17,10 @@ pub(crate) fn run_command(
 
     if code != 0 {
         // TODO: This may be redundent for expected-to-fail commands.
-        eprintln!("process stdout and stderr: {}", msg);
-        return Err(CliError::from(anyhow::format_err!(
-            "{cmd} exited with {code}"
-        )));
+        return Err(CliError::new(
+            HuakError::AnyHowError(anyhow::format_err!(msg)),
+            code,
+        ));
     }
 
     Ok((code, msg))

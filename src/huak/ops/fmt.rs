@@ -1,5 +1,5 @@
 use crate::{
-    errors::CliResult,
+    errors::{CliError, CliResult, HuakError},
     project::{python::PythonProject, Project},
 };
 
@@ -7,18 +7,23 @@ const MODULE: &str = "black";
 
 /// Format Python code from the `Project`'s root.
 pub fn fmt_project(project: &Project, is_check: &bool) -> CliResult<()> {
-    match is_check {
+    let res = match is_check {
         true => project.venv().exec_module(
             MODULE,
             &[".", "--line-length", "79", "--check"],
             &project.root,
-        )?,
+        ),
         false => project.venv().exec_module(
             MODULE,
             &[".", "--line-length", "79"],
             &project.root,
-        )?,
+        ),
     };
+
+    if let Err(e) = res {
+        let code = e.status_code;
+        return Err(CliError::new(HuakError::PyBlackError(Box::new(e)), code));
+    }
 
     Ok(())
 }
