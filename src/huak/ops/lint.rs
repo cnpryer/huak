@@ -7,9 +7,13 @@ const MODULE: &str = "ruff";
 
 /// Lint the project from its root.
 pub fn lint_project(project: &Project) -> CliResult<()> {
-    let args = [".", "--extend-exclude", project.venv().name()?];
+    let venv = match project.venv() {
+        Some(v) => v,
+        _ => return Err(CliError::new(HuakError::VenvNotFound, 1)),
+    };
+    let args = [".", "--extend-exclude", venv.name()?];
 
-    match project.venv().exec_module(MODULE, &args, &project.root) {
+    match venv.exec_module(MODULE, &args, &project.root) {
         Err(e) => {
             let code = e.status_code;
             Err(CliError::new(HuakError::RuffError(Box::new(e)), code))
