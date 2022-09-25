@@ -2,6 +2,7 @@ use std::{env, path::PathBuf};
 
 use crate::{
     env::venv::Venv,
+    errors::HuakError,
     project::{python::PythonProject, Project},
 };
 
@@ -19,8 +20,11 @@ pub fn create_venv(path: PathBuf) -> Result<Venv, anyhow::Error> {
 
 // Creates a mock `Project` from a `path`. A mock `Project` is given a
 // re-usable .venv from cwd
-pub fn create_mock_project(path: PathBuf) -> Result<Project, anyhow::Error> {
-    let cwd = env::current_dir()?;
+pub fn create_mock_project(path: PathBuf) -> Result<Project, HuakError> {
+    let cwd = match env::current_dir() {
+        Ok(p) => p,
+        Err(e) => return Err(HuakError::AnyHowError(anyhow::format_err!(e))),
+    };
     let venv = create_venv(cwd.join(".venv"))?;
 
     let mut mock_project = Project::from(path)?;
