@@ -25,7 +25,7 @@ pub enum HuakError {
     // TODO: Abstract out wrapped cli errors.
     RuffError(Box<CliError>),
     PyBlackError(Box<CliError>),
-    PyTest(Box<CliError>),
+    PyTestError(Box<CliError>),
     PythonNotFound,
     VenvNotFound,
 }
@@ -80,7 +80,7 @@ impl fmt::Display for CliError {
                 binding = format!("Black Error: {err}");
                 binding.as_str()
             }
-            HuakError::PyTest(err) => {
+            HuakError::PyTestError(err) => {
                 binding = format!("Pytest Error: {err}");
                 binding.as_str()
             }

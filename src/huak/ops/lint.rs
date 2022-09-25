@@ -12,7 +12,7 @@ pub fn lint_project(project: &Project) -> CliResult<()> {
     match project.venv().exec_module(MODULE, &args, &project.root) {
         Err(e) => {
             let code = e.status_code;
-            Err(CliError::new(HuakError::PyBlackError(Box::new(e)), code))
+            Err(CliError::new(HuakError::RuffError(Box::new(e)), code))
         }
         Ok(_) => Ok(()),
     }
