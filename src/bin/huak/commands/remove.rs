@@ -1,4 +1,5 @@
 use std::env;
+use std::process::ExitCode;
 
 use super::utils::subcommand;
 use clap::{value_parser, Arg, ArgMatches, Command};
@@ -24,12 +25,20 @@ pub fn cmd() -> Command<'static> {
 pub fn run(args: &ArgMatches) -> CliResult<()> {
     let dependency = match args.get_one::<String>("dependency") {
         Some(d) => d,
-        None => return Err(CliError::new(HuakError::MissingArguments, 1)),
+        None => {
+            return Err(CliError::new(
+                HuakError::MissingArguments,
+                ExitCode::FAILURE,
+            ))
+        }
     };
     let cwd = env::current_dir()?;
     let project = Project::from(cwd)?;
 
-    ops::remove::remove_project_dependency(&project, dependency)?;
+    if let Err(e) = ops::remove::remove_project_dependency(&project, dependency)
+    {
+        return Err(CliError::new(e, ExitCode::FAILURE));
+    };
 
     Ok(())
 }

@@ -1,8 +1,8 @@
-use std::env;
+use std::{env, process::ExitCode};
 
 use clap::Command;
 use huak::{
-    errors::CliResult,
+    errors::{CliError, CliResult},
     ops,
     project::{python::PythonProject, Project},
 };
@@ -19,7 +19,10 @@ pub fn run() -> CliResult<()> {
     let cwd = env::current_dir()?;
     let project = Project::from(cwd)?;
 
-    let version = ops::version::get_project_version(&project)?;
+    let version = match ops::version::get_project_version(&project) {
+        Ok(v) => v,
+        Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
+    };
     let name = &project.config().project_name();
 
     println!("Version: {name}-{version}");
