@@ -3,6 +3,7 @@ pub mod python;
 use std::path::PathBuf;
 
 use crate::env::venv::{self, Venv};
+use crate::errors::HuakError;
 
 use self::config::Config;
 use self::python::PythonProject;
@@ -28,16 +29,15 @@ impl Project {
     /// Initialize `Project` from a given path. If a manifest isn't found
     /// at the path, then we search for a manifest and set the project root
     /// if it's found.
-    pub fn from(path: PathBuf) -> Result<Project, anyhow::Error> {
+    pub fn from(path: PathBuf) -> Result<Project, HuakError> {
         // TODO: Builder.
         let config = Config::from(&path)?;
         let venv = match Venv::from(&path) {
             Ok(v) => v,
-            Err(e) => {
-                eprintln!("{}", e);
-
+            Err(HuakError::VenvNotFound) => {
                 Venv::new(path.join(venv::DEFAULT_VENV_NAME))
             }
+            Err(e) => return Err(e),
         };
         let manifest_path = &config.manifest().path;
 
