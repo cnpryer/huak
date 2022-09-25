@@ -58,9 +58,6 @@ impl Config {
         )?;
 
         if manifest_path.is_none() {
-            eprintln!("no manifest found");
-            eprintln!("creating default manifest");
-
             return Ok(Config {
                 manifest: Manifest::default(),
             });

@@ -11,7 +11,7 @@ pub fn create_project(project: &Project) -> Result<(), anyhow::Error> {
     let toml_path = project.root.join("pyproject.toml");
 
     if toml_path.exists() {
-        return Err(anyhow::format_err!("a pyproject.toml already exists"));
+        return Err(anyhow::format_err!("A pyproject.toml already exists."));
     }
 
     // Serialize pyproject.toml.

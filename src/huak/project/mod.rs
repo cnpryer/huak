@@ -35,7 +35,6 @@ impl Project {
             Ok(v) => v,
             Err(e) => {
                 eprintln!("{}", e);
-                eprintln!("initializing project with default .venv");
 
                 Venv::new(path.join(venv::DEFAULT_VENV_NAME))
             }
