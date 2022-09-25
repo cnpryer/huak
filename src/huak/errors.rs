@@ -59,7 +59,7 @@ impl fmt::Display for CliError {
                 "This directory already exists and may not be empty!"
             }
             HuakError::AnyHowError(anyhow_error) => {
-                binding = format!("AnyHow Error: {}", anyhow_error);
+                binding = format!("An error occurred: {}", anyhow_error);
                 binding.as_str()
             }
             HuakError::NotImplemented => {
