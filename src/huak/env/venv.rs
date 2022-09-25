@@ -4,7 +4,8 @@ use std::{
 };
 
 use crate::{
-    errors::CliError, package::python::PythonPackage,
+    errors::{CliError, HuakError},
+    package::python::PythonPackage,
     utils::path::search_parents_for_filepath,
 };
 
@@ -30,7 +31,7 @@ impl Venv {
     /// Initialize a `Venv` by searching a directory for a venv. `from()` will search
     /// the parents directory for a configured number of recursive steps.
     // TODO: Improve the directory search (refactor manifest search into search utility).
-    pub fn from(from: &Path) -> Result<Venv, anyhow::Error> {
+    pub fn from(from: &Path) -> Result<Venv, HuakError> {
         let names = vec![".venv", "venv"];
 
         // TODO: Redundancy.
@@ -42,10 +43,7 @@ impl Venv {
             };
         }
 
-        Err(anyhow::format_err!(
-            "could not find venv from {}",
-            from.display()
-        ))
+        Err(HuakError::VenvNotFound)
     }
 
     /// Get the name of the Venv (ex: ".venv").

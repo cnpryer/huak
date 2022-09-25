@@ -1,8 +1,12 @@
-use std::env;
+use std::{env, process::ExitCode};
 
 use super::utils::subcommand;
 use clap::Command;
-use huak::{errors::CliResult, ops, project::Project};
+use huak::{
+    errors::{CliError, CliResult},
+    ops,
+    project::Project,
+};
 
 /// Get the `clean` subcommand.
 pub fn cmd() -> Command<'static> {
@@ -13,9 +17,14 @@ pub fn cmd() -> Command<'static> {
 /// Run the `clean` command.
 pub fn run() -> CliResult<()> {
     let cwd = env::current_dir()?;
-    let project = Project::from(cwd)?;
+    let project = match Project::from(cwd) {
+        Ok(p) => p,
+        Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
+    };
 
-    ops::clean::clean_project(&project)?;
+    if let Err(e) = ops::clean::clean_project(&project) {
+        return Err(CliError::new(e, ExitCode::FAILURE));
+    };
 
     Ok(())
 }

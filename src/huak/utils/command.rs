@@ -1,4 +1,8 @@
-use std::{env, path::Path, process};
+use std::{
+    env,
+    path::Path,
+    process::{self, ExitCode},
+};
 
 use crate::errors::{CliError, HuakError};
 
@@ -16,10 +20,10 @@ pub(crate) fn run_command(
     };
 
     if code != 0 {
-        // TODO: This may be redundent for expected-to-fail commands.
+        // TODO: Capture status codes.
         return Err(CliError::new(
             HuakError::AnyHowError(anyhow::format_err!(msg)),
-            code,
+            ExitCode::FAILURE,
         ));
     }
 

@@ -7,7 +7,7 @@
 
 <div align="center">
 
-<img src="docs/assets/img/logo.png" alt="Huak logo" width="300" role="img">
+<a href="https://docs.rs/crate/huak"><img src="docs/assets/img/logo.png" alt="Huak logo" width="300" role="img"></a>
 
 </div>
 

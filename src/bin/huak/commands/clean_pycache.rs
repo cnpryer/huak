@@ -3,7 +3,10 @@ use anyhow::Error;
 use clap::Command;
 use glob::{glob, Paths, PatternError};
 use huak::errors::{CliError, CliResult, HuakError};
-use std::fs::{remove_dir_all, remove_file};
+use std::{
+    fs::{remove_dir_all, remove_file},
+    process::ExitCode,
+};
 
 #[derive(Clone, Copy)]
 enum PathType {
@@ -69,7 +72,7 @@ pub fn run() -> CliResult<()> {
     if success {
         Ok(())
     } else {
-        Err(CliError::new(HuakError::IOError, 1))
+        Err(CliError::new(HuakError::IOError, ExitCode::FAILURE))
     }
 }
 

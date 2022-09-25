@@ -1,23 +1,27 @@
 //! The `huak` application.
 //!
 //! Huak implements a cli application with various subcommands.
+use std::process::ExitCode;
+
 use clap::{self, AppSettings, ArgMatches};
 use huak::errors::{CliError, CliResult, HuakError};
 
 mod commands;
-/// Launch Huak's cli process.
 
-pub fn main() {
+/// Launch Huak's cli process.
+pub fn main() -> ExitCode {
     let args = commands::args()
         .version(clap::crate_version!())
         .author(clap::crate_authors!())
         .about("A Python package manager written in Rust inspired by Cargo")
         .setting(AppSettings::ArgRequiredElseHelp);
 
-    let res = run(args.get_matches());
-    match res {
-        Ok(_) => (),
-        Err(err) => eprintln!("{}", err),
+    match run(args.get_matches()) {
+        Ok(_) => ExitCode::SUCCESS,
+        Err(err) => {
+            eprintln!("{}", err);
+            err.exit_code
+        }
     }
 }
 
@@ -42,6 +46,6 @@ fn run(args: ArgMatches) -> CliResult<()> {
         Some(("update", subargs)) => commands::update::run(subargs),
         Some(("test", _)) => commands::test::run(),
         Some(("version", _)) => commands::version::run(),
-        _ => Err(CliError::new(HuakError::UnknownCommand, 1)),
+        _ => Err(CliError::new(HuakError::UnknownCommand, ExitCode::FAILURE)),
     }
 }

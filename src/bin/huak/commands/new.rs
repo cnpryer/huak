@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::process::ExitCode;
 
 use super::utils::subcommand;
 use clap::{arg, value_parser, ArgMatches, Command};
@@ -29,12 +30,18 @@ pub fn run(args: &ArgMatches) -> CliResult<()> {
 
     // Make sure there isn't already a path we would override.
     if path.exists() && path != cwd {
-        return Err(CliError::new(HuakError::DirectoryExists, 1));
+        return Err(CliError::new(
+            HuakError::DirectoryExists,
+            ExitCode::FAILURE,
+        ));
     }
 
     // If the current directory is used it must be empty. User should use init.
     if path == cwd && path.read_dir()?.count() > 0 {
-        return Err(CliError::new(HuakError::DirectoryExists, 1));
+        return Err(CliError::new(
+            HuakError::DirectoryExists,
+            ExitCode::FAILURE,
+        ));
     }
 
     // Create project directory.
@@ -44,7 +51,9 @@ pub fn run(args: &ArgMatches) -> CliResult<()> {
 
     let project = Project::new(path);
 
-    ops::new::create_project(&project)?;
+    if let Err(e) = ops::new::create_project(&project) {
+        return Err(CliError::new(e, ExitCode::FAILURE));
+    };
 
     Ok(())
 }
