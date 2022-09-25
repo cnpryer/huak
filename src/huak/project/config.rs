@@ -105,6 +105,8 @@ impl PythonConfig for Config {
         let from = &table.dependencies;
 
         // Collect into vector of owned `PythonPackage` data.
-        from.iter().map(|d| PythonPackage::new(d.clone())).collect()
+        from.iter()
+            .map(|d| PythonPackage::from(d.clone()))
+            .collect()
     }
 }
