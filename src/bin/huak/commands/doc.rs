@@ -16,7 +16,7 @@ pub fn cmd() -> Command<'static> {
 }
 
 /// Run the `doc` command.
-pub fn run(args: &ArgMatches) -> CliResult {
+pub fn run(args: &ArgMatches) -> CliResult<()> {
     // TODO: Use is_check.
     let _ = args.get_one::<bool>("check").unwrap();
 

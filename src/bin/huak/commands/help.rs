@@ -10,6 +10,6 @@ pub fn cmd() -> Command<'static> {
 }
 
 /// Run the `help` command.
-pub fn run() -> CliResult {
+pub fn run() -> CliResult<()> {
     unimplemented!()
 }

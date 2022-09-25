@@ -1,8 +1,8 @@
 use std::fs;
 
-use crate::env::python::PythonEnvironment;
 use crate::{
     config::pyproject::toml::Toml,
+    errors::{CliError, HuakError},
     project::{python::PythonProject, Project},
 };
 
@@ -11,13 +11,14 @@ use crate::{
 pub fn remove_project_dependency(
     project: &Project,
     dependency: &str,
-) -> Result<(), anyhow::Error> {
-    let venv = project.venv();
+) -> Result<(), CliError> {
+    let venv = match project.venv() {
+        Some(v) => v,
+        _ => return Err(CliError::new(HuakError::VenvNotFound, 1)),
+    };
 
     // TODO: #109
-    if let Err(e) = venv.uninstall_package(dependency) {
-        return Err(anyhow::format_err!(e.error.unwrap()));
-    };
+    venv.uninstall_package(dependency)?;
 
     let mut toml = Toml::open(&project.root.join("pyproject.toml"))?;
     toml.project
@@ -25,7 +26,11 @@ pub fn remove_project_dependency(
         .retain(|s| !s.starts_with(dependency));
 
     // Serialize pyproject.toml.
-    fs::write(&project.root.join("pyproject.toml"), toml.to_string()?)?;
+    let string = match toml.to_string() {
+        Ok(s) => s,
+        Err(_) => return Err(CliError::new(HuakError::IOError, 1)),
+    };
+    fs::write(&project.root.join("pyproject.toml"), string)?;
 
     Ok(())
 }

@@ -15,7 +15,7 @@ pub fn cmd() -> Command<'static> {
 }
 
 /// Run the `add` subcommand.
-pub fn run(args: &ArgMatches) -> CliResult {
+pub fn run(args: &ArgMatches) -> CliResult<()> {
     let dependency = args.get_one::<String>("dependency");
     add_project_dependency(dependency.unwrap().to_string(), false)?;
     Ok(())

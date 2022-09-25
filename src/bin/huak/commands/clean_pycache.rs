@@ -2,7 +2,7 @@ use super::utils::subcommand;
 use anyhow::Error;
 use clap::Command;
 use glob::{glob, Paths, PatternError};
-use huak::errors::{CliError, CliResult};
+use huak::errors::{CliError, CliResult, HuakError};
 use std::fs::{remove_dir_all, remove_file};
 
 #[derive(Clone, Copy)]
@@ -20,10 +20,10 @@ pub fn cmd() -> Command<'static> {
         .about("Remove all .pyc files and __pycache__ directories.")
 }
 
-pub fn run() -> CliResult {
+pub fn run() -> CliResult<()> {
     let mut success: bool = true;
 
-    let mut error: Option<Error> = None;
+    let mut _error: Option<Error> = None;
     for i in get_delete_patterns() {
         let files: Result<Paths, PatternError> = glob(&i.glob);
 
@@ -39,7 +39,7 @@ pub fn run() -> CliResult {
                                         Ok(_) => (),
                                         Err(e) => {
                                             file_level_success = false;
-                                            error = Some(Error::new(e));
+                                            _error = Some(Error::new(e));
                                         }
                                     }
                                 }
@@ -47,13 +47,13 @@ pub fn run() -> CliResult {
                                     Ok(_) => (),
                                     Err(e) => {
                                         file_level_success = false;
-                                        error = Some(Error::new(e));
+                                        _error = Some(Error::new(e));
                                     }
                                 },
                             },
                             Err(e) => {
                                 file_level_success = false;
-                                error = Some(Error::new(e))
+                                _error = Some(Error::new(e))
                             }
                         }
                     }
@@ -69,10 +69,7 @@ pub fn run() -> CliResult {
     if success {
         Ok(())
     } else {
-        Err(CliError {
-            error,
-            exit_code: 2,
-        })
+        Err(CliError::new(HuakError::IOError, 1))
     }
 }
 

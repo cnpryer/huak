@@ -1,21 +1,22 @@
 use crate::{
-    env::python::PythonEnvironment,
-    errors::{CliError, CliResult},
+    errors::{CliError, CliResult, HuakError},
     project::{config::PythonConfig, python::PythonProject, Project},
 };
 
 /// Install all of the projects defined dependencies.
-pub fn install_project_dependencies(project: &Project) -> CliResult {
+pub fn install_project_dependencies(project: &Project) -> CliResult<()> {
     // TODO: Doing this venv handling seems hacky.
     if !project.root.join("pyproject.toml").exists() {
-        return Err(CliError::new(
-            anyhow::format_err!("no pyproject.toml found"),
-            2,
-        ));
+        return Err(CliError::new(HuakError::PyProjectTomlNotFound, 1));
     }
 
+    let venv = match project.venv() {
+        Some(v) => v,
+        _ => return Err(CliError::new(HuakError::VenvNotFound, 1)),
+    };
+
     for dependency in &project.config().dependency_list() {
-        project.venv().install_package(dependency)?;
+        venv.install_package(dependency)?;
     }
 
     Ok(())
@@ -26,12 +27,12 @@ pub mod tests {
 
     use tempfile::tempdir;
 
-    use crate::utils::{
-        path::copy_dir,
-        test_utils::{create_mock_project, get_resource_dir},
-    };
     use crate::{
-        env::python::PythonEnvironment, project::python::PythonProject,
+        project::python::PythonProject,
+        utils::{
+            path::copy_dir,
+            test_utils::{create_mock_project, get_resource_dir},
+        },
     };
 
     use super::install_project_dependencies;
@@ -45,7 +46,7 @@ pub mod tests {
 
         let project_path = directory.join("mock-project");
         let project = create_mock_project(project_path.clone()).unwrap();
-        let venv = project.venv();
+        let venv = project.venv().as_ref().unwrap();
 
         venv.uninstall_package("black").unwrap();
         let black_path = venv.module_path("black").unwrap();

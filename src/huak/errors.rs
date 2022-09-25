@@ -2,57 +2,127 @@ use std::fmt;
 
 use anyhow::Error;
 
-/// Generic CLI Result type.
-pub type CliResult = Result<(), CliError>;
+pub type CliResult<T> = std::result::Result<T, CliError>;
+
+trait BinaryError {}
+
+impl BinaryError for HuakError {}
+impl BinaryError for Error {}
+
+const BASIC_ERROR_CODE: i32 = 1;
+
+// TODO: Slit into different types of errors. This could be
+//       based on behavior, data, tooling, etc.
+#[derive(Debug)]
+pub enum HuakError {
+    NotImplemented,
+    MissingArguments,
+    UnknownError,
+    IOError,
+    UnknownCommand,
+    DirectoryExists,
+    AnyHowError(anyhow::Error),
+    // TODO: Abstract out wrapped cli errors.
+    RuffError(Box<CliError>),
+    PyBlackError(Box<CliError>),
+    PyTestError(Box<CliError>),
+    PythonNotFound,
+    VenvNotFound,
+    PyProjectTomlNotFound, // TODO: Manfiest
+}
 
 #[derive(Debug)]
-/// The CLI error is the error type used at Huak's CLI-layer.
-///
-/// All errors from the lib side of Huak will get wrapped with this error.
-/// Other errors (such as command-line argument validation) will create this
-/// directly.
 pub struct CliError {
-    /// The error to display. This can be `None` in rare cases to exit with a
-    /// code without displaying a message.
-    pub error: Option<anyhow::Error>,
-    /// The process exit code.
-    pub exit_code: i32,
+    pub error: HuakError,
+    pub status_code: i32,
 }
 
 impl CliError {
-    /// Initialize a `CliError` with `anyhow`.
-    pub fn new(error: anyhow::Error, code: i32) -> CliError {
-        CliError {
-            error: Some(error),
-            exit_code: code,
-        }
+    pub fn new(error: HuakError, status_code: i32) -> CliError {
+        CliError { error, status_code }
     }
+}
 
-    /// Create a `CliError` with an error code.
-    pub fn code(code: i32) -> CliError {
-        CliError {
-            error: None,
-            exit_code: code,
-        }
+impl fmt::Display for CliError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // This is a temporary value only useful for extracting something from anyhow::Error
+        // It's something to do with the borrow checker as the value "does not live for long enough"
+        // But I'm not knowledgeable enough to understand why.
+        let binding: String;
+
+        let error_string = match &self.error {
+            HuakError::MissingArguments => "Some arguments were missing.",
+            HuakError::IOError => "An IO error occurred.",
+            HuakError::UnknownCommand => {
+                "This is an unknown command. Please check --help."
+            }
+            HuakError::DirectoryExists => {
+                "This directory already exists and may not be empty!"
+            }
+            HuakError::AnyHowError(anyhow_error) => {
+                binding = format!("An error occurred: {}", anyhow_error);
+                binding.as_str()
+            }
+            HuakError::NotImplemented => {
+                "This feature is not implemented. \
+                See https://github.com/cnpryer/huak/milestones."
+            }
+            HuakError::VenvNotFound => "No venv was found.",
+            HuakError::UnknownError => {
+                "An unknown error occurred. Please file a bug report here \
+                https://github.com/cnpryer/huak/issues/new?\
+                assignees=&labels=bug&template=BUG_REPORT.md&title="
+            }
+            HuakError::RuffError(err) => {
+                binding = format!("Ruff Error: {err}");
+                binding.as_str()
+            }
+            HuakError::PyBlackError(err) => {
+                binding = format!("Black Error: {err}");
+                binding.as_str()
+            }
+            HuakError::PyTestError(err) => {
+                binding = format!("Pytest Error: {err}");
+                binding.as_str()
+            }
+            HuakError::PythonNotFound => {
+                "Python was not found on your operating system. \
+                Please install Python at https://www.python.org/."
+            }
+            HuakError::PyProjectTomlNotFound => {
+                "A pyproject.toml could not be found."
+            }
+        };
+        write!(f, "{}", error_string)
+    }
+}
+impl From<anyhow::Error> for HuakError {
+    fn from(err: anyhow::Error) -> HuakError {
+        HuakError::AnyHowError(err)
     }
 }
 
 impl From<anyhow::Error> for CliError {
     fn from(err: anyhow::Error) -> CliError {
-        CliError::new(err, 101)
+        CliError::new(HuakError::AnyHowError(err), BASIC_ERROR_CODE)
     }
 }
 
 impl From<clap::Error> for CliError {
     fn from(err: clap::Error) -> CliError {
-        let code = if err.use_stderr() { 1 } else { 0 };
-        CliError::new(err.into(), code)
+        CliError::new(
+            HuakError::AnyHowError(Error::from(err)),
+            BASIC_ERROR_CODE,
+        )
     }
 }
 
 impl From<std::io::Error> for CliError {
     fn from(err: std::io::Error) -> CliError {
-        CliError::new(err.into(), 1)
+        CliError::new(
+            HuakError::AnyHowError(Error::from(err)),
+            BASIC_ERROR_CODE,
+        )
     }
 }
 

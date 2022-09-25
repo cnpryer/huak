@@ -3,7 +3,7 @@ use std::fs;
 
 use super::utils::subcommand;
 use clap::{arg, value_parser, ArgMatches, Command};
-use huak::errors::{CliError, CliResult};
+use huak::errors::{CliError, CliResult, HuakError};
 use huak::ops;
 use huak::project::Project;
 
@@ -16,7 +16,7 @@ pub fn cmd() -> Command<'static> {
 
 /// Run the `new` command.
 // TODO: Ops should hanlde the path creation step in addition to the project creation.
-pub fn run(args: &ArgMatches) -> CliResult {
+pub fn run(args: &ArgMatches) -> CliResult<()> {
     // This command runs from the current working directory
     // Each command's behavior is triggered from the context of the cwd.
     let cwd = env::current_dir()?;
@@ -29,18 +29,12 @@ pub fn run(args: &ArgMatches) -> CliResult {
 
     // Make sure there isn't already a path we would override.
     if path.exists() && path != cwd {
-        return Err(CliError::new(
-            anyhow::format_err!("a directory already exists"),
-            2,
-        ));
+        return Err(CliError::new(HuakError::DirectoryExists, 1));
     }
 
     // If the current directory is used it must be empty. User should use init.
     if path == cwd && path.read_dir()?.count() > 0 {
-        return Err(CliError::new(
-            anyhow::format_err!("cwd was used but isn't empty"),
-            2,
-        ));
+        return Err(CliError::new(HuakError::DirectoryExists, 1));
     }
 
     // Create project directory.
@@ -48,7 +42,7 @@ pub fn run(args: &ArgMatches) -> CliResult {
         fs::create_dir_all(&path)?;
     }
 
-    let project = Project::from(path)?;
+    let project = Project::new(path);
 
     ops::new::create_project(&project)?;
 

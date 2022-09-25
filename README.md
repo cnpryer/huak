@@ -1,7 +1,7 @@
 [![ci-rust](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml)
 [![ci-python](https://github.com/cnpryer/huak/actions/workflows/ci-python.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci-python.yaml)
 [![crates.io](https://img.shields.io/crates/v/huak.svg)](https://crates.io/crates/huak)
-[![discord](https://img.shields.io/discord/1022879330470199347?color=7289DA&logo=discord&style=plastic)](https://discord.gg/St3menxFZT)
+[![discord](https://img.shields.io/discord/1022879330470199347?color=7289DA&logo=discord)](https://discord.gg/St3menxFZT)
 
 # huak
 
@@ -11,7 +11,7 @@
 
 </div>
 
-</br>
+<br>
 
 ## About
 
@@ -41,7 +41,7 @@ A PoC and an 0.1.0 are expected.
 
 During the [PoC phase](https://github.com/cnpryer/huak/milestones) you'll need to explicitly install the latest pre-release available.
 
-`❯ cargo install --version` [![crates.io](https://img.shields.io/crates/v/huak.svg?label="")](https://crates.io/crates/huak)
+`❯ cargo install huak --version` [![crates.io](https://img.shields.io/crates/v/huak.svg?label="")](https://crates.io/crates/huak)
 
 
 Around 0.1.0 you'll be able to install `huak` using `brew` or `pip`. Distribution plans will be finalized closer to 0.1.0.
@@ -114,8 +114,8 @@ JavaScript has seen a "Going Rust" sub-community pop up. Python seems to be gett
 
 ## Contributing
 
-Please read our [contributing guide](./CONTRIBUTING.md) before you start contributing. We also have [![discord](https://img.shields.io/discord/1022879330470199347?color=7289DA&logo=discord&style=plastic)](https://discord.gg/St3menxFZT) for more interactive assistance.
+Please read our [contributing guide](/docs/CONTRIBUTING.md) before you start contributing.
 
 ## Architecture and Design
 
-See [architecture.md](./architecture.md).
+See [architecture.md](/docs/architecture.md).

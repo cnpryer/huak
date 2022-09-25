@@ -4,14 +4,14 @@ use crate::project::Project;
 
 use super::project_utils;
 
-/// Create an intialized project (TODO) in an environment.
+/// Create an initialized project (TODO) in an environment.
 pub fn create_project(project: &Project) -> Result<(), anyhow::Error> {
     // TODO: Use available toml from manifest.
     let toml = project_utils::create_toml(project)?;
     let toml_path = project.root.join("pyproject.toml");
 
     if toml_path.exists() {
-        return Err(anyhow::format_err!("a pyproject.toml already exists"));
+        return Err(anyhow::format_err!("A pyproject.toml already exists."));
     }
 
     // Serialize pyproject.toml.

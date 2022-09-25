@@ -8,6 +8,6 @@ pub fn cmd() -> Command<'static> {
 }
 
 /// Run the `build` command.
-pub fn run() -> CliResult {
+pub fn run() -> CliResult<()> {
     unimplemented!()
 }

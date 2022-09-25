@@ -9,6 +9,6 @@ pub fn cmd() -> Command<'static> {
 }
 
 /// Run the `publish` command.
-pub fn run() -> CliResult {
+pub fn run() -> CliResult<()> {
     unimplemented!()
 }

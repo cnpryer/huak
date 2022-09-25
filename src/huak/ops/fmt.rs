@@ -1,25 +1,34 @@
 use crate::{
-    env::python::PythonEnvironment,
-    errors::CliResult,
+    errors::{CliError, CliResult, HuakError},
     project::{python::PythonProject, Project},
 };
 
 const MODULE: &str = "black";
 
 /// Format Python code from the `Project`'s root.
-pub fn fmt_project(project: &Project, is_check: &bool) -> CliResult {
-    match is_check {
-        true => project.venv().exec_module(
+pub fn fmt_project(project: &Project, is_check: &bool) -> CliResult<()> {
+    let venv = match project.venv() {
+        Some(v) => v,
+        _ => return Err(CliError::new(HuakError::VenvNotFound, 1)),
+    };
+
+    let res = match is_check {
+        true => venv.exec_module(
             MODULE,
             &[".", "--line-length", "79", "--check"],
             &project.root,
-        )?,
-        false => project.venv().exec_module(
+        ),
+        false => venv.exec_module(
             MODULE,
             &[".", "--line-length", "79"],
             &project.root,
-        )?,
+        ),
     };
+
+    if let Err(e) = res {
+        let code = e.status_code;
+        return Err(CliError::new(HuakError::PyBlackError(Box::new(e)), code));
+    }
 
     Ok(())
 }
@@ -47,6 +56,8 @@ mod tests {
         let project = create_mock_project(project_path.clone()).unwrap();
         project
             .venv()
+            .as_ref()
+            .unwrap()
             .exec_module("pip", &["install", MODULE], &project.root)
             .unwrap();
 

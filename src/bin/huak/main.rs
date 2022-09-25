@@ -2,23 +2,27 @@
 //!
 //! Huak implements a cli application with various subcommands.
 use clap::{self, AppSettings, ArgMatches};
-use huak::errors::{CliError, CliResult};
+use huak::errors::{CliError, CliResult, HuakError};
 
 mod commands;
-
 /// Launch Huak's cli process.
-pub fn main() -> CliResult {
+
+pub fn main() {
     let args = commands::args()
         .version(clap::crate_version!())
         .author(clap::crate_authors!())
         .about("A Python package manager written in Rust inspired by Cargo")
         .setting(AppSettings::ArgRequiredElseHelp);
 
-    run(args.get_matches())
+    let res = run(args.get_matches());
+    match res {
+        Ok(_) => (),
+        Err(err) => eprintln!("{}", err),
+    }
 }
 
 /// Command gating for Huak.
-fn run(args: ArgMatches) -> CliResult {
+fn run(args: ArgMatches) -> CliResult<()> {
     match args.subcommand() {
         Some(("activate", _)) => commands::activate::run(),
         Some(("add", subargs)) => commands::add::run(subargs),
@@ -38,9 +42,6 @@ fn run(args: ArgMatches) -> CliResult {
         Some(("update", subargs)) => commands::update::run(subargs),
         Some(("test", _)) => commands::test::run(),
         Some(("version", _)) => commands::version::run(),
-        _ => Err(CliError::new(
-            anyhow::format_err!("unrecognized command"),
-            2,
-        )),
+        _ => Err(CliError::new(HuakError::UnknownCommand, 1)),
     }
 }

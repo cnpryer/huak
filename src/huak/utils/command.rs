@@ -1,6 +1,6 @@
 use std::{env, path::Path, process};
 
-use crate::errors::CliError;
+use crate::errors::{CliError, HuakError};
 
 /// Run a command using process::Command and an array of args. The command will
 /// execute inside a `from` dir. Set the environment variable
@@ -17,9 +17,8 @@ pub(crate) fn run_command(
 
     if code != 0 {
         // TODO: This may be redundent for expected-to-fail commands.
-        eprintln!("process stdout and stderr: {}", msg);
         return Err(CliError::new(
-            anyhow::format_err!("{cmd} exited with {code}"),
+            HuakError::AnyHowError(anyhow::format_err!(msg)),
             code,
         ));
     }
@@ -75,7 +74,7 @@ fn run_command_with_spawn(
     let status = match child.try_wait() {
         Ok(Some(s)) => s,
         Ok(None) => child.wait()?,
-        Err(e) => return Err(CliError::new(anyhow::format_err!(e), 2)),
+        Err(e) => return Err(CliError::from(anyhow::format_err!(e))),
     };
 
     // TODO: Capture through spawn.

@@ -8,12 +8,12 @@ use crate::{
     utils::path::search_parents_for_filepath,
 };
 
-use super::python::PythonEnvironment;
-
-const DEFUALT_SEARCH_STEPS: usize = 5;
+const DEFAULT_SEARCH_STEPS: usize = 5;
 pub(crate) const DEFAULT_VENV_NAME: &str = ".venv";
 pub(crate) const BIN_NAME: &str = "bin";
 pub(crate) const WINDOWS_BIN_NAME: &str = "Scripts";
+pub(crate) const DEFAULT_PYTHON_ALIAS: &str = "python";
+pub(crate) const PYTHON3_ALIAS: &str = "python3";
 
 /// A struct for Python venv.
 #[derive(Clone)]
@@ -36,7 +36,7 @@ impl Venv {
         // TODO: Redundancy.
         for name in &names {
             if let Ok(Some(path)) =
-                search_parents_for_filepath(from, name, DEFUALT_SEARCH_STEPS)
+                search_parents_for_filepath(from, name, DEFAULT_SEARCH_STEPS)
             {
                 return Ok(Venv::new(path));
             };
@@ -54,30 +54,6 @@ impl Venv {
 
         Ok(name)
     }
-
-    /// Create the venv at its path.
-    pub fn create(&self) -> Result<(), CliError> {
-        if self.path.exists() {
-            return Ok(());
-        }
-
-        let from = match self.path.parent() {
-            Some(p) => p,
-            _ => {
-                return Err(CliError::new(
-                    anyhow::format_err!("invalid venv path"),
-                    2,
-                ))
-            }
-        };
-
-        let name = self.name()?;
-        let args = ["-m", "venv", name];
-
-        crate::utils::command::run_command("python", &args, from)?;
-
-        Ok(())
-    }
 }
 
 impl Default for Venv {
@@ -93,9 +69,44 @@ impl Default for Venv {
     }
 }
 
-impl PythonEnvironment for Venv {
+impl Venv {
+    /// Create the venv at its path.
+    pub fn create(&self) -> Result<(), CliError> {
+        if self.path.exists() {
+            return Ok(());
+        }
+
+        let from = match self.path.parent() {
+            Some(p) => p,
+            _ => {
+                return Err(CliError::from(anyhow::format_err!(
+                    "Invalid venv path"
+                )))
+            }
+        };
+
+        let name = self.name()?;
+        let args = ["-m", "venv", name];
+
+        crate::utils::command::run_command(self.python_alias(), &args, from)?;
+
+        Ok(())
+    }
+
+    /// Get the python alias associated with the venv.
+    // TODO: Do better python resolution agnostic of Venv.
+    pub fn python_alias(&self) -> &str {
+        let (py, py3) = (DEFAULT_PYTHON_ALIAS, PYTHON3_ALIAS);
+
+        // TODO: Enum.
+        match OS {
+            "linux" => py3,
+            _ => py,
+        }
+    }
+
     /// Get the path to the bin folder (called Scripts on Windows).
-    fn bin_path(&self) -> PathBuf {
+    pub fn bin_path(&self) -> PathBuf {
         match OS {
             "windows" => self.path.join(WINDOWS_BIN_NAME),
             _ => self.path.join(BIN_NAME),
@@ -103,7 +114,7 @@ impl PythonEnvironment for Venv {
     }
 
     /// Get the path to the module passed from the venv.
-    fn module_path(&self, module: &str) -> Result<PathBuf, anyhow::Error> {
+    pub fn module_path(&self, module: &str) -> Result<PathBuf, anyhow::Error> {
         let bin_path = self.bin_path();
         let mut path = bin_path.join(module);
 
@@ -120,7 +131,7 @@ impl PythonEnvironment for Venv {
     }
 
     /// Run a module installed to the venv as an alias'd command from the current working dir.
-    fn exec_module(
+    pub fn exec_module(
         &self,
         module: &str,
         args: &[&str],
@@ -133,7 +144,7 @@ impl PythonEnvironment for Venv {
         let module_path = self.module_path(module)?;
 
         if !module_path.exists() {
-            self.install_package(&PythonPackage::new(module.to_string()))?;
+            self.install_package(&PythonPackage::from(module.to_string()))?;
         }
 
         let module_path = crate::utils::path::to_string(module_path.as_path())?;
@@ -144,7 +155,7 @@ impl PythonEnvironment for Venv {
     }
 
     /// Install a dependency to the venv.
-    fn install_package(
+    pub fn install_package(
         &self,
         dependency: &PythonPackage,
     ) -> Result<(), CliError> {
@@ -159,7 +170,7 @@ impl PythonEnvironment for Venv {
     }
 
     /// Install a dependency from the venv.
-    fn uninstall_package(&self, name: &str) -> Result<(), CliError> {
+    pub fn uninstall_package(&self, name: &str) -> Result<(), CliError> {
         let cwd = env::current_dir()?;
         let module = "pip";
         let args = ["uninstall", name, "-y"];

@@ -11,10 +11,20 @@ use self::python::PythonProject;
 pub struct Project {
     pub root: PathBuf,
     config: Config,
-    venv: Venv,
+    venv: Option<Venv>,
 }
 
 impl Project {
+    /// Initialize `Project` at a given path. This creates a `Project` without
+    /// attempting to construct it through project artifact searches.
+    pub fn new(path: PathBuf) -> Project {
+        Project {
+            root: path,
+            config: Config::default(),
+            venv: None,
+        }
+    }
+
     /// Initialize `Project` from a given path. If a manifest isn't found
     /// at the path, then we search for a manifest and set the project root
     /// if it's found.
@@ -25,7 +35,6 @@ impl Project {
             Ok(v) => v,
             Err(e) => {
                 eprintln!("{}", e);
-                eprintln!("initializing project with default .venv");
 
                 Venv::new(path.join(venv::DEFAULT_VENV_NAME))
             }
@@ -39,7 +48,11 @@ impl Project {
             root = parent.to_path_buf()
         }
 
-        Ok(Project { root, config, venv })
+        Ok(Project {
+            root,
+            config,
+            venv: Some(venv),
+        })
     }
 }
 
@@ -51,14 +64,14 @@ impl PythonProject for Project {
 
     /// Get a reference to the `Project` `Venv`.
     // TODO: Decouple to operate on `Config` data.
-    fn venv(&self) -> &Venv {
+    fn venv(&self) -> &Option<Venv> {
         &self.venv
     }
 
     /// Set the `Project`'s `Venv`.
     // TODO: Decouple to operate on `Config` data.
     fn set_venv(&mut self, venv: Venv) {
-        self.venv = venv;
+        self.venv = Some(venv);
     }
 }
 
@@ -91,6 +104,9 @@ mod tests {
         .unwrap();
 
         assert_eq!(project1.root, project2.root);
-        assert_eq!(project1.venv().path, project2.venv().path);
+        assert_eq!(
+            project1.venv().as_ref().unwrap().path,
+            project2.venv().as_ref().unwrap().path
+        );
     }
 }

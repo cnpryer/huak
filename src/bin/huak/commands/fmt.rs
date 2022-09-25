@@ -15,7 +15,7 @@ pub fn cmd() -> Command<'static> {
 }
 
 /// Run the `fmt` command.
-pub fn run(args: &ArgMatches) -> CliResult {
+pub fn run(args: &ArgMatches) -> CliResult<()> {
     // This command runs from the context of the cwd.
     let cwd = env::current_dir()?;
     let project = Project::from(cwd)?;

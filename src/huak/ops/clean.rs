@@ -6,7 +6,7 @@ use crate::{
 };
 
 /// Clean build artifacts from a `Project`.
-pub fn clean_project(project: &Project) -> CliResult {
+pub fn clean_project(project: &Project) -> CliResult<()> {
     // Just find dist at project root.
     let dist_path = project.root.join("dist");
 
@@ -16,7 +16,7 @@ pub fn clean_project(project: &Project) -> CliResult {
     } else {
         match remove_dir_all(dist_path) {
             Ok(_) => Ok(()),
-            Err(e) => Err(CliError::new(anyhow::format_err!(e), 2)),
+            Err(e) => Err(CliError::from(anyhow::format_err!(e))),
         }
     }
 }
