@@ -7,8 +7,8 @@ use clap::{self, AppSettings, ArgMatches};
 use huak::errors::{CliError, CliResult, HuakError};
 
 mod commands;
-/// Launch Huak's cli process.
 
+/// Launch Huak's cli process.
 pub fn main() -> ExitCode {
     let args = commands::args()
         .version(clap::crate_version!())
@@ -16,8 +16,7 @@ pub fn main() -> ExitCode {
         .about("A Python package manager written in Rust inspired by Cargo")
         .setting(AppSettings::ArgRequiredElseHelp);
 
-    let res = run(args.get_matches());
-    match res {
+    match run(args.get_matches()) {
         Ok(_) => ExitCode::SUCCESS,
         Err(err) => {
             eprintln!("{}", err);
