@@ -1,5 +1,4 @@
 use crate::{
-    env::python::PythonEnvironment,
     errors::CliResult,
     project::{python::PythonProject, Project},
 };

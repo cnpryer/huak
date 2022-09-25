@@ -1,5 +1,4 @@
 use crate::{
-    env::python::PythonEnvironment,
     errors::{CliError, CliResult},
     project::{config::PythonConfig, python::PythonProject, Project},
 };
@@ -25,12 +24,12 @@ pub mod tests {
 
     use tempfile::tempdir;
 
-    use crate::utils::{
-        path::copy_dir,
-        test_utils::{create_mock_project, get_resource_dir},
-    };
     use crate::{
-        env::python::PythonEnvironment, project::python::PythonProject,
+        project::python::PythonProject,
+        utils::{
+            path::copy_dir,
+            test_utils::{create_mock_project, get_resource_dir},
+        },
     };
 
     use super::install_project_dependencies;
