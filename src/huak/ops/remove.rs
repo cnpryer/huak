@@ -1,6 +1,5 @@
 use std::fs;
 
-use crate::env::python::PythonEnvironment;
 use crate::{
     config::pyproject::toml::Toml,
     project::{python::PythonProject, Project},
