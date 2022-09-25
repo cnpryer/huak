@@ -69,7 +69,7 @@ pub fn run() -> CliResult<()> {
     if success {
         Ok(())
     } else {
-        Err(CliError::new(HuakError::IOError))
+        Err(CliError::new(HuakError::IOError, 1))
     }
 }
 

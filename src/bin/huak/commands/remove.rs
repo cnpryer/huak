@@ -24,7 +24,7 @@ pub fn cmd() -> Command<'static> {
 pub fn run(args: &ArgMatches) -> CliResult<()> {
     let dependency = match args.get_one::<String>("dependency") {
         Some(d) => d,
-        None => return Err(CliError::new(HuakError::MissingArguments)),
+        None => return Err(CliError::new(HuakError::MissingArguments, 1)),
     };
     let cwd = env::current_dir()?;
     let project = Project::from(cwd)?;

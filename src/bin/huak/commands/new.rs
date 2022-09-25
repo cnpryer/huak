@@ -29,12 +29,12 @@ pub fn run(args: &ArgMatches) -> CliResult<()> {
 
     // Make sure there isn't already a path we would override.
     if path.exists() && path != cwd {
-        return Err(CliError::new(HuakError::DirectoryExists));
+        return Err(CliError::new(HuakError::DirectoryExists, 1));
     }
 
     // If the current directory is used it must be empty. User should use init.
     if path == cwd && path.read_dir()?.count() > 0 {
-        return Err(CliError::new(HuakError::DirectoryExists));
+        return Err(CliError::new(HuakError::DirectoryExists, 1));
     }
 
     // Create project directory.
