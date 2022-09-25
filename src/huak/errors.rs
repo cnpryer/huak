@@ -28,6 +28,7 @@ pub enum HuakError {
     PyTestError(Box<CliError>),
     PythonNotFound,
     VenvNotFound,
+    PyProjectTomlNotFound, // TODO: Manfiest
 }
 
 #[derive(Debug)]
@@ -87,6 +88,9 @@ impl fmt::Display for CliError {
             HuakError::PythonNotFound => {
                 "Python was not found on your operating system. \
                 Please install Python at https://www.python.org/."
+            }
+            HuakError::PyProjectTomlNotFound => {
+                "A pyproject.toml could not be found."
             }
         };
         write!(f, "{}", error_string)
