@@ -128,7 +128,10 @@ impl From<std::io::Error> for CliError {
 
 impl From<reqwest::Error> for CliError {
     fn from(err: reqwest::Error) -> CliError {
-        CliError::new(HuakError::AnyHowError(Error::from(err)), BASIC_ERROR_CODE)
+        CliError::new(
+            HuakError::AnyHowError(Error::from(err)),
+            BASIC_ERROR_CODE,
+        )
     }
 }
 

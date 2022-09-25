@@ -1,13 +1,10 @@
-use crate::{ 
+use crate::{
     env::venv::Venv,
     errors::CliResult,
     package::{metadata::PyPi, python::PythonPackage},
 };
 
-pub fn add_project_dependency(
-    package: String,
-    _is_dev: bool,
-) -> CliResult<()> {
+pub fn add_project_dependency(package: String, _is_dev: bool) -> CliResult<()> {
     let path = format!("https://pypi.org/pypi/{}/json", package);
     let resp = reqwest::blocking::get(path)?;
     let json: PyPi = resp.json()?;
