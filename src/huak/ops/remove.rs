@@ -25,7 +25,6 @@ pub fn remove_project_dependency(
 
     let mut toml = Toml::open(&project.root.join("pyproject.toml"))?;
     toml.remove_dependency(dependency);
-    toml.remove_optional_dependency(dependency);
 
     // Serialize pyproject.toml.
     let string = match toml.to_string() {
@@ -69,13 +68,9 @@ mod tests {
             .iter()
             .any(|d| d.starts_with("click"));
         let existed = existed
-            && toml
-                .project
-                .optional_dependencies
-                .as_ref()
-                .unwrap()
-                .iter()
-                .any(|d| d.starts_with("black"));
+            && toml.project.optional_dependencies.map_or(false, |deps| {
+                deps.values().flatten().any(|d| d.starts_with("pytest"))
+            });
 
         remove_project_dependency(&project, "click").unwrap();
 
@@ -87,13 +82,9 @@ mod tests {
             .any(|s| s.starts_with("click"));
 
         let exists = exists
-            && toml
-                .project
-                .optional_dependencies
-                .as_ref()
-                .unwrap()
-                .iter()
-                .any(|s| s.starts_with("black"));
+            && toml.project.optional_dependencies.map_or(false, |deps| {
+                deps.values().flatten().any(|d| d.starts_with("pytest"))
+            });
 
         assert!(existed);
         assert!(!exists);

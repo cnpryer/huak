@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::{fs, path::Path};
 
 use super::{build_system::BuildSystem, project::Project};
@@ -55,14 +56,17 @@ impl Toml {
         self.project.dependencies.push(dependency.to_string());
     }
 
-    pub fn add_optional_dependency(&mut self, dependency: &str) {
+    pub fn add_optional_dependency(&mut self, group: &str, dependency: &str) {
         match &mut self.project.optional_dependencies {
-            Some(deps) => {
-                deps.push(dependency.to_string());
-            }
+            Some(deps) => deps
+                .entry(group.to_string())
+                .or_insert_with(Vec::new)
+                .push(dependency.to_string()),
             None => {
-                self.project.optional_dependencies =
-                    Some(vec![dependency.to_string()]);
+                self.project.optional_dependencies = Some(HashMap::from([(
+                    group.to_string(),
+                    vec![dependency.to_string()],
+                )]));
             }
         }
     }
@@ -72,11 +76,11 @@ impl Toml {
         self.project
             .dependencies
             .retain(|s| !s.starts_with(dependency));
-    }
 
-    pub fn remove_optional_dependency(&mut self, dependency: &str) {
         if let Some(deps) = &mut self.project.optional_dependencies {
-            deps.retain(|s| !s.starts_with(dependency));
+            for (_, group_deps) in deps.iter_mut() {
+                group_deps.retain(|s| !s.starts_with(dependency));
+            }
         }
     }
 }
@@ -92,6 +96,9 @@ name = "Test"
 version = "0.1.0"
 description = ""
 dependencies = ["click==8.1.3", "black==22.8.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=6", "mock"]
 
 [[project.authors]]
 name = "Chris Pryer"
@@ -116,6 +123,9 @@ name = "Test"
 version = "0.1.0"
 description = ""
 dependencies = ["click==8.1.3", "black==22.8.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=6", "mock"]
 
 [[project.authors]]
 name = "Chris Pryer"
