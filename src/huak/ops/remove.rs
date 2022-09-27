@@ -1,9 +1,7 @@
 use std::fs;
 
 use crate::{
-    config::pyproject::toml::Toml,
-    errors::HuakError,
-    project::{python::PythonProject, Project},
+    config::pyproject::toml::Toml, errors::HuakError, project::Project,
 };
 
 /// Remove a dependency from a project by uninstalling it and updating the

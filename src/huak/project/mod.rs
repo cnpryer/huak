@@ -1,12 +1,10 @@
 pub mod config;
-pub mod python;
 use std::path::PathBuf;
 
 use crate::env::venv::{self, Venv};
 use crate::errors::HuakError;
 
 use self::config::Config;
-use self::python::PythonProject;
 
 /// The ``Project`` struct.
 /// The ``Project`` struct provides and API for maintaining project. The pattern for
@@ -83,21 +81,21 @@ impl Project {
     }
 }
 
-impl PythonProject for Project {
+impl Project {
     /// Get a reference to the `Project` `Config`.
-    fn config(&self) -> &Config {
+    pub fn config(&self) -> &Config {
         &self.config
     }
 
     /// Get a reference to the `Project` `Venv`.
     // TODO: Decouple to operate on `Config` data.
-    fn venv(&self) -> &Option<Venv> {
+    pub fn venv(&self) -> &Option<Venv> {
         &self.venv
     }
 
     /// Set the `Project`'s `Venv`.
     // TODO: Decouple to operate on `Config` data.
-    fn set_venv(&mut self, venv: Venv) {
+    pub fn set_venv(&mut self, venv: Venv) {
         self.venv = Some(venv);
     }
 }
