@@ -1,9 +1,7 @@
 use std::fs;
 
 use crate::{
-    config::pyproject::toml::Toml,
-    errors::HuakError,
-    project::{python::PythonProject, Project},
+    config::pyproject::toml::Toml, errors::HuakError, project::Project,
 };
 
 /// Remove a dependency from a project by uninstalling it and updating the
@@ -64,24 +62,39 @@ mod tests {
             create_mock_project(directory.join("mock-project")).unwrap();
         let toml_path = project.root.join("pyproject.toml");
         let toml = Toml::open(&toml_path).unwrap();
-        let prev = toml
+        let existed = toml
             .project
             .dependencies
-            .into_iter()
-            .filter(|s| s.starts_with("click"))
-            .collect::<Vec<String>>();
+            .iter()
+            .any(|d| d.starts_with("click"));
+        let existed = existed
+            && toml
+                .project
+                .optional_dependencies
+                .as_ref()
+                .unwrap()
+                .iter()
+                .any(|d| d.starts_with("black"));
 
         remove_project_dependency(&project, "click").unwrap();
 
         let toml = Toml::open(&toml_path).unwrap();
-        let curr = toml
+        let exists = !toml
             .project
             .dependencies
-            .into_iter()
-            .filter(|s| s.starts_with("click"))
-            .collect::<Vec<String>>();
+            .iter()
+            .any(|s| s.starts_with("black"));
 
-        assert!(!prev.is_empty());
-        assert!(curr.is_empty());
+        let exists = exists
+            && toml
+                .project
+                .optional_dependencies
+                .as_ref()
+                .unwrap()
+                .iter()
+                .any(|s| s.starts_with("black"));
+
+        assert!(existed);
+        assert!(exists);
     }
 }

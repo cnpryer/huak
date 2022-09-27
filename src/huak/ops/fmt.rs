@@ -1,7 +1,4 @@
-use crate::{
-    errors::HuakError,
-    project::{python::PythonProject, Project},
-};
+use crate::{errors::HuakError, project::Project};
 
 const MODULE: &str = "black";
 

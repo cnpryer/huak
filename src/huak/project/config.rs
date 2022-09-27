@@ -10,7 +10,8 @@ const DEFAULT_SEARCH_STEPS: usize = 5;
 
 /// Traits for Python-specific configuration.
 pub trait PythonConfig {
-    fn dependency_list(&self) -> Vec<PythonPackage>;
+    fn package_list(&self) -> Vec<PythonPackage>;
+    fn optional_package_list(&self) -> Vec<PythonPackage>;
 }
 
 /// `Manifest` data the configuration uses to manage standard configuration
@@ -69,6 +70,11 @@ impl Config {
         Ok(Config { manifest })
     }
 
+    // Initialize from a `Manifest`.
+    pub fn from_manifest(manifest: Manifest) -> Config {
+        Config { manifest }
+    }
+
     /// Get a reference to the `Manifest`.
     pub(crate) fn manifest(&self) -> &Manifest {
         &self.manifest
@@ -92,14 +98,31 @@ impl Config {
 }
 
 impl PythonConfig for Config {
-    // Get vec of dependencies from the manifest.
+    // Get vec of `PythonPackage`s from the manifest.
     // TODO: More than toml.
-    fn dependency_list(&self) -> Vec<PythonPackage> {
+    fn package_list(&self) -> Vec<PythonPackage> {
         // Get huak's spanned table found in the Toml.
         let table = &self.manifest.toml.project;
 
         // Dependencies to list from.
         let from = &table.dependencies;
+
+        // Collect into vector of owned `PythonPackage` data.
+        from.iter()
+            .map(|d| PythonPackage::from(d.clone()))
+            .collect()
+    }
+    // Get vec of `PythonPackage`s from the manifest.
+    // TODO: More than toml.
+    fn optional_package_list(&self) -> Vec<PythonPackage> {
+        // Get huak's spanned table found in the Toml.
+        let table = &self.manifest.toml.project;
+
+        // Dependencies to list from.
+        let from = match &table.optional_dependencies {
+            Some(vec) => vec,
+            None => return vec![],
+        };
 
         // Collect into vector of owned `PythonPackage` data.
         from.iter()

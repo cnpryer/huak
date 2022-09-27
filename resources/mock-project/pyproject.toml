@@ -2,7 +2,8 @@
 name = "mock_project"
 version = "0.0.1"
 description = ""
-dependencies = ["click==8.1.3", "black==22.8.0"]
+dependencies = ["click==8.1.3"]
+optional-dependencies = ["black==22.8.0"]
 
 [[project.authors]]
 name = "Chris Pryer"

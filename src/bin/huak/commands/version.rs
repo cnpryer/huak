@@ -4,7 +4,7 @@ use clap::Command;
 use huak::{
     errors::{CliError, CliResult},
     ops,
-    project::{python::PythonProject, Project},
+    project::Project,
 };
 
 use super::utils::subcommand;
