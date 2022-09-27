@@ -64,7 +64,7 @@ SUBCOMMANDS:
     build            Build tarball and wheel for the project.*
     clean            Remove tarball and wheel from the built project.
     clean-pycache    Remove all .pyc files and __pycache__ directories.
-    doc              Builds and uploads current project to a registry.*
+    doc              Build the current project's documentation.*
     fmt              Format Python code.
     help             Display Huak commands and general usage information.
     init             Initialize the existing project.
