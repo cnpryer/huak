@@ -23,11 +23,12 @@ Huak aims to support a base workflow for developing Python packages and projects
 
 ```mermaid
 graph LR
-    A[Project Bootstrap] --> B[Project Setup]
-    B --> C[Project Change]
-    C --> D[Project Test]
-    D --> E[Project Distribution]
+    A[Workflow Startup] --> B[Project Change]
+    B --> C[Project Test]
+    C --> D[Project Distribution]
 ```
+
+See [design_doc.md](/docs/design_doc.md) for more workflow details.
 
 The goal is to create an opinionated tool to support a reliably inviting onboarding experience for the Python ecosystem, that feels responsive and snappy to use.
 
@@ -41,7 +42,7 @@ See either **[this milestone list](https://github.com/cnpryer/huak/milestones)**
 - [Documentation](#documentation)
 - [Goals and Motivation](#goals)
 - [Contributing](#contributing)
-- [Architecture and Design](#architecture-and-design)
+- [More](#more)
 
 ## Installation
 
@@ -124,6 +125,6 @@ JavaScript has seen a "Going Rust" sub-community pop up. Python seems to be gett
 
 Please read our [contributing guide](/docs/CONTRIBUTING.md) before you start contributing.
 
-## Architecture and Design
+## More
 
-See [architecture.md](/docs/architecture.md).
+See the [design_doc.md](/docs/design_doc.md) for more about the project, design motivations, and various architecture docs.
