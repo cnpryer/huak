@@ -1,6 +1,9 @@
+use core::fmt;
+
 const DEFAULT_VERSION_OP: &str = "==";
 
-/// A Python package struct.
+/// A Python package struct that captures a packages name and version
+/// see https://peps.python.org/pep-0440/
 // At the moment (during the PoC phase) the `PythonPackage` contains a
 // private string attribute for Huak to utilize.
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -10,6 +13,7 @@ pub struct PythonPackage {
     pub op: Option<String>, // Enum?
     pub version: Option<String>,
 }
+
 
 impl PythonPackage {
     pub fn new(
@@ -40,6 +44,26 @@ impl PythonPackage {
         &self.string
     }
 }
+
+impl fmt::Display for PythonPackage{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // check if a version is specified
+        if let Some(ver) = &self.version {
+            // check if a version specifier (operator) is supplied
+            if let Some(operator) = &self.op {
+                write!(f, "{}{}{}", self.name, operator, ver)
+            } else {
+                // if no version specifier, default to '=='
+                write!(f, "{}=={}", self.name, ver)
+            }
+        } else {
+            // if no version, just display python package name
+            write!(f, "{}", self.name )
+        }
+    }
+
+}
+
 
 fn _package_from_string(
     _string: String,
@@ -85,5 +109,14 @@ mod tests {
 
         assert_eq!(res1, ans1);
         assert_eq!(res2, ans2);
+    }
+
+    #[test]
+    fn python_package_from_new() {
+        let pkg_name = "test";
+        let pkg_version: Option<&str> = Some("0.0.1");
+        let python_pkg = PythonPackage::new(pkg_name, None, pkg_version);
+        let test_output = format!("{}", python_pkg);
+        assert_eq!(test_output, "test==0.0.1");
     }
 }

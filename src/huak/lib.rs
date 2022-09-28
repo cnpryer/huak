@@ -119,6 +119,8 @@
 //!     └── utils     # Library utilities
 //! ```
 
+extern crate core;
+
 /// Configuration formats for structures and contexts.
 pub mod config;
 /// Environments for different contexts.
