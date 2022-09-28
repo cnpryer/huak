@@ -10,8 +10,21 @@ const DEFAULT_VERSION_OP: &str = "==";
 pub struct PythonPackage {
     string: String, // TODO: More like a view maybe.
     pub name: String,
-    pub op: Option<String>, // Enum?
+    pub op: Option<String>,
     pub version: Option<String>,
+}
+
+/// Python Package version specifiers per PEP-0440
+/// https://peps.python.org/pep-0440/#version-specifiers
+pub enum VersionSpecifier {
+    Compatible,
+    Matching,
+    Exclusion,
+    GreaterIncluding,
+    LesserIncluding,
+    GreaterExcluding,
+    LesserExcluding,
+    ArbitraryEqual,
 }
 
 
@@ -45,6 +58,7 @@ impl PythonPackage {
     }
 }
 
+/// display a PythonPackage as the name and version when available
 impl fmt::Display for PythonPackage{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // check if a version is specified
@@ -61,7 +75,24 @@ impl fmt::Display for PythonPackage{
             write!(f, "{}", self.name )
         }
     }
+}
 
+impl fmt::Display for VersionSpecifier {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let operator = {
+            match self {
+                VersionSpecifier::Compatible => "~=",
+                VersionSpecifier::Matching => "==",
+                VersionSpecifier::Exclusion => "!=",
+                VersionSpecifier::ArbitraryEqual => "===",
+                VersionSpecifier::LesserIncluding=> "<=",
+                VersionSpecifier::LesserExcluding => "<",
+                VersionSpecifier::GreaterIncluding => ">=",
+                VersionSpecifier::GreaterExcluding => ">",
+            }
+        };
+        write!(f, "{}", operator)
+    }
 }
 
 
@@ -112,11 +143,19 @@ mod tests {
     }
 
     #[test]
-    fn python_package_from_new() {
+    fn display_python_package() {
         let pkg_name = "test";
         let pkg_version: Option<&str> = Some("0.0.1");
         let python_pkg = PythonPackage::new(pkg_name, None, pkg_version);
-        let test_output = format!("{}", python_pkg);
-        assert_eq!(test_output, "test==0.0.1");
+        let py_pkg_fmt = format!("{}", python_pkg);
+        assert_eq!(py_pkg_fmt, "test==0.0.1");
     }
+
+    #[test]
+    fn display_version_operator() {
+        let test_formatted_output = format!("{}", VersionSpecifier::Compatible);
+        assert_eq!("~=", test_formatted_output);
+    }
+
+
 }
