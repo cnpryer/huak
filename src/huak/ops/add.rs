@@ -49,13 +49,15 @@ pub fn add_project_dependency(
         None => return Err(HuakError::VenvNotFound),
     };
 
+    let dep = package.string();
+
     if venv.install_package(&package).is_err() {
-        return Err(HuakError::PackageInstallFailure(dependency.to_string()));
+        return Err(HuakError::PackageInstallFailure(dep.clone()));
     };
 
     match is_dev {
-        true => toml.add_optional_dependency(dependency),
-        false => toml.add_dependency(dependency),
+        true => toml.add_optional_dependency(dep),
+        false => toml.add_dependency(dep),
     }
 
     // Serialize pyproject.toml.
