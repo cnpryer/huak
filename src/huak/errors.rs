@@ -29,6 +29,7 @@ pub enum HuakError {
     PythonNotFound,
     VenvNotFound,
     PyProjectTomlNotFound, // TODO: Manfiest
+    PackageInstallFailure(String),
 }
 
 #[derive(Debug)]
@@ -96,6 +97,10 @@ impl fmt::Display for CliError {
             }
             HuakError::PyProjectTomlNotFound => {
                 "A pyproject.toml could not be found."
+            }
+            HuakError::PackageInstallFailure(package) => {
+                binding = format!("Failed to install package: {package}.");
+                binding.as_str()
             }
         };
         write!(f, "{}", error_string)
