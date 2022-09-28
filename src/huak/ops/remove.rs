@@ -24,9 +24,8 @@ pub fn remove_project_dependency(
     };
 
     let mut toml = Toml::open(&project.root.join("pyproject.toml"))?;
-    toml.project
-        .dependencies
-        .retain(|s| !s.starts_with(dependency));
+    toml.remove_dependency(dependency);
+    toml.remove_optional_dependency(dependency);
 
     // Serialize pyproject.toml.
     let string = match toml.to_string() {
@@ -54,6 +53,8 @@ mod tests {
 
     #[test]
     fn removes_dependencies() {
+        // TODO: Optional deps test is passing but the operation wasn't fully
+        //       implemented.
         let directory = tempdir().unwrap().into_path().to_path_buf();
         let mock_project_path = get_resource_dir().join("mock-project");
         copy_dir(&mock_project_path, &directory);
