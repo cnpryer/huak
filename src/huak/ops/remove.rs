@@ -80,11 +80,11 @@ mod tests {
         remove_project_dependency(&project, "click").unwrap();
 
         let toml = Toml::open(&toml_path).unwrap();
-        let exists = !toml
+        let exists = toml
             .project
             .dependencies
             .iter()
-            .any(|s| s.starts_with("black"));
+            .any(|s| s.starts_with("click"));
 
         let exists = exists
             && toml
@@ -96,6 +96,6 @@ mod tests {
                 .any(|s| s.starts_with("black"));
 
         assert!(existed);
-        assert!(exists);
+        assert!(!exists);
     }
 }
