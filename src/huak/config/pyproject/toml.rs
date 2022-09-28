@@ -50,6 +50,24 @@ impl Toml {
     }
 }
 
+impl Toml {
+    pub fn add_dependency(&mut self, dependency: &str) {
+        self.project.dependencies.push(dependency.to_string());
+    }
+
+    pub fn add_optional_dependency(&mut self, dependency: &str) {
+        match &mut self.project.optional_dependencies {
+            Some(deps) => {
+                deps.push(dependency.to_string());
+            }
+            None => {
+                self.project.optional_dependencies =
+                    Some(vec![dependency.to_string()]);
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
