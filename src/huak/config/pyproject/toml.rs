@@ -66,6 +66,19 @@ impl Toml {
             }
         }
     }
+
+    pub fn remove_dependency(&mut self, dependency: &str) {
+        // TODO: Do better than .starts_with
+        self.project
+            .dependencies
+            .retain(|s| !s.starts_with(dependency));
+    }
+
+    pub fn remove_optional_dependency(&mut self, dependency: &str) {
+        if let Some(deps) = &mut self.project.optional_dependencies {
+            deps.retain(|s| !s.starts_with(dependency));
+        }
+    }
 }
 
 #[cfg(test)]
