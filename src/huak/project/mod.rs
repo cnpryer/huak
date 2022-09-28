@@ -1,13 +1,24 @@
 pub mod config;
-pub mod python;
 use std::path::PathBuf;
 
 use crate::env::venv::{self, Venv};
 use crate::errors::HuakError;
 
 use self::config::Config;
-use self::python::PythonProject;
 
+/// The ``Project`` struct.
+/// The ``Project`` struct provides and API for maintaining project. The pattern for
+/// implementing a new command may involve creating operations that interacts
+/// with a `Project`.
+///
+/// ``Project``s can be initialized using `from` or `new` intialization functions.
+/// ```rust
+/// use std::env;
+/// use huak::project::Project;
+///
+/// let cwd = env::current_dir().unwrap();
+/// let project = Project::from(cwd);
+/// ```
 #[derive(Default)]
 pub struct Project {
     pub root: PathBuf,
@@ -18,6 +29,13 @@ pub struct Project {
 impl Project {
     /// Initialize `Project` at a given path. This creates a `Project` without
     /// attempting to construct it through project artifact searches.
+    /// ```rust
+    /// use std::env;
+    /// use huak::project::Project;
+    ///
+    /// let cwd = env::current_dir().unwrap();
+    /// let project = Project::from(cwd);
+    /// ```
     pub fn new(path: PathBuf) -> Project {
         Project {
             root: path,
@@ -29,6 +47,13 @@ impl Project {
     /// Initialize `Project` from a given path. If a manifest isn't found
     /// at the path, then we search for a manifest and set the project root
     /// if it's found.
+    /// ```rust
+    /// use std::env;
+    /// use huak::project::Project;
+    ///
+    /// let cwd = env::current_dir().unwrap();
+    /// let project = Project::from(cwd);
+    /// ```
     pub fn from(path: PathBuf) -> Result<Project, HuakError> {
         // TODO: Builder.
         let config = Config::from(&path)?;
@@ -56,21 +81,21 @@ impl Project {
     }
 }
 
-impl PythonProject for Project {
+impl Project {
     /// Get a reference to the `Project` `Config`.
-    fn config(&self) -> &Config {
+    pub fn config(&self) -> &Config {
         &self.config
     }
 
     /// Get a reference to the `Project` `Venv`.
     // TODO: Decouple to operate on `Config` data.
-    fn venv(&self) -> &Option<Venv> {
+    pub fn venv(&self) -> &Option<Venv> {
         &self.venv
     }
 
     /// Set the `Project`'s `Venv`.
     // TODO: Decouple to operate on `Config` data.
-    fn set_venv(&mut self, venv: Venv) {
+    pub fn set_venv(&mut self, venv: Venv) {
         self.venv = Some(venv);
     }
 }

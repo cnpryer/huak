@@ -1,6 +1,8 @@
 use crate::{
+    env::venv::Venv,
     errors::HuakError,
-    project::{config::PythonConfig, python::PythonProject, Project},
+    package::python::PythonPackage,
+    project::{config::PythonConfig, Project},
 };
 
 /// Install all of the projects defined dependencies.
@@ -17,19 +19,28 @@ pub fn install_project_dependencies(
         _ => return Err(HuakError::VenvNotFound),
     };
 
-    for dependency in &project.config().dependency_list() {
-        match venv.install_package(dependency) {
+    install_packages(&project.config().package_list(), venv)?;
+    install_packages(&project.config().optional_package_list(), venv)?;
+
+    Ok(())
+}
+
+fn install_packages(
+    packages: &Vec<PythonPackage>,
+    venv: &Venv,
+) -> Result<(), HuakError> {
+    for package in packages {
+        match venv.install_package(package) {
             Ok(_) => (),
             Err(_) => {
                 // TODO: Level logging for capturing more internal errors.
                 return Err(HuakError::AnyHowError(anyhow::format_err!(
                     "Failed to install dependency {:?}",
-                    dependency.string()
+                    package.string()
                 )));
             }
         };
     }
-
     Ok(())
 }
 
@@ -38,12 +49,9 @@ pub mod tests {
 
     use tempfile::tempdir;
 
-    use crate::{
-        project::python::PythonProject,
-        utils::{
-            path::copy_dir,
-            test_utils::{create_mock_project, get_resource_dir},
-        },
+    use crate::utils::{
+        path::copy_dir,
+        test_utils::{create_mock_project, get_resource_dir},
     };
 
     use super::install_project_dependencies;

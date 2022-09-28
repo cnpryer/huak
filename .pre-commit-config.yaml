@@ -11,6 +11,8 @@ repos:
         files: Cargo\.toml|\.rs$
         pass_filenames: false
         args: ["--all", "--", "--check"]
+        fail_fast: true
+
       - id: cargo-test
         name: cargo test
         description: Run Rust tests.
@@ -20,6 +22,8 @@ repos:
         files: Cargo\.toml|\.rs$
         pass_filenames: false
         args: ["--all-features", "--", "--test-threads=1"]
+        fail_fast: true
+
       - id: clippy
         name: clippy
         description: Run Rust lints.
@@ -29,6 +33,7 @@ repos:
         files: Cargo\.toml|\.rs$
         pass_filenames: false
         args: ["--all-features", "--", "-D", "warnings"]
+        fail_fast: true
         
       # Python
       - id: pyfmt
@@ -39,6 +44,8 @@ repos:
         types: [python]
         files: pyproject\.toml|\.py$
         pass_filenames: false
+        fail_fast: true
+
       - id: flake8
         name: flake8
         description: Run Python lints.
@@ -47,6 +54,8 @@ repos:
         types: [python]
         files: pyproject\.toml|\.py$
         pass_filenames: false
+        fail_fast: true
+
       - id: mypy
         name: mypy
         description: Check Python types.
@@ -55,6 +64,8 @@ repos:
         types: [python]
         files: pyproject\.toml|\.py$
         pass_filenames: false
+        fail_fast: true
+        
       - id: pytest
         name: pytest
         description: Run Python tests.
@@ -63,4 +74,4 @@ repos:
         types: [python]
         files: pyproject\.toml|\.py$
         pass_filenames: false
-      
+        fail_fast: true

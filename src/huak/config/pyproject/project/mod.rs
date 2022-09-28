@@ -26,6 +26,8 @@ pub(crate) struct Project {
     pub(crate) version: String,
     pub(crate) description: String,
     pub(crate) dependencies: Vec<String>,
+    #[serde(rename = "optional-dependencies")]
+    pub(crate) optional_dependencies: Option<Vec<String>>,
     pub(crate) authors: Vec<Author>,
 }
 
@@ -37,6 +39,7 @@ impl Default for Project {
             description: "".to_string(),
             authors: vec![],
             dependencies: vec![],
+            optional_dependencies: Some(vec![]),
         }
     }
 }

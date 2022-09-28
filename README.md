@@ -19,9 +19,17 @@ A Python package manager written in Rust. The [Cargo](https://github.com/rust-la
 
 > ⚠️ Disclaimer: `huak` is currently in its [proof-of-concept (PoC) phase](https://github.com/cnpryer/huak/milestones).
 
-Huak aims to be a snappy package manager for Python, supporting a standard base workflow with bootstrapping, configuration, dependency management, testing, building, and distribution tools. This package manager can be used for Python packages and projects.
+Huak aims to support a base workflow for developing Python packages and projects. The process is linear and purpose oriented, establishing better familiarization with the steps.
 
-The goal is to create an opinionated tool to support an inviting onboarding experience to projects and the Python space, that's also responsive and snappy to use.
+```mermaid
+graph LR
+    A[Project Bootstrap] --> B[Project Setup]
+    B --> C[Project Change]
+    C --> D[Project Test]
+    D --> E[Project Distribution]
+```
+
+The goal is to create an opinionated tool to support a reliably inviting onboarding experience for the Python ecosystem, that feels responsive and snappy to use.
 
 ### Milestones and Project Board
 
@@ -64,7 +72,7 @@ SUBCOMMANDS:
     build            Build tarball and wheel for the project.*
     clean            Remove tarball and wheel from the built project.
     clean-pycache    Remove all .pyc files and __pycache__ directories.
-    doc              Builds and uploads current project to a registry.*
+    doc              Build the current project's documentation.*
     fmt              Format Python code.
     help             Display Huak commands and general usage information.
     init             Initialize the existing project.

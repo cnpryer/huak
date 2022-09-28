@@ -1,10 +1,6 @@
 use std::{env, path::PathBuf};
 
-use crate::{
-    env::venv::Venv,
-    errors::HuakError,
-    project::{python::PythonProject, Project},
-};
+use crate::{env::venv::Venv, errors::HuakError, project::Project};
 
 pub fn get_resource_dir() -> PathBuf {
     let cwd = env!("CARGO_MANIFEST_DIR");

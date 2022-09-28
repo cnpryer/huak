@@ -69,24 +69,25 @@ impl Default for Venv {
 
 impl Venv {
     /// Create the venv at its path.
-    pub fn create(&self) -> Result<(), CliError> {
+    pub fn create(&self) -> Result<(), anyhow::Error> {
         if self.path.exists() {
             return Ok(());
         }
 
         let from = match self.path.parent() {
             Some(p) => p,
-            _ => {
-                return Err(CliError::from(anyhow::format_err!(
-                    "Invalid venv path"
-                )))
-            }
+            _ => return Err(anyhow::format_err!("Invalid venv path.")),
         };
 
         let name = self.name()?;
         let args = ["-m", "venv", name];
 
-        crate::utils::command::run_command(self.python_alias(), &args, from)?;
+        // This can be handled without the wrapped CliError.
+        if let Err(e) =
+            crate::utils::command::run_command(self.python_alias(), &args, from)
+        {
+            return Err(anyhow::format_err!(e));
+        };
 
         Ok(())
     }
