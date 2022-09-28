@@ -100,6 +100,7 @@ impl Venv {
         // TODO: Enum.
         match OS {
             "linux" => py3,
+            "macos" => py3,
             _ => py,
         }
     }
