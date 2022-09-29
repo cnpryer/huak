@@ -118,7 +118,6 @@
 //!     ├── project   # The `Project` struct
 //!     └── utils     # Library utilities
 //! ```
-
 /// Configuration formats for structures and contexts.
 pub mod config;
 /// Environments for different contexts.

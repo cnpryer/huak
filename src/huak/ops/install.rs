@@ -58,7 +58,7 @@ pub mod tests {
 
     // TODO
     #[test]
-    fn installs_dependenices() {
+    fn installs_dependencies() {
         let directory = tempdir().unwrap().into_path().to_path_buf();
         let mock_project_dir = get_resource_dir().join("mock-project");
         copy_dir(&mock_project_dir, &directory);
