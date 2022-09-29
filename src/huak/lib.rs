@@ -104,7 +104,7 @@
 //!
 //! Currently, the project is structured using the following components:
 //!
-//! ```bash
+//! ```txt
 //! src
 //! ├── bin           # CLI binary `huak`
 //! │   ├── commands  # Application subcommand layer
