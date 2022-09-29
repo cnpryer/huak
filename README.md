@@ -28,7 +28,7 @@ graph LR
     C --> D[Project Distribution]
 ```
 
-See [design_doc.md](/docs/design_doc.md) for more workflow details.
+See the [design doc](/docs/design_doc.md) for more workflow details.
 
 The goal is to create an opinionated tool to support a reliably inviting onboarding experience for the Python ecosystem, that feels responsive and snappy to use.
 
@@ -127,4 +127,4 @@ Please read our [contributing guide](/docs/CONTRIBUTING.md) before you start con
 
 ## More
 
-See the [design_doc.md](/docs/design_doc.md) for more about the project, design motivations, and various architecture docs.
+See the [design doc](/docs/design_doc.md) for more about the project, design motivations, and various architecture docs.
