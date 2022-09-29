@@ -52,7 +52,7 @@ pub fn add_project_dependency(
     let dep = package.string();
 
     if venv.install_package(&package).is_err() {
-        return Err(HuakError::PackageInstallFailure(dep.clone()));
+        return Err(HuakError::PyPackageInstallFailure(dep.clone()));
     };
 
     match is_dev {

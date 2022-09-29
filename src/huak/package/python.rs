@@ -12,9 +12,9 @@ const VERSION_OPERATORS: [&str; 8] =
 /// # Examples
 /// ```
 /// use huak::package::python::PythonPackage;
-/// let python_pkg = PythonPackage::new("request", Some(">="), Some("2.28.1"));
+/// let python_pkg = PythonPackage::new("request", Some(">="), Some("2.28.1")).unwrap();
 /// // or
-/// let other_pkg = PythonPackage::from("problems==0.0.2".to_string());
+/// let other_pkg = PythonPackage::from("problems==0.0.2".to_string()).unwrap();
 /// println!("I've got 99 {} but huak ain't one", other_pkg);
 /// ```
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -57,18 +57,7 @@ impl PythonPackage {
         version: Option<&str>,
     ) -> Result<PythonPackage, HuakError> {
         let op = match operator {
-            Some(it) => {
-                let op_string = match VersionOp::from_str(it) {
-                    Ok(res) => res,
-                    Err(_) => {
-                        return Err(HuakError::InvalidPyPackageVersionOp(
-                            it.to_string(),
-                        ))
-                    }
-                };
-
-                Some(op_string)
-            }
+            Some(it) => Some(VersionOp::from_str(it)?),
             None => {
                 if version.is_none() {
                     None
@@ -97,7 +86,7 @@ impl PythonPackage {
     /// use huak::package::python::PythonPackage;
     /// let my_pkg = PythonPackage::from("requests==2.28.1".to_string());
     /// ```
-    pub fn from(pkg_string: String) -> PythonPackage {
+    pub fn from(pkg_string: String) -> Result<PythonPackage, HuakError> {
         // unfortunately, we have to redeclare the operators here or bring in a 3rd party crate (like strum)
         // to derive an iterable from out VersionOp enum
         let version_operators = VERSION_OPERATORS.into_iter();
@@ -115,7 +104,7 @@ impl PythonPackage {
                 let pkg_vec = pkg_components.collect::<Vec<&str>>();
                 PythonPackage {
                     name: pkg_vec[0].to_string(),
-                    operator: Some(VersionOp::from_str(it).unwrap()),
+                    operator: Some(VersionOp::from_str(it)?),
                     version: Some(pkg_vec[1].to_string()),
                 }
             }
@@ -126,7 +115,7 @@ impl PythonPackage {
             },
         };
 
-        package
+        Ok(package)
     }
 
     pub fn string(&self) -> &String {
@@ -139,7 +128,7 @@ impl PythonPackage {
 /// # Examples
 /// ```
 /// use huak::package::python::PythonPackage;
-/// let my_pkg = PythonPackage::from("requests==2.28.1".to_string());
+/// let my_pkg = PythonPackage::from("requests==2.28.1".to_string()).unwrap();
 /// println!("{}", my_pkg); // output: "request==2.28.1"
 /// ```
 impl fmt::Display for PythonPackage {
@@ -197,8 +186,8 @@ impl fmt::Display for VersionOp {
 /// let ver_op_enum = VersionOp::from_str(ver_op_string).unwrap();
 /// ```
 impl FromStr for VersionOp {
-    type Err = ();
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    type Err = HuakError;
+    fn from_str(s: &str) -> Result<Self, self::HuakError> {
         match s {
             "~=" => Ok(VersionOp::Compatible),
             "==" => Ok(VersionOp::Matching),
@@ -208,7 +197,7 @@ impl FromStr for VersionOp {
             "<" => Ok(VersionOp::LesserExcluding),
             ">=" => Ok(VersionOp::GreaterIncluding),
             ">" => Ok(VersionOp::GreaterExcluding),
-            _ => Err(()),
+            _ => Err(self::HuakError::InvalidPyPackageVersionOp(s.to_string())),
         }
     }
 }
@@ -250,7 +239,8 @@ mod tests {
         let new_pkg_from_string = PythonPackage::from(format!(
             "{}{}{}",
             dependency, operator, version
-        ));
+        ))
+        .unwrap();
         assert_eq!(new_pkg_from_string.name, dependency);
         if let Some(op_from_new_pkg) = new_pkg_from_string.operator {
             assert_eq!(format!("{}", op_from_new_pkg), operator);

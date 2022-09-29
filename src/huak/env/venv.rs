@@ -1,6 +1,7 @@
 use std::{
     env::{self, consts::OS},
     path::{Path, PathBuf},
+    process::ExitCode,
 };
 
 use crate::{
@@ -142,9 +143,19 @@ impl Venv {
         self.create()?;
 
         let module_path = self.module_path(module)?;
+        let package = match PythonPackage::from(module.to_string()) {
+            Ok(it) => it,
+            // TODO: Don't do this post-decouple.
+            Err(_) => {
+                return Err(CliError::new(
+                    HuakError::PyPackageInitError(module.to_string()),
+                    ExitCode::FAILURE,
+                ))
+            }
+        };
 
         if !module_path.exists() {
-            self.install_package(&PythonPackage::from(module.to_string()))?;
+            self.install_package(&package)?;
         }
 
         let module_path = crate::utils::path::to_string(module_path.as_path())?;
