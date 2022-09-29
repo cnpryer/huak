@@ -6,7 +6,7 @@ const VERSION_OPERATORS: [&str; 8] =
     ["==", "~=", "!=", ">=", "<=", ">", "<", "==="];
 
 /// A Python package struct that encapsulates a packages name and version in accordance with PEP
-/// see https://peps.python.org/pep-0440/
+/// see <https://peps.python.org/pep-0440/>
 /// # Examples
 /// ```
 /// use huak::package::python::PythonPackage;
@@ -26,7 +26,7 @@ pub struct PythonPackage {
 }
 
 /// Python Package version specifiers per PEP-0440
-/// https://peps.python.org/pep-0440/#version-specifiers
+/// <https://peps.python.org/pep-0440/#version-specifiers>
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum VersionOp {
     /// "~=" Releases expected to be compatible with this version (e.g. ~= 1.4)
