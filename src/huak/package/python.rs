@@ -61,7 +61,7 @@ impl PythonPackage {
                 let op_string = match VersionOp::from_str(it) {
                     Ok(res) => res,
                     Err(_) => {
-                        return Err(HuakError::InvalidPyPackageVersion(
+                        return Err(HuakError::InvalidPyPackageVersionOp(
                             it.to_string(),
                         ))
                     }

@@ -30,7 +30,7 @@ pub enum HuakError {
     VenvNotFound,
     PyProjectTomlNotFound, // TODO: Manfiest
     PackageInstallFailure(String),
-    InvalidPyPackageVersion(String),
+    InvalidPyPackageVersionOp(String),
 }
 
 #[derive(Debug)]
@@ -100,8 +100,9 @@ impl fmt::Display for CliError {
                 binding = format!("Failed to install package: {package}.");
                 binding.as_str()
             }
-            HuakError::InvalidPyPackageVersion(version) => {
-                binding = format!("Invalid Python package version: {version}.");
+            HuakError::InvalidPyPackageVersionOp(op) => {
+                binding =
+                    format!("Invalid Python package version operator: {op}.");
                 binding.as_str()
             }
         };
