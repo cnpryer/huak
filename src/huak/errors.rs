@@ -11,7 +11,7 @@ impl BinaryError for Error {}
 
 const BASIC_ERROR_CODE: ExitCode = ExitCode::FAILURE;
 
-// TODO: Slit into different types of errors. This could be
+// TODO: Split into different types of errors. This could be
 //       based on behavior, data, tooling, etc.
 #[derive(Debug)]
 pub enum HuakError {
@@ -51,9 +51,6 @@ impl CliError {
 
 impl fmt::Display for CliError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // This is a temporary value only useful for extracting something from anyhow::Error
-        // It's something to do with the borrow checker as the value "does not live for long enough"
-        // But I'm not knowledgeable enough to understand why.
         let binding: String;
 
         let error_string = match &self.error {
