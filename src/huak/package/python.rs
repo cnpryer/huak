@@ -91,21 +91,24 @@ impl PythonPackage {
                 break;
             }
         }
-        return if let Some(my_op) = op {
-            let pkg_components = pkg_string.split(my_op);
-            let pkg_vec = pkg_components.collect::<Vec<&str>>();
-            PythonPackage {
-                name: pkg_vec[0].to_string(),
-                op: Some(VersionOp::from_str(my_op).unwrap()),
-                version: Some(pkg_vec[1].to_string()),
+        let package = match op {
+            Some(it) => {
+                let pkg_components = pkg_string.split(it);
+                let pkg_vec = pkg_components.collect::<Vec<&str>>();
+                PythonPackage {
+                    name: pkg_vec[0].to_string(),
+                    op: Some(VersionOp::from_str(it).unwrap()),
+                    version: Some(pkg_vec[1].to_string()),
+                }
             }
-        } else {
-            PythonPackage {
+            None => PythonPackage {
                 name: pkg_string,
                 op: None,
                 version: None,
-            }
+            },
         };
+
+        package
     }
 
     pub fn string(&self) -> &String {
