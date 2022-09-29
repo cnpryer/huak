@@ -1,6 +1,10 @@
 use core::fmt;
 use std::str::FromStr;
 
+/// Version operators used in dependency strings.
+const VERSION_OPERATORS: [&str; 8] =
+    ["==", "~=", "!=", ">=", "<=", ">", "<", "==="];
+
 /// A Python package struct that encapsulates a packages name and version in accordance with PEP
 /// see https://peps.python.org/pep-0440/
 /// # Examples
@@ -79,8 +83,7 @@ impl PythonPackage {
     pub fn from(pkg_string: String) -> PythonPackage {
         // unfortunately, we have to redeclare the operators here or bring in a 3rd party crate (like strum)
         // to derive an iterable from out VersionOp enum
-        let version_operators =
-            ["==", "~=", "!=", ">=", "<=", ">", "<", "==="].into_iter();
+        let version_operators = VERSION_OPERATORS.into_iter();
         let mut op: Option<&str> = None;
         for i in version_operators {
             if pkg_string.contains(i) {
