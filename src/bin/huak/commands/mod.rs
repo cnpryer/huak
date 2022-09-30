@@ -45,10 +45,14 @@ enum Commands {
     Cleanpycache,
     // Builds and uploads current project to a registry.
     Doc {
+        // Check if Python code is formatted.
+        #[arg(long)]
         check: bool,
     },
-    //Check if Python code is formatted.
+    //Format Python code.
     Fmt {
+        // Check if Python code is formatted.
+        #[arg(long)]
         check: bool
     },
     // Display Huak commands and general usage information.
