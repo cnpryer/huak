@@ -6,7 +6,7 @@ use huak::{
     project::Project,
 };
 use std::{env, process::ExitCode};
-
+/*
 /// Get the `fmt` subcommand.
 pub fn cmd() -> Command<'static> {
     subcommand("fmt").about("Format Python code.").arg(
@@ -17,7 +17,7 @@ pub fn cmd() -> Command<'static> {
             .help("Check if Python code is formatted."),
     )
 }
-
+*/
 /// Run the `fmt` command.
 pub fn run(args: &ArgMatches) -> CliResult<()> {
     // This command runs from the context of the cwd.

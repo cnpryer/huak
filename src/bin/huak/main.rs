@@ -3,13 +3,14 @@
 //! Huak implements a cli application with various subcommands.
 use std::process::ExitCode;
 
-use clap::{self, AppSettings, ArgMatches};
+use clap::{Parser, Args, Subcommand};
 use huak::errors::{CliError, CliResult, HuakError};
 
 mod commands;
 
 /// Launch Huak's cli process.
 pub fn main() -> ExitCode {
+    /*
     let args = commands::args()
         .version(clap::crate_version!())
         .author(clap::crate_authors!())
@@ -23,8 +24,11 @@ pub fn main() -> ExitCode {
             err.exit_code
         }
     }
-}
+    */
 
+    ExitCode::SUCCESS
+}
+/*
 /// Command gating for Huak.
 fn run(args: ArgMatches) -> CliResult<()> {
     match args.subcommand() {
@@ -49,3 +53,4 @@ fn run(args: ArgMatches) -> CliResult<()> {
         _ => Err(CliError::new(HuakError::UnknownCommand, ExitCode::FAILURE)),
     }
 }
+*/

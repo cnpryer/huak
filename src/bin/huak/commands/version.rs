@@ -8,12 +8,12 @@ use huak::{
 };
 
 use super::utils::subcommand;
-
+/*
 /// Get the `version` subcommand.
 pub fn cmd() -> Command<'static> {
     subcommand("version").about("Display the version of the project.")
 }
-
+*/
 /// Run the `version` command.
 pub fn run() -> CliResult<()> {
     let cwd = env::current_dir()?;

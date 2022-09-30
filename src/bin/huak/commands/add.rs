@@ -2,12 +2,14 @@ use std::env;
 use std::process::ExitCode;
 
 use super::utils::subcommand;
+use clap::{Parser};
 use clap::{arg, value_parser, Arg, ArgAction, ArgMatches, Command};
 use huak::errors::{CliError, CliResult, HuakError};
 use huak::ops;
 use huak::project::Project;
 
 /// Get the `add` subcommand.
+/*
 pub fn cmd() -> Command<'static> {
     subcommand("add")
         .arg(
@@ -24,7 +26,7 @@ pub fn cmd() -> Command<'static> {
         )
         .about("Add a Python module to the existing project.")
 }
-
+*/
 pub fn run(args: &ArgMatches) -> CliResult<()> {
     let dependency = match args.get_one::<String>("dependency") {
         Some(d) => d,

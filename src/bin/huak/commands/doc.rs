@@ -1,7 +1,7 @@
 use super::utils::subcommand;
 use clap::{arg, ArgAction, ArgMatches, Command};
 use huak::errors::CliResult;
-
+/*
 /// Get the `doc` subcommand.
 pub fn cmd() -> Command<'static> {
     subcommand("doc")
@@ -14,7 +14,7 @@ pub fn cmd() -> Command<'static> {
         )
         .about("Builds and uploads current project to a registry.")
 }
-
+*/
 /// Run the `doc` command.
 pub fn run(args: &ArgMatches) -> CliResult<()> {
     // TODO: Use is_check.

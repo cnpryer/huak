@@ -9,7 +9,7 @@ use huak::{
     errors::{CliError, CliResult},
     project::Project,
 };
-
+/*
 /// Get the `remove` subcommand.
 pub fn cmd() -> Command<'static> {
     subcommand("remove")
@@ -20,7 +20,7 @@ pub fn cmd() -> Command<'static> {
         )
         .about("Remove a dependency from the project.")
 }
-
+*/
 /// Run the `remove` command.
 pub fn run(args: &ArgMatches) -> CliResult<()> {
     let dependency = match args.get_one::<String>("dependency") {
