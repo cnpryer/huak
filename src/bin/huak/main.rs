@@ -12,11 +12,11 @@ use commands::Cli;
 pub fn main() -> ExitCode {
     let cli = Cli::parse();
 
-    return match cli.run() {
+    match cli.run() {
         Ok(_) => ExitCode::SUCCESS,
         Err(err) => {
             eprintln!("{}", err);
             err.exit_code
         }
-    };
+    }
 }
