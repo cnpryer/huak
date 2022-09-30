@@ -26,7 +26,13 @@ pub(crate) mod version;
 
 /// A Python package manager written in Rust inspired by Cargo.
 #[derive(Parser)]
-#[command(version, author, about, arg_required_else_help=true, disable_help_subcommand=true)]
+#[command(
+    version,
+    author,
+    about,
+    arg_required_else_help = true,
+    disable_help_subcommand = true
+)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
@@ -37,7 +43,7 @@ pub struct Cli {
 pub enum Commands {
     /// Activate the project's virtual environment.
     Activate,
-    
+
     /// Add a python module to the existing project.
     Add {
         dependency: String,
@@ -83,22 +89,16 @@ pub enum Commands {
     Lint,
 
     /// Create a project from scratch.
-    New {
-        path: Option<String>,
-    },
+    New { path: Option<String> },
 
     /// Builds and uploads current project to a registry.
     Publish,
 
     /// Remove a dependency from the project.
-    Remove {
-        dependency: String,
-    },
+    Remove { dependency: String },
 
     /// Run a command within the project's environment context.
-    Run {
-        command: String,
-    },
+    Run { command: String },
 
     /// Test Python Code.
     Test,

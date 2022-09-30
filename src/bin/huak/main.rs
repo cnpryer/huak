@@ -18,5 +18,5 @@ pub fn main() -> ExitCode {
             eprintln!("{}", err);
             err.exit_code
         }
-    }
+    };
 }
