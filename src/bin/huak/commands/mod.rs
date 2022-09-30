@@ -41,7 +41,6 @@ pub struct Cli {
 pub enum Commands {
     /// Activate the project's virtual environment.
     Activate,
-
     /// Add a python module to the existing project.
     Add {
         dependency: String,
@@ -49,64 +48,48 @@ pub enum Commands {
         #[arg(long)]
         dev: bool,
     },
-
     /// Build tarball and wheel for the project.
     Build,
-
     /// Remove tarball and wheel from the built project.
     Clean,
-
     /// Remove all .pyc files and __pycache__ directores.
     #[command(name = "clean-pycache")]
     Cleanpycache,
-
     /// Builds and uploads current project to a registry.
     Doc {
         /// Check if Python code is formatted.
         #[arg(long)]
         check: bool,
     },
-
     /// Display Huak commands and general usage information.
     Help,
-
     /// Format Python code.
     Fmt {
         /// Check if Python code is formatted.
         #[arg(long)]
         check: bool,
     },
-
     /// Initialize the existing project.
     Init,
-
     /// Install the dependencies of an existing project.
     Install,
-
     /// Lint Python code.
     Lint,
-
     /// Create a project from scratch.
     New { path: Option<String> },
-
     /// Builds and uploads current project to a registry.
     Publish,
-
     /// Remove a dependency from the project.
     Remove { dependency: String },
-
     /// Run a command within the project's environment context.
     Run { command: String },
-
     /// Test Python Code.
     Test,
-
     /// Update dependencies added to the project.
     Update {
         #[arg(default_value = "*")]
         dependency: String,
     },
-
     /// Display the version of the project.
     Version,
 }
