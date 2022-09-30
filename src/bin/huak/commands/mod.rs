@@ -8,7 +8,6 @@ pub(crate) mod clean;
 pub(crate) mod clean_pycache;
 pub(crate) mod doc;
 pub(crate) mod fmt;
-pub(crate) mod help;
 pub(crate) mod init;
 pub(crate) mod install;
 pub(crate) mod lint;
@@ -24,13 +23,7 @@ pub(crate) mod version;
 
 /// A Python package manager written in Rust inspired by Cargo.
 #[derive(Parser)]
-#[command(
-    version,
-    author,
-    about,
-    arg_required_else_help = true,
-    disable_help_subcommand = true
-)]
+#[command(version, author, about, arg_required_else_help = true)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
@@ -61,8 +54,6 @@ pub enum Commands {
         #[arg(long)]
         check: bool,
     },
-    /// Display Huak commands and general usage information.
-    Help,
     /// Format Python code.
     Fmt {
         /// Check if Python code is formatted.
@@ -104,7 +95,6 @@ impl Cli {
             Commands::Clean => clean::run(),
             Commands::Cleanpycache => clean_pycache::run(),
             Commands::Doc { check } => doc::run(check),
-            Commands::Help => help::run(),
             Commands::Fmt { check } => fmt::run(check),
             Commands::Init => init::run(),
             Commands::Install => install::run(),
