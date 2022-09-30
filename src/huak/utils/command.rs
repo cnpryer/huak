@@ -22,7 +22,7 @@ pub(crate) fn run_command(
     if code != 0 {
         // TODO: Capture status codes.
         return Err(CliError::new(
-            HuakError::AnyHowError(anyhow::format_err!(msg)),
+            HuakError::UnknownError(msg),
             ExitCode::FAILURE,
         ));
     }
@@ -78,7 +78,7 @@ fn run_command_with_spawn(
     let status = match child.try_wait() {
         Ok(Some(s)) => s,
         Ok(None) => child.wait()?,
-        Err(e) => return Err(CliError::from(anyhow::format_err!(e))),
+        Err(e) => return Err(CliError::from(e)),
     };
 
     // TODO: Capture through spawn.
@@ -90,7 +90,7 @@ fn run_command_with_spawn(
     Ok((code, msg))
 }
 
-fn string_from_buff(buff: &[u8]) -> Result<String, anyhow::Error> {
+fn string_from_buff(buff: &[u8]) -> Result<String, CliError> {
     let string = std::str::from_utf8(buff)?.to_string();
 
     Ok(string)

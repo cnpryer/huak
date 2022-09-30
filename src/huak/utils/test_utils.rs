@@ -7,9 +7,10 @@ pub fn get_resource_dir() -> PathBuf {
     PathBuf::from(cwd).join("resources")
 }
 
-pub fn create_venv(path: PathBuf) -> Result<Venv, anyhow::Error> {
+pub fn create_venv(path: PathBuf) -> Result<Venv, HuakError> {
     let venv = Venv::new(path);
-    venv.create().unwrap();
+
+    venv.create()?;
 
     Ok(venv)
 }
@@ -17,10 +18,11 @@ pub fn create_venv(path: PathBuf) -> Result<Venv, anyhow::Error> {
 // Creates a mock `Project` from a `path`. A mock `Project` is given a
 // re-usable .venv from cwd
 pub fn create_mock_project(path: PathBuf) -> Result<Project, HuakError> {
-    let cwd = match env::current_dir() {
-        Ok(p) => p,
-        Err(e) => return Err(HuakError::AnyHowError(anyhow::format_err!(e))),
-    };
+    let cwd = env::current_dir()?;
+    // let cwd = match env::current_dir() {
+    //     Ok(p) => p,
+    //     Err(e) => return Err(HuakError::AnyHowError(anyhow::format_err!(e))),
+    // };
     let venv = create_venv(cwd.join(".venv"))?;
 
     let mut mock_project = Project::from(path)?;

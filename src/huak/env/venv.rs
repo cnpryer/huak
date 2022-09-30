@@ -5,8 +5,7 @@ use std::{
 };
 
 use crate::{
-    errors::{CliError, HuakError},
-    package::python::PythonPackage,
+    errors::HuakError, package::python::PythonPackage,
     utils::path::search_parents_for_filepath,
 };
 
@@ -48,7 +47,7 @@ impl Venv {
     }
 
     /// Get the name of the Venv (ex: ".venv").
-    pub fn name(&self) -> Result<&str, anyhow::Error> {
+    pub fn name(&self) -> Result<&str, HuakError> {
         let name = crate::utils::path::parse_filename(self.path.as_path())?;
 
         Ok(name)
@@ -70,25 +69,28 @@ impl Default for Venv {
 
 impl Venv {
     /// Create the venv at its path.
-    pub fn create(&self) -> Result<(), anyhow::Error> {
+    pub fn create(&self) -> Result<(), HuakError> {
         if self.path.exists() {
             return Ok(());
         }
 
         let from = match self.path.parent() {
             Some(p) => p,
-            _ => return Err(anyhow::format_err!("Invalid venv path.")),
+            _ => {
+                return Err(HuakError::ConfigurationError(
+                    "Invalid venv path, no parent directory.".into(),
+                ))
+            }
         };
 
         let name = self.name()?;
         let args = ["-m", "venv", name];
 
         // This can be handled without the wrapped CliError.
-        if let Err(e) =
-            crate::utils::command::run_command(self.python_alias(), &args, from)
-        {
-            return Err(anyhow::format_err!(e));
-        };
+        // TODO: This presents a circular problem. See comment in `errors.rs`. For
+        // now, I am just taking the HuakError out of the CliError and returning that.
+        crate::utils::command::run_command(self.python_alias(), &args, from)
+            .map_err(|e| e.error)?;
 
         Ok(())
     }
@@ -115,7 +117,7 @@ impl Venv {
     }
 
     /// Get the path to the module passed from the venv.
-    pub fn module_path(&self, module: &str) -> Result<PathBuf, anyhow::Error> {
+    pub fn module_path(&self, module: &str) -> Result<PathBuf, HuakError> {
         let bin_path = self.bin_path();
         let mut path = bin_path.join(module);
 
@@ -125,9 +127,9 @@ impl Venv {
 
         match path.set_extension("exe") {
             true => Ok(path),
-            false => {
-                Err(anyhow::format_err!("failed to create path for {module}"))
-            }
+            false => Err(HuakError::InternalError(format!(
+                "failed to create path for {module}"
+            ))),
         }
     }
 
@@ -137,7 +139,7 @@ impl Venv {
         module: &str,
         args: &[&str],
         from: &Path,
-    ) -> Result<(), CliError> {
+    ) -> Result<(), HuakError> {
         // Create the venv if it doesn't exist.
         // TODO: Fix this.
         self.create()?;
@@ -169,7 +171,7 @@ impl Venv {
     pub fn install_package(
         &self,
         package: &PythonPackage,
-    ) -> Result<(), CliError> {
+    ) -> Result<(), HuakError> {
         let cwd = env::current_dir()?;
         let module_str = &package.string();
         let args = ["install", module_str];
@@ -181,7 +183,7 @@ impl Venv {
     }
 
     /// Uninstall a dependency from the venv.
-    pub fn uninstall_package(&self, name: &str) -> Result<(), CliError> {
+    pub fn uninstall_package(&self, name: &str) -> Result<(), HuakError> {
         let cwd = env::current_dir()?;
         let module = "pip";
         let args = ["uninstall", name, "-y"];

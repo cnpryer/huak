@@ -7,6 +7,7 @@ use clap::Parser;
 
 mod commands;
 use commands::Cli;
+mod errors;
 
 /// Launch Huak's cli process.
 pub fn main() -> ExitCode {
