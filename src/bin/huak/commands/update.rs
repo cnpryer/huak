@@ -14,8 +14,8 @@ pub fn cmd() -> Command<'static> {
 }
 */
 /// Run the `update` command.
-pub fn run(args: &ArgMatches) -> CliResult<()> {
-    let _ = args.get_one::<String>("dependency").unwrap();
+pub fn run(dependency: String) -> CliResult<()> {
+    //let _ = args.get_one::<String>("dependency").unwrap();
 
     unimplemented!()
 }

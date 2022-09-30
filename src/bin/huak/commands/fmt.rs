@@ -19,16 +19,15 @@ pub fn cmd() -> Command<'static> {
 }
 */
 /// Run the `fmt` command.
-pub fn run(args: &ArgMatches) -> CliResult<()> {
+pub fn run(is_check: bool) -> CliResult<()> {
     // This command runs from the context of the cwd.
     let cwd = env::current_dir()?;
     let project = match Project::from(cwd) {
         Ok(p) => p,
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
-    let is_check = args.get_one::<bool>("check").unwrap();
 
-    if let Err(e) = ops::fmt::fmt_project(&project, is_check) {
+    if let Err(e) = ops::fmt::fmt_project(&project, &is_check) {
         return Err(CliError::new(e, ExitCode::FAILURE));
     };
 

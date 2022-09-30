@@ -27,7 +27,8 @@ pub fn cmd() -> Command<'static> {
         .about("Add a Python module to the existing project.")
 }
 */
-pub fn run(args: &ArgMatches) -> CliResult<()> {
+pub fn run(dependency: String, is_dev: bool) -> CliResult<()> {
+    /*
     let dependency = match args.get_one::<String>("dependency") {
         Some(d) => d,
         None => {
@@ -38,7 +39,7 @@ pub fn run(args: &ArgMatches) -> CliResult<()> {
         }
     };
     let is_dev = args.get_one::<bool>("dev").unwrap();
-
+*/
     let cwd = env::current_dir()?;
     let project = match Project::from(cwd) {
         Ok(p) => p,
@@ -46,7 +47,7 @@ pub fn run(args: &ArgMatches) -> CliResult<()> {
     };
 
     if let Err(e) =
-        ops::add::add_project_dependency(&project, dependency, *is_dev)
+        ops::add::add_project_dependency(&project, &dependency, is_dev)
     {
         return Err(CliError::new(e, ExitCode::FAILURE));
     }

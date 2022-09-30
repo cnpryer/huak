@@ -22,7 +22,8 @@ pub fn cmd() -> Command<'static> {
 }
 */
 /// Run the `remove` command.
-pub fn run(args: &ArgMatches) -> CliResult<()> {
+pub fn run(dependency: String) -> CliResult<()> {
+    /*
     let dependency = match args.get_one::<String>("dependency") {
         Some(d) => d,
         None => {
@@ -32,13 +33,14 @@ pub fn run(args: &ArgMatches) -> CliResult<()> {
             ))
         }
     };
+    */
     let cwd = env::current_dir()?;
     let project = match Project::from(cwd) {
         Ok(p) => p,
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
 
-    if let Err(e) = ops::remove::remove_project_dependency(&project, dependency)
+    if let Err(e) = ops::remove::remove_project_dependency(&project, &dependency)
     {
         return Err(CliError::new(e, ExitCode::FAILURE));
     };

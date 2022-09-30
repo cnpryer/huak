@@ -1,4 +1,7 @@
+use std::process::ExitCode;
+
 use clap::{Parser, Args, Subcommand};
+use huak::errors::{CliError, CliResult, HuakError};
 
 pub(crate) mod activate;
 pub(crate) mod add;
@@ -20,14 +23,16 @@ pub(crate) mod update;
 pub(crate) mod utils;
 pub(crate) mod version;
 
+// Main CLI struct.
 #[derive(Parser)]
 pub struct Cli {
     #[command(subcommand)]
-    command: Commands,
+    pub command: Commands,
 }
 
+// List of commands.
 #[derive(Subcommand)]
-enum Commands {
+pub enum Commands {
     // Activate the project's virtual environment.
     Activate,
     // Add a python module to the existing project.
@@ -65,7 +70,7 @@ enum Commands {
     Lint,
     // Create a project from scratch.
     New {
-        path: String
+        path: Option<String>
     },
     // Builds and uploads current project to a registry.
     Publish,
@@ -88,35 +93,30 @@ enum Commands {
 
 }
 
-/*
-pub fn args() -> Command<'static> {
-    let mut app = Command::new("huak");
-
-    let subcommands = vec![
-        activate::cmd(),
-        add::cmd(),
-        build::cmd(),
-        clean::cmd(),
-        clean_pycache::cmd(),
-        doc::cmd(),
-        help::cmd(),
-        fmt::cmd(),
-        init::cmd(),
-        install::cmd(),
-        lint::cmd(),
-        new::cmd(),
-        publish::cmd(),
-        remove::cmd(),
-        run::cmd(),
-        test::cmd(),
-        update::cmd(),
-        version::cmd(),
-    ];
-
-    for cmd in subcommands {
-        app = app.subcommand(cmd)
+// Command gating for Huak.
+impl Cli {
+    pub fn run(self) -> CliResult<()> {
+        match self.command {
+            Commands::Activate => activate::run(),
+            Commands::Add { dependency, dev } => add::run(dependency, dev),
+            Commands::Build => build::run(),
+            Commands::Clean => clean::run(),
+            Commands::Cleanpycache => clean_pycache::run(),
+            Commands::Doc { check } => doc::run(check),
+            Commands::Fmt { check } => fmt::run(check),
+            Commands::Help => help::run(),
+            Commands::Init => init::run(),
+            Commands::Install => install::run(),
+            Commands::Lint => lint::run(),
+            Commands::New { path } => new::run(path),
+            Commands::Publish => publish::run(),
+            Commands::Remove { dependency } => remove::run(dependency),
+            Commands::Run { command } => run::run(command),
+            Commands::Test => test::run(),
+            Commands::Update { dependency } => update::run(dependency),
+            Commands::Version => version::run(),
+            _ => Err(CliError::new(HuakError::UnknownCommand, ExitCode::FAILURE)),
+        }
     }
-
-    app
 }
-*/
+
