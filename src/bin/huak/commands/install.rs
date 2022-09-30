@@ -1,17 +1,9 @@
 use std::env;
 use std::process::ExitCode;
 
-use super::utils::subcommand;
-use clap::Command;
 use huak::errors::{CliError, CliResult};
 use huak::ops;
 use huak::project::Project;
-
-/// Get the `install` subcommand.
-pub fn cmd() -> Command<'static> {
-    subcommand("install")
-        .about("Install the dependencies of an existing project.")
-}
 
 /// Run the `install` command.
 pub fn run() -> CliResult<()> {

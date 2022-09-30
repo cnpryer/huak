@@ -2,28 +2,19 @@ use std::env;
 use std::fs;
 use std::process::ExitCode;
 
-use super::utils::subcommand;
-use clap::{arg, value_parser, ArgMatches, Command};
 use huak::errors::{CliError, CliResult, HuakError};
 use huak::ops;
 use huak::project::Project;
 
-/// Get the `new` subcommand.
-pub fn cmd() -> Command<'static> {
-    subcommand("new")
-        .about("Create a project from scratch.")
-        .arg(arg!([PATH]).id("path").value_parser(value_parser!(String)))
-}
-
 /// Run the `new` command.
 // TODO: Ops should hanlde the path creation step in addition to the project creation.
-pub fn run(args: &ArgMatches) -> CliResult<()> {
+pub fn run(path: Option<String>) -> CliResult<()> {
     // This command runs from the current working directory
     // Each command's behavior is triggered from the context of the cwd.
     let cwd = env::current_dir()?;
 
     // If a user passes a path
-    let path = match args.get_one::<String>("path") {
+    let path = match path {
         Some(p) => cwd.join(p),
         _ => cwd.clone(),
     };

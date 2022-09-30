@@ -1,15 +1,8 @@
-use super::utils::subcommand;
-use clap::Command;
 use huak::errors::CliError;
 use huak::ops;
 use huak::{errors::CliResult, project::Project};
 use std::env;
 use std::process::ExitCode;
-
-/// Get the `lint` subcommand.
-pub fn cmd() -> Command<'static> {
-    subcommand("lint").about("Lint Python code.")
-}
 
 /// Run the `lint` command.
 pub fn run() -> CliResult<()> {
