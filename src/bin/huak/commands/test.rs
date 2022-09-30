@@ -1,16 +1,9 @@
-use super::utils::subcommand;
-use clap::Command;
 use huak::errors::CliError;
 use huak::ops;
 use huak::{errors::CliResult, project::Project};
 use std::env;
 use std::process::ExitCode;
-/*
-/// Get the `test` subcommand.
-pub fn cmd() -> Command<'static> {
-    subcommand("test").about("Test Python code.")
-}
-*/
+
 /// Run the `test` command.
 // TODO: Use pyproject.toml for configuration overrides.
 pub fn run() -> CliResult<()> {

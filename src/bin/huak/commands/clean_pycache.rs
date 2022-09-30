@@ -1,6 +1,4 @@
-use super::utils::subcommand;
 use anyhow::Error;
-use clap::Command;
 use glob::{glob, Paths, PatternError};
 use huak::errors::{CliError, CliResult, HuakError};
 use std::{
@@ -17,12 +15,7 @@ struct DeletePath {
     path_type: PathType,
     glob: String,
 }
-/*
-pub fn cmd() -> Command<'static> {
-    subcommand("clean-pycache")
-        .about("Remove all .pyc files and __pycache__ directories.")
-}
-*/
+
 pub fn run() -> CliResult<()> {
     let mut success: bool = true;
 

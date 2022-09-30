@@ -1,6 +1,6 @@
 use std::process::ExitCode;
 
-use clap::{Parser, Args, Subcommand};
+use clap::{Parser, Subcommand};
 use huak::errors::{CliError, CliResult, HuakError};
 
 pub(crate) mod activate;
@@ -20,11 +20,13 @@ pub(crate) mod remove;
 pub(crate) mod run;
 pub(crate) mod test;
 pub(crate) mod update;
-pub(crate) mod utils;
 pub(crate) mod version;
 
 // Main CLI struct.
+
+/// A Python package manager written in Rust inspired by Cargo.
 #[derive(Parser)]
+#[command(version, author, about, arg_required_else_help=true, disable_help_subcommand=true)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
@@ -33,64 +35,82 @@ pub struct Cli {
 // List of commands.
 #[derive(Subcommand)]
 pub enum Commands {
-    // Activate the project's virtual environment.
+    /// Activate the project's virtual environment.
     Activate,
-    // Add a python module to the existing project.
+    
+    /// Add a python module to the existing project.
     Add {
         dependency: String,
-        // Adds an optional dependency.
-        dev: bool
+        /// Adds an optional dependency.
+        #[arg(long)]
+        dev: bool,
     },
-    // Build tarball and wheel for the project.
+
+    /// Build tarball and wheel for the project.
     Build,
-    // Remove tarball and wheel from the built project.
+
+    /// Remove tarball and wheel from the built project.
     Clean,
-    // Remove all .pyc files and __pycache__ directores.
+
+    /// Remove all .pyc files and __pycache__ directores.
     #[command(name = "clean-pycache")]
     Cleanpycache,
-    // Builds and uploads current project to a registry.
+
+    /// Builds and uploads current project to a registry.
     Doc {
-        // Check if Python code is formatted.
+        /// Check if Python code is formatted.
         #[arg(long)]
         check: bool,
     },
-    //Format Python code.
-    Fmt {
-        // Check if Python code is formatted.
-        #[arg(long)]
-        check: bool
-    },
-    // Display Huak commands and general usage information.
+
+    /// Display Huak commands and general usage information.
     Help,
-    // Initialize the existing project.
-    Init,
-    // Install the dependencies of an existing project.
-    Install,
-    // Lint Python code.
-    Lint,
-    // Create a project from scratch.
-    New {
-        path: Option<String>
+
+    /// Format Python code.
+    Fmt {
+        /// Check if Python code is formatted.
+        #[arg(long)]
+        check: bool,
     },
-    // Builds and uploads current project to a registry.
+
+    /// Initialize the existing project.
+    Init,
+
+    /// Install the dependencies of an existing project.
+    Install,
+
+    /// Lint Python code.
+    Lint,
+
+    /// Create a project from scratch.
+    New {
+        path: Option<String>,
+    },
+
+    /// Builds and uploads current project to a registry.
     Publish,
-    // Remove a dependency from the project.
+
+    /// Remove a dependency from the project.
     Remove {
         dependency: String,
     },
-    // Run a command within the project's environment context.
+
+    /// Run a command within the project's environment context.
     Run {
         command: String,
     },
-    // Test Python Code.
+
+    /// Test Python Code.
     Test,
-    // Update dependencies added to the project.
+
+    /// Update dependencies added to the project.
     Update {
+        #[arg(default_value = "*")]
         dependency: String,
     },
-    // Display the version of the project.
-    Version,
 
+    /// Display the version of the project.
+    Version,
 }
 
 // Command gating for Huak.
@@ -103,8 +123,8 @@ impl Cli {
             Commands::Clean => clean::run(),
             Commands::Cleanpycache => clean_pycache::run(),
             Commands::Doc { check } => doc::run(check),
-            Commands::Fmt { check } => fmt::run(check),
             Commands::Help => help::run(),
+            Commands::Fmt { check } => fmt::run(check),
             Commands::Init => init::run(),
             Commands::Install => install::run(),
             Commands::Lint => lint::run(),
@@ -115,8 +135,9 @@ impl Cli {
             Commands::Test => test::run(),
             Commands::Update { dependency } => update::run(dependency),
             Commands::Version => version::run(),
-            _ => Err(CliError::new(HuakError::UnknownCommand, ExitCode::FAILURE)),
+            _ => {
+                Err(CliError::new(HuakError::UnknownCommand, ExitCode::FAILURE))
+            }
         }
     }
 }
-

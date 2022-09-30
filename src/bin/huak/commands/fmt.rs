@@ -1,23 +1,10 @@
-use super::utils::subcommand;
-use clap::{arg, ArgAction, ArgMatches, Command};
 use huak::{
     errors::{CliError, CliResult},
     ops,
     project::Project,
 };
 use std::{env, process::ExitCode};
-/*
-/// Get the `fmt` subcommand.
-pub fn cmd() -> Command<'static> {
-    subcommand("fmt").about("Format Python code.").arg(
-        arg!(--check)
-            .id("check")
-            .takes_value(false)
-            .action(ArgAction::SetTrue)
-            .help("Check if Python code is formatted."),
-    )
-}
-*/
+
 /// Run the `fmt` command.
 pub fn run(is_check: bool) -> CliResult<()> {
     // This command runs from the context of the cwd.
