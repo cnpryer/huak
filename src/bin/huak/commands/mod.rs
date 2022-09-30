@@ -1,7 +1,5 @@
-use std::process::ExitCode;
-
 use clap::{Parser, Subcommand};
-use huak::errors::{CliError, CliResult, HuakError};
+use huak::errors::CliResult;
 
 pub(crate) mod activate;
 pub(crate) mod add;
@@ -135,9 +133,6 @@ impl Cli {
             Commands::Test => test::run(),
             Commands::Update { dependency } => update::run(dependency),
             Commands::Version => version::run(),
-            _ => {
-                Err(CliError::new(HuakError::UnknownCommand, ExitCode::FAILURE))
-            }
         }
     }
 }
