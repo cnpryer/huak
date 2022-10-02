@@ -12,8 +12,8 @@ use self::config::Config;
 #[derive(Default)]
 pub enum ProjectType {
     #[default]
-    Application,
     Library,
+    Application,
 }
 
 /// The ``Project`` struct.

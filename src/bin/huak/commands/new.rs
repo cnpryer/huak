@@ -14,14 +14,6 @@ pub fn run(path: Option<String>, app: bool, lib: bool) -> CliResult<()> {
     // Each command's behavior is triggered from the context of the cwd.
     let cwd = env::current_dir()?;
 
-    // The user cannot ask for both kinds of project at once.
-    if app && lib {
-        return Err(CliError::new(
-            HuakError::ConflictingArguments,
-            ExitCode::FAILURE,
-        ));
-    }
-
     let project_type = match (app, lib) {
         (true, false) => ProjectType::Application,
         (false, true) => ProjectType::Library,

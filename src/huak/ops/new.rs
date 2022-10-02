@@ -54,7 +54,10 @@ mod tests {
 
     use super::*;
 
-    use crate::utils::test_utils::create_mock_project;
+    use crate::{
+        config::pyproject::toml::Toml, project::ProjectType,
+        utils::test_utils::create_mock_project,
+    };
 
     // TODO
     #[test]
@@ -69,5 +72,21 @@ mod tests {
 
         assert!(!had_toml);
         assert!(toml_path.exists());
+    }
+
+    #[test]
+    fn create_app_project() {
+        let directory = tempdir().unwrap().into_path().to_path_buf();
+        let project = Project::new(directory, ProjectType::Application);
+        let toml_path = project.root.join("pyproject.toml");
+
+        create_project(&project).unwrap();
+        let toml = Toml::open(&toml_path).unwrap();
+
+        assert!(toml.project.scripts.is_some());
+        assert_eq!(
+            toml.project.scripts.unwrap()[&toml.project.name],
+            format!("{}:run", toml.project.name)
+        );
     }
 }

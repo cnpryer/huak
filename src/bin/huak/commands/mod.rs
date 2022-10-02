@@ -72,12 +72,12 @@ pub enum Commands {
     Lint,
     /// Create a project from scratch.
     New {
+        /// Create a library.
+        #[arg(long, conflicts_with = "app")]
+        lib: bool,
         /// Create a runnable application.
         #[arg(long)]
         app: bool,
-        /// Create a library.
-        #[arg(long)]
-        lib: bool,
         path: Option<String>,
     },
     /// Builds and uploads current project to a registry.
