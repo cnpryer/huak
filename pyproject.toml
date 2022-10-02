@@ -1,0 +1,27 @@
+[project]
+name = "huak"
+version = "0.0.203"
+description = "A Python package manager written in Rust inspired by Cargo."
+authors = [
+    {email = "cnpryer@gmail.com"},
+    {name = "Chris Pryer"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Rust",
+]
+
+[project.urls]
+Issues = "https://github.com/cnpryer/huak/issues"
+Documentation = "https://docs.rs/crate/huak"
+homepage = "https://github.com/cnpryer/huak"
+repository = "https://github.com/cnpryer/huak"
+
+[tool.maturin]
+bindings = "bin"
+
+[build-system]
+requires = ["maturin>=0.13,<0.14"]
+build-backend = "maturin"
