@@ -24,8 +24,8 @@ pub struct Toml {
 */
 #[derive(Serialize, Deserialize, Default)]
 pub struct Toml {
-    pub(crate) project: Project,
-    pub(crate) build_system: BuildSystem,
+    pub(crate) project: ProjectWrapper,
+    pub(crate) build_system: BuildSystemWrapper,
 }
 
 impl Toml {

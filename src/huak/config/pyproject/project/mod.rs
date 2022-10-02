@@ -11,7 +11,7 @@ pub(crate) struct Author {
     pub(crate) name: Option<String>,
     pub(crate) email: Option<String>,
 }
-
+/*
 /// Project table data.
 /// ```toml
 /// [project]
@@ -30,16 +30,23 @@ pub(crate) struct Project {
     pub(crate) optional_dependencies: Option<Vec<String>>,
     pub(crate) authors: Vec<Author>,
 }
+*/
+#[derive(Serialize, Deserialize)]
+struct ProjectWrapper {
+    pub project: Project,
+}
 
-impl Default for Project {
-    fn default() -> Project {
-        Project {
-            name: "".to_string(),
-            version: "0.0.1".to_string(),
-            description: "".to_string(),
-            authors: vec![],
-            dependencies: vec![],
-            optional_dependencies: Some(vec![]),
+impl Default for ProjectWrapper {
+    fn default() -> ProjectWrapper {
+        ProjectWrapper { 
+            project: Project {
+                name: "".to_string(),
+                version: Some("0.0.1".to_string()),
+                description: Some("".to_string()),
+                authors: Some(vec![]),
+                dependencies: Some(vec![]),
+                ..Default
+            }
         }
     }
 }

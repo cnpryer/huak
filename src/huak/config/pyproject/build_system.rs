@@ -17,12 +17,19 @@ pub(crate) struct BuildSystem {
     pub(crate) backend: String,
 }
 */
-impl Default for BuildSystem {
-    fn default() -> BuildSystem {
-        BuildSystem {
-            requires: vec![HUAK_REQUIRES.to_string()],
-            build_backend: Some(HUAK_BUILD_BACKEND.to_string()),
-            backend_path: None,
+#[derive(Serialize, Deserialize)]
+pub struct BuildSystemWrapper {
+    pub build_system: BuildSystem,
+}
+
+impl Default for BuildSystemWrapper {
+    fn default() -> BuildSystemWrapper {
+        BuildSystemWrapper {
+            build_system: BuildSystem { 
+                requires: Some(vec![HUAK_REQUIRES.to_string()]), 
+                build_backend: Some(HUAK_BUILD_BACKEND.to_string()), 
+                backend_path: None, 
+            }
         }
     }
 }
