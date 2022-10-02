@@ -165,13 +165,13 @@ impl Venv {
         Ok(())
     }
 
-    /// Install a dependency to the venv.
+    /// Install a Python package to the venv.
     pub fn install_package(
         &self,
-        dependency: &PythonPackage,
+        package: &PythonPackage,
     ) -> Result<(), CliError> {
         let cwd = env::current_dir()?;
-        let module_str = &dependency.string();
+        let module_str = &package.string();
         let args = ["install", module_str];
         let module = "pip";
 
