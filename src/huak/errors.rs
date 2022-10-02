@@ -32,6 +32,7 @@ pub enum HuakError {
     PyPackageInstallFailure(String),
     PyPackageInitError(String),
     InvalidPyPackageVersionOp(String),
+    BuildFailure,
 }
 
 #[derive(Debug)]
@@ -111,6 +112,7 @@ impl fmt::Display for CliError {
                     format!("Invalid Python package version operator: {op}.");
                 binding.as_str()
             }
+            HuakError::BuildFailure => "Failed to build the project.",
         };
         write!(f, "{}", error_string)
     }
