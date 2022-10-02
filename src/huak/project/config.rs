@@ -109,7 +109,7 @@ impl PythonConfig for Config {
 
         // Collect into vector of owned `PythonPackage` data.
         from.iter()
-            .filter_map(|d| PythonPackage::from(d.clone()).ok())
+            .filter_map(|d| PythonPackage::from(d).ok())
             .collect()
     }
     // Get vec of `PythonPackage`s from the manifest.
@@ -127,7 +127,7 @@ impl PythonConfig for Config {
 
         // Collect into vector of owned `PythonPackage` data.
         from.iter()
-            .filter_map(|d| PythonPackage::from(d.clone()).ok())
+            .filter_map(|d| PythonPackage::from(d).ok())
             .collect()
     }
 }

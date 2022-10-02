@@ -10,7 +10,7 @@ pub fn build_project(project: &Project) -> Result<(), HuakError> {
         None => return Err(HuakError::VenvNotFound),
     };
 
-    let package = PythonPackage::from("build".to_string())?;
+    let package = PythonPackage::from("build")?;
 
     if venv.install_package(&package).is_err() {
         return Err(HuakError::PyPackageInstallFailure("build".to_string()));
