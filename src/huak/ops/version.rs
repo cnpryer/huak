@@ -8,5 +8,8 @@ pub fn get_project_version(project: &Project) -> Result<&str, HuakError> {
 
     let version = project.config().project_version();
 
-    Ok(version)
+    match version {
+        Some(version) => Ok(version),
+        None => Ok("0.0.1"),
+    }
 }

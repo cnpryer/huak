@@ -20,6 +20,8 @@ pub fn add_project_dependency(
     if toml
         .project
         .dependencies
+        .as_ref()
+        .unwrap_or(&Vec::new())
         .iter()
         .any(|d| d.starts_with(dependency))
     {
@@ -56,7 +58,7 @@ pub fn add_project_dependency(
     };
 
     match is_dev {
-        true => toml.add_optional_dependency(dep),
+        true => toml.add_optional_dependency("dev", dep),
         false => toml.add_dependency(dep),
     }
 
@@ -99,6 +101,8 @@ mod tests {
         let had_dep = toml
             .project
             .dependencies
+            .as_ref()
+            .unwrap_or(&Vec::new())
             .iter()
             .any(|d| d.starts_with(dependency));
 
@@ -108,6 +112,8 @@ mod tests {
         let has_dep = toml
             .project
             .dependencies
+            .as_ref()
+            .unwrap_or(&Vec::new())
             .iter()
             .any(|d| d.starts_with(dependency));
 

@@ -11,7 +11,7 @@ const DEFAULT_SEARCH_STEPS: usize = 5;
 /// Traits for Python-specific configuration.
 pub trait PythonConfig {
     fn package_list(&self) -> Vec<PythonPackage>;
-    fn optional_package_list(&self) -> Vec<PythonPackage>;
+    fn optional_package_list(&self, group: &str) -> Vec<PythonPackage>;
 }
 
 /// `Manifest` data the configuration uses to manage standard configuration
@@ -90,7 +90,7 @@ impl Config {
 
     /// Get a reference to the project version from manifest data.
     // TODO: Use more than toml.
-    pub fn project_version(&self) -> &String {
+    pub fn project_version(&self) -> &Option<String> {
         let table = &self.manifest.toml.project;
 
         &table.version
@@ -103,9 +103,9 @@ impl PythonConfig for Config {
     fn package_list(&self) -> Vec<PythonPackage> {
         // Get huak's spanned table found in the Toml.
         let table = &self.manifest.toml.project;
-
+        let empty: Vec<String> = Vec::new();
         // Dependencies to list from.
-        let from = &table.dependencies;
+        let from = &table.dependencies.as_ref().unwrap_or(&empty);
 
         // Collect into vector of owned `PythonPackage` data.
         from.iter()
@@ -114,17 +114,17 @@ impl PythonConfig for Config {
     }
     // Get vec of `PythonPackage`s from the manifest.
     // TODO: More than toml.
-    fn optional_package_list(&self) -> Vec<PythonPackage> {
+    fn optional_package_list(&self, group: &str) -> Vec<PythonPackage> {
         // Get huak's spanned table found in the Toml.
         let table = &self.manifest.toml.project;
+        let empty: Vec<String> = vec![];
 
         // Dependencies to list from.
-        let from = match &table.optional_dependencies {
-            Some(vec) => vec,
-            None => return vec![],
-        };
+        let from = &table
+            .optional_dependencies
+            .as_ref()
+            .map_or(&empty, |deps| deps.get(group).unwrap_or(&empty));
 
-        // Collect into vector of owned `PythonPackage` data.
         from.iter()
             .filter_map(|d| PythonPackage::from(d.clone()).ok())
             .collect()

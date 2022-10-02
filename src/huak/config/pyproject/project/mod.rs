@@ -1,5 +1,5 @@
-use serde_derive::{Deserialize, Serialize};
-
+use pyproject_toml::Project;
+/*
 /// Struct containing Author information.
 /// ```toml
 /// [[project.authors]]
@@ -11,6 +11,7 @@ pub(crate) struct Author {
     pub(crate) name: Option<String>,
     pub(crate) email: Option<String>,
 }
+*/
 /*
 /// Project table data.
 /// ```toml
@@ -31,22 +32,29 @@ pub(crate) struct Project {
     pub(crate) authors: Vec<Author>,
 }
 */
-#[derive(Serialize, Deserialize)]
-struct ProjectWrapper {
-    pub project: Project,
-}
 
-impl Default for ProjectWrapper {
-    fn default() -> ProjectWrapper {
-        ProjectWrapper { 
-            project: Project {
-                name: "".to_string(),
-                version: Some("0.0.1".to_string()),
-                description: Some("".to_string()),
-                authors: Some(vec![]),
-                dependencies: Some(vec![]),
-                ..Default
-            }
+pub struct ProjectBuilder {}
+
+impl ProjectBuilder {
+    pub fn default() -> Project {
+        Project {
+            name: "".to_string(),
+            version: Some("0.0.1".to_string()),
+            description: Some("".to_string()),
+            readme: None,
+            requires_python: None,
+            license: None,
+            authors: Some(vec![]),
+            maintainers: None,
+            keywords: None,
+            classifiers: None,
+            urls: None,
+            entry_points: None,
+            scripts: None,
+            gui_scripts: None,
+            dependencies: Some(vec![]),
+            optional_dependencies: None,
+            dynamic: None,
         }
     }
 }

@@ -1,7 +1,11 @@
+use std::collections::HashMap;
 use std::{fs, path::Path};
 
+use pyproject_toml::{BuildSystem, Project};
 use serde_derive::{Deserialize, Serialize};
-use pyproject_toml::{Project, BuildSystem};
+
+use super::build_system::BuildSystemBuilder;
+use super::project::ProjectBuilder;
 
 /// Toml configuration deser and ser structure.
 /// ```toml
@@ -22,15 +26,25 @@ pub struct Toml {
     pub(crate) build_system: BuildSystem,
 }
 */
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Toml {
-    pub(crate) project: ProjectWrapper,
-    pub(crate) build_system: BuildSystemWrapper,
+    #[serde(rename = "build-system")]
+    pub build_system: BuildSystem,
+    pub project: Project,
+}
+
+impl Default for Toml {
+    fn default() -> Toml {
+        Toml {
+            project: ProjectBuilder::default(),
+            build_system: BuildSystemBuilder::default(),
+        }
+    }
 }
 
 impl Toml {
-    pub(crate) fn from(string: &str) -> Result<Toml, toml::de::Error> {
-        toml::from(string)
+    pub(crate) fn from(string: &str) -> Result<Toml, toml_edit::de::Error> {
+        toml_edit::de::from_str(string)
     }
 
     pub(crate) fn open(path: &Path) -> Result<Toml, anyhow::Error> {
@@ -52,37 +66,48 @@ impl Toml {
         Ok(toml)
     }
 
-    pub(crate) fn to_string(&self) -> Result<String, toml::ser::Error> {
-        toml::to_string(&self)
+    pub(crate) fn to_string(&self) -> Result<String, toml_edit::ser::Error> {
+        toml_edit::ser::to_string(&self)
     }
 }
 
 impl Toml {
     pub fn add_dependency(&mut self, dependency: &str) {
-        match self.project.dependencies {
+        match &mut self.project.dependencies {
             Some(dependencies) => {
                 dependencies.push(dependency.to_string());
-            },
+            }
             None => {
                 self.project.dependencies = Some(vec![dependency.to_string()]);
             }
         }
     }
 
-    pub fn add_optional_dependency(&mut self, name: &str, dependencies: &Vec<String>) {
-        unimplemented!()
+    pub fn add_optional_dependency(&mut self, group: &str, dependency: &str) {
+        match &mut self.project.optional_dependencies {
+            Some(deps) => deps
+                .entry(group.to_string())
+                .or_insert_with(Vec::new)
+                .push(dependency.to_string()),
+            None => {
+                self.project.optional_dependencies = Some(HashMap::from([(
+                    group.to_string(),
+                    vec![dependency.to_string()],
+                )]))
+            }
+        }
     }
 
     pub fn remove_dependency(&mut self, dependency: &str) {
         // TODO: Do better than .starts_with
-        if let Some(deps) = self.project.dependencies {
-            dependencies.retain(|s| !s.starts_with(dependency));
+        if let Some(deps) = &mut self.project.dependencies {
+            deps.retain(|s| !s.starts_with(dependency));
         }
-    }
 
-    pub fn remove_optional_dependency(&mut self, dependency: &str) {
         if let Some(deps) = &mut self.project.optional_dependencies {
-            deps.retain(|(k, v)| !k.starts_with(dependency));
+            for (_, group_deps) in deps.iter_mut() {
+                group_deps.retain(|s| !s.starts_with(dependency));
+            }
         }
     }
 }
@@ -90,6 +115,26 @@ impl Toml {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test1() {
+        let string = r#"[build-system]
+requires = ["huak-core>=1.0.0"]
+build-backend = "huak.core.build.api"
+
+[project]
+name = "spam"
+version = "2020.0.0"
+description = "Lovely Spam! Wonderful Spam!"
+readme = "README.rst"
+requires-python = ">=3.8""#;
+
+
+        match Toml::from(string) {
+            Ok(toml) => {},
+            Err(err) => eprintln!("{}", err),
+        }
+    }
 
     #[test]
     fn serialize() {
@@ -107,12 +152,16 @@ email = "cnpryer@gmail.com"
 requires = ["huak-core>=1.0.0"]
 build-backend = "huak.core.build.api"
 "#;
+  
         let toml = Toml::from(string).unwrap();
+
+        println!("{}", toml.project.name.clone());
+        println!("{}", toml.project.version.as_ref().unwrap());
 
         let res = toml.to_string().unwrap();
         dbg!(&res);
 
-        assert_eq!(res, string);
+        println!("{:?}", toml.to_string());
     }
 
     #[test]
@@ -135,9 +184,20 @@ build-backend = "huak.core.build.api"
 
         assert_eq!(toml.project.name, "Test");
         assert_eq!(
-            toml.project.authors[0].clone().name.unwrap(),
+            toml.project.authors.unwrap()[0]
+                .name
+                .as_ref()
+                .unwrap()
+                .clone(),
             "Chris Pryer"
         );
+
+        assert_eq!(toml.build_system.requires, &["huak-core>=1.0.0"]);
+        assert_eq!(toml.build_system.build_backend, Some(String::from("huak.core.build.api")));
+
+        assert_eq!(toml.project.version, Some(String::from("0.1.0")));
+        assert_eq!(toml.project.description, Some(String::from("")));
+        assert_eq!(toml.project.dependencies, Some(vec![String::from("click==8.1.3"), String::from("black==22.8.0")]));
     }
 
     #[test]
@@ -161,8 +221,13 @@ requires = ["huak-core>=1.0.0"]
 build-backend = "huak.core.build.api"
 "#;
 
-        let toml = Toml::from(string).unwrap();
+        match Toml::from(string) {
+            Ok(toml) => {println!("{:?}", toml)},
+            Err(err) => {eprintln!("{}", err)}
+        }        
 
-        assert!(toml.project.authors.iter().nth(1).is_some());
+//let toml = Toml::from(string).unwrap();
+
+        //assert!(toml.project.authors.iter().nth(1).is_some());
     }
 }

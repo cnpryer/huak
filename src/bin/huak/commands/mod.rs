@@ -63,7 +63,11 @@ pub enum Commands {
     /// Initialize the existing project.
     Init,
     /// Install the dependencies of an existing project.
-    Install,
+    Install {
+        /// Install main and all optional dependencies.
+        #[arg(long)]
+        all: bool,
+    },
     /// Lint Python code.
     Lint,
     /// Create a project from scratch.
@@ -97,7 +101,7 @@ impl Cli {
             Commands::Doc { check } => doc::run(check),
             Commands::Fmt { check } => fmt::run(check),
             Commands::Init => init::run(),
-            Commands::Install => install::run(),
+            Commands::Install { all } => install::run(all),
             Commands::Lint => lint::run(),
             Commands::New { path } => new::run(path),
             Commands::Publish => publish::run(),
