@@ -13,7 +13,7 @@ pub fn run() -> CliResult<()> {
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
 
-    if let Err(e) = ops::install::install_project_dependencies(&project) {
+    if let Err(e) = ops::install::install_project_dependencies(&project, &[]) {
         return Err(CliError::new(e, ExitCode::FAILURE));
     };
 

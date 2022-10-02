@@ -56,7 +56,7 @@ pub fn add_project_dependency(
     };
 
     match is_dev {
-        true => toml.add_optional_dependency(dep),
+        true => toml.add_optional_dependency("dev", dep),
         false => toml.add_dependency(dep),
     }
 

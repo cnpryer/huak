@@ -180,7 +180,7 @@ impl Venv {
         Ok(())
     }
 
-    /// Install a dependency from the venv.
+    /// Uninstall a dependency from the venv.
     pub fn uninstall_package(&self, name: &str) -> Result<(), CliError> {
         let cwd = env::current_dir()?;
         let module = "pip";
