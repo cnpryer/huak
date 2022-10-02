@@ -8,7 +8,7 @@ use crate::{
 /// Install all of the projects defined dependencies.
 pub fn install_project_dependencies(
     project: &Project,
-    optional_groups: &[&str],
+    all: bool,
 ) -> Result<(), HuakError> {
     // TODO: Doing this venv handling seems hacky.
     if !project.root.join("pyproject.toml").exists() {
@@ -21,8 +21,24 @@ pub fn install_project_dependencies(
     };
 
     install_packages(&project.config().package_list(), venv)?;
-    for group in optional_groups {
-        install_packages(&project.config().optional_package_list(group), venv)?;
+
+    if !all {
+        return Ok(());
+    }
+
+    if let Some(deps) = &project
+        .config()
+        .manifest()
+        .toml
+        .project
+        .optional_dependencies
+    {
+        for group in deps.keys() {
+            install_packages(
+                &project.config().optional_package_list(group),
+                venv,
+            )?;
+        }
     }
 
     Ok(())
@@ -74,7 +90,7 @@ pub mod tests {
         let black_path = venv.module_path("black").unwrap();
         let had_black = black_path.exists();
 
-        install_project_dependencies(&project, &["test"]).unwrap();
+        install_project_dependencies(&project, true).unwrap();
 
         assert!(!had_black);
         assert!(venv.module_path("black").unwrap().exists());
