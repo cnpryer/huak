@@ -17,6 +17,7 @@ const BASIC_ERROR_CODE: ExitCode = ExitCode::FAILURE;
 pub enum HuakError {
     NotImplemented,
     MissingArguments,
+    ConflictingArguments,
     UnknownError,
     IOError,
     UnknownCommand,
@@ -58,6 +59,9 @@ impl fmt::Display for CliError {
 
         let error_string = match &self.error {
             HuakError::MissingArguments => "Some arguments were missing.",
+            HuakError::ConflictingArguments => {
+                "Some arguments were conflicting with each other."
+            }
             HuakError::IOError => "An IO error occurred.",
             HuakError::UnknownCommand => {
                 "This is an unknown command. Please check --help."

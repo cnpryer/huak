@@ -30,6 +30,7 @@ pub(crate) struct Project {
     #[serde(rename = "optional-dependencies")]
     pub(crate) optional_dependencies: Option<HashMap<String, Vec<String>>>,
     pub(crate) authors: Vec<Author>,
+    pub(crate) scripts: Option<HashMap<String, String>>,
 }
 
 impl Default for Project {
@@ -41,6 +42,7 @@ impl Default for Project {
             authors: vec![],
             dependencies: vec![],
             optional_dependencies: None,
+            scripts: None,
         }
     }
 }

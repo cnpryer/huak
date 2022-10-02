@@ -45,7 +45,7 @@ pub enum Commands {
     Build,
     /// Remove tarball and wheel from the built project.
     Clean,
-    /// Remove all .pyc files and __pycache__ directores.
+    /// Remove all .pyc files and __pycache__ directories.
     #[command(name = "clean-pycache")]
     Cleanpycache,
     /// Builds and uploads current project to a registry.
@@ -60,7 +60,7 @@ pub enum Commands {
         #[arg(long)]
         check: bool,
     },
-    /// Initialize the exi`sting project.
+    /// Initialize the existing project.
     Init,
     /// Install the dependencies of an existing project.
     Install {
@@ -71,7 +71,15 @@ pub enum Commands {
     /// Lint Python code.
     Lint,
     /// Create a project from scratch.
-    New { path: Option<String> },
+    New {
+        /// Create a runnable application.
+        #[arg(long)]
+        app: bool,
+        /// Create a library.
+        #[arg(long)]
+        lib: bool,
+        path: Option<String>,
+    },
     /// Builds and uploads current project to a registry.
     Publish,
     /// Remove a dependency from the project.
@@ -103,7 +111,7 @@ impl Cli {
             Commands::Init => init::run(),
             Commands::Install { all } => install::run(all),
             Commands::Lint => lint::run(),
-            Commands::New { path } => new::run(path),
+            Commands::New { path, app, lib } => new::run(path, app, lib),
             Commands::Publish => publish::run(),
             Commands::Remove { dependency } => remove::run(dependency),
             Commands::Run { command } => run::run(command),
