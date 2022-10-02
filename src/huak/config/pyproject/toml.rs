@@ -1,7 +1,7 @@
 use std::{fs, path::Path};
 
-use super::{build_system::BuildSystem, project::Project};
 use serde_derive::{Deserialize, Serialize};
+use pyproject_toml::{Project, BuildSystem};
 
 /// Toml configuration deser and ser structure.
 /// ```toml
@@ -14,16 +14,23 @@ use serde_derive::{Deserialize, Serialize};
 /// [tool.build-system]
 /// # ...
 /// ```
+/*
 #[derive(Serialize, Deserialize, Default)]
 pub struct Toml {
     pub(crate) project: Project,
     #[serde(rename = "build-system")]
     pub(crate) build_system: BuildSystem,
 }
+*/
+#[derive(Serialize, Deserialize, Default)]
+pub struct Toml {
+    pub(crate) project: Project,
+    pub(crate) build_system: BuildSystem,
+}
 
 impl Toml {
     pub(crate) fn from(string: &str) -> Result<Toml, toml::de::Error> {
-        toml::from_str(string)
+        toml::from(string)
     }
 
     pub(crate) fn open(path: &Path) -> Result<Toml, anyhow::Error> {
@@ -52,31 +59,30 @@ impl Toml {
 
 impl Toml {
     pub fn add_dependency(&mut self, dependency: &str) {
-        self.project.dependencies.push(dependency.to_string());
-    }
-
-    pub fn add_optional_dependency(&mut self, dependency: &str) {
-        match &mut self.project.optional_dependencies {
-            Some(deps) => {
-                deps.push(dependency.to_string());
-            }
+        match self.project.dependencies {
+            Some(dependencies) => {
+                dependencies.push(dependency.to_string());
+            },
             None => {
-                self.project.optional_dependencies =
-                    Some(vec![dependency.to_string()]);
+                self.project.dependencies = Some(vec![dependency.to_string()]);
             }
         }
     }
 
+    pub fn add_optional_dependency(&mut self, name: &str, dependencies: &Vec<String>) {
+        unimplemented!()
+    }
+
     pub fn remove_dependency(&mut self, dependency: &str) {
         // TODO: Do better than .starts_with
-        self.project
-            .dependencies
-            .retain(|s| !s.starts_with(dependency));
+        if let Some(deps) = self.project.dependencies {
+            dependencies.retain(|s| !s.starts_with(dependency));
+        }
     }
 
     pub fn remove_optional_dependency(&mut self, dependency: &str) {
         if let Some(deps) = &mut self.project.optional_dependencies {
-            deps.retain(|s| !s.starts_with(dependency));
+            deps.retain(|(k, v)| !k.starts_with(dependency));
         }
     }
 }

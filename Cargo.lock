@@ -304,6 +304,7 @@ dependencies = [
  "clap",
  "fs_extra",
  "glob",
+ "pyproject-toml",
  "reqwest",
  "serde",
  "serde_derive",
@@ -587,6 +588,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pyproject-toml"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "380405edf78a88a5789f6f19ec9b76de091b5dce31eddb7a43a7386814aaa8fb"
+dependencies = [
+ "serde",
+ "toml",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -694,6 +705,9 @@ name = "serde"
 version = "1.0.145"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "728eb6351430bccb993660dfffc5a72f91ccc1295abaa8ce19b27ebe4f75568b"
+dependencies = [
+ "serde_derive",
+]
 
 [[package]]
 name = "serde_derive"
