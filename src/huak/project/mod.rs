@@ -6,6 +6,16 @@ use crate::errors::HuakError;
 
 use self::config::Config;
 
+/// There are two kinds of project, application and library.
+/// Application projects usually have one or more entrypoints in the form of
+/// runnable scripts while library projects do not.
+#[derive(Default)]
+pub enum ProjectType {
+    #[default]
+    Library,
+    Application,
+}
+
 /// The ``Project`` struct.
 /// The ``Project`` struct provides and API for maintaining project. The pattern for
 /// implementing a new command may involve creating operations that interacts
@@ -22,6 +32,7 @@ use self::config::Config;
 #[derive(Default)]
 pub struct Project {
     pub root: PathBuf,
+    pub project_type: ProjectType,
     config: Config,
     venv: Option<Venv>,
 }
@@ -36,9 +47,10 @@ impl Project {
     /// let cwd = env::current_dir().unwrap();
     /// let project = Project::from(cwd);
     /// ```
-    pub fn new(path: PathBuf) -> Project {
+    pub fn new(path: PathBuf, project_type: ProjectType) -> Project {
         Project {
             root: path,
+            project_type,
             config: Config::default(),
             venv: None,
         }
@@ -73,8 +85,13 @@ impl Project {
             root = parent.to_path_buf()
         }
 
+        // We can't know the project type here, but it probably doesn't matter
+        // much. We'll just use the default.
+        let project_type = ProjectType::default();
+
         Ok(Project {
             root,
+            project_type,
             config,
             venv: Some(venv),
         })
