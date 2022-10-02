@@ -14,7 +14,7 @@ const VERSION_OPERATORS: [&str; 8] =
 /// use huak::package::python::PythonPackage;
 /// let python_pkg = PythonPackage::new("request", Some(">="), Some("2.28.1")).unwrap();
 /// // or
-/// let other_pkg = PythonPackage::from("problems==0.0.2".to_string()).unwrap();
+/// let other_pkg = PythonPackage::from("problems==0.0.2").unwrap();
 /// println!("I've got 99 {} but huak ain't one", other_pkg);
 /// ```
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -84,9 +84,9 @@ impl PythonPackage {
     /// # Examples
     /// ```
     /// use huak::package::python::PythonPackage;
-    /// let my_pkg = PythonPackage::from("requests==2.28.1".to_string());
+    /// let my_pkg = PythonPackage::from("requests==2.28.1");
     /// ```
-    pub fn from(pkg_string: String) -> Result<PythonPackage, HuakError> {
+    pub fn from(pkg_string: &str) -> Result<PythonPackage, HuakError> {
         // unfortunately, we have to redeclare the operators here or bring in a 3rd party crate (like strum)
         // to derive an iterable from out VersionOp enum
         let version_operators = VERSION_OPERATORS.into_iter();
@@ -109,7 +109,7 @@ impl PythonPackage {
                 }
             }
             None => PythonPackage {
-                name: pkg_string,
+                name: pkg_string.to_string(),
                 operator: None,
                 version: None,
             },
@@ -128,7 +128,7 @@ impl PythonPackage {
 /// # Examples
 /// ```
 /// use huak::package::python::PythonPackage;
-/// let my_pkg = PythonPackage::from("requests==2.28.1".to_string()).unwrap();
+/// let my_pkg = PythonPackage::from("requests==2.28.1").unwrap();
 /// println!("{}", my_pkg); // output: "request==2.28.1"
 /// ```
 impl fmt::Display for PythonPackage {
@@ -236,7 +236,7 @@ mod tests {
         let dependency = "test".to_string();
         let version: String = "0.1.0".to_string();
         let operator: String = "!=".to_string();
-        let new_pkg_from_string = PythonPackage::from(format!(
+        let new_pkg_from_string = PythonPackage::from(&format!(
             "{}{}{}",
             dependency, operator, version
         ))
