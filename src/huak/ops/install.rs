@@ -8,6 +8,7 @@ use crate::{
 /// Install all of the projects defined dependencies.
 pub fn install_project_dependencies(
     project: &Project,
+    groups: &Vec<String>,
     all: bool,
 ) -> HuakResult<()> {
     // TODO: Doing this venv handling seems hacky.
@@ -23,6 +24,12 @@ pub fn install_project_dependencies(
     install_packages(&project.config().package_list(), venv)?;
 
     if !all {
+        for group in groups {
+            install_packages(
+                &project.config().optional_package_list(group),
+                venv,
+            )?
+        }
         return Ok(());
     }
 
@@ -82,9 +89,20 @@ pub mod tests {
         let black_path = venv.module_path("black").unwrap();
         let had_black = black_path.exists();
 
-        install_project_dependencies(&project, true).unwrap();
+        let pytest_path = venv.module_path("pytest").unwrap();
+        let had_pytest = pytest_path.exists();
+
+        install_project_dependencies(&project, &vec![], false).unwrap();
+        install_project_dependencies(
+            &project,
+            &vec!["test".to_string()],
+            false,
+        )
+        .unwrap();
 
         assert!(!had_black);
         assert!(venv.module_path("black").unwrap().exists());
+        assert!(!had_pytest);
+        assert!(venv.module_path("pytest").unwrap().exists());
     }
 }
