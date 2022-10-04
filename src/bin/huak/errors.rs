@@ -59,6 +59,3 @@ impl From<std::str::Utf8Error> for CliError {
     }
 }
 
-// pub fn internal<S: std::fmt::Display>(error: S) -> HuakError {
-//     HuakError::UnknownError(error.to_string())
-// }
