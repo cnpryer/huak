@@ -26,7 +26,7 @@ impl CliError {
 
 // TODO: not sure how you'd like to go about determining exit/status codes, but
 // you can do some sort of impl From<HuakError> for CliError, or maybe
-// impl From<HuakError> for ExitCode?
+// impl From<HuakError> for ExitCode? Can also just do a function if you wanted
 
 impl std::fmt::Display for CliError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -64,38 +64,4 @@ impl From<std::str::Utf8Error> for CliError {
 
 // pub fn internal<S: std::fmt::Display>(error: S) -> HuakError {
 //     HuakError::UnknownError(error.to_string())
-// }
-
-// Note: I have commented this out temporarily. I see you already had an `UnknownError` enum
-// for `HuakError`. I think this is a good idea, wasn't sure InternalError was necessary as well.
-// / An unexpected, internal error.
-// /
-// / This should only be used for unexpected errors. It prints a message asking
-// / the user to file a bug report.
-// pub struct InternalError {
-//     inner: Error,
-// }
-
-// impl InternalError {
-//     pub fn new(inner: Error) -> InternalError {
-//         InternalError { inner }
-//     }
-// }
-
-// impl std::error::Error for InternalError {
-//     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-//         self.inner.source()
-//     }
-// }
-
-// impl fmt::Debug for InternalError {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         self.inner.fmt(f)
-//     }
-// }
-
-// impl fmt::Display for InternalError {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         self.inner.fmt(f)
-//     }
 // }

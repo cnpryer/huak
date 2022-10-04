@@ -19,10 +19,6 @@ pub fn create_venv(path: PathBuf) -> Result<Venv, HuakError> {
 // re-usable .venv from cwd
 pub fn create_mock_project(path: PathBuf) -> Result<Project, HuakError> {
     let cwd = env::current_dir()?;
-    // let cwd = match env::current_dir() {
-    //     Ok(p) => p,
-    //     Err(e) => return Err(HuakError::AnyHowError(anyhow::format_err!(e))),
-    // };
     let venv = create_venv(cwd.join(".venv"))?;
 
     let mut mock_project = Project::from(path)?;

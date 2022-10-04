@@ -1,17 +1,13 @@
 use std::{io, path::PathBuf};
 
-// use anyhow::Error;
 use thiserror::Error;
 
 trait BinaryError {}
 
 impl BinaryError for HuakError {}
-// impl BinaryError for Error {}
 
 pub type HuakResult<T> = Result<T, HuakError>;
 
-// TODO: Slit into different types of errors. This could be
-//       based on behavior, data, tooling, etc.
 #[derive(Error, Debug)]
 pub enum HuakError {
     #[error(
@@ -44,19 +40,15 @@ pub enum HuakError {
     Utf8Error(#[from] std::str::Utf8Error),
     #[error("{0}")]
     InternalError(String),
-    // AnyHowError(anyhow::Error),
-    // TODO: Abstract out wrapped cli errors.
-    // FIXME: This presents a circular problem. CliError contains a HuakError, so there should
-    // not be any enum variants containing a CliError. Instead, isolate CliError to only in the
-    // `bin` crate. Add some sort of `CommandError` to `HuakError`, and use that instead.
-    // I see you encountered this and boxed it, but down the road I feel this just might make
-    // things more complicated.
-    // #[error("Ruff Error: {0}")]
-    // RuffError(Box<CliError>),
-    // #[error("Black Error: {0}")]
-    // PyBlackError(Box<CliError>),
-    // #[error("Pytest Error: {0}")]
-    // PyTestError(Box<CliError>),
+    // TODO: make RuffError, PyBlackError, PyTestError, etc, take in whatever you
+    // feel makes the most sense. I have them as String for now, since I can't find
+    // usages anywhere and can't tell what they should derive from.
+    #[error("Ruff Error: {0}")]
+    RuffError(String),
+    #[error("Black Error: {0}")]
+    PyBlackError(String),
+    #[error("Pytest Error: {0}")]
+    PyTestError(String),
     #[error(
         "Python was not found on your operating system. Please \
         install Python at https://www.python.org/."
@@ -70,7 +62,8 @@ pub enum HuakError {
     PyPackageInstallFailure(String),
     #[error("A pyproject.toml already exists.")]
     PyProjectTomlExists,
-    // TODO: had some rebase conflicts, leaving this for now but seems like duplicate...
+    // TODO: had some rebase conflicts, leaving this for now but seems like duplicate
+    // of PyPackageInstallFailure
     #[error("Failed to install package: {0}.")]
     PackageInstallFailure(String),
     #[error("Failed to init Python package: {0}.")]
@@ -84,69 +77,3 @@ pub enum HuakError {
     #[error("Failed to build the project.")]
     BuildFailure,
 }
-
-// impl fmt::Display for CliError {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         let binding: String;
-
-//         let error_string = match &self.error {
-//             HuakError::MissingArguments => "Some arguments were missing.",
-//             HuakError::IOError => "An IO error occurred.",
-//             HuakError::UnknownCommand => {
-//                 "This is an unknown command. Please check --help."
-//             }
-//             HuakError::DirectoryExists => {
-//                 "This directory already exists and may not be empty!"
-//             }
-//             HuakError::AnyHowError(anyhow_error) => {
-//                 binding = format!("An error occurred: {}", anyhow_error);
-//                 binding.as_str()
-//             }
-//             HuakError::NotImplemented => {
-//                 "This feature is not implemented. \
-//                 See https://github.com/cnpryer/huak/milestones."
-//             }
-//             HuakError::VenvNotFound => "No venv was found.",
-//             HuakError::UnknownError => {
-//                 "An unknown error occurred. Please file a bug report here \
-//                 https://github.com/cnpryer/huak/issues/new?\
-//                 assignees=&labels=bug&template=BUG_REPORT.md&title="
-//             }
-//             HuakError::RuffError(err) => {
-//                 binding = format!("Ruff Error: {err}");
-//                 binding.as_str()
-//             }
-//             HuakError::PyBlackError(err) => {
-//                 binding = format!("Black Error: {err}");
-//                 binding.as_str()
-//             }
-//             HuakError::PyTestError(err) => {
-//                 binding = format!("Pytest Error: {err}");
-//                 binding.as_str()
-//             }
-//             HuakError::PythonNotFound => {
-//                 "Python was not found on your operating system. \
-//                 Please install Python at https://www.python.org/."
-//             }
-//             HuakError::PyProjectTomlNotFound => {
-//                 "A pyproject.toml could not be found."
-//             }
-//             HuakError::PyPackageInstallFailure(package) => {
-//                 binding =
-//                     format!("Failed to install Python package: {package}.");
-//                 binding.as_str()
-//             }
-//             HuakError::PyPackageInitError(package) => {
-//                 binding = format!("Failed to init Python package: {package}.");
-//                 binding.as_str()
-//             }
-//             HuakError::InvalidPyPackageVersionOp(op) => {
-//                 binding =
-//                     format!("Invalid Python package version operator: {op}.");
-//                 binding.as_str()
-//             }
-//             HuakError::BuildFailure => "Failed to build the project.",
-//         };
-//         write!(f, "{}", error_string)
-//     }
-// }
