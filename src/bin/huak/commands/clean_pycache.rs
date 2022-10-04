@@ -69,9 +69,9 @@ pub fn run() -> CliResult<()> {
         Ok(())
     } else {
         Err(CliError::new(
-            _error.unwrap_or(HuakError::UnknownError(
-                "An unknown error ocurred".into(),
-            )),
+            _error.unwrap_or_else(|| {
+                HuakError::UnknownError("An unknown error ocurred".into())
+            }),
             ExitCode::FAILURE,
         ))
     }

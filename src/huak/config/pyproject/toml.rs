@@ -43,9 +43,9 @@ impl Toml {
         let toml = match Toml::from(&toml) {
             Ok(t) => t,
             Err(_) => {
-                return Err(HuakError::InternalError(format!(
-                    "failed to build toml"
-                )))
+                return Err(HuakError::InternalError(
+                    "failed to build toml".into(),
+                ))
             }
         };
 

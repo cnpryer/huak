@@ -1,9 +1,12 @@
-use crate::{errors::HuakError, project::Project};
+use crate::{
+    errors::{HuakError, HuakResult},
+    project::Project,
+};
 
 const MODULE: &str = "pytest";
 
 /// Test a project using `pytest`.
-pub fn test_project(project: &Project) -> Result<(), HuakError> {
+pub fn test_project(project: &Project) -> HuakResult<()> {
     let args = [];
     let venv = match project.venv() {
         Some(v) => v,
@@ -16,5 +19,5 @@ pub fn test_project(project: &Project) -> Result<(), HuakError> {
     //     Ok(_) => Ok(()),
     //     Err(e) => Err(HuakError::PyTestError(Box::new(e))),
     // }
-    Ok(venv.exec_module(MODULE, &args, &project.root)?)
+    venv.exec_module(MODULE, &args, &project.root)
 }
