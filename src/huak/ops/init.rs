@@ -1,30 +1,25 @@
 use std::fs;
 
 use super::project_utils;
-use crate::{errors::HuakError, project::Project};
+use crate::{
+    errors::{HuakError, HuakResult},
+    project::Project,
+};
 
 /// Initialize a project by adding a pyproject.toml to the dir.
-pub fn init_project(project: &Project) -> Result<(), HuakError> {
+pub fn init_project(project: &Project) -> HuakResult<()> {
     // Create a toml setting the name to the project dir's name.
     // TODO: Don't do this with a utility function.
     let toml = project_utils::create_toml(project)?;
 
     if project.root.join("pyproject.toml").exists() {
-        return Err(HuakError::AnyHowError(anyhow::format_err!(
-            "A pyproject.toml already exists."
-        )));
+        return Err(HuakError::PyProjectTomlExists);
     }
 
     // Serialize pyproject.toml.
-    let string = match toml.to_string() {
-        Ok(s) => s,
-        Err(_) => return Err(HuakError::IOError),
-    };
+    let string = toml.to_string()?;
 
-    match fs::write(&project.root.join("pyproject.toml"), string) {
-        Ok(_) => Ok(()),
-        Err(_) => Err(HuakError::IOError),
-    }
+    Ok(fs::write(&project.root.join("pyproject.toml"), string)?)
 }
 
 #[cfg(test)]

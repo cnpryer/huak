@@ -1,6 +1,7 @@
-use anyhow::Error;
+use crate::errors::{CliError, CliResult};
+
 use glob::{glob, Paths, PatternError};
-use huak::errors::{CliError, CliResult, HuakError};
+use huak::errors::HuakError;
 use std::{
     fs::{remove_dir_all, remove_file},
     process::ExitCode,
@@ -19,7 +20,7 @@ struct DeletePath {
 pub fn run() -> CliResult<()> {
     let mut success: bool = true;
 
-    let mut _error: Option<Error> = None;
+    let mut _error: Option<HuakError> = None;
     for i in get_delete_patterns() {
         let files: Result<Paths, PatternError> = glob(&i.glob);
 
@@ -35,7 +36,7 @@ pub fn run() -> CliResult<()> {
                                         Ok(_) => (),
                                         Err(e) => {
                                             file_level_success = false;
-                                            _error = Some(Error::new(e));
+                                            _error = Some(e.into());
                                         }
                                     }
                                 }
@@ -43,13 +44,15 @@ pub fn run() -> CliResult<()> {
                                     Ok(_) => (),
                                     Err(e) => {
                                         file_level_success = false;
-                                        _error = Some(Error::new(e));
+                                        _error = Some(e.into());
                                     }
                                 },
                             },
                             Err(e) => {
                                 file_level_success = false;
-                                _error = Some(Error::new(e))
+                                _error = Some(HuakError::InternalError(
+                                    e.to_string(),
+                                ));
                             }
                         }
                     }
@@ -65,7 +68,12 @@ pub fn run() -> CliResult<()> {
     if success {
         Ok(())
     } else {
-        Err(CliError::new(HuakError::IOError, ExitCode::FAILURE))
+        Err(CliError::new(
+            _error.unwrap_or_else(|| {
+                HuakError::UnknownError("An unknown error ocurred".into())
+            }),
+            ExitCode::FAILURE,
+        ))
     }
 }
 

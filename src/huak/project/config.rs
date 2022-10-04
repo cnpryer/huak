@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 use crate::config::pyproject::toml::Toml;
 
+use crate::errors::HuakResult;
 use crate::package::python::PythonPackage;
 use crate::utils;
 
@@ -27,7 +28,7 @@ impl Manifest {
     /// Initialize a `Manifest` from a `path` pointing to a manifest file.
     /// Use `new()` to initiate from files including: pyproject.toml.
     // TODO: More than just toml.
-    fn new(path: PathBuf) -> Result<Manifest, anyhow::Error> {
+    fn new(path: PathBuf) -> HuakResult<Manifest> {
         // TODO
         if !path.ends_with("pyproject.toml") {
             return Ok(Manifest::default());
@@ -51,7 +52,7 @@ impl Config {
     // TODO:
     //       - Improve scan. Initially `new` will only expect pyproject.toml at the root of `from`.
     //       - Add other setup file types like requirements.txt.
-    pub fn from(path: &Path) -> Result<Config, anyhow::Error> {
+    pub fn from(path: &Path) -> HuakResult<Config> {
         let manifest_path = utils::path::search_parents_for_filepath(
             path,
             "pyproject.toml",

@@ -1,4 +1,4 @@
-use huak::errors::CliResult;
+use crate::errors::CliResult;
 
 /// Run the `update` command.
 pub fn run(_dependency: String) -> CliResult<()> {

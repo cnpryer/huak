@@ -1,8 +1,5 @@
-use huak::{
-    errors::{CliError, CliResult},
-    ops,
-    project::Project,
-};
+use crate::errors::{CliError, CliResult};
+use huak::{ops, project::Project};
 use std::{env, process::ExitCode};
 
 /// Run the `fmt` command.

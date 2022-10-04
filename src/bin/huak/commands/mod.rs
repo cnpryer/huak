@@ -1,5 +1,5 @@
+use crate::errors::CliResult;
 use clap::{Parser, Subcommand};
-use huak::errors::CliResult;
 
 pub(crate) mod activate;
 pub(crate) mod add;

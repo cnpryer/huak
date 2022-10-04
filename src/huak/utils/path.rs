@@ -1,36 +1,41 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::{self, Error};
 use fs_extra::dir;
 
+use crate::errors::{HuakError, HuakResult};
+
 /// Return the filename from a `Path`.
-pub fn parse_filename(path: &Path) -> Result<&str, Error> {
+pub fn parse_filename(path: &Path) -> HuakResult<&str> {
     // Attempt to convert OsStr to str.
     let name = match path.file_name() {
         Some(f) => f.to_str(),
-        _ => return Err(anyhow::format_err!("failed to read name from path")),
+        _ => {
+            return Err(HuakError::InternalError(
+                "failed to read name from path".into(),
+            ))
+        }
     };
 
     // If a str was failed to be parsed error.
     if name.is_none() {
-        return Err(anyhow::format_err!(
+        return Err(HuakError::InternalError(format!(
             "failed to convert filename from {} to string",
             path.display()
-        ));
+        )));
     }
 
     Ok(name.unwrap())
 }
 
 /// Convert a `Path` to a &str.
-pub fn to_string(path: &Path) -> Result<&str, anyhow::Error> {
+pub fn to_string(path: &Path) -> HuakResult<&str> {
     let pip_path = match path.to_str() {
         Some(s) => s,
         None => {
-            return Err(anyhow::format_err!(
+            return Err(HuakError::InternalError(format!(
                 "failed to convert {} to a string",
                 path.display()
-            ))
+            )))
         }
     };
 
@@ -43,7 +48,7 @@ pub fn search_parents_for_filepath(
     from: &Path,
     filename: &str,
     steps: usize,
-) -> Result<Option<PathBuf>, anyhow::Error> {
+) -> HuakResult<Option<PathBuf>> {
     if steps == 0 {
         return Ok(None);
     }

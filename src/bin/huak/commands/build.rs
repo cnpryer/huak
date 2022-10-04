@@ -1,10 +1,8 @@
 use std::{env, process::ExitCode};
 
-use huak::{
-    errors::{CliError, CliResult},
-    ops,
-    project::Project,
-};
+use huak::{ops, project::Project};
+
+use crate::errors::{CliError, CliResult};
 
 /// Run the `build` command.
 pub fn run() -> CliResult<()> {

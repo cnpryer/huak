@@ -1,4 +1,4 @@
-use huak::errors::CliResult;
+use crate::errors::CliResult;
 
 /// Run the `activate` command.
 pub fn run() -> CliResult<()> {
