@@ -24,9 +24,6 @@ impl CliError {
     }
 }
 
-// TODO: not sure how you'd like to go about determining exit/status codes, but
-// you can do some sort of impl From<HuakError> for CliError, or maybe
-// impl From<HuakError> for ExitCode? Can also just do a function if you wanted
 
 impl std::fmt::Display for CliError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
