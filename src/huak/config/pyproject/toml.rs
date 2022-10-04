@@ -36,8 +36,8 @@ pub struct Toml {
 impl Default for Toml {
     fn default() -> Toml {
         Toml {
-            project: ProjectBuilder::default(),
             build_system: BuildSystemBuilder::default(),
+            project: ProjectBuilder::default(),
         }
     }
 }
@@ -58,6 +58,9 @@ impl Toml {
             }
         };
 
+        dbg!(&toml);
+        println!("{}", toml);
+
         let toml = match Toml::from(&toml) {
             Ok(t) => t,
             Err(_) => return Err(anyhow::format_err!("failed to build toml")),
@@ -67,7 +70,7 @@ impl Toml {
     }
 
     pub(crate) fn to_string(&self) -> Result<String, toml_edit::ser::Error> {
-        toml_edit::ser::to_string(&self)
+        toml_edit::ser::to_string_pretty(&self)
     }
 }
 
@@ -117,26 +120,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test1() {
-        let string = r#"[build-system]
-requires = ["huak-core>=1.0.0"]
-build-backend = "huak.core.build.api"
-
-[project]
-name = "spam"
-version = "2020.0.0"
-description = "Lovely Spam! Wonderful Spam!"
-readme = "README.rst"
-requires-python = ">=3.8""#;
-
-
-        match Toml::from(string) {
-            Ok(toml) => {},
-            Err(err) => eprintln!("{}", err),
-        }
-    }
-
-    #[test]
     fn serialize() {
         let string = r#"[project]
 name = "Test"
@@ -152,7 +135,26 @@ email = "cnpryer@gmail.com"
 requires = ["huak-core>=1.0.0"]
 build-backend = "huak.core.build.api"
 "#;
-  
+
+        // toml_edit does not preserve the ordering of the tables
+        let expected_output = r#"[build-system]
+requires = ["huak-core>=1.0.0"]
+build-backend = "huak.core.build.api"
+
+[project]
+name = "Test"
+version = "0.1.0"
+description = ""
+dependencies = [
+    "click==8.1.3",
+    "black==22.8.0",
+]
+
+[[project.authors]]
+name = "Chris Pryer"
+email = "cnpryer@gmail.com"
+"#;
+
         let toml = Toml::from(string).unwrap();
 
         println!("{}", toml.project.name.clone());
@@ -161,7 +163,8 @@ build-backend = "huak.core.build.api"
         let res = toml.to_string().unwrap();
         dbg!(&res);
 
-        println!("{:?}", toml.to_string());
+        assert_eq!(expected_output, &res);
+
     }
 
     #[test]
@@ -226,8 +229,10 @@ build-backend = "huak.core.build.api"
             Err(err) => {eprintln!("{}", err)}
         }        
 
-//let toml = Toml::from(string).unwrap();
+        let toml = Toml::from(string).unwrap();
 
-        //assert!(toml.project.authors.iter().nth(1).is_some());
+        assert_eq!("Troy Kohler", toml.project.authors.as_ref().unwrap().get(1).unwrap().name.as_ref().unwrap());
+        assert_eq!("test@email.com", toml.project.authors.as_ref().unwrap().get(1).unwrap().email.as_ref().unwrap());
+
     }
 }
