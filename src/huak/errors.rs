@@ -1,4 +1,4 @@
-use std::{io, process::ExitCode};
+use std::{io, path::PathBuf};
 
 // use anyhow::Error;
 use thiserror::Error;
@@ -7,8 +7,6 @@ trait BinaryError {}
 
 impl BinaryError for HuakError {}
 // impl BinaryError for Error {}
-
-const BASIC_ERROR_CODE: ExitCode = ExitCode::FAILURE;
 
 pub type HuakResult<T> = Result<T, HuakError>;
 
@@ -39,7 +37,7 @@ pub enum HuakError {
     #[error("{0}")]
     ConfigurationError(String),
     #[error("{0} already exists and may not be empty!")]
-    DirectoryExists(String),
+    DirectoryExists(PathBuf),
     #[error("An HTTP error occurred: {0}.")]
     HttpError(#[from] reqwest::Error),
     #[error("An error occurred while parsing bytes to a string: {0}.")]

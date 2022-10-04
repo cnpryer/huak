@@ -1,4 +1,4 @@
-use huak::errors::CliResult;
+use crate::errors::CliResult;
 
 /// Run the `run` command.
 pub fn run(_command: String) -> CliResult<()> {

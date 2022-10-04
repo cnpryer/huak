@@ -2,7 +2,8 @@ use std::env;
 use std::fs;
 use std::process::ExitCode;
 
-use huak::errors::{CliError, CliResult, HuakError};
+use crate::errors::{CliError, CliResult};
+use huak::errors::HuakError;
 use huak::ops;
 use huak::project::Project;
 use huak::project::ProjectType;
@@ -29,7 +30,7 @@ pub fn run(path: Option<String>, app: bool, lib: bool) -> CliResult<()> {
     // Make sure there isn't already a path we would override.
     if path.exists() && path != cwd {
         return Err(CliError::new(
-            HuakError::DirectoryExists,
+            HuakError::DirectoryExists(path),
             ExitCode::FAILURE,
         ));
     }
@@ -37,7 +38,7 @@ pub fn run(path: Option<String>, app: bool, lib: bool) -> CliResult<()> {
     // If the current directory is used it must be empty. User should use init.
     if path == cwd && path.read_dir()?.count() > 0 {
         return Err(CliError::new(
-            HuakError::DirectoryExists,
+            HuakError::DirectoryExists(path),
             ExitCode::FAILURE,
         ));
     }

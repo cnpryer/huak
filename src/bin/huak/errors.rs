@@ -1,6 +1,10 @@
+use std::process::ExitCode;
+
+use huak::errors::HuakError;
 use thiserror::Error;
 
 pub type CliResult<T> = Result<T, CliError>;
+pub const BASIC_ERROR_CODE: ExitCode = ExitCode::FAILURE;
 
 #[derive(Debug, Error)]
 pub struct CliError {
@@ -24,7 +28,7 @@ impl CliError {
 // you can do some sort of impl From<HuakError> for CliError, or maybe
 // impl From<HuakError> for ExitCode?
 
-impl fmt::Display for CliError {
+impl std::fmt::Display for CliError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -33,76 +37,6 @@ impl fmt::Display for CliError {
         )
     }
 }
-
-// impl fmt::Display for CliError {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         // This is a temporary value only useful for extracting something from anyhow::Error
-//         // It's something to do with the borrow checker as the value "does not live for long enough"
-//         // But I'm not knowledgeable enough to understand why.
-//         let binding: String;
-
-//         let error_string = match &self.error {
-//             HuakError::MissingArguments => "Some arguments were missing.",
-//             HuakError::IOError => "An IO error occurred.",
-//             HuakError::UnknownCommand => {
-//                 "This is an unknown command. Please check --help."
-//             }
-//             HuakError::DirectoryExists => {
-//                 "This directory already exists and may not be empty!"
-//             }
-//             // HuakError::AnyHowError(anyhow_error) => {
-//             //     binding = format!("An error occurred: {}", anyhow_error);
-//             //     binding.as_str()
-//             // }
-//             HuakError::NotImplemented => {
-//                 "This feature is not implemented. \
-//                 See https://github.com/cnpryer/huak/milestones."
-//             }
-//             HuakError::VenvNotFound => "No venv was found.",
-//             HuakError::UnknownError => {
-// "An unknown error occurred. Please file a bug report here \
-// https://github.com/cnpryer/huak/issues/new?\
-// assignees=&labels=bug&template=BUG_REPORT.md&title="
-//             }
-//             HuakError::RuffError(err) => {
-//                 binding = format!("Ruff Error: {err}");
-//                 binding.as_str()
-//             }
-//             HuakError::PyBlackError(err) => {
-//                 binding = format!("Black Error: {err}");
-//                 binding.as_str()
-//             }
-//             HuakError::PyTestError(err) => {
-//                 binding = format!("Pytest Error: {err}");
-//                 binding.as_str()
-//             }
-//             HuakError::PythonNotFound => {
-//                 "Python was not found on your operating system. \
-//                 Please install Python at https://www.python.org/."
-//             }
-//             HuakError::PyProjectTomlNotFound => {
-//                 "A pyproject.toml could not be found."
-//             }
-//             HuakError::PackageInstallFailure(package) => {
-//                 binding = format!("Failed to install package: {package}.");
-//                 binding.as_str()
-//             }
-//         };
-//         write!(f, "{}", error_string)
-//     }
-// }
-
-// impl From<anyhow::Error> for HuakError {
-//     fn from(err: anyhow::Error) -> HuakError {
-//         HuakError::AnyHowError(err)
-//     }
-// }
-
-// impl From<anyhow::Error> for CliError {
-//     fn from(err: anyhow::Error) -> CliError {
-//         CliError::new(HuakError::AnyHowError(err), BASIC_ERROR_CODE)
-//     }
-// }
 
 impl From<clap::Error> for CliError {
     fn from(err: clap::Error) -> CliError {
@@ -128,12 +62,8 @@ impl From<std::str::Utf8Error> for CliError {
     }
 }
 
-pub fn internal<S: fmt::Display>(error: S) -> HuakError {
-    HuakError::UnknownError(error.to_string())
-}
-
-// pub fn internal<S: fmt::Display>(error: S) -> anyhow::Error {
-//     InternalError::new(anyhow::format_err!("{}", error)).into()
+// pub fn internal<S: std::fmt::Display>(error: S) -> HuakError {
+//     HuakError::UnknownError(error.to_string())
 // }
 
 // Note: I have commented this out temporarily. I see you already had an `UnknownError` enum
