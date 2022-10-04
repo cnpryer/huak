@@ -28,11 +28,12 @@ pub(crate) struct Project {
     pub(crate) description: String,
     pub(crate) dependencies: Vec<String>,
     #[serde(rename = "optional-dependencies")]
-    pub(crate) optional_dependencies: Option<Vec<String>>,
+    pub(crate) optional_dependencies: Option<HashMap<String, Vec<String>>>,
     pub(crate) authors: Vec<Author>,
+    pub(crate) scripts: Option<HashMap<String, String>>,
 }
 */
-
+/// Builder struct to create create default Project data.
 pub struct ProjectBuilder {}
 
 impl ProjectBuilder {

@@ -1,11 +1,10 @@
 use std::{
     env::{self, consts::OS},
     path::{Path, PathBuf},
-    process::ExitCode,
 };
 
 use crate::{
-    errors::{CliError, HuakError},
+    errors::{HuakError, HuakResult},
     package::python::PythonPackage,
     utils::path::search_parents_for_filepath,
 };
@@ -32,7 +31,7 @@ impl Venv {
     /// Initialize a `Venv` by searching a directory for a venv. `from()` will search
     /// the parents directory for a configured number of recursive steps.
     // TODO: Improve the directory search (refactor manifest search into search utility).
-    pub fn from(from: &Path) -> Result<Venv, HuakError> {
+    pub fn from(from: &Path) -> HuakResult<Venv> {
         let names = vec![".venv", "venv"];
 
         // TODO: Redundancy.
@@ -48,7 +47,7 @@ impl Venv {
     }
 
     /// Get the name of the Venv (ex: ".venv").
-    pub fn name(&self) -> Result<&str, anyhow::Error> {
+    pub fn name(&self) -> HuakResult<&str> {
         let name = crate::utils::path::parse_filename(self.path.as_path())?;
 
         Ok(name)
@@ -70,25 +69,24 @@ impl Default for Venv {
 
 impl Venv {
     /// Create the venv at its path.
-    pub fn create(&self) -> Result<(), anyhow::Error> {
+    pub fn create(&self) -> HuakResult<()> {
         if self.path.exists() {
             return Ok(());
         }
 
         let from = match self.path.parent() {
             Some(p) => p,
-            _ => return Err(anyhow::format_err!("Invalid venv path.")),
+            _ => {
+                return Err(HuakError::ConfigurationError(
+                    "Invalid venv path, no parent directory.".into(),
+                ))
+            }
         };
 
         let name = self.name()?;
         let args = ["-m", "venv", name];
 
-        // This can be handled without the wrapped CliError.
-        if let Err(e) =
-            crate::utils::command::run_command(self.python_alias(), &args, from)
-        {
-            return Err(anyhow::format_err!(e));
-        };
+        crate::utils::command::run_command(self.python_alias(), &args, from)?;
 
         Ok(())
     }
@@ -115,7 +113,7 @@ impl Venv {
     }
 
     /// Get the path to the module passed from the venv.
-    pub fn module_path(&self, module: &str) -> Result<PathBuf, anyhow::Error> {
+    pub fn module_path(&self, module: &str) -> HuakResult<PathBuf> {
         let bin_path = self.bin_path();
         let mut path = bin_path.join(module);
 
@@ -125,9 +123,9 @@ impl Venv {
 
         match path.set_extension("exe") {
             true => Ok(path),
-            false => {
-                Err(anyhow::format_err!("failed to create path for {module}"))
-            }
+            false => Err(HuakError::InternalError(format!(
+                "failed to create path for {module}"
+            ))),
         }
     }
 
@@ -137,20 +135,17 @@ impl Venv {
         module: &str,
         args: &[&str],
         from: &Path,
-    ) -> Result<(), CliError> {
+    ) -> HuakResult<()> {
         // Create the venv if it doesn't exist.
         // TODO: Fix this.
         self.create()?;
 
         let module_path = self.module_path(module)?;
-        let package = match PythonPackage::from(module.to_string()) {
+        let package = match PythonPackage::from(module) {
             Ok(it) => it,
             // TODO: Don't do this post-decouple.
             Err(_) => {
-                return Err(CliError::new(
-                    HuakError::PyPackageInitError(module.to_string()),
-                    ExitCode::FAILURE,
-                ))
+                return Err(HuakError::PyPackageInitError(module.to_string()))
             }
         };
 
@@ -165,13 +160,10 @@ impl Venv {
         Ok(())
     }
 
-    /// Install a dependency to the venv.
-    pub fn install_package(
-        &self,
-        dependency: &PythonPackage,
-    ) -> Result<(), CliError> {
+    /// Install a Python package to the venv.
+    pub fn install_package(&self, package: &PythonPackage) -> HuakResult<()> {
         let cwd = env::current_dir()?;
-        let module_str = &dependency.string();
+        let module_str = &package.string();
         let args = ["install", module_str];
         let module = "pip";
 
@@ -180,8 +172,8 @@ impl Venv {
         Ok(())
     }
 
-    /// Install a dependency from the venv.
-    pub fn uninstall_package(&self, name: &str) -> Result<(), CliError> {
+    /// Uninstall a dependency from the venv.
+    pub fn uninstall_package(&self, name: &str) -> HuakResult<()> {
         let cwd = env::current_dir()?;
         let module = "pip";
         let args = ["uninstall", name, "-y"];

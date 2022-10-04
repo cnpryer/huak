@@ -1,8 +1,10 @@
-use huak::errors::CliError;
+use crate::errors::CliError;
 use huak::ops;
-use huak::{errors::CliResult, project::Project};
+use huak::project::Project;
 use std::env;
 use std::process::ExitCode;
+
+use crate::errors::CliResult;
 
 /// Run the `lint` command.
 pub fn run() -> CliResult<()> {

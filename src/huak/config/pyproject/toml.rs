@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::{fs, path::Path};
 
 use pyproject_toml::{BuildSystem, Project};
+use crate::errors::{HuakError, HuakResult};
+
 use serde_derive::{Deserialize, Serialize};
 
 use super::build_system::BuildSystemBuilder;
@@ -43,18 +45,18 @@ impl Default for Toml {
 }
 
 impl Toml {
-    pub(crate) fn from(string: &str) -> Result<Toml, toml_edit::de::Error> {
-        toml_edit::de::from_str(string)
+    pub(crate) fn from(string: &str) -> HuakResult<Toml> {
+        Ok(toml_edit::de::from_str(string)?)
     }
 
-    pub(crate) fn open(path: &Path) -> Result<Toml, anyhow::Error> {
+    pub(crate) fn open(path: &Path) -> HuakResult<Toml> {
         let toml = match fs::read_to_string(path) {
             Ok(s) => s,
             Err(_) => {
-                return Err(anyhow::format_err!(
+                return Err(HuakError::InternalError(format!(
                     "failed to read toml file from {}",
                     path.display()
-                ))
+                )))
             }
         };
 
@@ -63,14 +65,18 @@ impl Toml {
 
         let toml = match Toml::from(&toml) {
             Ok(t) => t,
-            Err(_) => return Err(anyhow::format_err!("failed to build toml")),
+            Err(_) => {
+                return Err(HuakError::InternalError(
+                    "failed to build toml".into(),
+                ))
+            }
         };
 
         Ok(toml)
     }
 
-    pub(crate) fn to_string(&self) -> Result<String, toml_edit::ser::Error> {
-        toml_edit::ser::to_string_pretty(&self)
+    pub(crate) fn to_string(&self) -> HuakResult<String> {
+        Ok(toml_edit::ser::to_string_pretty(&self)?)
     }
 }
 
@@ -96,16 +102,22 @@ impl Toml {
                 self.project.optional_dependencies = Some(HashMap::from([(
                     group.to_string(),
                     vec![dependency.to_string()],
-                )]))
+                )]));
             }
         }
     }
 
     pub fn remove_dependency(&mut self, dependency: &str) {
         // TODO: Do better than .starts_with
+<<<<<<< HEAD
         if let Some(deps) = &mut self.project.dependencies {
             deps.retain(|s| !s.starts_with(dependency));
         }
+=======
+        self.project
+            .dependencies
+            .retain(|s| !s.starts_with(dependency));
+>>>>>>> master
 
         if let Some(deps) = &mut self.project.optional_dependencies {
             for (_, group_deps) in deps.iter_mut() {
@@ -126,6 +138,9 @@ name = "Test"
 version = "0.1.0"
 description = ""
 dependencies = ["click==8.1.3", "black==22.8.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=6", "mock"]
 
 [[project.authors]]
 name = "Chris Pryer"
@@ -174,6 +189,9 @@ name = "Test"
 version = "0.1.0"
 description = ""
 dependencies = ["click==8.1.3", "black==22.8.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=6", "mock"]
 
 [[project.authors]]
 name = "Chris Pryer"

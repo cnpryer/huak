@@ -1,6 +1,5 @@
-/// `add command operations.
 pub mod add;
-/// `clean` command operations.
+pub mod build;
 pub mod clean;
 pub mod fmt;
 pub mod init;

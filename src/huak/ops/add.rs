@@ -32,12 +32,12 @@ pub fn add_project_dependency(
     let res = match reqwest::blocking::get(url) {
         Ok(it) => it,
         // TODO: RequestError
-        Err(e) => return Err(HuakError::AnyHowError(anyhow::format_err!(e))),
+        Err(e) => return Err(HuakError::InternalError(e.to_string())),
     };
     let json: PyPi = match res.json() {
         Ok(it) => it,
         // TODO: PyPIError
-        Err(e) => return Err(HuakError::AnyHowError(anyhow::format_err!(e))),
+        Err(e) => return Err(HuakError::InternalError(e.to_string())),
     };
 
     // Get the version
@@ -63,14 +63,8 @@ pub fn add_project_dependency(
     }
 
     // Serialize pyproject.toml.
-    let string = match toml.to_string() {
-        Ok(s) => s,
-        Err(_) => return Err(HuakError::IOError),
-    };
-
-    if fs::write(&project.root.join("pyproject.toml"), string).is_err() {
-        return Err(HuakError::IOError);
-    };
+    let string = toml.to_string()?;
+    fs::write(&project.root.join("pyproject.toml"), string)?;
 
     Ok(())
 }

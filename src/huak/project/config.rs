@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 use crate::config::pyproject::toml::Toml;
 
+use crate::errors::HuakResult;
 use crate::package::python::PythonPackage;
 use crate::utils;
 
@@ -11,7 +12,11 @@ const DEFAULT_SEARCH_STEPS: usize = 5;
 /// Traits for Python-specific configuration.
 pub trait PythonConfig {
     fn package_list(&self) -> Vec<PythonPackage>;
+<<<<<<< HEAD
     fn optional_package_list(&self, group: &str) -> Vec<PythonPackage>;
+=======
+    fn optional_package_list(&self, opt_group: &str) -> Vec<PythonPackage>;
+>>>>>>> master
 }
 
 /// `Manifest` data the configuration uses to manage standard configuration
@@ -27,7 +32,7 @@ impl Manifest {
     /// Initialize a `Manifest` from a `path` pointing to a manifest file.
     /// Use `new()` to initiate from files including: pyproject.toml.
     // TODO: More than just toml.
-    fn new(path: PathBuf) -> Result<Manifest, anyhow::Error> {
+    fn new(path: PathBuf) -> HuakResult<Manifest> {
         // TODO
         if !path.ends_with("pyproject.toml") {
             return Ok(Manifest::default());
@@ -51,7 +56,7 @@ impl Config {
     // TODO:
     //       - Improve scan. Initially `new` will only expect pyproject.toml at the root of `from`.
     //       - Add other setup file types like requirements.txt.
-    pub fn from(path: &Path) -> Result<Config, anyhow::Error> {
+    pub fn from(path: &Path) -> HuakResult<Config> {
         let manifest_path = utils::path::search_parents_for_filepath(
             path,
             "pyproject.toml",
@@ -109,7 +114,7 @@ impl PythonConfig for Config {
 
         // Collect into vector of owned `PythonPackage` data.
         from.iter()
-            .filter_map(|d| PythonPackage::from(d.clone()).ok())
+            .filter_map(|d| PythonPackage::from(d).ok())
             .collect()
     }
     // Get vec of `PythonPackage`s from the manifest.
@@ -126,7 +131,7 @@ impl PythonConfig for Config {
             .map_or(&empty, |deps| deps.get(group).unwrap_or(&empty));
 
         from.iter()
-            .filter_map(|d| PythonPackage::from(d.clone()).ok())
+            .filter_map(|d| PythonPackage::from(d).ok())
             .collect()
     }
 }

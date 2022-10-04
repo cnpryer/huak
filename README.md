@@ -70,7 +70,7 @@ OPTIONS:
 SUBCOMMANDS:
     activate         Activate the project's virtual environment.*
     add              Add a Python module to the existing project.
-    build            Build tarball and wheel for the project.*
+    build            Build tarball and wheel for the project.
     clean            Remove tarball and wheel from the built project.
     clean-pycache    Remove all .pyc files and __pycache__ directories.
     doc              Build the current project's documentation.*

@@ -12,7 +12,7 @@ pub fn fmt_project(
         _ => return Err(HuakError::VenvNotFound),
     };
 
-    let res = match is_check {
+    match is_check {
         true => venv.exec_module(
             MODULE,
             &[".", "--line-length", "79", "--check"],
@@ -23,13 +23,7 @@ pub fn fmt_project(
             &[".", "--line-length", "79"],
             &project.root,
         ),
-    };
-
-    if let Err(e) = res {
-        return Err(HuakError::PyBlackError(Box::new(e)));
     }
-
-    Ok(())
 }
 
 #[cfg(test)]

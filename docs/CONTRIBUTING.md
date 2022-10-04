@@ -6,7 +6,7 @@ You can contribute to Huak by checking for unassigned issues on our [issue board
 
 ## Communication
 
-You can reach out to me on discord at cnpryer#6201 if you have any questions. Otherwise, please feel free to [start a discussion](https://github.com/cnpryer/huak/discussions/new) or [open an issue](https://github.com/cnpryer/huak/issues/new/).
+You can reach out to me on discord in our [discord server](https://discord.gg/St3menxFZT) if you have any questions. Otherwise, please feel free to [start a discussion](https://github.com/cnpryer/huak/discussions/new) or [open an issue](https://github.com/cnpryer/huak/issues/new/).
 
 ## Testing
 

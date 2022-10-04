@@ -1,6 +1,7 @@
-use huak::errors::CliError;
+use crate::errors::CliError;
+use crate::errors::CliResult;
 use huak::ops;
-use huak::{errors::CliResult, project::Project};
+use huak::project::Project;
 use std::env;
 use std::process::ExitCode;
 

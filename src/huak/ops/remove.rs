@@ -16,25 +16,15 @@ pub fn remove_project_dependency(
     };
 
     // TODO: #109
-    if venv.uninstall_package(dependency).is_err() {
-        return Err(HuakError::AnyHowError(anyhow::format_err!(
-            "Failed to install {:?}",
-            dependency
-        )));
-    };
+    venv.uninstall_package(dependency)?;
 
     let mut toml = Toml::open(&project.root.join("pyproject.toml"))?;
     toml.remove_dependency(dependency);
 
     // Serialize pyproject.toml.
-    let string = match toml.to_string() {
-        Ok(s) => s,
-        Err(_) => return Err(HuakError::IOError),
-    };
+    let string = toml.to_string()?;
 
-    if fs::write(&project.root.join("pyproject.toml"), string).is_err() {
-        return Err(HuakError::IOError);
-    };
+    fs::write(&project.root.join("pyproject.toml"), string)?;
 
     Ok(())
 }

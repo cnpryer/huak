@@ -1,10 +1,7 @@
 use std::{env, process::ExitCode};
 
-use huak::{
-    errors::{CliError, CliResult},
-    ops,
-    project::Project,
-};
+use crate::errors::{CliError, CliResult};
+use huak::{ops, project::Project};
 
 /// Run the `version` command.
 pub fn run() -> CliResult<()> {

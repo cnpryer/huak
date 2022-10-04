@@ -1,11 +1,9 @@
 use std::env;
 use std::process::ExitCode;
 
+use crate::errors::{CliError, CliResult};
 use huak::ops;
-use huak::{
-    errors::{CliError, CliResult},
-    project::Project,
-};
+use huak::project::Project;
 
 /// Run the `remove` command.
 pub fn run(dependency: String) -> CliResult<()> {
