@@ -62,10 +62,6 @@ pub enum HuakError {
     PyPackageInstallFailure(String),
     #[error("A pyproject.toml already exists.")]
     PyProjectTomlExists,
-    // TODO: had some rebase conflicts, leaving this for now but seems like duplicate
-    // of PyPackageInstallFailure
-    #[error("Failed to install package: {0}.")]
-    PackageInstallFailure(String),
     #[error("Failed to init Python package: {0}.")]
     PyPackageInitError(String),
     #[error("Failed to deserialize toml: {0}.")]

@@ -24,7 +24,6 @@ impl CliError {
     }
 }
 
-
 impl std::fmt::Display for CliError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -58,4 +57,3 @@ impl From<std::str::Utf8Error> for CliError {
         CliError::new(HuakError::Utf8Error(err), BASIC_ERROR_CODE)
     }
 }
-
