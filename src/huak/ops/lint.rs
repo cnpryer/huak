@@ -10,8 +10,5 @@ pub fn lint_project(project: &Project) -> Result<(), HuakError> {
     };
     let args = [".", "--extend-exclude", venv.name()?];
 
-    match venv.exec_module(MODULE, &args, &project.root) {
-        Err(e) => Err(HuakError::RuffError(Box::new(e))),
-        Ok(_) => Ok(()),
-    }
+    Ok(venv.exec_module(MODULE, &args, &project.root)?)
 }

@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::{fs, path::Path};
 
+use crate::errors::{HuakError, HuakResult};
+
 use super::{build_system::BuildSystem, project::Project};
 use serde_derive::{Deserialize, Serialize};
 
@@ -23,31 +25,35 @@ pub struct Toml {
 }
 
 impl Toml {
-    pub(crate) fn from(string: &str) -> Result<Toml, toml::de::Error> {
-        toml::from_str(string)
+    pub(crate) fn from(string: &str) -> HuakResult<Toml> {
+        Ok(toml::from_str(string)?)
     }
 
-    pub(crate) fn open(path: &Path) -> Result<Toml, anyhow::Error> {
+    pub(crate) fn open(path: &Path) -> HuakResult<Toml> {
         let toml = match fs::read_to_string(path) {
             Ok(s) => s,
             Err(_) => {
-                return Err(anyhow::format_err!(
+                return Err(HuakError::InternalError(format!(
                     "failed to read toml file from {}",
                     path.display()
-                ))
+                )))
             }
         };
 
         let toml = match Toml::from(&toml) {
             Ok(t) => t,
-            Err(_) => return Err(anyhow::format_err!("failed to build toml")),
+            Err(_) => {
+                return Err(HuakError::InternalError(format!(
+                    "failed to build toml"
+                )))
+            }
         };
 
         Ok(toml)
     }
 
-    pub(crate) fn to_string(&self) -> Result<String, toml::ser::Error> {
-        toml::to_string(&self)
+    pub(crate) fn to_string(&self) -> HuakResult<String> {
+        Ok(toml::to_string(&self)?)
     }
 }
 

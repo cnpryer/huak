@@ -1,11 +1,11 @@
 use std::{
     env::{self, consts::OS},
     path::{Path, PathBuf},
-    process::ExitCode,
 };
 
 use crate::{
-    errors::HuakError, package::python::PythonPackage,
+    errors::{HuakError, HuakResult},
+    package::python::PythonPackage,
     utils::path::search_parents_for_filepath,
 };
 
@@ -31,7 +31,7 @@ impl Venv {
     /// Initialize a `Venv` by searching a directory for a venv. `from()` will search
     /// the parents directory for a configured number of recursive steps.
     // TODO: Improve the directory search (refactor manifest search into search utility).
-    pub fn from(from: &Path) -> Result<Venv, HuakError> {
+    pub fn from(from: &Path) -> HuakResult<Venv> {
         let names = vec![".venv", "venv"];
 
         // TODO: Redundancy.
@@ -47,7 +47,7 @@ impl Venv {
     }
 
     /// Get the name of the Venv (ex: ".venv").
-    pub fn name(&self) -> Result<&str, HuakError> {
+    pub fn name(&self) -> HuakResult<&str> {
         let name = crate::utils::path::parse_filename(self.path.as_path())?;
 
         Ok(name)
@@ -69,7 +69,7 @@ impl Default for Venv {
 
 impl Venv {
     /// Create the venv at its path.
-    pub fn create(&self) -> Result<(), HuakError> {
+    pub fn create(&self) -> HuakResult<()> {
         if self.path.exists() {
             return Ok(());
         }
@@ -86,11 +86,7 @@ impl Venv {
         let name = self.name()?;
         let args = ["-m", "venv", name];
 
-        // This can be handled without the wrapped CliError.
-        // TODO: This presents a circular problem. See comment in `errors.rs`. For
-        // now, I am just taking the HuakError out of the CliError and returning that.
-        crate::utils::command::run_command(self.python_alias(), &args, from)
-            .map_err(|e| e.error)?;
+        crate::utils::command::run_command(self.python_alias(), &args, from)?;
 
         Ok(())
     }
@@ -117,7 +113,7 @@ impl Venv {
     }
 
     /// Get the path to the module passed from the venv.
-    pub fn module_path(&self, module: &str) -> Result<PathBuf, HuakError> {
+    pub fn module_path(&self, module: &str) -> HuakResult<PathBuf> {
         let bin_path = self.bin_path();
         let mut path = bin_path.join(module);
 
@@ -139,7 +135,7 @@ impl Venv {
         module: &str,
         args: &[&str],
         from: &Path,
-    ) -> Result<(), HuakError> {
+    ) -> HuakResult<()> {
         // Create the venv if it doesn't exist.
         // TODO: Fix this.
         self.create()?;
@@ -149,10 +145,7 @@ impl Venv {
             Ok(it) => it,
             // TODO: Don't do this post-decouple.
             Err(_) => {
-                return Err(CliError::new(
-                    HuakError::PyPackageInitError(module.to_string()),
-                    ExitCode::FAILURE,
-                ))
+                return Err(HuakError::PyPackageInitError(module.to_string()))
             }
         };
 
@@ -168,10 +161,7 @@ impl Venv {
     }
 
     /// Install a Python package to the venv.
-    pub fn install_package(
-        &self,
-        package: &PythonPackage,
-    ) -> Result<(), HuakError> {
+    pub fn install_package(&self, package: &PythonPackage) -> HuakResult<()> {
         let cwd = env::current_dir()?;
         let module_str = &package.string();
         let args = ["install", module_str];
@@ -183,7 +173,7 @@ impl Venv {
     }
 
     /// Uninstall a dependency from the venv.
-    pub fn uninstall_package(&self, name: &str) -> Result<(), HuakError> {
+    pub fn uninstall_package(&self, name: &str) -> HuakResult<()> {
         let cwd = env::current_dir()?;
         let module = "pip";
         let args = ["uninstall", name, "-y"];

@@ -1,6 +1,6 @@
 use crate::{
     env::venv::Venv,
-    errors::HuakError,
+    errors::{HuakError, HuakResult},
     package::python::PythonPackage,
     project::{config::PythonConfig, Project},
 };
@@ -9,7 +9,7 @@ use crate::{
 pub fn install_project_dependencies(
     project: &Project,
     all: bool,
-) -> Result<(), HuakError> {
+) -> HuakResult<()> {
     // TODO: Doing this venv handling seems hacky.
     if !project.root.join("pyproject.toml").exists() {
         return Err(HuakError::PyProjectTomlNotFound);
@@ -47,19 +47,11 @@ pub fn install_project_dependencies(
 fn install_packages(
     packages: &Vec<PythonPackage>,
     venv: &Venv,
-) -> Result<(), HuakError> {
+) -> HuakResult<()> {
     for package in packages {
-        match venv.install_package(package) {
-            Ok(_) => (),
-            Err(_) => {
-                // TODO: Level logging for capturing more internal errors.
-                return Err(HuakError::AnyHowError(anyhow::format_err!(
-                    "Failed to install dependency {:?}",
-                    package.string()
-                )));
-            }
-        };
+        venv.install_package(package)?;
     }
+
     Ok(())
 }
 

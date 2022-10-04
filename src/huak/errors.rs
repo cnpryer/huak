@@ -70,11 +70,17 @@ pub enum HuakError {
     PyProjectTomlNotFound, // TODO: Manfiest
     #[error("Failed to install Python package: {0}.")]
     PyPackageInstallFailure(String),
+    #[error("A pyproject.toml already exists.")]
+    PyProjectTomlExists,
     // TODO: had some rebase conflicts, leaving this for now but seems like duplicate...
     #[error("Failed to install package: {0}.")]
     PackageInstallFailure(String),
     #[error("Failed to init Python package: {0}.")]
     PyPackageInitError(String),
+    #[error("Failed to deserialize toml: {0}.")]
+    TomlDeserializeError(#[from] toml::de::Error),
+    #[error("Failed to serialize toml: {0}.")]
+    TomlSerializeError(#[from] toml::ser::Error),
     #[error("Invalid Python package version operator: {0}.")]
     InvalidPyPackageVersionOp(String),
     #[error("Failed to build the project.")]

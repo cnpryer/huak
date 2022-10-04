@@ -23,11 +23,7 @@ pub fn fmt_project(
             &[".", "--line-length", "79"],
             &project.root,
         ),
-    };
-
-    if let Err(e) = res {
-        return Err(HuakError::PyBlackError(Box::new(e)));
-    }
+    }?;
 
     Ok(())
 }

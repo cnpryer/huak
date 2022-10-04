@@ -1,10 +1,6 @@
-use std::{
-    env,
-    path::Path,
-    process::{self, ExitCode},
-};
+use std::{env, path::Path, process};
 
-use crate::errors::{CliError, HuakError};
+use crate::errors::{HuakError, HuakResult};
 
 /// Run a command using process::Command and an array of args. The command will
 /// execute inside a `from` dir. Set the environment variable
@@ -13,7 +9,7 @@ pub(crate) fn run_command(
     cmd: &str,
     args: &[&str],
     from: &Path,
-) -> Result<(i32, String), CliError> {
+) -> HuakResult<(i32, String)> {
     let (code, msg) = match should_mute() {
         true => run_command_with_output(cmd, args, from)?,
         false => run_command_with_spawn(cmd, args, from)?,
@@ -21,10 +17,7 @@ pub(crate) fn run_command(
 
     if code != 0 {
         // TODO: Capture status codes.
-        return Err(CliError::new(
-            HuakError::UnknownError(msg),
-            ExitCode::FAILURE,
-        ));
+        return Err(HuakError::UnknownError(msg));
     }
 
     Ok((code, msg))
@@ -45,7 +38,7 @@ fn run_command_with_output(
     cmd: &str,
     args: &[&str],
     from: &Path,
-) -> Result<(i32, String), CliError> {
+) -> HuakResult<(i32, String)> {
     let output = process::Command::new(cmd)
         .args(args)
         .current_dir(from)
@@ -66,7 +59,7 @@ fn run_command_with_spawn(
     cmd: &str,
     args: &[&str],
     from: &Path,
-) -> Result<(i32, String), CliError> {
+) -> HuakResult<(i32, String)> {
     // Get the child from spawning the process. Child inherets this scopes
     // stdout.
     let mut child = process::Command::new(cmd)
@@ -78,7 +71,7 @@ fn run_command_with_spawn(
     let status = match child.try_wait() {
         Ok(Some(s)) => s,
         Ok(None) => child.wait()?,
-        Err(e) => return Err(CliError::from(e)),
+        Err(e) => return Err(HuakError::from(e)),
     };
 
     // TODO: Capture through spawn.
@@ -90,7 +83,7 @@ fn run_command_with_spawn(
     Ok((code, msg))
 }
 
-fn string_from_buff(buff: &[u8]) -> Result<String, CliError> {
+fn string_from_buff(buff: &[u8]) -> HuakResult<String> {
     let string = std::str::from_utf8(buff)?.to_string();
 
     Ok(string)
