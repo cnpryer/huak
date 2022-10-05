@@ -18,7 +18,7 @@ impl BuildSystemBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use toml;
+    use toml_edit;
 
     #[test]
     fn build_system() {
@@ -36,6 +36,6 @@ build-backend = ""
 
         assert_eq!(data.requires, requires);
         assert_eq!(data.build_backend.as_ref().unwrap(), &backend);
-        assert_eq!(toml::to_string(&data).unwrap(), string);
+        assert_eq!(toml_edit::ser::to_string(&data).unwrap(), string);
     }
 }
