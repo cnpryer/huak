@@ -162,6 +162,12 @@ dependencies = [
 [[project.authors]]
 name = "Chris Pryer"
 email = "cnpryer@gmail.com"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=6",
+    "mock",
+]
 "#;
 
         let toml = Toml::from(string).unwrap();
