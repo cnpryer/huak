@@ -20,14 +20,6 @@ use super::project::ProjectBuilder;
 /// [tool.build-system]
 /// # ...
 /// ```
-/*
-#[derive(Serialize, Deserialize, Default)]
-pub struct Toml {
-    pub(crate) project: Project,
-    #[serde(rename = "build-system")]
-    pub(crate) build_system: BuildSystem,
-}
-*/
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Toml {
     #[serde(rename = "build-system")]
@@ -59,9 +51,6 @@ impl Toml {
                 )))
             }
         };
-
-        dbg!(&toml);
-        println!("{}", toml);
 
         let toml = match Toml::from(&toml) {
             Ok(t) => t,
@@ -249,15 +238,6 @@ email = "test@email.com"
 requires = ["huak-core>=1.0.0"]
 build-backend = "huak.core.build.api"
 "#;
-
-        match Toml::from(string) {
-            Ok(toml) => {
-                println!("{:?}", toml)
-            }
-            Err(err) => {
-                eprintln!("{}", err)
-            }
-        }
 
         let toml = Toml::from(string).unwrap();
 

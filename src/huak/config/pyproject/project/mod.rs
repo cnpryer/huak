@@ -1,39 +1,6 @@
 use pyproject_toml::Project;
-/*
-/// Struct containing Author information.
-/// ```toml
-/// [[project.authors]]
-/// name = "Chris Pryer"
-/// email = "cnpryer@gmail.com"
-/// ```
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub(crate) struct Author {
-    pub(crate) name: Option<String>,
-    pub(crate) email: Option<String>,
-}
-*/
-/*
-/// Project table data.
-/// ```toml
-/// [project]
-/// name = "Project"
-/// version = "0.0.1"
-/// description = ""
-/// # ...
-/// ```
-#[derive(Serialize, Deserialize)]
-pub(crate) struct Project {
-    pub(crate) name: String,
-    pub(crate) version: String,
-    pub(crate) description: String,
-    pub(crate) dependencies: Vec<String>,
-    #[serde(rename = "optional-dependencies")]
-    pub(crate) optional_dependencies: Option<HashMap<String, Vec<String>>>,
-    pub(crate) authors: Vec<Author>,
-    pub(crate) scripts: Option<HashMap<String, String>>,
-}
-*/
-/// Builder struct to create create default Project data.
+
+/// Builder struct to create load default Project data into pyproject-toml-rs.
 pub struct ProjectBuilder {}
 
 impl ProjectBuilder {
