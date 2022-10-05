@@ -9,11 +9,7 @@ use crate::{
 pub fn install_project_dependencies(
     project: &Project,
     all: bool,
-<<<<<<< HEAD
-) -> Result<(), HuakError> {
-=======
 ) -> HuakResult<()> {
->>>>>>> master
     // TODO: Doing this venv handling seems hacky.
     if !project.root.join("pyproject.toml").exists() {
         return Err(HuakError::PyProjectTomlNotFound);

@@ -12,11 +12,7 @@ const DEFAULT_SEARCH_STEPS: usize = 5;
 /// Traits for Python-specific configuration.
 pub trait PythonConfig {
     fn package_list(&self) -> Vec<PythonPackage>;
-<<<<<<< HEAD
-    fn optional_package_list(&self, group: &str) -> Vec<PythonPackage>;
-=======
     fn optional_package_list(&self, opt_group: &str) -> Vec<PythonPackage>;
->>>>>>> master
 }
 
 /// `Manifest` data the configuration uses to manage standard configuration
@@ -119,7 +115,7 @@ impl PythonConfig for Config {
     }
     // Get vec of `PythonPackage`s from the manifest.
     // TODO: More than toml.
-    fn optional_package_list(&self, group: &str) -> Vec<PythonPackage> {
+    fn optional_package_list(&self, opt_group: &str) -> Vec<PythonPackage> {
         // Get huak's spanned table found in the Toml.
         let table = &self.manifest.toml.project;
         let empty: Vec<String> = vec![];
@@ -128,7 +124,7 @@ impl PythonConfig for Config {
         let from = &table
             .optional_dependencies
             .as_ref()
-            .map_or(&empty, |deps| deps.get(group).unwrap_or(&empty));
+            .map_or(&empty, |deps| deps.get(opt_group).unwrap_or(&empty));
 
         from.iter()
             .filter_map(|d| PythonPackage::from(d).ok())

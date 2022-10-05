@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::{fs, path::Path};
 
-use pyproject_toml::{BuildSystem, Project};
 use crate::errors::{HuakError, HuakResult};
+use pyproject_toml::{BuildSystem, Project};
 
 use serde_derive::{Deserialize, Serialize};
 
@@ -109,15 +109,9 @@ impl Toml {
 
     pub fn remove_dependency(&mut self, dependency: &str) {
         // TODO: Do better than .starts_with
-<<<<<<< HEAD
         if let Some(deps) = &mut self.project.dependencies {
             deps.retain(|s| !s.starts_with(dependency));
         }
-=======
-        self.project
-            .dependencies
-            .retain(|s| !s.starts_with(dependency));
->>>>>>> master
 
         if let Some(deps) = &mut self.project.optional_dependencies {
             for (_, group_deps) in deps.iter_mut() {
@@ -179,7 +173,6 @@ email = "cnpryer@gmail.com"
         dbg!(&res);
 
         assert_eq!(expected_output, &res);
-
     }
 
     #[test]
@@ -214,11 +207,20 @@ build-backend = "huak.core.build.api"
         );
 
         assert_eq!(toml.build_system.requires, &["huak-core>=1.0.0"]);
-        assert_eq!(toml.build_system.build_backend, Some(String::from("huak.core.build.api")));
+        assert_eq!(
+            toml.build_system.build_backend,
+            Some(String::from("huak.core.build.api"))
+        );
 
         assert_eq!(toml.project.version, Some(String::from("0.1.0")));
         assert_eq!(toml.project.description, Some(String::from("")));
-        assert_eq!(toml.project.dependencies, Some(vec![String::from("click==8.1.3"), String::from("black==22.8.0")]));
+        assert_eq!(
+            toml.project.dependencies,
+            Some(vec![
+                String::from("click==8.1.3"),
+                String::from("black==22.8.0")
+            ])
+        );
     }
 
     #[test]
@@ -243,14 +245,39 @@ build-backend = "huak.core.build.api"
 "#;
 
         match Toml::from(string) {
-            Ok(toml) => {println!("{:?}", toml)},
-            Err(err) => {eprintln!("{}", err)}
-        }        
+            Ok(toml) => {
+                println!("{:?}", toml)
+            }
+            Err(err) => {
+                eprintln!("{}", err)
+            }
+        }
 
         let toml = Toml::from(string).unwrap();
 
-        assert_eq!("Troy Kohler", toml.project.authors.as_ref().unwrap().get(1).unwrap().name.as_ref().unwrap());
-        assert_eq!("test@email.com", toml.project.authors.as_ref().unwrap().get(1).unwrap().email.as_ref().unwrap());
-
+        assert_eq!(
+            "Troy Kohler",
+            toml.project
+                .authors
+                .as_ref()
+                .unwrap()
+                .get(1)
+                .unwrap()
+                .name
+                .as_ref()
+                .unwrap()
+        );
+        assert_eq!(
+            "test@email.com",
+            toml.project
+                .authors
+                .as_ref()
+                .unwrap()
+                .get(1)
+                .unwrap()
+                .email
+                .as_ref()
+                .unwrap()
+        );
     }
 }
