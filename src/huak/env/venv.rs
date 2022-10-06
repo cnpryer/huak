@@ -6,7 +6,10 @@ use std::{
 use crate::{
     errors::{HuakError, HuakResult},
     package::python::PythonPackage,
-    utils::path::search_parents_for_filepath,
+    utils::{
+        path::search_parents_for_filepath,
+        shell::{get_shell_name, get_shell_path, get_shell_source_command},
+    },
 };
 
 const DEFAULT_SEARCH_STEPS: usize = 5;
@@ -22,6 +25,7 @@ pub struct Venv {
     pub path: PathBuf,
 }
 
+// TODO: merge impl blocks
 impl Venv {
     /// Initialize a `Venv`.
     pub fn new(path: PathBuf) -> Venv {
@@ -51,6 +55,54 @@ impl Venv {
         let name = crate::utils::path::parse_filename(self.path.as_path())?;
 
         Ok(name)
+    }
+
+    /// Activates the virtual environment in the current shell
+    pub fn activate(&self) -> HuakResult<()> {
+        // Check if venv is already activated
+        if env::var("HUAK_VENV_ACTIVE").is_ok() {
+            return Err(HuakError::VenvActive);
+        }
+
+        let script = self.get_activation_script()?;
+        let source_command = get_shell_source_command()?;
+        let activation_command =
+            format!("{} {}", source_command, script.display());
+
+        env::set_var("HUAK_VENV_ACTIVE", "1");
+
+        // activate
+        let shell_path = get_shell_path()?;
+        let mut new_shell = expectrl::spawn(&shell_path)?;
+        let mut stdin = expectrl::stream::stdin::Stdin::open()?;
+        new_shell.send_line(&activation_command)?;
+        new_shell.interact(&mut stdin, std::io::stdout()).spawn()?;
+        stdin.close()?;
+        Ok(())
+    }
+
+    /// Gets path to the activation script
+    /// (e.g. `.venv/bin/activate`)
+    ///
+    /// Takes into the account OS and current shell.
+    /// Returns errors if it fails to get correct env vars.
+    fn get_activation_script(&self) -> HuakResult<PathBuf> {
+        let shell_name = get_shell_name()?;
+
+        let suffix = match shell_name.as_str() {
+            "fish" => ".fish",
+            "csh" | "tcsh" => ".csh",
+            "powershell" | "pwsh" => ".ps1",
+            "cmd" => ".bat",
+            "nu" => ".nu",
+            _ => "",
+        };
+
+        let path = self
+            .bin_path()
+            .join(Path::new(&("activate".to_owned() + suffix)));
+
+        Ok(path)
     }
 }
 
