@@ -25,7 +25,19 @@ pub struct Venv {
     pub path: PathBuf,
 }
 
-// TODO: merge impl blocks
+impl Default for Venv {
+    fn default() -> Venv {
+        let cwd = match env::current_dir() {
+            Err(_) => Path::new(".").to_path_buf(),
+            Ok(p) => p,
+        };
+
+        Venv {
+            path: cwd.join(DEFAULT_VENV_NAME),
+        }
+    }
+}
+
 impl Venv {
     /// Initialize a `Venv`.
     pub fn new(path: PathBuf) -> Venv {
@@ -104,22 +116,6 @@ impl Venv {
 
         Ok(path)
     }
-}
-
-impl Default for Venv {
-    fn default() -> Venv {
-        let cwd = match env::current_dir() {
-            Err(_) => Path::new(".").to_path_buf(),
-            Ok(p) => p,
-        };
-
-        Venv {
-            path: cwd.join(DEFAULT_VENV_NAME),
-        }
-    }
-}
-
-impl Venv {
     /// Create the venv at its path.
     pub fn create(&self) -> HuakResult<()> {
         if self.path.exists() {
