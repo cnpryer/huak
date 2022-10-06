@@ -12,9 +12,7 @@ pub fn get_shell_name() -> HuakResult<String> {
         .and_then(|name| name.to_str())
         .map(|name| name.to_owned())
         .ok_or_else(|| {
-            HuakError::InternalError(
-                "Shell path is not vaild Unicode.".to_owned(),
-            )
+            HuakError::InternalError("Shell path is invalid.".to_owned())
         });
 
     shell_name
