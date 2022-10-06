@@ -1,6 +1,7 @@
 pub mod add;
 pub mod build;
 pub mod clean;
+pub mod fix;
 pub mod fmt;
 pub mod init;
 pub mod install;
