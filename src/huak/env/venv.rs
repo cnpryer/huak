@@ -18,6 +18,7 @@ pub(crate) const BIN_NAME: &str = "bin";
 pub(crate) const WINDOWS_BIN_NAME: &str = "Scripts";
 pub(crate) const DEFAULT_PYTHON_ALIAS: &str = "python";
 pub(crate) const PYTHON3_ALIAS: &str = "python3";
+const HUAK_VENV_ENV_VAR: &str = "HUAK_VENV_ACTIVE";
 
 /// A struct for Python venv.
 #[derive(Clone)]
@@ -72,7 +73,7 @@ impl Venv {
     /// Activates the virtual environment in the current shell
     pub fn activate(&self) -> HuakResult<()> {
         // Check if venv is already activated
-        if env::var("HUAK_VENV_ACTIVE").is_ok() {
+        if env::var(HUAK_VENV_ENV_VAR).is_ok() {
             return Err(HuakError::VenvActive);
         }
 
@@ -81,13 +82,18 @@ impl Venv {
         let activation_command =
             format!("{} {}", source_command, script.display());
 
-        env::set_var("HUAK_VENV_ACTIVE", "1");
+        env::set_var(HUAK_VENV_ENV_VAR, "1");
 
-        // activate
+        // Spawn a pseudo-terminal with current shell and source activation script
         let shell_path = get_shell_path()?;
         let mut new_shell = expectrl::spawn(&shell_path)?;
         let mut stdin = expectrl::stream::stdin::Stdin::open()?;
         new_shell.send_line(&activation_command)?;
+        new_shell.set_expect_lazy(false);
+        let (cols, rows) = terminal_size::terminal_size().unwrap();
+        new_shell
+            .set_window_size(cols.0, rows.0)
+            .map_err(|e| HuakError::InternalError(e.to_string()))?;
         new_shell.interact(&mut stdin, std::io::stdout()).spawn()?;
         stdin.close()?;
         Ok(())
@@ -96,7 +102,7 @@ impl Venv {
     /// Gets path to the activation script
     /// (e.g. `.venv/bin/activate`)
     ///
-    /// Takes into the account OS and current shell.
+    /// Takes current shell into account.
     /// Returns errors if it fails to get correct env vars.
     fn get_activation_script(&self) -> HuakResult<PathBuf> {
         let shell_name = get_shell_name()?;
