@@ -91,7 +91,7 @@ impl Config {
 
     /// Get a reference to the project version from manifest data.
     // TODO: Use more than toml.
-    pub fn project_version(&self) -> &String {
+    pub fn project_version(&self) -> &Option<String> {
         let table = &self.manifest.toml.project;
 
         &table.version
@@ -104,9 +104,9 @@ impl PythonConfig for Config {
     fn package_list(&self) -> Vec<PythonPackage> {
         // Get huak's spanned table found in the Toml.
         let table = &self.manifest.toml.project;
-
+        let empty: Vec<String> = Vec::new();
         // Dependencies to list from.
-        let from = &table.dependencies;
+        let from = &table.dependencies.as_ref().unwrap_or(&empty);
 
         // Collect into vector of owned `PythonPackage` data.
         from.iter()
@@ -115,7 +115,7 @@ impl PythonConfig for Config {
     }
     // Get vec of `PythonPackage`s from the manifest.
     // TODO: More than toml.
-    fn optional_package_list(&self, group: &str) -> Vec<PythonPackage> {
+    fn optional_package_list(&self, opt_group: &str) -> Vec<PythonPackage> {
         // Get huak's spanned table found in the Toml.
         let table = &self.manifest.toml.project;
         let empty: Vec<String> = vec![];
@@ -124,9 +124,8 @@ impl PythonConfig for Config {
         let from = &table
             .optional_dependencies
             .as_ref()
-            .map_or(&empty, |deps| deps.get(group).unwrap_or(&empty));
+            .map_or(&empty, |deps| deps.get(opt_group).unwrap_or(&empty));
 
-        // Collect into vector of owned `PythonPackage` data.
         from.iter()
             .filter_map(|d| PythonPackage::from(d).ok())
             .collect()

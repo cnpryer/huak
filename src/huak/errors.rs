@@ -65,9 +65,9 @@ pub enum HuakError {
     #[error("Failed to init Python package: {0}.")]
     PyPackageInitError(String),
     #[error("Failed to deserialize toml: {0}.")]
-    TomlDeserializeError(#[from] toml::de::Error),
+    TomlDeserializeError(#[from] toml_edit::de::Error),
     #[error("Failed to serialize toml: {0}.")]
-    TomlSerializeError(#[from] toml::ser::Error),
+    TomlSerializeError(#[from] toml_edit::ser::Error),
     #[error("Invalid Python package version operator: {0}.")]
     InvalidPyPackageVersionOp(String),
     #[error("Failed to build the project.")]

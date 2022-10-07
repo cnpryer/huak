@@ -20,6 +20,8 @@ pub fn add_project_dependency(
     if toml
         .project
         .dependencies
+        .as_ref()
+        .unwrap_or(&Vec::new())
         .iter()
         .any(|d| d.starts_with(dependency))
     {
@@ -93,6 +95,8 @@ mod tests {
         let had_dep = toml
             .project
             .dependencies
+            .as_ref()
+            .unwrap_or(&Vec::new())
             .iter()
             .any(|d| d.starts_with(dependency));
 
@@ -102,6 +106,8 @@ mod tests {
         let has_dep = toml
             .project
             .dependencies
+            .as_ref()
+            .unwrap_or(&Vec::new())
             .iter()
             .any(|d| d.starts_with(dependency));
 

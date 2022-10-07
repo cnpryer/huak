@@ -1,25 +1,17 @@
-use serde_derive::{Deserialize, Serialize};
+use pyproject_toml::BuildSystem;
 
 const HUAK_REQUIRES: &str = "hatchling";
 const HUAK_BUILD_BACKEND: &str = "hatchling.build";
 
-/// Build System data.
-/// ```toml
-/// [tool.build-system]
-/// # ...
-/// ```
-#[derive(Serialize, Deserialize)]
-pub(crate) struct BuildSystem {
-    pub(crate) requires: Vec<String>,
-    #[serde(rename = "build-backend")]
-    pub(crate) backend: String,
-}
+/// Builder struct to create load default BuildSystem data into pyproject-toml-rs.
+pub struct BuildSystemBuilder {}
 
-impl Default for BuildSystem {
-    fn default() -> BuildSystem {
+impl BuildSystemBuilder {
+    pub fn default() -> BuildSystem {
         BuildSystem {
             requires: vec![HUAK_REQUIRES.to_string()],
-            backend: HUAK_BUILD_BACKEND.to_string(),
+            build_backend: Some(HUAK_BUILD_BACKEND.to_string()),
+            backend_path: None,
         }
     }
 }
@@ -27,7 +19,7 @@ impl Default for BuildSystem {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use toml;
+    use toml_edit;
 
     #[test]
     fn build_system() {
@@ -39,11 +31,12 @@ build-backend = ""
 
         let data = BuildSystem {
             requires: requires.clone(),
-            backend: backend.clone(),
+            build_backend: Some(backend.clone()),
+            backend_path: None,
         };
 
         assert_eq!(data.requires, requires);
-        assert_eq!(data.backend, backend);
-        assert_eq!(toml::to_string(&data).unwrap(), string);
+        assert_eq!(data.build_backend.as_ref().unwrap(), &backend);
+        assert_eq!(toml_edit::ser::to_string(&data).unwrap(), string);
     }
 }

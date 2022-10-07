@@ -15,7 +15,7 @@ pub fn run() -> CliResult<()> {
         Ok(v) => v,
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
-    let name = &project.config().project_name();
+    let name = project.config().project_name();
 
     println!("Version: {name}-{version}");
 

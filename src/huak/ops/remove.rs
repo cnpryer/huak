@@ -55,6 +55,7 @@ mod tests {
         let existed = toml
             .project
             .dependencies
+            .unwrap()
             .iter()
             .any(|d| d.starts_with("click"));
         let existed = existed
@@ -68,6 +69,7 @@ mod tests {
         let exists = toml
             .project
             .dependencies
+            .unwrap()
             .iter()
             .any(|s| s.starts_with("click"));
 
