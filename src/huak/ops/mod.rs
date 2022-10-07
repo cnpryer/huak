@@ -1,3 +1,4 @@
+pub mod activate;
 pub mod add;
 pub mod build;
 pub mod clean;
