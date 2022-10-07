@@ -5,31 +5,21 @@ use crate::{
     project::Project,
 };
 
-use super::project_utils;
-
 /// Create an initialized project (TODO) in an environment.
 pub fn create_project(project: &Project) -> HuakResult<()> {
     // TODO: Use available toml from manifest.
-    let toml = project_utils::create_toml(project)?;
-    let toml_path = project.root.join("pyproject.toml");
+    let pyproject_toml = project.create_toml()?;
+    let pyproject_path = project.root.join("pyproject.toml");
 
-    if toml_path.exists() {
+    if pyproject_path.exists() {
         return Err(HuakError::PyProjectTomlExists);
     }
+    // bootstrap new project with lib or app template
+    project.create_from_template()?;
 
-    // Serialize pyproject.toml.
-    let string = toml.to_string()?;
-    fs::write(&toml_path, string)?;
-
-    // Use name from the toml config.
-    let name = &toml.project.name;
-
-    // Create src subdirectory with standard project namespace.
-    fs::create_dir_all(project.root.join("src"))?;
-    fs::create_dir_all(project.root.join("src").join(name))?;
-
-    // Add __init__.py to main project namespace.
-    fs::write(&project.root.join("src").join(name).join("__init__.py"), "")?;
+    // Serialize pyproject.toml and write to file
+    let pyproject_content = pyproject_toml.to_string()?;
+    fs::write(&pyproject_path, pyproject_content)?;
 
     Ok(())
 }
@@ -48,7 +38,7 @@ mod tests {
     // TODO
     #[test]
     fn creates_project() {
-        let directory = tempdir().unwrap().into_path().to_path_buf();
+        let directory = tempdir().unwrap().into_path();
         let project = create_mock_project(directory).unwrap();
 
         let toml_path = project.root.join("pyproject.toml");
@@ -62,7 +52,7 @@ mod tests {
 
     #[test]
     fn create_app_project() {
-        let directory = tempdir().unwrap().into_path().to_path_buf();
+        let directory = tempdir().unwrap().into_path();
         let project = Project::new(directory, ProjectType::Application);
         let toml_path = project.root.join("pyproject.toml");
 
@@ -72,7 +62,7 @@ mod tests {
         assert!(toml.project.scripts.is_some());
         assert_eq!(
             toml.project.scripts.unwrap()[&toml.project.name],
-            format!("{}:run", toml.project.name)
+            format!("{}.main:main", toml.project.name)
         );
     }
 }

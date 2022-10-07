@@ -47,7 +47,7 @@ pub enum Commands {
     Clean,
     /// Remove all .pyc files and __pycache__ directories.
     #[command(name = "clean-pycache")]
-    Cleanpycache,
+    CleanPycache,
     /// Builds and uploads current project to a registry.
     Doc {
         /// Check if Python code is formatted.
@@ -73,15 +73,16 @@ pub enum Commands {
     },
     /// Lint Python code.
     Lint,
-    /// Create a project from scratch.
+    /// Create a new python package at <path>
     New {
-        /// Create a library.
+        /// Use a library template.
         #[arg(long, conflicts_with = "app")]
         lib: bool,
-        /// Create a runnable application.
+        /// Use a application template [default].
         #[arg(long)]
         app: bool,
-        path: Option<String>,
+        /// Path and name of the python package
+        path: String,
     },
     /// Builds and uploads current project to a registry.
     Publish,
@@ -108,7 +109,7 @@ impl Cli {
             Commands::Add { dependency, dev } => add::run(dependency, dev),
             Commands::Build => build::run(),
             Commands::Clean => clean::run(),
-            Commands::Cleanpycache => clean_pycache::run(),
+            Commands::CleanPycache => clean_pycache::run(),
             Commands::Doc { check } => doc::run(check),
             Commands::Fmt { check } => fmt::run(check),
             Commands::Init => init::run(),

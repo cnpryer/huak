@@ -1,6 +1,5 @@
 use std::fs;
 
-use super::project_utils;
 use crate::{
     errors::{HuakError, HuakResult},
     project::Project,
@@ -8,9 +7,9 @@ use crate::{
 
 /// Initialize a project by adding a pyproject.toml to the dir.
 pub fn init_project(project: &Project) -> HuakResult<()> {
-    // Create a toml setting the name to the project dir's name.
+    // Create a toml setting the name to the project directory's name.
     // TODO: Don't do this with a utility function.
-    let toml = project_utils::create_toml(project)?;
+    let toml = project.create_toml()?;
 
     if project.root.join("pyproject.toml").exists() {
         return Err(HuakError::PyProjectTomlExists);
