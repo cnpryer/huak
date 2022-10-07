@@ -4,6 +4,13 @@ use crate::env::venv::{self, Venv};
 use crate::errors::HuakError;
 use crate::project::Config;
 
+use std::collections::HashMap;
+
+use crate::{
+    config::pyproject::toml::Toml,
+    errors::HuakResult,
+};
+
 /// There are two kinds of project, application and library.
 /// Application projects usually have one or more entrypoints in the form of
 /// runnable scripts while library projects do not.
@@ -94,6 +101,23 @@ impl Project {
             venv: Some(venv),
         })
     }
+
+    /// Create project toml.
+    // TODO: Config implementations?
+    pub fn create_toml(&self) -> HuakResult<Toml> {
+        let mut toml = Toml::default();
+        let name = crate::utils::path::parse_filename(&self.root)?.to_string();
+
+        if matches!(self.project_type, ProjectType::Application) {
+            let entrypoint = format!("{name}:run");
+            toml.project.scripts = Some(HashMap::from([(name.clone(), entrypoint)]))
+        }
+
+        toml.project.name = name;
+
+        Ok(toml)
+    }
+
 
     /// Get a reference to the `Project` `Config`.
     pub fn config(&self) -> &Config {
