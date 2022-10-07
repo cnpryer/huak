@@ -90,10 +90,11 @@ impl Venv {
         let mut stdin = expectrl::stream::stdin::Stdin::open()?;
         new_shell.send_line(&activation_command)?;
         new_shell.set_expect_lazy(false);
-        let (cols, rows) = terminal_size::terminal_size().unwrap();
-        new_shell
-            .set_window_size(cols.0, rows.0)
-            .map_err(|e| HuakError::InternalError(e.to_string()))?;
+        if let Some((cols, rows)) = terminal_size::terminal_size() {
+            new_shell
+                .set_window_size(cols.0, rows.0)
+                .map_err(|e| HuakError::InternalError(e.to_string()))?;
+        }
         new_shell.interact(&mut stdin, std::io::stdout()).spawn()?;
         stdin.close()?;
         Ok(())
