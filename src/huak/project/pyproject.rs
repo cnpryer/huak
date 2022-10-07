@@ -14,8 +14,8 @@ use crate::{config::pyproject::toml::Toml, errors::HuakResult};
 /// runnable scripts while library projects do not.
 #[derive(Default, Eq, PartialEq)]
 pub enum ProjectType {
-    Library,
     #[default]
+    Library,
     Application,
 }
 
@@ -109,22 +109,22 @@ impl Project {
         if self.project_type == ProjectType::Library {
             fs::write(
                 &self.root.join("src").join("__init__.py"),
-                "from .my_math import add_one, times_two\n",
+                "from .math import add_one\n",
             )?;
 
-            fs::write(&self.root.join("src").join("my_math.py"),
-                      "# welcome to Huak's sample Python library.\ndef add_one(my_number):\
-                      \n\treturn my_number + 1\n\n\ndef times_two(my_number):\n\treturn my_number * 2\n")?;
+            fs::write(
+                &self.root.join("src").join("math.py"),
+                "def add_one(my_number):\n\treturn my_number + 1\n",
+            )?;
 
             fs::write(&self.root.join("test.py"),
-                      "import unittest\nfrom src import add_one\n\n\n\
-                      class TestSum(unittest.TestCase):\n\tdef test_lib_function(self):\n\t\t\
-                      self.assertEqual(add_one(1), 2)\n\n\nif __name__ == '__main__':\n\tunittest.main()\n")?;
+                      "import unittest\n\n\n\
+                      class TestSum(unittest.TestCase):\n\tdef test_lib_function(self):\n\t\tresult = 2 + 2
+                      self.assertEqual(result, 4)\n\n\nif __name__ == '__main__':\n\tunittest.main()\n")?;
         } else {
             fs::create_dir_all(self.root.join("src").join(&name))?;
             fs::write(&self.root.join("src").join(&name).join("main.py"),
-                      "# This is a sample Python script.\ndef print_hi(name):\
-                      \n\tprint(f'Hello, {name}')\n\n\nif __name__ == '__main__':\n\tprint_hi('World')\n")?;
+                      "def main():\n\tprint('Hello, World!')\n\n\nif __name__ == '__main__':\n\tmain()\n")?;
         }
         Ok(())
     }
@@ -136,7 +136,7 @@ impl Project {
         let name = crate::utils::path::parse_filename(&self.root)?.to_string();
 
         if matches!(self.project_type, ProjectType::Application) {
-            let entrypoint = format!("{name}:run");
+            let entrypoint = format!("{name}:main");
             toml.project.scripts =
                 Some(HashMap::from([(name.clone(), entrypoint)]))
         }

@@ -62,7 +62,7 @@ mod tests {
         assert!(toml.project.scripts.is_some());
         assert_eq!(
             toml.project.scripts.unwrap()[&toml.project.name],
-            format!("{}:run", toml.project.name)
+            format!("{}:main", toml.project.name)
         );
     }
 }

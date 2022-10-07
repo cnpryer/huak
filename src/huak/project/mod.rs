@@ -1,9 +1,9 @@
 mod config;
-mod py_project;
+mod pyproject;
 
 // declare the `project` module API here
 pub use self::config::Config;
 pub use self::config::Manifest;
 pub use self::config::PythonConfig;
-pub use py_project::Project;
-pub use py_project::ProjectType;
+pub use pyproject::Project;
+pub use pyproject::ProjectType;
