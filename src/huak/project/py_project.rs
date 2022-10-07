@@ -5,6 +5,7 @@ use crate::errors::HuakError;
 use crate::project::Config;
 
 use std::collections::HashMap;
+use std::fs;
 
 use crate::{
     config::pyproject::toml::Toml,
@@ -14,7 +15,7 @@ use crate::{
 /// There are two kinds of project, application and library.
 /// Application projects usually have one or more entrypoints in the form of
 /// runnable scripts while library projects do not.
-#[derive(Default)]
+#[derive(Default, Eq, PartialEq)]
 pub enum ProjectType {
     Library,
     #[default]
@@ -102,6 +103,33 @@ impl Project {
         })
     }
 
+    pub fn create_from_template(&self) -> HuakResult<(), > {
+        let name = crate::utils::path::parse_filename(&self.root)?.to_string();
+
+        // Create src subdirectory
+        fs::create_dir_all(self.root.join("src"))?;
+
+        if self.project_type == ProjectType::Library {
+            fs::write(&self.root.join("src").join("__init__.py"),
+                      "from .my_math import add_one, times_two\n")?;
+
+            fs::write(&self.root.join("src").join("my_math.py"),
+                      "# welcome to Huak's sample Python library.\ndef add_one(my_number):\
+                      \n\treturn my_number + 1\n\n\ndef times_two(my_number):\n\treturn my_number * 2\n")?;
+
+            fs::write(&self.root.join("test.py"),
+                      "import unittest\nfrom src import add_one\n\n\n\
+                      class TestSum(unittest.TestCase):\n\tdef test_lib_function(self):\n\t\t\
+                      self.assertEqual(add_one(1), 2)\n\n\nif __name__ == '__main__':\n\tunittest.main()\n")?;
+        } else {
+            fs::create_dir_all(self.root.join("src").join(&name))?;
+            fs::write(&self.root.join("src").join(&name).join("main.py"),
+                      "# This is a sample Python script.\ndef print_hi(name):\
+                      \n\tprint(f'Hello, {name}')\n\n\nif __name__ == '__main__':\n\tprint_hi('World')\n")?;
+        }
+        Ok(())
+    }
+
     /// Create project toml.
     // TODO: Config implementations?
     pub fn create_toml(&self) -> HuakResult<Toml> {
@@ -117,7 +145,6 @@ impl Project {
 
         Ok(toml)
     }
-
 
     /// Get a reference to the `Project` `Config`.
     pub fn config(&self) -> &Config {
