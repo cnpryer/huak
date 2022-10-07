@@ -112,8 +112,13 @@ impl Project {
                 &self.root.join("src").join(&name).join("__init__.py"),
                 "",
             )?;
-            fs::write(&self.root.join("src").join(&name).join("main.py"),
-                      "def main():\n\tprint('Hello, World!')\n\n\nif __name__ == '__main__':\n\tmain()\n")?;
+            fs::write(
+                &self.root.join("src").join(&name).join("main.py"),
+                "def main():\n
+                \tprint('Hello, World!')\n\n\n\
+                if __name__ == '__main__':\n
+                \tmain()\n",
+            )?;
         } else {
             fs::write(
                 &self.root.join("src").join("__init__.py"),
@@ -122,12 +127,19 @@ impl Project {
 
             fs::write(
                 &self.root.join("src").join("math.py"),
-                "def add_one(my_number):\n\treturn my_number + 1\n",
+                "def add_one(my_number):\n
+                \treturn my_number + 1\n",
             )?;
 
-            fs::write(&self.root.join("test.py"),
-                      "import unittest\n\n\n\
-                      class TestSum(unittest.TestCase):\n\tdef test_lib_function(self):\n\t\tresult = 2 + 2\n\t\tself.assertEqual(result, 4)\n\n\nif __name__ == '__main__':\n\tunittest.main()\n")?;
+            fs::write(
+                &self.root.join("test.py"),
+                "import unittest\n\n\n\
+                      class TestSum(unittest.TestCase):\n
+                      \tdef test_lib_function(self):\n\
+                      \t\tresult = 2 + 2\n
+                      \t\tself.assertEqual(result, 4)\n\n\n\
+                      if __name__ == '__main__':\n\tunittest.main()\n",
+            )?;
         }
         Ok(())
     }
