@@ -64,6 +64,9 @@ pub enum Commands {
     Init,
     /// Install the dependencies of an existing project.
     Install {
+        /// Install optional dependency groups
+        #[arg(long, conflicts_with = "all", num_args = 1..)]
+        groups: Option<Vec<String>>,
         /// Install main and all optional dependencies.
         #[arg(long)]
         all: bool,
@@ -109,7 +112,7 @@ impl Cli {
             Commands::Doc { check } => doc::run(check),
             Commands::Fmt { check } => fmt::run(check),
             Commands::Init => init::run(),
-            Commands::Install { all } => install::run(all),
+            Commands::Install { groups, all } => install::run(groups, all),
             Commands::Lint => lint::run(),
             Commands::New { path, app, lib } => new::run(path, app, lib),
             Commands::Publish => publish::run(),
