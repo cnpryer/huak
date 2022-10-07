@@ -10,7 +10,7 @@ use huak::project::ProjectType;
 
 /// Run the `new` command.
 // TODO: Ops should handle the path creation step in addition to the project creation.
-pub fn run(path: Option<String>, app: bool, lib: bool) -> CliResult<()> {
+pub fn run(path: String, app: bool, lib: bool) -> CliResult<()> {
     // This command runs from the current working directory
     // Each command's behavior is triggered from the context of the cwd.
     let cwd = env::current_dir()?;
@@ -22,10 +22,7 @@ pub fn run(path: Option<String>, app: bool, lib: bool) -> CliResult<()> {
     };
 
     // If a user passes a path
-    let path = match path {
-        Some(p) => cwd.join(p),
-        _ => cwd.clone(),
-    };
+    let path = cwd.join(path);
 
     // Make sure there isn't already a path we would override.
     if path.exists() && path != cwd {
