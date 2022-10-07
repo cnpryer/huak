@@ -50,9 +50,8 @@ pub fn run(path: Option<String>, app: bool, lib: bool) -> CliResult<()> {
 
     let project = Project::new(path, project_type);
 
-    if let Err(e) = ops::new::create_project(&project) {
-        return Err(CliError::new(e, ExitCode::FAILURE));
-    };
+    ops::new::create_project(&project)
+        .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
     Ok(())
 }
