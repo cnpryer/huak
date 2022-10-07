@@ -106,6 +106,7 @@ impl Project {
         // Create src subdirectory
         fs::create_dir_all(self.root.join("src"))?;
 
+        // Add directories and example python files to new project
         if self.project_type == ProjectType::Application {
             fs::create_dir_all(self.root.join("src").join(&name))?;
             fs::write(
@@ -114,32 +115,10 @@ impl Project {
             )?;
             fs::write(
                 &self.root.join("src").join(&name).join("main.py"),
-                "def main():\n
-                \tprint('Hello, World!')\n\n\n\
-                if __name__ == '__main__':\n
-                \tmain()\n",
+                "def main():\n    print('Hello, World!')\n\n\nif __name__ == '__main__':\n    main()\n",
             )?;
         } else {
-            fs::write(
-                &self.root.join("src").join("__init__.py"),
-                "from .math import add_one\n",
-            )?;
-
-            fs::write(
-                &self.root.join("src").join("math.py"),
-                "def add_one(my_number):\n
-                \treturn my_number + 1\n",
-            )?;
-
-            fs::write(
-                &self.root.join("test.py"),
-                "import unittest\n\n\n\
-                      class TestSum(unittest.TestCase):\n
-                      \tdef test_lib_function(self):\n\
-                      \t\tresult = 2 + 2\n
-                      \t\tself.assertEqual(result, 4)\n\n\n\
-                      if __name__ == '__main__':\n\tunittest.main()\n",
-            )?;
+            fs::write(&self.root.join("src").join("__init__.py"), "")?;
         }
         Ok(())
     }
