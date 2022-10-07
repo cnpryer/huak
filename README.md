@@ -1,5 +1,6 @@
 [![ci-rust](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml)
 [![ci-python](https://github.com/cnpryer/huak/actions/workflows/ci-python.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci-python.yaml)
+[![pypi.org](https://img.shields.io/pypi/v/huak.svg)](https://pypi.org/project/huak/)
 [![crates.io](https://img.shields.io/crates/v/huak.svg)](https://crates.io/crates/huak)
 [![discord](https://img.shields.io/discord/1022879330470199347?color=7289DA&logo=discord)](https://discord.gg/St3menxFZT)
 
