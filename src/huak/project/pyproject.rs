@@ -106,7 +106,15 @@ impl Project {
         // Create src subdirectory
         fs::create_dir_all(self.root.join("src"))?;
 
-        if self.project_type == ProjectType::Library {
+        if self.project_type == ProjectType::Application {
+            fs::create_dir_all(self.root.join("src").join(&name))?;
+            fs::write(
+                &self.root.join("src").join(&name).join("__init__.py"),
+                "",
+            )?;
+            fs::write(&self.root.join("src").join(&name).join("main.py"),
+                      "def main():\n\tprint('Hello, World!')\n\n\nif __name__ == '__main__':\n\tmain()\n")?;
+        } else {
             fs::write(
                 &self.root.join("src").join("__init__.py"),
                 "from .math import add_one\n",
@@ -119,12 +127,7 @@ impl Project {
 
             fs::write(&self.root.join("test.py"),
                       "import unittest\n\n\n\
-                      class TestSum(unittest.TestCase):\n\tdef test_lib_function(self):\n\t\tresult = 2 + 2
-                      self.assertEqual(result, 4)\n\n\nif __name__ == '__main__':\n\tunittest.main()\n")?;
-        } else {
-            fs::create_dir_all(self.root.join("src").join(&name))?;
-            fs::write(&self.root.join("src").join(&name).join("main.py"),
-                      "def main():\n\tprint('Hello, World!')\n\n\nif __name__ == '__main__':\n\tmain()\n")?;
+                      class TestSum(unittest.TestCase):\n\tdef test_lib_function(self):\n\t\tresult = 2 + 2\n\t\tself.assertEqual(result, 4)\n\n\nif __name__ == '__main__':\n\tunittest.main()\n")?;
         }
         Ok(())
     }
@@ -136,7 +139,7 @@ impl Project {
         let name = crate::utils::path::parse_filename(&self.root)?.to_string();
 
         if matches!(self.project_type, ProjectType::Application) {
-            let entrypoint = format!("{name}:main");
+            let entrypoint = format!("{name}.main:main");
             toml.project.scripts =
                 Some(HashMap::from([(name.clone(), entrypoint)]))
         }
