@@ -12,14 +12,12 @@ pub fn build_project(project: &Project) -> Result<(), HuakError> {
 
     let package = PythonPackage::from("build")?;
 
-    if venv.install_package(&package).is_err() {
-        return Err(HuakError::PyPackageInstallFailure("build".to_string()));
-    };
+    venv.install_package(&package)
+        .map_err(|_| HuakError::PyPackageInstallFailure("build".to_string()))?;
 
     let args = ["-m", MODULE];
-    if venv.exec_module("python", &args, &project.root).is_err() {
-        return Err(HuakError::BuildFailure);
-    };
+    venv.exec_module("python", &args, &project.root)
+        .map_err(|_| HuakError::BuildFailure)?;
 
     Ok(())
 }

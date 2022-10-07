@@ -15,9 +15,8 @@ pub fn run() -> CliResult<()> {
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
 
-    if let Err(e) = ops::lint::lint_project(&project) {
-        return Err(CliError::new(e, ExitCode::FAILURE));
-    };
+    ops::lint::lint_project(&project)
+        .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
     Ok(())
 }

@@ -89,6 +89,7 @@ pub mod tests {
         let black_path = venv.module_path("black").unwrap();
         let had_black = black_path.exists();
 
+        venv.uninstall_package("pytest").unwrap();
         let pytest_path = venv.module_path("pytest").unwrap();
         let had_pytest = pytest_path.exists();
 

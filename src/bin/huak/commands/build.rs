@@ -12,9 +12,8 @@ pub fn run() -> CliResult<()> {
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
 
-    if let Err(e) = ops::build::build_project(&project) {
-        return Err(CliError::new(e, ExitCode::FAILURE));
-    };
+    ops::build::build_project(&project)
+        .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
     Ok(())
 }

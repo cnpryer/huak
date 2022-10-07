@@ -11,9 +11,8 @@ pub fn run(is_check: bool) -> CliResult<()> {
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
 
-    if let Err(e) = ops::fmt::fmt_project(&project, &is_check) {
-        return Err(CliError::new(e, ExitCode::FAILURE));
-    };
+    ops::fmt::fmt_project(&project, &is_check)
+        .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
     Ok(())
 }

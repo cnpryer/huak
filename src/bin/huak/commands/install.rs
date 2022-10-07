@@ -13,13 +13,12 @@ pub fn run(groups: Option<Vec<String>>, all: bool) -> CliResult<()> {
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
 
-    if let Err(e) = ops::install::install_project_dependencies(
+    ops::install::install_project_dependencies(
         &project,
         &groups.unwrap_or_default(),
         all,
-    ) {
-        return Err(CliError::new(e, ExitCode::FAILURE));
-    };
+    )
+    .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
     Ok(())
 }

@@ -12,11 +12,8 @@ pub fn run(dependency: String, is_dev: bool) -> CliResult<()> {
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
 
-    if let Err(e) =
-        ops::add::add_project_dependency(&project, &dependency, is_dev)
-    {
-        return Err(CliError::new(e, ExitCode::FAILURE));
-    }
+    ops::add::add_project_dependency(&project, &dependency, is_dev)
+        .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
     Ok(())
 }

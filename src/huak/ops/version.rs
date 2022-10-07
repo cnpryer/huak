@@ -10,6 +10,6 @@ pub fn get_project_version(project: &Project) -> Result<&str, HuakError> {
 
     match version {
         Some(version) => Ok(version),
-        None => Ok("0.0.1"),
+        None => Err(HuakError::VersionNotFound),
     }
 }

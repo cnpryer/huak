@@ -13,11 +13,8 @@ pub fn run(dependency: String) -> CliResult<()> {
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
 
-    if let Err(e) =
-        ops::remove::remove_project_dependency(&project, &dependency)
-    {
-        return Err(CliError::new(e, ExitCode::FAILURE));
-    };
+    ops::remove::remove_project_dependency(&project, &dependency)
+        .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
     Ok(())
 }

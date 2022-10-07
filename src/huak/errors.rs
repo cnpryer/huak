@@ -72,4 +72,6 @@ pub enum HuakError {
     InvalidPyPackageVersionOp(String),
     #[error("Failed to build the project.")]
     BuildFailure,
+    #[error("Failed to find the project's version.")]
+    VersionNotFound,
 }

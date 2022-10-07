@@ -11,13 +11,12 @@ pub fn run() -> CliResult<()> {
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
 
-    let version = match ops::version::get_project_version(&project) {
-        Ok(v) => v,
-        Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
-    };
+    let version = ops::version::get_project_version(&project)
+        .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
+
     let name = project.config().project_name();
 
-    println!("Version: {name}-{version}");
+    println!("{name}-{version}");
 
     Ok(())
 }
