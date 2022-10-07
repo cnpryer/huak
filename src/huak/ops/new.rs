@@ -14,20 +14,12 @@ pub fn create_project(project: &Project) -> HuakResult<()> {
     if pyproject_path.exists() {
         return Err(HuakError::PyProjectTomlExists);
     }
+    // bootstrap new project with lib or app template
+    project.create_from_template()?;
 
-    // Serialize pyproject.toml.
+    // Serialize pyproject.toml and write to file
     let pyproject_content = pyproject_toml.to_string()?;
     fs::write(&pyproject_path, pyproject_content)?;
-
-    // Use name from the toml config.
-    let name = &pyproject_toml.project.name;
-
-    // Create src subdirectory with standard project namespace.
-    fs::create_dir_all(project.root.join("src"))?;
-    fs::create_dir_all(project.root.join("src").join(name))?;
-
-    // Add __init__.py to main project namespace.
-    fs::write(&project.root.join("src").join(name).join("__init__.py"), "")?;
 
     Ok(())
 }
@@ -46,7 +38,7 @@ mod tests {
     // TODO
     #[test]
     fn creates_project() {
-        let directory = tempdir().unwrap().into_path().to_path_buf();
+        let directory = tempdir().unwrap().into_path();
         let project = create_mock_project(directory).unwrap();
 
         let toml_path = project.root.join("pyproject.toml");
@@ -60,7 +52,7 @@ mod tests {
 
     #[test]
     fn create_app_project() {
-        let directory = tempdir().unwrap().into_path().to_path_buf();
+        let directory = tempdir().unwrap().into_path();
         let project = Project::new(directory, ProjectType::Application);
         let toml_path = project.root.join("pyproject.toml");
 

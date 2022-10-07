@@ -2,7 +2,7 @@ use crate::{
     env::venv::Venv,
     errors::{HuakError, HuakResult},
     package::python::PythonPackage,
-    project::{PythonConfig, Project},
+    project::{Project, PythonConfig},
 };
 
 /// Install all of the projects defined dependencies.
