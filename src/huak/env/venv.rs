@@ -89,7 +89,6 @@ impl Venv {
         let mut new_shell = expectrl::spawn(&shell_path)?;
         let mut stdin = expectrl::stream::stdin::Stdin::open()?;
         new_shell.send_line(&activation_command)?;
-        new_shell.set_expect_lazy(false);
         if let Some((cols, rows)) = terminal_size::terminal_size() {
             new_shell
                 .set_window_size(cols.0, rows.0)
