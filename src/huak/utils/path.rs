@@ -108,7 +108,7 @@ mod tests {
         copy_dir(&from, &tmp);
 
         let res = search_parents_for_filepath(
-            &tmp.join("mock-project").join("src"),
+            &tmp.join("mock-project"),
             "pyproject.toml",
             5,
         );

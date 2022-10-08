@@ -7,6 +7,7 @@ pub(crate) mod build;
 pub(crate) mod clean;
 pub(crate) mod clean_pycache;
 pub(crate) mod doc;
+pub(crate) mod fix;
 pub(crate) mod fmt;
 pub(crate) mod init;
 pub(crate) mod install;
@@ -47,13 +48,15 @@ pub enum Commands {
     Clean,
     /// Remove all .pyc files and __pycache__ directories.
     #[command(name = "clean-pycache")]
-    Cleanpycache,
+    CleanPycache,
     /// Builds and uploads current project to a registry.
     Doc {
         /// Check if Python code is formatted.
         #[arg(long)]
         check: bool,
     },
+    /// Auto-Fix Lint Conflicts
+    Fix,
     /// Format Python code.
     Fmt {
         /// Check if Python code is formatted.
@@ -72,16 +75,20 @@ pub enum Commands {
         all: bool,
     },
     /// Lint Python code.
-    Lint,
-    /// Create a project from scratch.
+    Lint {
+        #[arg(long, required = false)]
+        fix: bool,
+    },
+    /// Create a new python package at <path>
     New {
-        /// Create a library.
+        /// Use a library template.
         #[arg(long, conflicts_with = "app")]
         lib: bool,
-        /// Create a runnable application.
+        /// Use a application template [default].
         #[arg(long)]
         app: bool,
-        path: Option<String>,
+        /// Path and name of the python package
+        path: String,
     },
     /// Builds and uploads current project to a registry.
     Publish,
@@ -108,12 +115,13 @@ impl Cli {
             Commands::Add { dependency, dev } => add::run(dependency, dev),
             Commands::Build => build::run(),
             Commands::Clean => clean::run(),
-            Commands::Cleanpycache => clean_pycache::run(),
+            Commands::CleanPycache => clean_pycache::run(),
             Commands::Doc { check } => doc::run(check),
+            Commands::Fix => fix::run(),
             Commands::Fmt { check } => fmt::run(check),
             Commands::Init => init::run(),
             Commands::Install { groups, all } => install::run(groups, all),
-            Commands::Lint => lint::run(),
+            Commands::Lint { fix } => lint::run(fix),
             Commands::New { path, app, lib } => new::run(path, app, lib),
             Commands::Publish => publish::run(),
             Commands::Remove { dependency } => remove::run(dependency),

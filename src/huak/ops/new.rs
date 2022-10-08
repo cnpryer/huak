@@ -5,31 +5,21 @@ use crate::{
     project::Project,
 };
 
-use super::project_utils;
-
 /// Create an initialized project (TODO) in an environment.
 pub fn create_project(project: &Project) -> HuakResult<()> {
     // TODO: Use available toml from manifest.
-    let toml = project_utils::create_toml(project)?;
-    let toml_path = project.root.join("pyproject.toml");
+    let pyproject_toml = project.create_toml()?;
+    let pyproject_path = project.root.join("pyproject.toml");
 
-    if toml_path.exists() {
+    if pyproject_path.exists() {
         return Err(HuakError::PyProjectTomlExists);
     }
+    // bootstrap new project with lib or app template
+    project.create_from_template()?;
 
-    // Serialize pyproject.toml.
-    let string = toml.to_string()?;
-    fs::write(&toml_path, string)?;
-
-    // Use name from the toml config.
-    let name = &toml.project.name;
-
-    // Create src subdirectory with standard project namespace.
-    fs::create_dir_all(project.root.join("src"))?;
-    fs::create_dir_all(project.root.join("src").join(name))?;
-
-    // Add __init__.py to main project namespace.
-    fs::write(&project.root.join("src").join(name).join("__init__.py"), "")?;
+    // Serialize pyproject.toml and write to file
+    let pyproject_content = pyproject_toml.to_string()?;
+    fs::write(&pyproject_path, pyproject_content)?;
 
     Ok(())
 }
@@ -48,7 +38,7 @@ mod tests {
     // TODO
     #[test]
     fn creates_project() {
-        let directory = tempdir().unwrap().into_path().to_path_buf();
+        let directory = tempdir().unwrap().into_path();
         let project = create_mock_project(directory).unwrap();
 
         let toml_path = project.root.join("pyproject.toml");
@@ -62,17 +52,62 @@ mod tests {
 
     #[test]
     fn create_app_project() {
-        let directory = tempdir().unwrap().into_path().to_path_buf();
+        let directory = tempdir().unwrap().into_path().join("project");
         let project = Project::new(directory, ProjectType::Application);
         let toml_path = project.root.join("pyproject.toml");
 
         create_project(&project).unwrap();
         let toml = Toml::open(&toml_path).unwrap();
+        let main_file_filepath = project
+            .root
+            .join("project")
+            .join(project.config().project_name())
+            .join("main.py");
+        let main_file = fs::read_to_string(&main_file_filepath).unwrap();
+        let expected_main_file = r#"""\
+def main():
+    print("Hello, World!")
+
+
+if __name__ == "__main__":
+    main()
+"""#;
 
         assert!(toml.project.scripts.is_some());
         assert_eq!(
             toml.project.scripts.unwrap()[&toml.project.name],
-            format!("{}:run", toml.project.name)
+            format!("{}.main:main", toml.project.name)
         );
+        assert_eq!(main_file, expected_main_file);
+    }
+
+    #[test]
+    fn create_lib_project() {
+        let directory = tempdir().unwrap().into_path().join("project");
+        let project = Project::new(directory, ProjectType::Library);
+        let toml_path = project.root.join("pyproject.toml");
+
+        create_project(&project).unwrap();
+        let toml = Toml::open(&toml_path).unwrap();
+        let test_file_filepath =
+            project.root.join("tests").join("test_version.py");
+        let test_file = fs::read_to_string(&test_file_filepath).unwrap();
+        let expected_test_file = format!(
+            r#"from {} import __version__
+
+
+def test_version():
+    __version__
+"#,
+            project.config().project_name()
+        );
+        let init_file_filepath =
+            project.root.join("project").join("__init__.py");
+        let init_file = fs::read_to_string(&init_file_filepath).unwrap();
+        let expected_init_file = format!("__version__ = \"{}\"", "0.0.1");
+
+        assert!(toml.project.scripts.is_none());
+        assert_eq!(test_file, expected_test_file);
+        assert_eq!(init_file, expected_init_file);
     }
 }

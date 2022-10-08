@@ -1,5 +1,4 @@
 use std::env;
-use std::fs;
 use std::process::ExitCode;
 
 use crate::errors::{CliError, CliResult};
@@ -9,10 +8,8 @@ use huak::project::Project;
 use huak::project::ProjectType;
 
 /// Run the `new` command.
-// TODO: Ops should handle the path creation step in addition to the project creation.
-pub fn run(path: Option<String>, app: bool, lib: bool) -> CliResult<()> {
-    // This command runs from the current working directory
-    // Each command's behavior is triggered from the context of the cwd.
+pub fn run(path: String, app: bool, lib: bool) -> CliResult<()> {
+    // This command runs from in the context of the current working directory
     let cwd = env::current_dir()?;
 
     let project_type = match (app, lib) {
@@ -21,13 +18,10 @@ pub fn run(path: Option<String>, app: bool, lib: bool) -> CliResult<()> {
         _ => Default::default(),
     };
 
-    // If a user passes a path
-    let path = match path {
-        Some(p) => cwd.join(p),
-        _ => cwd.clone(),
-    };
+    // create PathBuf from `path` command line arg
+    let path = cwd.join(path);
 
-    // Make sure there isn't already a path we would override.
+    // Check there isn't already a path we would override.
     if path.exists() && path != cwd {
         return Err(CliError::new(
             HuakError::DirectoryExists(path),
@@ -35,17 +29,12 @@ pub fn run(path: Option<String>, app: bool, lib: bool) -> CliResult<()> {
         ));
     }
 
-    // If the current directory is used it must be empty. User should use init.
+    // If the current directory is used it must be empty. Otherwise, user should use `init`.
     if path == cwd && path.read_dir()?.count() > 0 {
         return Err(CliError::new(
             HuakError::DirectoryExists(path),
             ExitCode::FAILURE,
         ));
-    }
-
-    // Create project directory.
-    if path != cwd {
-        fs::create_dir_all(&path)?;
     }
 
     let project = Project::new(path, project_type);
