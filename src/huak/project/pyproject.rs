@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::env::venv::{self, Venv};
 use crate::errors::HuakError;
@@ -51,10 +51,16 @@ impl Project {
     /// let project = Project::from(cwd);
     /// ```
     pub fn new(path: PathBuf, project_type: ProjectType) -> Project {
+        let mut config = Config::default();
+        // TODO: Don't unwrap_or_else like this.
+        let name = project_name_from_root(path.as_path())
+            .unwrap_or_else(|_| "".to_string());
+        config.set_project_name(name.as_str());
+
         Project {
             root: path,
             project_type,
-            config: Config::default(),
+            config,
             venv: None,
         }
     }
@@ -101,25 +107,56 @@ impl Project {
     }
 
     pub fn create_from_template(&self) -> HuakResult<()> {
-        let name = crate::utils::path::parse_filename(&self.root)?.to_string();
+        let name = self.config.project_name();
+        let version = match self.config.project_version() {
+            Some(it) => it,
+            None => return Err(HuakError::VersionNotFound),
+        };
 
-        // Create src subdirectory
-        fs::create_dir_all(self.root.join("src"))?;
+        // Create package dir
+        fs::create_dir_all(self.root.join(name))?;
 
         // Add directories and example python files to new project
-        if self.project_type == ProjectType::Application {
-            fs::create_dir_all(self.root.join("src").join(&name))?;
-            fs::write(
-                &self.root.join("src").join(&name).join("__init__.py"),
-                "",
-            )?;
-            fs::write(
-                &self.root.join("src").join(&name).join("main.py"),
-                "def main():\n    print('Hello, World!')\n\n\nif __name__ == '__main__':\n    main()\n",
-            )?;
-        } else {
-            fs::write(&self.root.join("src").join("__init__.py"), "")?;
+        match self.project_type {
+            ProjectType::Library => {
+                fs::create_dir_all(self.root.join("tests"))?;
+                fs::write(
+                    &self.root.join(name).join("__init__.py"),
+                    format!("__version__ = \"{version}\""),
+                )?;
+                fs::write(&self.root.join("tests").join("__init__.py"), "")?;
+                fs::write(
+                    &self.root.join("tests").join("test_version.py"),
+                    format!(
+                        r#"from {name} import __version__
+
+
+def test_version():
+    __version__
+"#
+                    ),
+                )?;
+            }
+            ProjectType::Application => {
+                fs::create_dir_all(self.root.join(name).join(&name))?;
+                fs::write(
+                    &self.root.join(name).join(&name).join("__init__.py"),
+                    "",
+                )?;
+                fs::write(
+                    &self.root.join(name).join(&name).join("main.py"),
+                    r#"""\
+def main():
+    print("Hello, World!")
+
+
+if __name__ == "__main__":
+    main()
+"""#,
+                )?;
+            }
         }
+
         Ok(())
     }
 
@@ -127,7 +164,7 @@ impl Project {
     // TODO: Config implementations?
     pub fn create_toml(&self) -> HuakResult<Toml> {
         let mut toml = Toml::default();
-        let name = crate::utils::path::parse_filename(&self.root)?.to_string();
+        let name = project_name_from_root(&self.root)?;
 
         if matches!(self.project_type, ProjectType::Application) {
             let entrypoint = format!("{name}.main:main");
@@ -158,6 +195,10 @@ impl Project {
     }
 }
 
+fn project_name_from_root(root: &Path) -> HuakResult<String> {
+    Ok(crate::utils::path::parse_filename(root)?.replace('-', "_"))
+}
+
 #[cfg(test)]
 mod tests {
     use tempfile::tempdir;
@@ -178,13 +219,9 @@ mod tests {
 
         venv.create().unwrap();
 
-        let project2 = Project::from(
-            directory
-                .join("mock-project")
-                .join("src")
-                .join("mock_project"),
-        )
-        .unwrap();
+        let project2 =
+            Project::from(directory.join("mock-project").join("mock_project"))
+                .unwrap();
 
         assert_eq!(project1.root, project2.root);
         assert_eq!(

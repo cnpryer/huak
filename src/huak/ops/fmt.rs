@@ -54,11 +54,7 @@ mod tests {
             .exec_module("pip", &["install", MODULE], &project.root)
             .unwrap();
 
-        let fmt_filepath = project
-            .root
-            .join("src")
-            .join("mock_project")
-            .join("fmt_me.py");
+        let fmt_filepath = project.root.join("mock_project").join("fmt_me.py");
         let pre_fmt_str = r#"""
 def fn( ):
     pass"#;

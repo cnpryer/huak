@@ -74,4 +74,6 @@ pub enum HuakError {
     BuildFailure,
     #[error("Failed to find the project's version.")]
     VersionNotFound,
+    #[error("Project name not found.")]
+    ProjectNameNotFound,
 }
