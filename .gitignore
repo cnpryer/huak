@@ -33,13 +33,13 @@ MANIFEST
 .vscode/
 
 # Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+/.env
+/.venv
+/env/
+/venv/
+/ENV/
+/env.bak/
+/venv.bak/
 
 # Misc.
 .DS_Store
