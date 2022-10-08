@@ -78,6 +78,9 @@ impl Venv {
         }
 
         let script = self.get_activation_script()?;
+        if !script.exists() {
+            return Err(HuakError::VenvNotFound);
+        }
         let source_command = get_shell_source_command()?;
         let activation_command =
             format!("{} {}", source_command, script.display());
