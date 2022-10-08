@@ -21,15 +21,17 @@ pub fn get_shell_name() -> HuakResult<String> {
 /// Gets the path of the current shell from env var
 ///
 /// Returns an error if it fails to get correct env vars.
+#[cfg(unix)]
 pub fn get_shell_path() -> HuakResult<String> {
-    let shell_path: String = if cfg!(windows) {
-        std::env::var("COMSPEC")?
-    } else if cfg!(unix) {
-        std::env::var("SHELL")?
-    } else {
-        unimplemented!("We don't know how to get current shell for your OS.")
-    };
-    Ok(shell_path)
+    Ok(std::env::var("SHELL")?)
+}
+
+/// Gets the path of the current shell from env var
+///
+/// Returns an error if it fails to get correct env vars.
+#[cfg(windows)]
+pub fn get_shell_path() -> HuakResult<String> {
+    Ok(std::env::var("COMSPEC")?)
 }
 
 /// Gets the `source` command for the current shell.
