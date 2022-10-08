@@ -7,6 +7,7 @@ pub(crate) mod build;
 pub(crate) mod clean;
 pub(crate) mod clean_pycache;
 pub(crate) mod doc;
+pub(crate) mod fix;
 pub(crate) mod fmt;
 pub(crate) mod init;
 pub(crate) mod install;
@@ -54,6 +55,8 @@ pub enum Commands {
         #[arg(long)]
         check: bool,
     },
+    /// Auto-Fix Lint Conflicts
+    Fix,
     /// Format Python code.
     Fmt {
         /// Check if Python code is formatted.
@@ -111,6 +114,7 @@ impl Cli {
             Commands::Clean => clean::run(),
             Commands::CleanPycache => clean_pycache::run(),
             Commands::Doc { check } => doc::run(check),
+            Commands::Fix => fix::run(),
             Commands::Fmt { check } => fmt::run(check),
             Commands::Init => init::run(),
             Commands::Install { groups, all } => install::run(groups, all),
