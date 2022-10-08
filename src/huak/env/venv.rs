@@ -6,7 +6,10 @@ use std::{
 use crate::{
     errors::{HuakError, HuakResult},
     package::python::PythonPackage,
-    utils::path::search_parents_for_filepath,
+    utils::{
+        path::search_parents_for_filepath,
+        shell::{get_shell_name, get_shell_path, get_shell_source_command},
+    },
 };
 
 const DEFAULT_SEARCH_STEPS: usize = 5;
@@ -15,11 +18,25 @@ pub(crate) const BIN_NAME: &str = "bin";
 pub(crate) const WINDOWS_BIN_NAME: &str = "Scripts";
 pub(crate) const DEFAULT_PYTHON_ALIAS: &str = "python";
 pub(crate) const PYTHON3_ALIAS: &str = "python3";
+const HUAK_VENV_ENV_VAR: &str = "HUAK_VENV_ACTIVE";
 
 /// A struct for Python venv.
 #[derive(Clone)]
 pub struct Venv {
     pub path: PathBuf,
+}
+
+impl Default for Venv {
+    fn default() -> Venv {
+        let cwd = match env::current_dir() {
+            Err(_) => Path::new(".").to_path_buf(),
+            Ok(p) => p,
+        };
+
+        Venv {
+            path: cwd.join(DEFAULT_VENV_NAME),
+        }
+    }
 }
 
 impl Venv {
@@ -52,22 +69,62 @@ impl Venv {
 
         Ok(name)
     }
-}
 
-impl Default for Venv {
-    fn default() -> Venv {
-        let cwd = match env::current_dir() {
-            Err(_) => Path::new(".").to_path_buf(),
-            Ok(p) => p,
+    /// Activates the virtual environment in the current shell
+    pub fn activate(&self) -> HuakResult<()> {
+        // Check if venv is already activated
+        if env::var(HUAK_VENV_ENV_VAR).is_ok() {
+            return Err(HuakError::VenvActive);
+        }
+
+        let script = self.get_activation_script()?;
+        if !script.exists() {
+            return Err(HuakError::VenvNotFound);
+        }
+        let source_command = get_shell_source_command()?;
+        let activation_command =
+            format!("{} {}", source_command, script.display());
+
+        env::set_var(HUAK_VENV_ENV_VAR, "1");
+
+        // Spawn a pseudo-terminal with current shell and source activation script
+        let shell_path = get_shell_path()?;
+        let mut new_shell = expectrl::spawn(&shell_path)?;
+        let mut stdin = expectrl::stream::stdin::Stdin::open()?;
+        new_shell.send_line(&activation_command)?;
+        if let Some((cols, rows)) = terminal_size::terminal_size() {
+            new_shell
+                .set_window_size(cols.0, rows.0)
+                .map_err(|e| HuakError::InternalError(e.to_string()))?;
+        }
+        new_shell.interact(&mut stdin, std::io::stdout()).spawn()?;
+        stdin.close()?;
+        Ok(())
+    }
+
+    /// Gets path to the activation script
+    /// (e.g. `.venv/bin/activate`)
+    ///
+    /// Takes current shell into account.
+    /// Returns errors if it fails to get correct env vars.
+    fn get_activation_script(&self) -> HuakResult<PathBuf> {
+        let shell_name = get_shell_name()?;
+
+        let suffix = match shell_name.as_str() {
+            "fish" => ".fish",
+            "csh" | "tcsh" => ".csh",
+            "powershell" | "pwsh" => ".ps1",
+            "cmd" => ".bat",
+            "nu" => ".nu",
+            _ => "",
         };
 
-        Venv {
-            path: cwd.join(DEFAULT_VENV_NAME),
-        }
-    }
-}
+        let path = self
+            .bin_path()
+            .join(Path::new(&("activate".to_owned() + suffix)));
 
-impl Venv {
+        Ok(path)
+    }
     /// Create the venv at its path.
     pub fn create(&self) -> HuakResult<()> {
         if self.path.exists() {

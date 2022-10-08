@@ -56,6 +56,10 @@ pub enum HuakError {
     PythonNotFound,
     #[error("No venv was found.")]
     VenvNotFound,
+    #[error("Venv already activated.")]
+    VenvActive,
+    #[error("Expected env var not found.")]
+    EnvVarError(#[from] std::env::VarError),
     #[error("A pyproject.toml could not be found.")]
     PyProjectTomlNotFound, // TODO: Manfiest
     #[error("Failed to install Python package: {0}.")]
@@ -74,6 +78,8 @@ pub enum HuakError {
     BuildFailure,
     #[error("Failed to find the project's version.")]
     VersionNotFound,
+    #[error("Error related to pseudo-terminal: {0}.")]
+    ExpectrlError(#[from] expectrl::Error),
     #[error("Project name not found.")]
     ProjectNameNotFound,
 }
