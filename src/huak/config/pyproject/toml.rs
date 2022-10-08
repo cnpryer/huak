@@ -22,16 +22,16 @@ use super::project::ProjectBuilder;
 /// ```
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Toml {
+    pub project: Project,
     #[serde(rename = "build-system")]
     pub build_system: BuildSystem,
-    pub project: Project,
 }
 
 impl Default for Toml {
     fn default() -> Toml {
         Toml {
-            build_system: BuildSystemBuilder::default(),
             project: ProjectBuilder::default(),
+            build_system: BuildSystemBuilder::default(),
         }
     }
 }
@@ -135,11 +135,7 @@ build-backend = "huak.core.build.api"
 "#;
 
         // toml_edit does not preserve the ordering of the tables
-        let expected_output = r#"[build-system]
-requires = ["huak-core>=1.0.0"]
-build-backend = "huak.core.build.api"
-
-[project]
+        let expected_output = r#"[project]
 name = "Test"
 version = "0.1.0"
 description = ""
@@ -157,16 +153,14 @@ test = [
     "pytest>=6",
     "mock",
 ]
+
+[build-system]
+requires = ["huak-core>=1.0.0"]
+build-backend = "huak.core.build.api"
 "#;
 
         let toml = Toml::from(string).unwrap();
-
-        println!("{}", toml.project.name.clone());
-        println!("{}", toml.project.version.as_ref().unwrap());
-
         let res = toml.to_string().unwrap();
-        dbg!(&res);
-
         assert_eq!(expected_output, &res);
     }
 

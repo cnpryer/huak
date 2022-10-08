@@ -46,7 +46,6 @@ mod tests {
         assert!(project
             .root
             .as_path()
-            .join("src")
             .join("mock_project")
             .join("__init__.pyc")
             .exists());

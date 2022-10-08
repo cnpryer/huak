@@ -89,6 +89,10 @@ impl Config {
         &table.name
     }
 
+    pub fn set_project_name(&mut self, name: &str) {
+        self.manifest.toml.project.name = name.to_string();
+    }
+
     /// Get a reference to the project version from manifest data.
     // TODO: Use more than toml.
     pub fn project_version(&self) -> &Option<String> {
