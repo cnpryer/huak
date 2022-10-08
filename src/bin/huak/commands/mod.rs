@@ -75,7 +75,10 @@ pub enum Commands {
         all: bool,
     },
     /// Lint Python code.
-    Lint,
+    Lint {
+        #[arg(long, required = false)]
+        fix: bool,
+    },
     /// Create a new python package at <path>
     New {
         /// Use a library template.
@@ -118,7 +121,7 @@ impl Cli {
             Commands::Fmt { check } => fmt::run(check),
             Commands::Init => init::run(),
             Commands::Install { groups, all } => install::run(groups, all),
-            Commands::Lint => lint::run(),
+            Commands::Lint { fix } => lint::run(fix),
             Commands::New { path, app, lib } => new::run(path, app, lib),
             Commands::Publish => publish::run(),
             Commands::Remove { dependency } => remove::run(dependency),
