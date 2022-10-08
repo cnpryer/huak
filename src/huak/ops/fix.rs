@@ -44,23 +44,25 @@ mod tests {
             .exec_module("pip", &["install", MODULE], &project.root)
             .unwrap();
 
-        let lint_fix_filepath = project
-            .root
-            .join("src")
-            .join("mock_project")
-            .join("fix_me.py");
-        let pre_fix_str = r##"""
+        let lint_fix_filepath =
+            project.root.join("mock_project").join("fix_me.py");
+        let pre_fix_str = r#"
 import json # this gets removed(autofixed)
 
 
 def fn():
-    pass"##;
+    pass"#;
+        let expected = r#"
+
+
+def fn():
+    pass
+"#;
 
         fs::write(&lint_fix_filepath, pre_fix_str).unwrap();
         fix_project(&project).unwrap();
         let post_fix_str = fs::read_to_string(&lint_fix_filepath).unwrap();
-        println!("{}", post_fix_str);
 
-        assert_ne!(pre_fix_str, post_fix_str);
+        assert_eq!(post_fix_str, expected);
     }
 }
