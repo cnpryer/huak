@@ -70,24 +70,14 @@ pub fn add_project_dependency(
 
 #[cfg(test)]
 mod tests {
-    use tempfile::tempdir;
-
     use super::*;
 
-    use crate::utils::{
-        path::copy_dir,
-        test_utils::{create_mock_project, get_resource_dir},
-    };
+    use crate::utils::test_utils::create_mock_project_full;
 
     #[test]
     fn adds_dependencies() {
         // TODO: Test optional dep.
-        let directory = tempdir().unwrap().into_path().to_path_buf();
-        let mock_project_path = get_resource_dir().join("mock-project");
-        copy_dir(&mock_project_path, &directory);
-
-        let project =
-            create_mock_project(directory.join("mock-project")).unwrap();
+        let project = create_mock_project_full().unwrap();
         let toml_path = project.root.join("pyproject.toml");
         let dependency = "isort";
         let toml = Toml::open(&toml_path).unwrap();

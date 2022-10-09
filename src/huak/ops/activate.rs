@@ -16,26 +16,16 @@ pub fn activate_project_venv(project: &Project) -> HuakResult<()> {
 
 #[cfg(test)]
 mod tests {
-    use tempfile::tempdir;
-
     use super::*;
 
     use crate::{
         env::venv::HUAK_VENV_ENV_VAR,
-        utils::{
-            path::copy_dir,
-            test_utils::{create_mock_project, get_resource_dir},
-        },
+        utils::test_utils::create_mock_project_full,
     };
 
     #[test]
     fn venv_can_be_activated() {
-        let directory = tempdir().unwrap().into_path();
-        let mock_project_path = get_resource_dir().join("mock-project");
-        copy_dir(&mock_project_path, &directory);
-
-        let project =
-            create_mock_project(directory.join("mock-project")).unwrap();
+        let project = create_mock_project_full().unwrap();
 
         assert!(std::env::var(HUAK_VENV_ENV_VAR).is_err());
 
@@ -45,12 +35,7 @@ mod tests {
 
     #[test]
     fn venv_cant_be_activated() {
-        let directory = tempdir().unwrap().into_path();
-        let mock_project_path = get_resource_dir().join("mock-project");
-        copy_dir(&mock_project_path, &directory);
-
-        let project =
-            create_mock_project(directory.join("mock-project")).unwrap();
+        let project = create_mock_project_full().unwrap();
 
         std::env::set_var(HUAK_VENV_ENV_VAR, "1");
         assert!(std::env::var(HUAK_VENV_ENV_VAR).is_ok());
