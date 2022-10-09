@@ -99,7 +99,7 @@ SUBCOMMANDS:
 ```
 _"*" indicates first-pass of implementation is incomplete._
 
-Note that `huak activate` is currently unsupported on Windows. See the related [issue](https://github.com/cnpryer/huak/issues/302).
+Note that `huak activate` is currently unsupported on Windows. See the related [issue](https://github.com/cnpryer/huak/issues/302) for more details.
 
 ## Documentation
 
