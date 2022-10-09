@@ -5,7 +5,6 @@ pub(crate) mod activate;
 pub(crate) mod add;
 pub(crate) mod build;
 pub(crate) mod clean;
-pub(crate) mod clean_pycache;
 pub(crate) mod doc;
 pub(crate) mod fix;
 pub(crate) mod fmt;
@@ -45,10 +44,11 @@ pub enum Commands {
     /// Build tarball and wheel for the project.
     Build,
     /// Remove tarball and wheel from the built project.
-    Clean,
-    /// Remove all .pyc files and __pycache__ directories.
-    #[command(name = "clean-pycache")]
-    CleanPycache,
+    Clean {
+        #[arg(long, required = false)]
+        /// Remove all .pyc files and __pycache__ directories.
+        pycache: bool,
+    },
     /// Builds and uploads current project to a registry.
     Doc {
         /// Check if Python code is formatted.
@@ -114,8 +114,7 @@ impl Cli {
             Commands::Activate => activate::run(),
             Commands::Add { dependency, dev } => add::run(dependency, dev),
             Commands::Build => build::run(),
-            Commands::Clean => clean::run(),
-            Commands::CleanPycache => clean_pycache::run(),
+            Commands::Clean { pycache } => clean::run(pycache),
             Commands::Doc { check } => doc::run(check),
             Commands::Fix => fix::run(),
             Commands::Fmt { check } => fmt::run(check),

@@ -1,6 +1,20 @@
-use std::fs::remove_dir_all;
+use crate::{
+    errors::{HuakError, HuakResult},
+    project::Project,
+};
+use glob::{glob, Paths, PatternError};
+use std::fs::{remove_dir_all, remove_file};
 
-use crate::{errors::HuakResult, project::Project};
+#[derive(Clone, Copy)]
+enum PathType {
+    Directory,
+    File,
+}
+
+struct DeletePath {
+    path_type: PathType,
+    glob: String,
+}
 
 /// Clean build artifacts from a `Project`.
 pub fn clean_project(project: &Project) -> HuakResult<()> {
@@ -15,6 +29,55 @@ pub fn clean_project(project: &Project) -> HuakResult<()> {
     Ok(remove_dir_all(dist_path)?)
 }
 
+// TODO: From project root.
+pub fn clean_project_pycache() -> HuakResult<()> {
+    for i in get_delete_patterns() {
+        let files: Result<Paths, PatternError> = glob(&i.glob);
+
+        match files {
+            Ok(paths) => {
+                for path in paths {
+                    match path {
+                        Ok(p) => match i.path_type {
+                            PathType::Directory => {
+                                remove_dir_all(p).map_err(|e| {
+                                    HuakError::InternalError(e.to_string())
+                                })?;
+                            }
+                            PathType::File => {
+                                remove_file(p).map_err(|e| {
+                                    HuakError::InternalError(e.to_string())
+                                })?;
+                            }
+                        },
+                        Err(e) => {
+                            return Err(HuakError::InternalError(
+                                e.to_string(),
+                            ));
+                        }
+                    }
+                }
+            }
+            Err(e) => return Err(HuakError::InternalError(e.to_string())),
+        };
+    }
+    Ok(())
+}
+
+fn get_delete_patterns() -> Vec<DeletePath> {
+    vec![
+        DeletePath {
+            path_type: PathType::Directory,
+            glob: "**/__pycache__".to_owned(),
+        },
+        DeletePath {
+            path_type: PathType::File,
+            glob: "**/*.pyc".to_owned(),
+        },
+    ]
+}
+
+// TODO: Test clean_project_pycache
 #[cfg(test)]
 mod tests {
     use super::*;
