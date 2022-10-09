@@ -51,7 +51,8 @@ import json # this gets removed(autofixed)
 
 
 def fn():
-    pass"#;
+    pass
+"#;
         let expected = r#"
 
 
