@@ -60,46 +60,37 @@ Install with `cargo`:
 
 Around 0.1.0 you'll be able to install `huak` using `brew`. More distribution plans will be finalized closer to 0.1.0.
 
-```
+```console
 ❯ huak help
 
-A Python package manager written in Rust inspired by Cargo
+A Python package manager written in Rust inspired by Cargo.
 
-USAGE:
-    huak [SUBCOMMAND]
+Usage: huak <COMMAND>
 
-OPTIONS:
-    -h, --help       Print help information
-    -V, --version    Print version information
-
-SUBCOMMANDS:
-    activate         Activate the project's virtual environment.
-    add              Add a Python module to the existing project.
-    build            Build tarball and wheel for the project.
-    clean            Remove tarball and wheel from the built project.
-    doc              Build the current project's documentation.*
-    fmt              Format Python code.
-    help             Display Huak commands and general usage information.
-    init             Initialize the existing project.
-    install          Install the dependencies of an existing project.
-    lint             Lint Python code.
-    new              Create a project from scratch.
-    publish          Build and upload current project to a registry.*
-    remove           Remove a dependency from the project.
-    run              Run a command within the project's environment context.*
-    test             Test Python code.
-    update           Update dependencies added to the project.*
-    version          Display the version of the project.
-    
-    # 0.1.0
-    audit            Check for just vulnerable dependencies or check
-                     everything including license compatibility with
-                     your dependencies.*
-    fix              Apply auto-fixing to your Python code.*
+Commands:
+  activate  Activate the project's virtual environment
+  add       Add a dependency to the existing project
+  audit     Check for vulnerable dependencies and license compatibility*
+  build     Build tarball and wheel for the project
+  clean     Remove tarball and wheel from the built project
+  doc       Generates documenation for the project*
+  fix       Auto-fix fixable lint conflicts
+  fmt       Format the project's Python code
+  init      Initialize the existing project
+  install   Install the dependencies of an existing project
+  lint      Lint the project's Python code
+  new       Create a new project at <path>
+  publish   Builds and uploads current project to a registry*
+  remove    Remove a dependency from the project
+  run       Run a command within the project's environment context*
+  test      Test the project's Python code
+  update    Update dependencies added to the project*
+  version   Display the version of the project
+  help      Print this message or the help of the given subcommand(s)
 ```
 _"*" indicates first-pass of implementation is incomplete._
 
-Note that `huak activate` is currently unsupported on Windows. See the related [issue](https://github.com/cnpryer/huak/issues/302) for more details.
+Note that `huak activate` is currently only partially supported on Windows. See the related [issue](https://github.com/cnpryer/huak/issues/302) for more details.
 
 ## Documentation
 
