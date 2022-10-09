@@ -108,7 +108,6 @@ impl Venv {
                 .set_window_size(cols.0, rows.0)
                 .map_err(|e| HuakError::InternalError(e.to_string()))?;
         }
-        #[cfg(not(test))]
         new_shell.interact(&mut stdin, std::io::stdout()).spawn()?;
         stdin.close()?;
         Ok(())
@@ -126,7 +125,6 @@ impl Venv {
 
         sh.send_line(&activation_command)?;
 
-        #[cfg(not(test))]
         sh.interact(stdin, std::io::stdout()).spawn()?;
 
         let stdin = expectrl::stream::stdin::Stdin::open()?;

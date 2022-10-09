@@ -23,7 +23,9 @@ mod tests {
         utils::test_utils::create_mock_project_full,
     };
 
+    #[ignore = "currently untestable"]
     #[test]
+    // TODO
     fn venv_can_be_activated() {
         let project = create_mock_project_full().unwrap();
 
