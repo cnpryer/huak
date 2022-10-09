@@ -73,7 +73,7 @@ OPTIONS:
     -V, --version    Print version information
 
 SUBCOMMANDS:
-    activate         Activate the project's virtual environment.*
+    activate         Activate the project's virtual environment.
     add              Add a Python module to the existing project.
     build            Build tarball and wheel for the project.
     clean            Remove tarball and wheel from the built project.
