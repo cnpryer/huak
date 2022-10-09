@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 
 pub(crate) mod activate;
 pub(crate) mod add;
+pub(crate) mod audit;
 pub(crate) mod build;
 pub(crate) mod clean;
 pub(crate) mod doc;
@@ -34,13 +35,15 @@ pub struct Cli {
 pub enum Commands {
     /// Activate the project's virtual environment.
     Activate,
-    /// Add a python module to the existing project.
+    /// Add a dependency to the existing project.
     Add {
         dependency: String,
         /// Adds an optional dependency.
         #[arg(long)]
         dev: bool,
     },
+    /// Check for vulnerable dependencies and license compatibility.
+    Audit,
     /// Build tarball and wheel for the project.
     Build,
     /// Remove tarball and wheel from the built project.
@@ -49,15 +52,14 @@ pub enum Commands {
         /// Remove all .pyc files and __pycache__ directories.
         pycache: bool,
     },
-    /// Builds and uploads current project to a registry.
+    /// Generates documenation for the project.
     Doc {
-        /// Check if Python code is formatted.
         #[arg(long)]
         check: bool,
     },
-    /// Auto-Fix Lint Conflicts
+    /// Auto-fix fixable lint conflicts
     Fix,
-    /// Format Python code.
+    /// Format the project's Python code.
     Fmt {
         /// Check if Python code is formatted.
         #[arg(long)]
@@ -74,12 +76,12 @@ pub enum Commands {
         #[arg(long)]
         all: bool,
     },
-    /// Lint Python code.
+    /// Lint the project's Python code.
     Lint {
         #[arg(long, required = false)]
         fix: bool,
     },
-    /// Create a new python package at <path>
+    /// Create a new project at <path>.
     New {
         /// Use a library template.
         #[arg(long, conflicts_with = "app")]
@@ -96,7 +98,7 @@ pub enum Commands {
     Remove { dependency: String },
     /// Run a command within the project's environment context.
     Run { command: String },
-    /// Test Python Code.
+    /// Test the project's Python code.
     Test,
     /// Update dependencies added to the project.
     Update {
@@ -113,6 +115,7 @@ impl Cli {
         match self.command {
             Commands::Activate => activate::run(),
             Commands::Add { dependency, dev } => add::run(dependency, dev),
+            Commands::Audit => audit::run(),
             Commands::Build => build::run(),
             Commands::Clean { pycache } => clean::run(pycache),
             Commands::Doc { check } => doc::run(check),
