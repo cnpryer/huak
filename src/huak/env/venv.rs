@@ -20,9 +20,7 @@ pub(crate) const BIN_NAME: &str = "bin";
 pub(crate) const WINDOWS_BIN_NAME: &str = "Scripts";
 pub(crate) const DEFAULT_PYTHON_ALIAS: &str = "python";
 pub(crate) const PYTHON3_ALIAS: &str = "python3";
-#[allow(clippy::useless_attribute)]
-#[allow(dead_code)]
-const HUAK_VENV_ENV_VAR: &str = "HUAK_VENV_ACTIVE";
+pub(crate) const HUAK_VENV_ENV_VAR: &str = "HUAK_VENV_ACTIVE";
 
 /// A struct for Python venv.
 #[derive(Clone)]
@@ -110,6 +108,7 @@ impl Venv {
                 .set_window_size(cols.0, rows.0)
                 .map_err(|e| HuakError::InternalError(e.to_string()))?;
         }
+        #[cfg(not(test))]
         new_shell.interact(&mut stdin, std::io::stdout()).spawn()?;
         stdin.close()?;
         Ok(())
@@ -127,6 +126,7 @@ impl Venv {
 
         sh.send_line(&activation_command)?;
 
+        #[cfg(not(test))]
         sh.interact(stdin, std::io::stdout()).spawn()?;
 
         let stdin = expectrl::stream::stdin::Stdin::open()?;
