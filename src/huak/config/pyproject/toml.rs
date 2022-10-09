@@ -225,7 +225,7 @@ name = "Chris Pryer"
 email = "cnpryer@gmail.com"
 
 [[project.authors]]
-name = "Troy Kohler"
+name = "Chris Pryer"
 email = "test@email.com"
 
 [build-system]
@@ -236,7 +236,7 @@ build-backend = "huak.core.build.api"
         let toml = Toml::from(string).unwrap();
 
         assert_eq!(
-            "Troy Kohler",
+            "Chris Pryer",
             toml.project
                 .authors
                 .as_ref()
