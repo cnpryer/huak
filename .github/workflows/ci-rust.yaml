@@ -51,6 +51,7 @@ jobs:
             cargo clippy --all-features
             cargo clippy -- -D warnings
       - name: Run tests
+        env:
+          HUAK_MUTE_COMMAND: 1
         run: |
-          HUAK_MUTE_COMMAND=1 \
             cargo test --all-features -- --test-threads=1

@@ -1,6 +1,5 @@
-use std::path::Path;
-
 use crate::errors::{HuakError, HuakResult};
+use std::path::Path;
 
 /// Gets the name of the current shell.
 ///

@@ -3,6 +3,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[allow(clippy::useless_attribute)]
+#[allow(unused_imports)]
 use crate::{
     errors::{HuakError, HuakResult},
     package::python::PythonPackage,
@@ -18,6 +20,8 @@ pub(crate) const BIN_NAME: &str = "bin";
 pub(crate) const WINDOWS_BIN_NAME: &str = "Scripts";
 pub(crate) const DEFAULT_PYTHON_ALIAS: &str = "python";
 pub(crate) const PYTHON3_ALIAS: &str = "python3";
+#[allow(clippy::useless_attribute)]
+#[allow(dead_code)]
 const HUAK_VENV_ENV_VAR: &str = "HUAK_VENV_ACTIVE";
 
 /// A struct for Python venv.
@@ -71,6 +75,7 @@ impl Venv {
     }
 
     /// Activates the virtual environment in the current shell
+    #[cfg(unix)]
     pub fn activate(&self) -> HuakResult<()> {
         // Check if venv is already activated
         if env::var(HUAK_VENV_ENV_VAR).is_ok() {
@@ -102,6 +107,12 @@ impl Venv {
         Ok(())
     }
 
+    #[cfg(windows)]
+    pub fn activate(&self) -> HuakResult<()> {
+        unimplemented!("This feature is not yet supported.")
+    }
+
+    #[allow(dead_code)]
     /// Gets path to the activation script
     /// (e.g. `.venv/bin/activate`)
     ///
