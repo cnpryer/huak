@@ -1,9 +1,4 @@
 use crate::errors::{HuakError, HuakResult};
-#[cfg(unix)]
-use expectrl::process::unix::{PtyStream, UnixProcess};
-#[cfg(windows)]
-use expectrl::process::windows::{ProcessStream, WinProcess};
-use expectrl::Session;
 use std::path::Path;
 
 /// Gets the name of the current shell.
@@ -36,28 +31,6 @@ pub fn get_shell_path() -> HuakResult<String> {
 #[cfg(windows)]
 pub fn get_shell_path() -> HuakResult<String> {
     Ok(std::env::var("COMSPEC")?)
-}
-
-#[cfg(unix)]
-pub fn set_window_size(
-    shell: &mut Session<UnixProcess, PtyStream>,
-    cols: u16,
-    rows: u16,
-) -> HuakResult<()> {
-    shell
-        .set_window_size(cols, rows)
-        .map_err(|e| HuakError::InternalError(e.to_string()))?;
-
-    Ok(())
-}
-
-#[cfg(windows)]
-pub fn set_window_size(
-    _shell: &mut Session<WinProcess, ProcessStream>,
-    _cols: u16,
-    _rows: u16,
-) -> HuakResult<()> {
-    Ok(())
 }
 
 /// Gets the `source` command for the current shell.

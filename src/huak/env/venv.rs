@@ -3,15 +3,14 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[allow(clippy::useless_attribute)]
+#[allow(unused_imports)]
 use crate::{
     errors::{HuakError, HuakResult},
     package::python::PythonPackage,
     utils::{
         path::search_parents_for_filepath,
-        shell::{
-            get_shell_name, get_shell_path, get_shell_source_command,
-            set_window_size,
-        },
+        shell::{get_shell_name, get_shell_path, get_shell_source_command},
     },
 };
 
@@ -21,6 +20,8 @@ pub(crate) const BIN_NAME: &str = "bin";
 pub(crate) const WINDOWS_BIN_NAME: &str = "Scripts";
 pub(crate) const DEFAULT_PYTHON_ALIAS: &str = "python";
 pub(crate) const PYTHON3_ALIAS: &str = "python3";
+#[allow(clippy::useless_attribute)]
+#[allow(dead_code)]
 const HUAK_VENV_ENV_VAR: &str = "HUAK_VENV_ACTIVE";
 
 /// A struct for Python venv.
@@ -74,6 +75,7 @@ impl Venv {
     }
 
     /// Activates the virtual environment in the current shell
+    #[cfg(unix)]
     pub fn activate(&self) -> HuakResult<()> {
         // Check if venv is already activated
         if env::var(HUAK_VENV_ENV_VAR).is_ok() {
@@ -96,13 +98,21 @@ impl Venv {
         let mut stdin = expectrl::stream::stdin::Stdin::open()?;
         new_shell.send_line(&activation_command)?;
         if let Some((cols, rows)) = terminal_size::terminal_size() {
-            set_window_size(&mut new_shell, cols.0, rows.0)?
+            new_shell
+                .set_window_size(cols.0, rows.0)
+                .map_err(|e| HuakError::InternalError(e.to_string()))?;
         }
         new_shell.interact(&mut stdin, std::io::stdout()).spawn()?;
         stdin.close()?;
         Ok(())
     }
 
+    #[cfg(windows)]
+    pub fn activate(&self) -> HuakResult<()> {
+        unimplemented!("This feature is not yet supported.")
+    }
+
+    #[allow(dead_code)]
     /// Gets path to the activation script
     /// (e.g. `.venv/bin/activate`)
     ///
