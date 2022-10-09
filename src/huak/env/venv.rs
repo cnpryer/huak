@@ -8,7 +8,10 @@ use crate::{
     package::python::PythonPackage,
     utils::{
         path::search_parents_for_filepath,
-        shell::{get_shell_name, get_shell_path, get_shell_source_command},
+        shell::{
+            get_shell_name, get_shell_path, get_shell_source_command,
+            set_window_size,
+        },
     },
 };
 
@@ -93,9 +96,7 @@ impl Venv {
         let mut stdin = expectrl::stream::stdin::Stdin::open()?;
         new_shell.send_line(&activation_command)?;
         if let Some((cols, rows)) = terminal_size::terminal_size() {
-            new_shell
-                .set_window_size(cols.0, rows.0)
-                .map_err(|e| HuakError::InternalError(e.to_string()))?;
+            set_window_size(&mut new_shell, cols.0, rows.0)?
         }
         new_shell.interact(&mut stdin, std::io::stdout()).spawn()?;
         stdin.close()?;
