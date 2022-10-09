@@ -30,23 +30,13 @@ pub fn fmt_project(
 mod tests {
     use std::fs;
 
-    use tempfile::tempdir;
+    use crate::utils::test_utils::create_mock_project_full;
 
     use super::*;
 
-    use crate::utils::{
-        path::copy_dir,
-        test_utils::{create_mock_project, get_resource_dir},
-    };
-
     #[test]
     fn fmt() {
-        let directory = tempdir().unwrap().into_path().to_path_buf();
-        let mock_project_dir = get_resource_dir().join("mock-project");
-        copy_dir(&mock_project_dir, &directory);
-
-        let project_path = directory.join("mock-project");
-        let project = create_mock_project(project_path.clone()).unwrap();
+        let project = create_mock_project_full().unwrap();
         project
             .venv()
             .as_ref()

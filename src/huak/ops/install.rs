@@ -65,24 +65,14 @@ fn install_packages(
 #[cfg(test)]
 pub mod tests {
 
-    use tempfile::tempdir;
-
-    use crate::utils::{
-        path::copy_dir,
-        test_utils::{create_mock_project, get_resource_dir},
-    };
+    use crate::utils::test_utils::create_mock_project_full;
 
     use super::install_project_dependencies;
 
     // TODO
     #[test]
     fn installs_dependencies() {
-        let directory = tempdir().unwrap().into_path().to_path_buf();
-        let mock_project_dir = get_resource_dir().join("mock-project");
-        copy_dir(&mock_project_dir, &directory);
-
-        let project_path = directory.join("mock-project");
-        let project = create_mock_project(project_path.clone()).unwrap();
+        let project = create_mock_project_full().unwrap();
         let venv = project.venv().as_ref().unwrap();
 
         venv.uninstall_package("black").unwrap();

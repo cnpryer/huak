@@ -20,9 +20,7 @@ pub(crate) const BIN_NAME: &str = "bin";
 pub(crate) const WINDOWS_BIN_NAME: &str = "Scripts";
 pub(crate) const DEFAULT_PYTHON_ALIAS: &str = "python";
 pub(crate) const PYTHON3_ALIAS: &str = "python3";
-#[allow(clippy::useless_attribute)]
-#[allow(dead_code)]
-const HUAK_VENV_ENV_VAR: &str = "HUAK_VENV_ACTIVE";
+pub(crate) const HUAK_VENV_ENV_VAR: &str = "HUAK_VENV_ACTIVE";
 
 /// A struct for Python venv.
 #[derive(Clone)]
@@ -75,7 +73,6 @@ impl Venv {
     }
 
     /// Activates the virtual environment in the current shell
-    #[cfg(unix)]
     pub fn activate(&self) -> HuakResult<()> {
         // Check if venv is already activated
         if env::var(HUAK_VENV_ENV_VAR).is_ok() {
@@ -91,8 +88,17 @@ impl Venv {
             format!("{} {}", source_command, script.display());
 
         env::set_var(HUAK_VENV_ENV_VAR, "1");
+        self.spawn_pseudo_terminal(&activation_command)?;
 
-        // Spawn a pseudo-terminal with current shell and source activation script
+        Ok(())
+    }
+
+    /// Spawn a pseudo-terminal with current shell and source activation script
+    #[cfg(unix)]
+    fn spawn_pseudo_terminal(
+        &self,
+        activation_command: &str,
+    ) -> HuakResult<()> {
         let shell_path = get_shell_path()?;
         let mut new_shell = expectrl::spawn(&shell_path)?;
         let mut stdin = expectrl::stream::stdin::Stdin::open()?;
@@ -107,12 +113,25 @@ impl Venv {
         Ok(())
     }
 
+    /// Spawn a pseudo-terminal with current shell and source activation script
     #[cfg(windows)]
-    pub fn activate(&self) -> HuakResult<()> {
-        unimplemented!("This feature is not yet supported.")
+    fn spawn_pseudo_terminal(
+        &self,
+        activation_command: &str,
+    ) -> HuakResult<()> {
+        let shell_path = get_shell_path()?;
+        let mut sh = expectrl::spawn(shell_path)?;
+        let stdin = expectrl::stream::stdin::Stdin::open()?;
+
+        sh.send_line(&activation_command)?;
+
+        sh.interact(stdin, std::io::stdout()).spawn()?;
+
+        let stdin = expectrl::stream::stdin::Stdin::open()?;
+        stdin.close()?;
+        Ok(())
     }
 
-    #[allow(dead_code)]
     /// Gets path to the activation script
     /// (e.g. `.venv/bin/activate`)
     ///
