@@ -155,7 +155,7 @@ impl Venv {
 
         Ok(path)
     }
-    /// Create the venv at its path.
+    /// Create the venv at its path. No-op if it already exists.
     pub fn create(&self) -> HuakResult<()> {
         if self.path.exists() {
             return Ok(());
@@ -172,6 +172,8 @@ impl Venv {
 
         let name = self.name()?;
         let args = ["-m", "venv", name];
+
+        println!("Creating venv {}", self.path.display());
 
         crate::utils::command::run_command(self.python_alias(), &args, from)?;
 

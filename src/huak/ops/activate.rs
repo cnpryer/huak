@@ -1,10 +1,14 @@
-use crate::{errors::HuakResult, project::Project};
+use crate::{
+    errors::{HuakError, HuakResult},
+    project::Project,
+};
 
 pub fn activate_project_venv(project: &Project) -> HuakResult<()> {
-    let venv = project
-        .venv()
-        .as_ref()
-        .expect("`Project::from` creates venv if it doesn't exists.");
+    let venv = project.venv().as_ref().ok_or_else(|| {
+        HuakError::InternalError("Project's venv is `None`.".to_owned())
+    })?;
+
+    venv.create()?;
 
     println!("Venv activated: {}", venv.path.display());
 
