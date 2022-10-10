@@ -1,0 +1,20 @@
+name: Tasks on release
+# This top level GH Action Workflow controls what tasks on run when a release is triggered.
+
+on:
+  push:
+    branches:
+      - "*"
+#on:
+#  release:
+#    types: [published]
+
+jobs:
+  run-rust-tests:
+    uses: ./.github/workflows/test-rust.yaml
+
+  publish-to-pypi:
+    needs: run-rust-tests
+    uses: ./.github/workflows/build-publish-pypi.yaml
+    secrets:
+      PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}

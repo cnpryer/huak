@@ -1,0 +1,53 @@
+name: Test Rust
+# This workflow does one thing, build and test huak via Cargo.
+# it's a reusable component that is called from other workflows such as the Rust CI Pipeline
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  test-rust:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    name: Build and test Rust
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: /github/home/.cargo
+          key: cargo-cache-test-rs
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v3
+        with:
+          path: /github/home/target
+          key: rust-deps-cache-test-rs
+
+      - name: Run formatting checks
+        run: |
+          cargo fmt --all -- --check
+
+      - name: Run lints
+        env:
+          RUSTFLAGS: -C debuginfo=0
+        run: |
+          cargo clippy --all-features
+          cargo clippy -- -D warnings
+
+      - name: Run tests
+        env:
+          HUAK_MUTE_COMMAND: 1
+        run: |
+          cargo test --all-features -- --test-threads=1
