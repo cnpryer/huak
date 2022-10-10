@@ -10,7 +10,7 @@ use std::fs;
 use crate::{config::pyproject::toml::Toml, errors::HuakResult};
 
 /// There are two kinds of project, application and library.
-/// Application projects usually have one or more entrypoints in the form of
+/// Application projects usually have one or more entrypoint(s) in the form of
 /// runnable scripts while library projects do not.
 #[derive(Default, Eq, PartialEq)]
 pub enum ProjectType {

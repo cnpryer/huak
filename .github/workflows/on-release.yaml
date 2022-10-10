@@ -2,12 +2,8 @@ name: Tasks on release
 # This top level GH Action Workflow controls what tasks on run when a release is triggered.
 
 on:
-  push:
-    branches:
-      - "*"
-#on:
-#  release:
-#    types: [published]
+  release:
+    types: [published]
 
 jobs:
   run-rust-tests:

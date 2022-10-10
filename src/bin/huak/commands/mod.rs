@@ -52,7 +52,7 @@ pub enum Commands {
         /// Remove all .pyc files and __pycache__ directories.
         pycache: bool,
     },
-    /// Generates documenation for the project.
+    /// Generates documentation for the project.
     Doc {
         #[arg(long)]
         check: bool,
