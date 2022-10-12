@@ -1,0 +1,78 @@
+name: Build wheel
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        type: string
+        required: true
+        description: "Operating System to build for and Run workflow on [ 'macos-latest' | 'windows-latest' | ubuntu-latest']"
+      target:
+        type: string
+        required: false
+        default: "x64"
+        description: "the CPU architecture [ 'x86_64' | 'i686' ]"
+      py-version:
+        type: string
+        required: true
+        description: "Python version to build for [e.g., '3.10']"
+
+# This workflow builds huak as pip/python 'wheels' which are platform and python version specific.
+# when installed via PyPI, Pip will download the wheel for the user's system if we support it through this workflow.
+jobs:
+  # The 'linux' job uses the manylinux docker image to build wheels that can be used by most linux distros.
+  build:
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@v3
+
+      # since we don't have a requirements.txt file in the project root, setup-python needs one.
+      - name: check requirements.txt windows
+        if: inputs.os == 'windows-latest'
+        run: |
+          if (!(Test-Path requirements.txt))
+          {
+          New-Item -itemType File -Name requirements.txt
+          }
+      - name: check requirements.txt macos
+        if: inputs.os != 'windows-latest'
+        run: |
+          if [[ ! -f requirements.txt ]]; then
+            touch requirements.txt
+          fi
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ inputs.py-version }}
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          default: true
+
+      - name: build wheels
+        if: inputs.os != 'macos-latest'
+        # see example at https://github.com/messense/crfs-rs/blob/main/.github/workflows/Python.yml
+        uses: messense/maturin-action@v1
+        with:
+          target: ${{ inputs.target }}
+          manylinux: auto
+          maturin-version: latest
+          # Maturin's default command is 'build',
+          # and target supported python version ('-i' flag) and store in dist, so we can upload all wheels at same time.
+          args: --release -i ${{ inputs.py-version }} --out dist
+
+      - name: Build wheels - universal2
+        if: inputs.os == 'macos-latest'
+        uses: messense/maturin-action@v1
+        with:
+          args: --release --universal2 --out dist
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v2
+        with:
+          name: wheels
+          path: dist

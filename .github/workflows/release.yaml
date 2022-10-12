@@ -1,0 +1,62 @@
+name: Tasks on release
+# This top level GH Action Workflow controls what tasks on run when a release is triggered.
+
+on:
+ release:
+   types: [published]
+
+jobs:
+  linux:
+    strategy:
+      matrix:
+        targets: ["x86_64", "i686"]
+        py-versions: ["3.10", "3.9"]
+    uses: ./.github/workflows/build-wheel.yaml
+    with:
+      os: ubuntu-latest
+      target: ${{ matrix.targets }}
+      py-version: ${{ matrix.py-versions }}
+
+  windows:
+    strategy:
+      matrix:
+        targets: ["x64", "x86"]
+        py-versions: ["3.10", "3.9"]
+    uses: ./.github/workflows/build-wheel.yaml
+    with:
+      os: windows-latest
+      target: ${{ matrix.targets }}
+      py-version: ${{ matrix.py-versions }}
+
+  macos:
+    strategy:
+      matrix:
+        py-versions: ["3.10"]
+    uses: ./.github/workflows/build-wheel.yaml
+    with:
+      os: windows-latest
+      py-version: ${{ matrix.py-versions }}
+
+  release:
+   name: Release
+   runs-on: ubuntu-latest
+   needs: [macos, linux, windows]
+   steps:
+     - name: Download Saved artifacts
+       uses: actions/download-artifact@v2
+       with:
+         name: wheels
+
+     - name: Setup Python
+       uses: actions/setup-python@v4
+       with:
+         python-version: "3.10"
+
+     - name: Publish to PyPI
+       env:
+         TWINE_USERNAME: __token__
+         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+         # use 'twine upload --repository testpypi --skip-existing *' to upload to http://test.pypi.org
+       run: |
+         pip install --upgrade twine
+         twine upload --repository testpypi --skip-existing *

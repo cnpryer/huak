@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - "master"
+      - "*"
     paths:
       - 'src/**'
       - 'Cargo.toml'
@@ -19,5 +20,59 @@ on:
       - '.github/workflows/ci-rust.yaml'
 
 jobs:
-  run-rust-tests:
-    uses: ./.github/workflows/test-rust.yaml
+  test-rust:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    name: Build and test Rust
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: /github/home/.cargo
+          key: cargo-cache-test-rs
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v3
+        with:
+          path: /github/home/target
+          key: rust-deps-cache-test-rs
+
+      - name: Run formatting checks
+        run: |
+          cargo fmt --all -- --check
+
+      - name: Run lints
+        env:
+          RUSTFLAGS: -C debuginfo=0
+        run: |
+          cargo clippy --all-features
+          cargo clippy -- -D warnings
+
+      - name: Run tests
+        env:
+          HUAK_MUTE_COMMAND: 1
+        run: |
+          cargo test --all-features -- --test-threads=1
+
+  build-wheels:
+    needs: test-rust
+    strategy:
+      matrix:
+        platforms: ['macos-latest', 'ubuntu-latest', 'windows-latest']
+        py-versions: ["3.10"]
+    uses: ./.github/workflows/build-wheel.yaml
+    with:
+      os: ${{ matrix.platforms }}
+      target: ${{ matrix.targets }}
+      py-version: ${{ matrix.py-versions }}
