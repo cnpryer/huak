@@ -4,9 +4,7 @@ use crate::{
 };
 
 pub fn activate_project_venv(project: &Project) -> HuakResult<()> {
-    let venv = project.venv().as_ref().ok_or_else(|| {
-        HuakError::InternalError("Project's venv is `None`.".to_owned())
-    })?;
+    let venv = project.venv().as_ref().ok_or(HuakError::VenvNotFound)?;
 
     venv.create()?;
 
