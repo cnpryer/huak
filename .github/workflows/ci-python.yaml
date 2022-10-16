@@ -1,4 +1,5 @@
-name: ci-python
+name: Python CI Pipeline
+# This top level workflow controls the what and when of the CI pipeline for Python components of huak
 
 on:
   push:
@@ -19,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ['3.10']
 
     steps:
       - name: Checkout repo

@@ -33,7 +33,7 @@ fn should_mute() -> bool {
     matches!(_mute.as_str(), "TRUE" | "True" | "true" | "1")
 }
 
-/// Run initilized command with .output() to mute stdout.
+/// Run initialized command with .output() to mute stdout.
 fn run_command_with_output(
     cmd: &str,
     args: &[&str],

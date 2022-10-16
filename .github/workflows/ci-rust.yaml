@@ -1,9 +1,11 @@
-name: ci-rust
+name: Rust CI
+# This top level workflow controls the what and when of the CI pipeline for Rust components of huak
 
 on:
   push:
     branches:
       - "master"
+      - "*"
     paths:
       - 'src/**'
       - 'Cargo.toml'
@@ -17,7 +19,7 @@ on:
       - '.github/workflows/ci-rust.yaml'
 
 jobs:
-  test-rust:
+  rust:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -25,33 +27,63 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
           components: rustfmt, clippy
+
       - name: Cache Cargo
         uses: actions/cache@v3
         with:
           path: /github/home/.cargo
           key: cargo-cache-test-rs
+
       - name: Cache Rust dependencies
         uses: actions/cache@v3
         with:
           path: /github/home/target
           key: rust-deps-cache-test-rs
+
       - name: Run formatting checks
         run: |
           cargo fmt --all -- --check
+
       - name: Run lints
         env:
           RUSTFLAGS: -C debuginfo=0
         run: |
-            cargo clippy --all-features
-            cargo clippy -- -D warnings
+          cargo clippy --all-features
+          cargo clippy -- -D warnings
+
       - name: Run tests
         env:
           HUAK_MUTE_COMMAND: 1
         run: |
-            cargo test --all-features -- --test-threads=1
+          cargo test --all-features -- --test-threads=1
+
+  # The 'linux' job uses the manylinux docker image to build wheels that can be used by most linux distros.
+  dry-release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # These are the CPU architectures...
+        target: [ x86_64, i686 ]
+        # and python versions we'll support on linux.
+        # see https://github.com/pypa/manylinux for info on supported python versions.
+        py-version: ['3.7', '3.8', '3.9', '3.10']
+    steps:
+      - uses: actions/checkout@v3
+      - name: build wheels
+        # see example at https://github.com/messense/crfs-rs/blob/main/.github/workflows/Python.yml
+        uses: messense/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          manylinux: auto
+          maturin-version: latest
+          # Maturin's default command is 'build',
+          # and target supported python version ('-i' flag) and store in dist, so we can upload all wheels at same time.
+          args: --release -i ${{ matrix.py-version }} --out dist
+

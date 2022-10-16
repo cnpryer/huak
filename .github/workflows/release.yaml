@@ -1,13 +1,10 @@
-name: Build and Publish to PyPI
-# see https://github.com/messense/crfs-rs/blob/main/.github/workflows/Python.yml
-
+name: Release
+# This top level GH Action Workflow controls what tasks on run when a release is triggered.
 
 on:
   release:
     types: [published]
 
-# This workflow builds huak as pip/python 'wheels' which are platform and python version specific.
-# when installed via PyPI, Pip will download the wheel for the user's system if we support it through this workflow.
 jobs:
   # The 'linux' job uses the manylinux docker image to build wheels that can be used by most linux distros.
   linux:
@@ -21,6 +18,7 @@ jobs:
         py-version: ['3.7', '3.8', '3.9', '3.10']
     steps:
       - uses: actions/checkout@v3
+
       - name: build wheels
         # see example at https://github.com/messense/crfs-rs/blob/main/.github/workflows/Python.yml
         uses: messense/maturin-action@v1
@@ -31,12 +29,12 @@ jobs:
           # Maturin's default command is 'build',
           # and target supported python version ('-i' flag) and store in dist, so we can upload all wheels at same time.
           args: --release -i ${{ matrix.py-version }} --out dist
+
       - name: Upload wheels
         uses: actions/upload-artifact@v2
         with:
           name: wheels
           path: dist
-
 
   # Windows job is pretty straight forward, no containers. Runs on Windows, for Windows.
   windows:
@@ -46,7 +44,8 @@ jobs:
         target: [ x64, x86 ]
         py-version: [ '3.7', '3.8', '3.9', '3.10' ]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+
         # since we don't have a requirements.txt file in the project root, setup-python needs one.
       - name: check requirements.txt
         run: |
@@ -54,23 +53,27 @@ jobs:
           {
           New-Item -itemType File -Name requirements.txt
           }
-      - uses: actions/setup-python@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
           architecture: ${{ matrix.target }}
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           profile: minimal
           default: true
+
       - name: Build wheels
         uses: messense/maturin-action@v1
         with:
           target: ${{ matrix.target }}
           maturin-version: latest
           args: --release -i ${{ matrix.py-version }} --out dist
-      - name: Upload wheels
+
+      - name: Save wheels
         uses: actions/upload-artifact@v2
         with:
           name: wheels
@@ -79,44 +82,53 @@ jobs:
   macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+
         # since we don't have a requirements.txt file in the project root, setup-python needs one.
       - name: check requirements.txt
         run: |
           if [[ ! -f requirements.txt ]]; then
             touch requirements.txt
           fi
-      - uses: actions/setup-python@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
+
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           profile: minimal
           default: true
+
       - name: Build wheels - universal2
         uses: messense/maturin-action@v1
         with:
           args: --release --universal2 --out dist
+
       - name: Upload wheels
         uses: actions/upload-artifact@v2
         with:
           name: wheels
           path: dist
 
-
   release:
     name: Release
     runs-on: ubuntu-latest
     needs: [ macos, linux, windows ]
     steps:
-      - uses: actions/download-artifact@v2
+      - name: Download Saved artifacts
+        uses: actions/download-artifact@v2
         with:
           name: wheels
-      - uses: actions/setup-python@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
+
       - name: Publish to PyPI
         env:
           TWINE_USERNAME: __token__

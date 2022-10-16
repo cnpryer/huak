@@ -28,7 +28,7 @@ impl std::fmt::Display for CliError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "hauk exited with code {:?}: {}",
+            "huak exited with code {:?}: {}",
             self.exit_code, self.error
         )
     }

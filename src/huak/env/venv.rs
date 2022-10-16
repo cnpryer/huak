@@ -218,7 +218,7 @@ impl Venv {
         }
     }
 
-    /// Run a module installed to the venv as an alias'd command from the current working dir.
+    /// Run a module installed to the venv as an aliased command from the current working dir.
     pub fn exec_module(
         &self,
         module: &str,

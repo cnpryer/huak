@@ -9,7 +9,7 @@ help:
 	@echo "  clean				remove cleanable files"
 	@echo "  lint				run flake8 linting"
 	@cheo "  lint-types			run mypy check"
-	@echo "  fmt				run formaters"
+	@echo "  fmt				run formatters"
 	@echo "  fmt-check			run formatting check"
 	@echo "  test				run all tests"
 	@echo "  pre-commit			run pre-commit standardization"

@@ -61,7 +61,7 @@ pub enum HuakError {
     #[error("Expected env var not found.")]
     EnvVarError(#[from] std::env::VarError),
     #[error("A pyproject.toml could not be found.")]
-    PyProjectTomlNotFound, // TODO: Manfiest
+    PyProjectTomlNotFound, // TODO: Manifest
     #[error("Failed to install Python package: {0}.")]
     PyPackageInstallFailure(String),
     #[error("A pyproject.toml already exists.")]
