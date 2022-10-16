@@ -5,29 +5,55 @@ on:
   push:
     branches:
       - "master"
-      - "*"
     paths:
       - 'src/**'
       - 'Cargo.toml'
       - '.github/workflows/ci-rust.yaml'
   pull_request:
     branches:
-      - "master"  
+      - "master"
     paths:
       - 'src/**'
       - 'Cargo.toml'
       - '.github/workflows/ci-rust.yaml'
 
 jobs:
-  rust:
+  test_and_build:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    name: Build and test Rust
+    name: Test and build
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: actions/cache@v3
+        env:
+          cache-name: cache-cargo
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Test
+        env:
+          HUAK_MUTE_COMMAND: 1
+        run: |
+          cargo test --all-features -- --test-threads=1
+      - name: Build
+        run: cargo build --release
 
+  lint_and_fmt:
+    name: Lint and check fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -37,15 +63,17 @@ jobs:
 
       - name: Cache Cargo
         uses: actions/cache@v3
+        env:
+          cache-name: cache-cargo
         with:
-          path: /github/home/.cargo
-          key: cargo-cache-test-rs
-
-      - name: Cache Rust dependencies
-        uses: actions/cache@v3
-        with:
-          path: /github/home/target
-          key: rust-deps-cache-test-rs
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
 
       - name: Run formatting checks
         run: |
@@ -58,14 +86,9 @@ jobs:
           cargo clippy --all-features
           cargo clippy -- -D warnings
 
-      - name: Run tests
-        env:
-          HUAK_MUTE_COMMAND: 1
-        run: |
-          cargo test --all-features -- --test-threads=1
-
   # The 'linux' job uses the manylinux docker image to build wheels that can be used by most linux distros.
   dry-release:
+    name: Build with maturin
     runs-on: ubuntu-latest
     strategy:
       matrix:
