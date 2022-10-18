@@ -97,7 +97,10 @@ pub enum Commands {
     /// Remove a dependency from the project.
     Remove { dependency: String },
     /// Run a command within the project's environment context.
-    Run { command: String },
+    Run {
+        #[arg(trailing_var_arg = true)]
+        command: Vec<String>,
+    },
     /// Test the project's Python code.
     Test,
     /// Update dependencies added to the project.

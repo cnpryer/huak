@@ -9,5 +9,6 @@ pub mod install;
 pub mod lint;
 pub mod new;
 pub mod remove;
+pub mod run;
 pub mod test;
 pub mod version;
