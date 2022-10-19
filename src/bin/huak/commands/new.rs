@@ -2,13 +2,14 @@ use std::env;
 use std::process::ExitCode;
 
 use crate::errors::{CliError, CliResult};
+use git2::Repository;
 use huak::errors::HuakError;
 use huak::ops;
 use huak::project::Project;
 use huak::project::ProjectType;
 
 /// Run the `new` command.
-pub fn run(path: String, app: bool, lib: bool) -> CliResult<()> {
+pub fn run(path: String, app: bool, lib: bool, no_vcs: bool) -> CliResult<()> {
     // This command runs from in the context of the current working directory
     let cwd = env::current_dir()?;
 
@@ -41,6 +42,13 @@ pub fn run(path: String, app: bool, lib: bool) -> CliResult<()> {
 
     ops::new::create_project(&project)
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
+
+    if !no_vcs {
+        // Initialize git repository in the new project
+        Repository::init(&project.root).map_err(|e| {
+            CliError::new(HuakError::GitError(e), ExitCode::FAILURE)
+        })?;
+    }
 
     Ok(())
 }

@@ -82,4 +82,6 @@ pub enum HuakError {
     ExpectrlError(#[from] expectrl::Error),
     #[error("Project name not found.")]
     ProjectNameNotFound,
+    #[error("Git error: {0}.")]
+    GitError(#[from] git2::Error),
 }
