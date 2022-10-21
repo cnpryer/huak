@@ -1,3 +1,4 @@
+use git2::Repository;
 use std::fs;
 
 use crate::{
@@ -21,6 +22,14 @@ pub fn create_project(project: &Project) -> HuakResult<()> {
     let pyproject_content = pyproject_toml.to_string()?;
     fs::write(&pyproject_path, pyproject_content)?;
 
+    Ok(())
+}
+
+/// Initializes VCS (currently git) in the project
+pub fn init_vcs(project: &Project) -> HuakResult<()> {
+    if let Err(e) = Repository::init(&project.root) {
+        return Err(HuakError::GitError(e));
+    }
     Ok(())
 }
 
