@@ -119,4 +119,12 @@ def test_version():
         assert_eq!(test_file, expected_test_file);
         assert_eq!(init_file, expected_init_file);
     }
+
+    #[test]
+    fn initialize_git() {
+        let directory = tempdir().unwrap().into_path().join("project");
+        let project = Project::new(directory.clone(), ProjectType::Application);
+        super::init_vcs(&project).unwrap();
+        assert!(directory.join(".git").is_dir());
+    }
 }

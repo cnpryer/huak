@@ -49,28 +49,3 @@ pub fn run(path: String, app: bool, lib: bool, no_vcs: bool) -> CliResult<()> {
 
     Ok(())
 }
-
-#[cfg(test)]
-mod tests {
-    use tempfile::tempdir;
-
-    #[test]
-    fn initializes_git() {
-        let directory = tempdir().unwrap().into_path();
-        std::env::set_current_dir(&directory).unwrap();
-        super::run("foo".to_owned(), true, false, false).unwrap();
-        let proj_dir = directory.join("foo");
-        assert!(proj_dir.is_dir());
-        assert!(proj_dir.join(".git").is_dir());
-    }
-
-    #[test]
-    fn does_not_initialize_git() {
-        let directory = tempdir().unwrap().into_path();
-        std::env::set_current_dir(&directory).unwrap();
-        super::run("foo".to_owned(), true, false, true).unwrap();
-        let proj_dir = directory.join("foo");
-        assert!(proj_dir.is_dir());
-        assert!(!proj_dir.join(".git").exists());
-    }
-}
