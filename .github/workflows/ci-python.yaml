@@ -1,4 +1,4 @@
-name: Python CI Pipeline
+name: Python CI
 # This top level workflow controls the what and when of the CI pipeline for Python components of huak
 
 on:
