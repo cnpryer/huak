@@ -14,6 +14,7 @@ mod tests {
     use crate::ops::install::install_project_dependencies;
     use crate::utils::test_utils::create_mock_project_full;
 
+    #[ignore = "currently untestable"]
     #[test]
     fn run() {
         let project = create_mock_project_full().unwrap();
