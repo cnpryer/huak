@@ -91,6 +91,9 @@ pub enum Commands {
         app: bool,
         /// Path and name of the python package
         path: String,
+        /// Don't initialize VCS in the new project
+        #[arg(long)]
+        no_vcs: bool,
     },
     /// Builds and uploads current project to a registry.
     Publish,
@@ -126,7 +129,12 @@ impl Cli {
             Commands::Lint { fix } => lint::run(fix),
             // --lib is the default, so it's unnecessary to handle. If --app is not passed, assume --lib.
             #[allow(unused_variables)]
-            Commands::New { path, app, lib } => new::run(path, app),
+            Commands::New {
+                path,
+                app,
+                lib,
+                no_vcs,
+            } => new::run(path, app, no_vcs),
             Commands::Publish => publish::run(),
             Commands::Remove { dependency } => remove::run(dependency),
             Commands::Run { command } => run::run(command),
