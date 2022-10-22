@@ -124,7 +124,9 @@ impl Cli {
             Commands::Init => init::run(),
             Commands::Install { groups, all } => install::run(groups, all),
             Commands::Lint { fix } => lint::run(fix),
-            Commands::New { path, app, lib } => new::run(path, app, lib),
+            // --lib is the default, so it's unnecessary to handle. If --app is not passed, assume --lib.
+            #[allow(unused_variables)]
+            Commands::New { path, app, lib } => new::run(path, app),
             Commands::Publish => publish::run(),
             Commands::Remove { dependency } => remove::run(dependency),
             Commands::Run { command } => run::run(command),
