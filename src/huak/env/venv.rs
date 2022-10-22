@@ -249,6 +249,28 @@ impl Venv {
         Ok(())
     }
 
+    /// Run a command in the context of the venv.
+    pub fn exec_command(&self, command: &str) -> HuakResult<()> {
+        // Create the venv if it doesn't exist.
+        // TODO: Fix this.
+        self.create()?;
+
+        let source_command = get_shell_source_command()?;
+        let script = self.get_activation_script()?;
+        let activation_command =
+            format!("{} {}", source_command, script.display());
+
+        let shell_path = get_shell_path()?;
+        let cwd = env::current_dir()?;
+        crate::utils::command::run_command(
+            &shell_path,
+            &["-c", &format!("{} && {}", activation_command, command)],
+            cwd.as_path(),
+        )?;
+
+        Ok(())
+    }
+
     /// Install a Python package to the venv.
     pub fn install_package(&self, package: &PythonPackage) -> HuakResult<()> {
         let cwd = env::current_dir()?;
