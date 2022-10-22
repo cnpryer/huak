@@ -8,14 +8,13 @@ use huak::project::Project;
 use huak::project::ProjectType;
 
 /// Run the `new` command.
-pub fn run(path: String, app: bool, lib: bool, no_vcs: bool) -> CliResult<()> {
+pub fn run(path: String, is_app: bool, no_vcs: bool) -> CliResult<()> {
     // This command runs from in the context of the current working directory
     let cwd = env::current_dir()?;
 
-    let project_type = match (app, lib) {
-        (true, false) => ProjectType::Application,
-        (false, true) => ProjectType::Library,
-        _ => Default::default(),
+    let project_type = match is_app {
+        true => ProjectType::Application,
+        false => ProjectType::Library,
     };
 
     // create PathBuf from `path` command line arg
