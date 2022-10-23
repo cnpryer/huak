@@ -90,7 +90,7 @@ mod tests {
 
     #[test]
     pub fn clean() {
-        let directory = tempdir().unwrap().into_path().to_path_buf();
+        let directory = tempdir().unwrap().into_path();
         let from_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("resources")
             .join("mock-project");

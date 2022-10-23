@@ -91,7 +91,7 @@ mod tests {
 
     #[test]
     fn test_copy_dir() {
-        let tmp = tempdir().unwrap().into_path().to_path_buf();
+        let tmp = tempdir().unwrap().into_path();
         let from = get_resource_dir().join("mock-project");
 
         copy_dir(&from, &tmp);
@@ -102,7 +102,7 @@ mod tests {
 
     #[test]
     fn test_search_parents_for_filepath() {
-        let tmp = tempdir().unwrap().into_path().to_path_buf();
+        let tmp = tempdir().unwrap().into_path();
         let from = get_resource_dir().join("mock-project");
 
         copy_dir(&from, &tmp);
