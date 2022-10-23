@@ -30,7 +30,7 @@ mod tests {
     // TODO
     #[test]
     fn toml() {
-        let directory = tempdir().unwrap().into_path().to_path_buf();
+        let directory = tempdir().unwrap().into_path();
         let project = Project::from(directory).unwrap();
 
         init_project(&project).unwrap();

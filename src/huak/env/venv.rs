@@ -310,7 +310,7 @@ mod tests {
 
     #[test]
     fn from() {
-        let directory = tempdir().unwrap().into_path().to_path_buf();
+        let directory = tempdir().unwrap().into_path();
         let first_venv = Venv::new(directory.join(".venv"));
         first_venv.create().unwrap();
 
