@@ -82,7 +82,7 @@ Commands:
   new       Create a new project at <path>
   publish   Builds and uploads current project to a registry*
   remove    Remove a dependency from the project
-  run       Run a command within the project's environment context*
+  run       Run a command within the project's environment context
   test      Test the project's Python code
   update    Update dependencies added to the project*
   version   Display the version of the project
