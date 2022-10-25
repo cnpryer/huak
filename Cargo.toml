@@ -16,6 +16,8 @@ path = "./src/huak/lib.rs"
 
 [dependencies]
 clap = {version = "4.0.15", features = ["cargo", "derive"]}
+clap_complete = "4.0"
+
 thiserror = "1.0.36"
 fs_extra = "1.2.0"
 glob = "0.3.0"

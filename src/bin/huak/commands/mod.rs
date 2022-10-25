@@ -1,11 +1,13 @@
 use crate::errors::CliResult;
 use clap::{Parser, Subcommand};
+use clap_complete::Shell;
 
 pub(crate) mod activate;
 pub(crate) mod add;
 pub(crate) mod audit;
 pub(crate) mod build;
 pub(crate) mod clean;
+pub(crate) mod completion;
 pub(crate) mod doc;
 pub(crate) mod fix;
 pub(crate) mod fmt;
@@ -33,6 +35,10 @@ pub struct Cli {
 // List of commands.
 #[derive(Subcommand)]
 pub enum Commands {
+    Completion {
+        shell: Shell
+    },
+
     /// Activate the project's virtual environment.
     Activate,
     /// Add a dependency to the existing project.
@@ -119,6 +125,7 @@ pub enum Commands {
 impl Cli {
     pub fn run(self) -> CliResult<()> {
         match self.command {
+            Commands::Completion { shell } => completion::run(shell),
             Commands::Activate => activate::run(),
             Commands::Add { dependency, dev } => add::run(dependency, dev),
             Commands::Audit => audit::run(),
