@@ -1,9 +1,7 @@
 use crate::errors::CliResult;
 
 use clap::CommandFactory;
-use clap_complete::{Shell, generate};
-
-
+use clap_complete::{generate, Shell};
 
 pub fn run(shell: Shell) -> CliResult<()> {
     let mut cmd = crate::commands::Cli::command();

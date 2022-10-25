@@ -36,7 +36,7 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
     Completion {
-        shell: Shell
+        shell: Shell,
     },
 
     /// Activate the project's virtual environment.
@@ -104,7 +104,9 @@ pub enum Commands {
     /// Builds and uploads current project to a registry.
     Publish,
     /// Remove a dependency from the project.
-    Remove { dependency: String },
+    Remove {
+        dependency: String,
+    },
     /// Run a command within the project's environment context.
     Run {
         #[arg(trailing_var_arg = true)]
