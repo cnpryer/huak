@@ -28,6 +28,60 @@
 //!
 //!Around 0.1.0 you'll be able to install `huak` using `brew` or `pip`. Distribution plans will be finalized closer to 0.1.0.
 //!
+//!## Shell completion
+//!
+//!##### Bash
+//!First, ensure that you install `bash-completion` using your package manager.
+//!After, add this to your `~/.bash_profile`:
+//!
+//!```bash
+//! eval "$(huak completion bash)"
+//!```
+//!
+//!##### Elvish
+//!This shell is supported, but the suggestion as to how this should be added to your shell init file is missing.
+//!
+//!If you are able to test this please head over to [github](https://github.com/cnpryer/huak/issues) and file an issue
+//!##### Fish
+//!Generate a `tool.fish` completion script:
+//!
+//!```bash
+//! huak completion fish > ~/.config/fish/completions/huak.fish
+//!```
+//!
+//!##### Powershell
+//!Open your profile script with:
+//!
+//!```bash
+//! mkdir -Path (Split-Path -Parent $profile) -ErrorAction SilentlyContinue
+//!```
+//!
+//!```bash
+//! notepad $profile
+//!```
+//!
+//!Add the line and save the file:
+//!```bash
+//! Invoke-Expression -Command $(huak completion powershell| Out-String)
+//!```
+//!
+//!##### Zsh
+//!Generate a `_huak` completion script and put it somewhere in your `$fpath`:
+//!```bash
+//! huak completion zsh > /usr/local/share/zsh/site-functions/_huak
+//!```
+//!
+//!Ensure that the following is present in your `~/.zshrc`:
+//!
+//!```bash
+//! autoload -U compinit
+//!```
+//!
+//!```bash
+//! compinit -i
+//!```
+//!
+//!
 //!## Goals
 //!
 //!Besides some of my own experience with the Python ecosystem, there are a few additional guiding principles steering the development of Huak:
