@@ -35,10 +35,6 @@ pub struct Cli {
 // List of commands.
 #[derive(Subcommand)]
 pub enum Commands {
-    Completion {
-        shell: Shell,
-    },
-
     /// Activate the project's virtual environment.
     Activate,
     /// Add a dependency to the existing project.
@@ -52,6 +48,9 @@ pub enum Commands {
     Audit,
     /// Build tarball and wheel for the project.
     Build,
+    /// Generates a shell completion script for supported shells.
+    /// See the help menu for more information on supported shells.
+    Completion { shell: Shell },
     /// Remove tarball and wheel from the built project.
     Clean {
         #[arg(long, required = false)]
@@ -104,9 +103,7 @@ pub enum Commands {
     /// Builds and uploads current project to a registry.
     Publish,
     /// Remove a dependency from the project.
-    Remove {
-        dependency: String,
-    },
+    Remove { dependency: String },
     /// Run a command within the project's environment context.
     Run {
         #[arg(trailing_var_arg = true)]
