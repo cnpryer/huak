@@ -4,6 +4,9 @@ use crate::errors::CliResult;
 use clap::CommandFactory;
 use clap_complete::{generate, Shell};
 
+/// Prints the script to stdout and a way to add the script to the shell init file to stderr. This
+/// way if the user runs completion <shell> > completion.sh only the stdout will be redirected into
+/// completion.sh.
 pub fn run(shell: Shell) -> CliResult<()> {
     let mut cmd = Cli::command();
 
@@ -82,5 +85,9 @@ Ensure that the following is present in your `~/.zshrc`:
 // There should probably be a link to the github issues page for this since if this is triggered it
 // means clap_complete was upgraded but the added shell was not handled.
 fn completion_help_unknown(_cmd_name: &str) -> String {
-    format!(r##""##)
+    format!(
+        r##"The completion script generation is not implemented for this shell. Head over to 
+https://github.com/cnpryer/huak/issues to file an issue to add support.
+"##
+    )
 }
