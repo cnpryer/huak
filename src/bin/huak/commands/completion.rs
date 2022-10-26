@@ -36,7 +36,7 @@ fn completion_help_bash(cmd_name: &str) -> String {
         r##""First, ensure that you install `bash-completion` using your package manager.
 After, add this to your `~/.bash_profile`:
 
-`eval "$({cmd_name} completion bash --rename {cmd_name})"`
+`eval "$({cmd_name} completion bash)"`
 "##
     )
 }
@@ -52,7 +52,7 @@ fn completion_help_fish(cmd_name: &str) -> String {
     format!(
         r##"Generate a `tool.fish` completion script:
 
-`{cmd_name} completion fish --rename {cmd_name} > ~/.config/fish/completions/{cmd_name}.fish`
+`{cmd_name} completion fish > ~/.config/fish/completions/{cmd_name}.fish`
 "##
     )
 }
@@ -65,7 +65,7 @@ fn completion_help_powershell(cmd_name: &str) -> String {
 `notepad $profile`
 
 Add the line and save the file:
-`Invoke-Expression -Command $({cmd_name} completion powershell --rename {cmd_name} | Out-String)`
+`Invoke-Expression -Command $({cmd_name} completion powershell| Out-String)`
 "##
     )
 }
@@ -73,7 +73,7 @@ Add the line and save the file:
 fn completion_help_zsh(cmd_name: &str) -> String {
     format!(
         r##"Generate a `_{cmd_name}` completion script and put it somewhere in your `$fpath`:
-`{cmd_name} completion zsh --rename {cmd_name} > /usr/local/share/zsh/site-functions/_{cmd_name}`
+`{cmd_name} completion zsh > /usr/local/share/zsh/site-functions/_{cmd_name}`
 
 Ensure that the following is present in your `~/.zshrc`:
 
