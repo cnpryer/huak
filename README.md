@@ -110,7 +110,7 @@ This shell is supported, but the suggestion as to how this should be added to yo
 
 If you are able to test this please head over to [github](https://github.com/cnpryer/huak/issues) and file an issue
 ##### Fish
-Generate a `tool.fish` completion script:
+Generate a `huak.fish` completion script:
 
 ```bash
 huak completion fish > ~/.config/fish/completions/huak.fish
