@@ -25,9 +25,9 @@ pub fn run(shell: Shell) -> CliResult<()> {
         _ => completion_help_unknown(&cmd_name),
     };
 
-    eprintln!("{}", help_output);
-
     generate(shell, &mut cmd, &cmd_name, &mut std::io::stdout());
+
+    eprintln!("{}", help_output);
     Ok(())
 }
 
