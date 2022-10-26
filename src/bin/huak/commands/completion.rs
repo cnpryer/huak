@@ -81,9 +81,6 @@ Ensure that the following is present in your `~/.zshrc`:
     )
 }
 
-// TODO
-// There should probably be a link to the github issues page for this since if this is triggered it
-// means clap_complete was upgraded but the added shell was not handled.
 fn completion_help_unknown(_cmd_name: &str) -> String {
     format!(
         r##"The completion script generation is not implemented for this shell. Head over to 
