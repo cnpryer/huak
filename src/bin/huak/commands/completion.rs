@@ -43,11 +43,9 @@ After, add this to your `~/.bash_profile`:
 
 // TODO
 fn completion_help_elvish(_cmd_name: &str) -> String {
-    format!(
-        r##"This shell is supported, but the suggestion as to how this should be added to your shell init file is missing.
+    r##"This shell is supported, but the suggestion as to how this should be added to your shell init file is missing.
 
-If you are able to test this please head over to https://github.com/cnpryer/huak/issues and file an issue"##
-    )
+If you are able to test this please head over to https://github.com/cnpryer/huak/issues and file an issue"##.to_string()
 }
 
 fn completion_help_fish(cmd_name: &str) -> String {
@@ -86,9 +84,7 @@ Ensure that the following is present in your `~/.zshrc`:
 }
 
 fn completion_help_unknown(_cmd_name: &str) -> String {
-    format!(
-        r##"The completion script generation is not implemented for this shell. Head over to
+    r##"The completion script generation is not implemented for this shell. Head over to
 https://github.com/cnpryer/huak/issues to file an issue to add support.
-"##
-    )
+"##.to_string()
 }
