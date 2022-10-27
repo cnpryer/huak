@@ -42,6 +42,7 @@
 //!This shell is supported, but the suggestion as to how this should be added to your shell init file is missing.
 //!
 //!If you are able to test this please head over to [github](https://github.com/cnpryer/huak/issues) and file an issue
+
 //!##### Fish
 //!Generate a `huak.fish` completion script:
 //!
