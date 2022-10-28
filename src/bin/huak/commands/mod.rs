@@ -1,13 +1,13 @@
 use crate::errors::CliResult;
+
 use clap::{Parser, Subcommand};
-use clap_complete::Shell;
 
 pub(crate) mod activate;
 pub(crate) mod add;
 pub(crate) mod audit;
 pub(crate) mod build;
 pub(crate) mod clean;
-pub(crate) mod completion;
+pub(crate) mod config;
 pub(crate) mod doc;
 pub(crate) mod fix;
 pub(crate) mod fmt;
@@ -48,9 +48,8 @@ pub enum Commands {
     Audit,
     /// Build tarball and wheel for the project.
     Build,
-    /// Generates a shell completion script for supported shells.
-    /// See the help menu for more information on supported shells.
-    Completion { shell: Shell },
+    /// Interact with the configuration of huak.
+    Config(config::Config),
     /// Remove tarball and wheel from the built project.
     Clean {
         #[arg(long, required = false)]
@@ -124,7 +123,7 @@ pub enum Commands {
 impl Cli {
     pub fn run(self) -> CliResult<()> {
         match self.command {
-            Commands::Completion { shell } => completion::run(shell),
+            Commands::Config(config_command) => config::run(config_command),
             Commands::Activate => activate::run(),
             Commands::Add { dependency, dev } => add::run(dependency, dev),
             Commands::Audit => audit::run(),
