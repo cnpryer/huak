@@ -28,13 +28,13 @@ fn generate_shell_completion_script(shell: Option<Shell>) {
 
 #[derive(Args)]
 pub struct Config {
-    /// Generates a shell completion script for supported shells.
-    /// See the help menu for more information on supported shells.
     #[command(subcommand)]
     command: ConfigCommand,
 }
 
 #[derive(Debug, Subcommand)]
 pub enum ConfigCommand {
+    /// Generates a shell completion script for supported shells.
+    /// See the help menu for more information on supported shells.
     Completion { shell: Shell },
 }
