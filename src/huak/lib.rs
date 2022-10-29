@@ -35,7 +35,7 @@
 //!After, add this to your `~/.bash_profile`:
 //!
 //!```bash
-//! eval "$(huak completion bash)"
+//! eval "$(huak config completion bash)"
 //!```
 //!
 //!##### Elvish
@@ -47,7 +47,7 @@
 //!Generate a `huak.fish` completion script:
 //!
 //!```bash
-//! huak completion fish > ~/.config/fish/completions/huak.fish
+//! huak config completion fish > ~/.config/fish/completions/huak.fish
 //!```
 //!
 //!##### Powershell
@@ -63,13 +63,13 @@
 //!
 //!Add the line and save the file:
 //!```bash
-//! Invoke-Expression -Command $(huak completion powershell| Out-String)
+//! Invoke-Expression -Command $(huak config completion powershell| Out-String)
 //!```
 //!
 //!##### Zsh
 //!Generate a `_huak` completion script and put it somewhere in your `$fpath`:
 //!```bash
-//! huak completion zsh > /usr/local/share/zsh/site-functions/_huak
+//! huak config completion zsh > /usr/local/share/zsh/site-functions/_huak
 //!```
 //!
 //!Ensure that the following is present in your `~/.zshrc`:

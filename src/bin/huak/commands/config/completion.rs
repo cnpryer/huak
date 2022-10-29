@@ -1,7 +1,9 @@
 use crate::commands::Cli;
 use crate::errors::CliResult;
 
-use clap::{Args, CommandFactory, Subcommand};
+use huak::ops::config;
+
+use clap::{Args, Command, CommandFactory, Subcommand};
 use clap_complete::{generate, Shell};
 
 /// Prints the script to stdout and a way to add the script to the shell init file to stderr. This
@@ -10,20 +12,37 @@ use clap_complete::{generate, Shell};
 pub fn run(config_command: Config) -> CliResult<()> {
     match config_command.command {
         ConfigCommand::Completion { shell } => {
-            generate_shell_completion_script(Some(shell))
+            generate_shell_completion_script(shell)
+        }
+        ConfigCommand::Install { shell } => {
+            let mut cmd: Command = Cli::command();
+            let _result = match shell {
+                Shell::Bash => config::_add_completion_bash(),
+                Shell::Elvish => config::_add_completion_elvish(),
+                Shell::Fish => config::_add_completion_fish(&mut cmd),
+                Shell::PowerShell => config::_add_completion_powershell(),
+                Shell::Zsh => config::_add_completion_zsh(&mut cmd),
+                _ => Ok(()),
+            };
+        }
+        ConfigCommand::Uninstall { shell } => {
+            let _result = match shell {
+                Shell::Bash => config::_remove_completion_bash(),
+                Shell::Elvish => config::_remove_completion_elvish(),
+                Shell::Fish => config::_remove_completion_fish(),
+                Shell::PowerShell => config::_remove_completion_powershell(),
+                Shell::Zsh => config::_remove_completion_zsh(),
+                _ => Ok(()),
+            };
         }
     }
     Ok(())
 }
 
-fn generate_shell_completion_script(shell: Option<Shell>) {
+fn generate_shell_completion_script(shell: Shell) {
     let mut cmd = Cli::command();
 
-    // We can't take a reference to the cmd variable since we also need a mutable reference to this
-    // in the generate() function.
-    let cmd_name = String::from(Cli::command().get_name());
-
-    generate(shell.unwrap(), &mut cmd, &cmd_name, &mut std::io::stdout())
+    generate(shell, &mut cmd, "huak", &mut std::io::stdout())
 }
 
 #[derive(Args)]
@@ -37,4 +56,8 @@ pub enum ConfigCommand {
     /// Generates a shell completion script for supported shells.
     /// See the help menu for more information on supported shells.
     Completion { shell: Shell },
+    /// Installs the completion script in your shell init file.
+    Install { shell: Shell },
+    /// Uninstalls the completion script from your shell init file.
+    Uninstall { shell: Shell },
 }
