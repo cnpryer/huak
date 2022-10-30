@@ -52,7 +52,7 @@ pub struct Config {
 }
 
 #[derive(Debug, Subcommand)]
-pub enum ConfigCommand {
+pub enum Config {
     /// Generates a shell completion script for supported shells.
     /// See the help menu for more information on supported shells.
     Completion { shell: Shell },
