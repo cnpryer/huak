@@ -2,7 +2,6 @@ pub mod activate;
 pub mod add;
 pub mod build;
 pub mod clean;
-pub mod config;
 pub mod fix;
 pub mod fmt;
 pub mod init;
