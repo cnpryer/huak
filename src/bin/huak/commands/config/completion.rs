@@ -32,9 +32,11 @@ pub fn add_completion_bash() -> Result<(), Error> {
 
     // This needs to be a string since there will be a \n prepended if it is
     file.write_all(
-        format!(r##"{}eval "$(huak config completion bash)"{}"##, '\n', '\n')
-            .to_string()
-            .as_bytes(),
+        format!(
+            r##"{}eval "$(huak config completion -s bash)"{}"##,
+            '\n', '\n'
+        )
+        .as_bytes(),
     )?;
 
     Ok(())
@@ -103,7 +105,10 @@ pub fn remove_completion_bash() -> Result<(), Error> {
 
     let file_content = std::fs::read_to_string(&_file_path)?;
     let new_content = file_content.replace(
-        &format!(r##"{}eval "$(huak config completion bash)"{}"##, '\n', '\n'),
+        &format!(
+            r##"{}eval "$(huak config completion -s bash)"{}"##,
+            '\n', '\n'
+        ),
         "",
     );
 
@@ -207,7 +212,7 @@ mod tests {
 # removing the bash completion script
 
 
-eval "$(huak config completion bash)"
+eval "$(huak config completion -s bash)"
 "##
             ),
             file_content

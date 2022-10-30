@@ -11,29 +11,37 @@ use clap_complete::{generate, Shell};
 /// completion.sh.
 pub fn run(config_command: Config) -> CliResult<()> {
     match config_command.command {
-        ConfigCommand::Completion { shell } => {
-            generate_shell_completion_script(shell)
-        }
-        ConfigCommand::Install { shell } => {
-            let mut cmd: Command = Cli::command();
-            let _result = match shell {
-                Shell::Bash => completion::add_completion_bash(),
-                Shell::Elvish => completion::add_completion_elvish(),
-                Shell::Fish => completion::add_completion_fish(&mut cmd),
-                Shell::PowerShell => completion::add_completion_powershell(),
-                Shell::Zsh => completion::add_completion_zsh(&mut cmd),
-                _ => Ok(()),
-            };
-        }
-        ConfigCommand::Uninstall { shell } => {
-            let _result = match shell {
-                Shell::Bash => completion::remove_completion_bash(),
-                Shell::Elvish => completion::remove_completion_elvish(),
-                Shell::Fish => completion::remove_completion_fish(),
-                Shell::PowerShell => completion::remove_completion_powershell(),
-                Shell::Zsh => completion::remove_completion_zsh(),
-                _ => Ok(()),
-            };
+        ConfigCommand::Completion {
+            shell,
+            install,
+            uninstall,
+        } => {
+            if install {
+                let mut cmd: Command = Cli::command();
+                let _result = match shell {
+                    Shell::Bash => completion::add_completion_bash(),
+                    Shell::Elvish => completion::add_completion_elvish(),
+                    Shell::Fish => completion::add_completion_fish(&mut cmd),
+                    Shell::PowerShell => {
+                        completion::add_completion_powershell()
+                    }
+                    Shell::Zsh => completion::add_completion_zsh(&mut cmd),
+                    _ => Ok(()),
+                };
+            } else if uninstall {
+                let _result = match shell {
+                    Shell::Bash => completion::remove_completion_bash(),
+                    Shell::Elvish => completion::remove_completion_elvish(),
+                    Shell::Fish => completion::remove_completion_fish(),
+                    Shell::PowerShell => {
+                        completion::remove_completion_powershell()
+                    }
+                    Shell::Zsh => completion::remove_completion_zsh(),
+                    _ => Ok(()),
+                };
+            } else {
+                generate_shell_completion_script(shell)
+            }
         }
     }
     Ok(())
@@ -55,9 +63,16 @@ pub struct Config {
 pub enum ConfigCommand {
     /// Generates a shell completion script for supported shells.
     /// See the help menu for more information on supported shells.
-    Completion { shell: Shell },
-    /// Installs the completion script in your shell init file.
-    Install { shell: Shell },
-    /// Uninstalls the completion script from your shell init file.
-    Uninstall { shell: Shell },
+    Completion {
+        #[arg(short, long, value_name = "shell")]
+        shell: Shell,
+
+        #[arg(short, long)]
+        /// Installs the completion script in your shell init file.
+        install: bool,
+
+        #[arg(short, long)]
+        /// Uninstalls the completion script from your shell init file.
+        uninstall: bool,
+    },
 }
