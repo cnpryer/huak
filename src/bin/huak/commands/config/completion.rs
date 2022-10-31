@@ -193,6 +193,7 @@ mod tests {
     #[derive(Parser)]
     struct Cli {}
 
+    #[cfg(not(target = "linux"))]
     #[test]
     /// This test ensures the order of operations is always correct
     fn test_bash_completion() {
@@ -231,6 +232,7 @@ eval "$(huak config completion -s bash)"
 ", file_content)
     }
 
+    #[cfg(not(target = "linux"))]
     #[test]
     /// This test ensures the order of operations is always correct
     fn test_fish_completion() {
@@ -255,6 +257,7 @@ eval "$(huak config completion -s bash)"
         assert_eq!(true, result.is_err());
     }
 
+    #[cfg(not(target = "linux"))]
     #[test]
     /// This test ensures the order of operations is always correct
     fn test_zsh_completion() {
