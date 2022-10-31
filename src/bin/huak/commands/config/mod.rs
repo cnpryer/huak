@@ -18,39 +18,64 @@ pub fn run(config_command: Config) -> CliResult<()> {
         } => {
             if install {
                 let mut cmd: Command = Cli::command();
-                let _result = match shell {
-                    Shell::Bash => completion::add_completion_bash(),
-                    Shell::Elvish => completion::add_completion_elvish(),
-                    Shell::Fish => completion::add_completion_fish(&mut cmd),
-                    Shell::PowerShell => {
-                        completion::add_completion_powershell()
+                match shell {
+                    Some(shell) => {
+                        let result = match shell {
+                            Shell::Bash => completion::add_completion_bash(),
+                            Shell::Elvish => {
+                                completion::add_completion_elvish()
+                            }
+                            Shell::Fish => {
+                                completion::add_completion_fish(&mut cmd)
+                            }
+                            Shell::PowerShell => {
+                                completion::add_completion_powershell()
+                            }
+                            Shell::Zsh => {
+                                completion::add_completion_zsh(&mut cmd)
+                            }
+                            _ => Ok(()),
+                        };
+                        if let Err(e) = result {
+                            eprintln!("{}", e);
+                        }
                     }
-                    Shell::Zsh => completion::add_completion_zsh(&mut cmd),
-                    _ => Ok(()),
-                };
+                    None => eprintln!("Please provide a shell"),
+                }
             } else if uninstall {
-                let _result = match shell {
-                    Shell::Bash => completion::remove_completion_bash(),
-                    Shell::Elvish => completion::remove_completion_elvish(),
-                    Shell::Fish => completion::remove_completion_fish(),
-                    Shell::PowerShell => {
-                        completion::remove_completion_powershell()
+                match shell {
+                    Some(shell) => {
+                        let result = match shell {
+                            Shell::Bash => completion::remove_completion_bash(),
+                            Shell::Elvish => {
+                                completion::remove_completion_elvish()
+                            }
+                            Shell::Fish => completion::remove_completion_fish(),
+                            Shell::PowerShell => {
+                                completion::remove_completion_powershell()
+                            }
+                            Shell::Zsh => completion::remove_completion_zsh(),
+                            _ => Ok(()),
+                        };
+
+                        if let Err(e) = result {
+                            eprintln!("{}", e);
+                        }
                     }
-                    Shell::Zsh => completion::remove_completion_zsh(),
-                    _ => Ok(()),
-                };
+                    None => eprintln!("Please provide a shell"),
+                }
             } else {
-                generate_shell_completion_script(shell)
+                generate_shell_completion_script()
             }
         }
     }
     Ok(())
 }
 
-fn generate_shell_completion_script(shell: Shell) {
+fn generate_shell_completion_script() {
     let mut cmd = Cli::command();
 
-    generate(shell, &mut cmd, "huak", &mut std::io::stdout())
+    generate(Shell::Bash, &mut cmd, "huak", &mut std::io::stdout())
 }
 
 #[derive(Args)]
@@ -65,14 +90,16 @@ pub enum ConfigCommand {
     /// See the help menu for more information on supported shells.
     Completion {
         #[arg(short, long, value_name = "shell")]
-        shell: Shell,
+        shell: Option<Shell>,
 
         #[arg(short, long)]
         /// Installs the completion script in your shell init file.
+        /// If this flag is passed the --shell is required
         install: bool,
 
         #[arg(short, long)]
         /// Uninstalls the completion script from your shell init file.
+        /// If this flag is passed the --shell is required
         uninstall: bool,
     },
 }

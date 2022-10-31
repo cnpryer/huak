@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{Error, Write};
 use std::path::Path;
 
-use clap::{Command, Subcommand};
+use clap::Command;
 use clap_complete::{generate, Shell};
 
 /// Bash has a couple of files that can contain the actual completion script.
@@ -32,11 +32,8 @@ pub fn add_completion_bash() -> Result<(), Error> {
 
     // This needs to be a string since there will be a \n prepended if it is
     file.write_all(
-        format!(
-            r##"{}eval "$(huak config completion -s bash)"{}"##,
-            '\n', '\n'
-        )
-        .as_bytes(),
+        format!(r##"{}eval "$(huak config completion)"{}"##, '\n', '\n')
+            .as_bytes(),
     )?;
 
     Ok(())
@@ -105,10 +102,7 @@ pub fn remove_completion_bash() -> Result<(), Error> {
 
     let file_content = std::fs::read_to_string(&_file_path)?;
     let new_content = file_content.replace(
-        &format!(
-            r##"{}eval "$(huak config completion -s bash)"{}"##,
-            '\n', '\n'
-        ),
+        &format!(r##"{}eval "$(huak config completion)"{}"##, '\n', '\n'),
         "",
     );
 
@@ -172,23 +166,12 @@ where
     Ok(())
 }
 
-#[derive(Debug, Subcommand)]
-pub enum Config {
-    /// Generates a shell completion script for supported shells.
-    /// See the help menu for more information on supported shells.
-    Completion { shell: Shell },
-    /// Installs the completion script in your shell init file.
-    Install { shell: Shell },
-    /// Uninstalls the completion script from your shell init file.
-    Uninstall { shell: Shell },
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::fs;
 
-    use clap::{Command, CommandFactory, Parser};
+    use clap::{Command, Parser};
 
     #[derive(Parser)]
     struct Cli {}
@@ -213,7 +196,7 @@ mod tests {
 # removing the bash completion script
 
 
-eval "$(huak config completion -s bash)"
+eval "$(huak config completion)"
 "##
             ),
             file_content
