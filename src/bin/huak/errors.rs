@@ -57,3 +57,9 @@ impl From<std::str::Utf8Error> for CliError {
         CliError::new(HuakError::Utf8Error(err), BASIC_ERROR_CODE)
     }
 }
+
+impl From<std::env::VarError> for CliError {
+    fn from(err: std::env::VarError) -> CliError {
+        CliError::new(HuakError::EnvVarError(err), BASIC_ERROR_CODE)
+    }
+}

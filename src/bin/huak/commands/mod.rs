@@ -49,7 +49,10 @@ pub enum Commands {
     /// Build tarball and wheel for the project.
     Build,
     /// Interact with the configuration of huak.
-    Config(config::Config),
+    Config {
+        #[command(subcommand)]
+        command: config::Config,
+    },
     /// Remove tarball and wheel from the built project.
     Clean {
         #[arg(long, required = false)]
@@ -123,7 +126,7 @@ pub enum Commands {
 impl Cli {
     pub fn run(self) -> CliResult<()> {
         match self.command {
-            Commands::Config(config_command) => config::run(config_command),
+            Commands::Config { command } => config::run(command),
             Commands::Activate => activate::run(),
             Commands::Add { dependency, dev } => add::run(dependency, dev),
             Commands::Audit => audit::run(),
