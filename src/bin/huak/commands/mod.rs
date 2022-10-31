@@ -1,4 +1,5 @@
 use crate::errors::CliResult;
+
 use clap::{Parser, Subcommand};
 
 pub(crate) mod activate;
@@ -6,6 +7,7 @@ pub(crate) mod add;
 pub(crate) mod audit;
 pub(crate) mod build;
 pub(crate) mod clean;
+pub(crate) mod config;
 pub(crate) mod doc;
 pub(crate) mod fix;
 pub(crate) mod fmt;
@@ -46,6 +48,11 @@ pub enum Commands {
     Audit,
     /// Build tarball and wheel for the project.
     Build,
+    /// Interact with the configuration of huak.
+    Config {
+        #[command(subcommand)]
+        command: config::Config,
+    },
     /// Remove tarball and wheel from the built project.
     Clean {
         #[arg(long, required = false)]
@@ -119,6 +126,7 @@ pub enum Commands {
 impl Cli {
     pub fn run(self) -> CliResult<()> {
         match self.command {
+            Commands::Config { command } => config::run(command),
             Commands::Activate => activate::run(),
             Commands::Add { dependency, dev } => add::run(dependency, dev),
             Commands::Audit => audit::run(),
