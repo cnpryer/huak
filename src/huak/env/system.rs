@@ -22,12 +22,10 @@ fn find_binary(bin_name: String, dir: &str) -> HuakResult<Option<String>> {
         Err(e) => return Err(HuakError::IOError(e)),
     };
 
-    for bin in read_dir {
-        if let Ok(dir_entry) = bin {
-            if let Some(file_name) = dir_entry.file_name().to_str() {
-                if file_name == bin_name {
-                    return Ok(Some(format!("{}/{}", dir, bin_name)));
-                }
+    for dir_entry in read_dir.flatten() {
+        if let Some(file_name) = dir_entry.file_name().to_str() {
+            if file_name == bin_name {
+                return Ok(Some(format!("{}/{}", dir, bin_name)));
             }
         }
     }
@@ -41,20 +39,14 @@ pub fn find_python_binary_paths() -> HuakResult<String> {
     let paths = parse_path()?;
 
     for path in paths {
-        if let Ok(optional) = find_binary("python3".to_string(), &path) {
-            if let Some(python) = optional {
-                return Ok(python);
-            }
+        if let Ok(Some(python)) = find_binary("python3".to_string(), &path) {
+            return Ok(python);
         }
-        if let Ok(optional) = find_binary("python".to_string(), &path) {
-            if let Some(python) = optional {
-                return Ok(python);
-            }
+        if let Ok(Some(python)) = find_binary("python".to_string(), &path) {
+            return Ok(python);
         }
-        if let Ok(optional) = find_binary("python3".to_string(), &path) {
-            if let Some(python) = optional {
-                return Ok(python);
-            }
+        if let Ok(Some(python)) = find_binary("python3".to_string(), &path) {
+            return Ok(python);
         }
     }
 
