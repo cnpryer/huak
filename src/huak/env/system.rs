@@ -45,7 +45,7 @@ pub fn find_python_binary_paths() -> HuakResult<String> {
         if let Ok(Some(python)) = find_binary("python".to_string(), &path) {
             return Ok(python);
         }
-        if let Ok(Some(python)) = find_binary("python3".to_string(), &path) {
+        if let Ok(Some(python)) = find_binary("python2".to_string(), &path) {
             return Ok(python);
         }
     }
