@@ -19,7 +19,7 @@ pub(crate) const DEFAULT_VENV_NAME: &str = ".venv";
 pub(crate) const BIN_NAME: &str = "bin";
 pub(crate) const WINDOWS_BIN_NAME: &str = "Scripts";
 pub(crate) const DEFAULT_PYTHON_ALIAS: &str = "python";
-pub(crate) const PYTHON3_ALIAS: &str = "python3";
+//pub(crate) const PYTHON3_ALIAS: &str = "python3";
 pub(crate) const HUAK_VENV_ENV_VAR: &str = "HUAK_VENV_ACTIVE";
 
 /// A struct for Python venv.
@@ -175,22 +175,25 @@ impl Venv {
 
         println!("Creating venv {}", self.path.display());
 
-        crate::utils::command::run_command(self.python_alias(), &args, from)?;
+        crate::utils::command::run_command(&self.python_alias(), &args, from)?;
 
         Ok(())
     }
 
     /// Get the python alias associated with the venv.
-    // TODO: Do better python resolution agnostic of Venv.
-    pub fn python_alias(&self) -> &str {
-        let (py, py3) = (DEFAULT_PYTHON_ALIAS, PYTHON3_ALIAS);
+    pub fn python_alias(&self) -> String {
+        let py = DEFAULT_PYTHON_ALIAS;
 
+        if let Ok(python) = crate::env::system::find_python_binary_paths() {
+            match OS {
+                "linux" => return python,
+                "macos" => return python,
+                _ => return py.to_string(),
+            }
+        };
+
+        py.to_string()
         // TODO: Enum.
-        match OS {
-            "linux" => py3,
-            "macos" => py3,
-            _ => py,
-        }
     }
 
     /// Get the path to the bin folder (called Scripts on Windows).
