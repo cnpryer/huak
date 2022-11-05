@@ -15,43 +15,15 @@ pub trait PythonConfig {
     fn optional_package_list(&self, opt_group: &str) -> Vec<PythonPackage>;
 }
 
-/// `Manifest` data the configuration uses to manage standard configuration
-/// information.
-// TODO: Isolated container of information.
+// TODO: PythonConfig?
 #[derive(Default)]
-pub struct Manifest {
+pub struct Config {
     pub(crate) path: PathBuf,
     pub(crate) toml: Toml,
 }
 
-impl Manifest {
-    /// Initialize a `Manifest` from a `path` pointing to a manifest file.
-    /// Use `new()` to initiate from files including: pyproject.toml.
-    // TODO: More than just toml.
-    fn new(path: PathBuf) -> HuakResult<Manifest> {
-        // TODO
-        if !path.ends_with("pyproject.toml") {
-            return Ok(Manifest::default());
-        }
-
-        // Just use the toml for now.
-        let toml = Toml::open(&path)?;
-
-        Ok(Manifest { path, toml })
-    }
-}
-
-// TODO: PythonConfig?
-#[derive(Default)]
-pub struct Config {
-    manifest: Manifest,
-}
-
+// TODO: Config refactor.
 impl Config {
-    /// Initialize a `Config` by scanning a directory for configuration files like pyproject.toml.
-    // TODO:
-    //       - Improve scan. Initially `new` will only expect pyproject.toml at the root of `from`.
-    //       - Add other setup file types like requirements.txt.
     pub fn from(path: &Path) -> HuakResult<Config> {
         let manifest_path = utils::path::search_parents_for_filepath(
             path,
@@ -59,44 +31,34 @@ impl Config {
             DEFAULT_SEARCH_STEPS,
         )?;
 
-        if manifest_path.is_none() {
-            return Ok(Config {
-                manifest: Manifest::default(),
-            });
-        }
+        let manifest_path = match manifest_path {
+            Some(it) => it,
+            None => return Ok(Config::default()), // Just use the toml for now.
+        };
+        let toml = Toml::open(&manifest_path)?;
 
-        let manifest_path = manifest_path.unwrap();
-        let manifest = Manifest::new(manifest_path)?;
-
-        Ok(Config { manifest })
-    }
-
-    // Initialize from a `Manifest`.
-    pub fn from_manifest(manifest: Manifest) -> Config {
-        Config { manifest }
-    }
-
-    /// Get a reference to the `Manifest`.
-    pub(crate) fn manifest(&self) -> &Manifest {
-        &self.manifest
+        Ok(Config {
+            path: manifest_path,
+            toml,
+        })
     }
 
     /// Get a reference to the project name from manifest data.
     // TODO: Use more than toml.
     pub fn project_name(&self) -> &String {
-        let table = &self.manifest.toml.project;
+        let table = &self.toml.project;
 
         &table.name
     }
 
     pub fn set_project_name(&mut self, name: &str) {
-        self.manifest.toml.project.name = name.to_string();
+        self.toml.project.name = name.to_string();
     }
 
     /// Get a reference to the project version from manifest data.
     // TODO: Use more than toml.
     pub fn project_version(&self) -> &Option<String> {
-        let table = &self.manifest.toml.project;
+        let table = &self.toml.project;
 
         &table.version
     }
@@ -107,7 +69,7 @@ impl PythonConfig for Config {
     // TODO: More than toml.
     fn package_list(&self) -> Vec<PythonPackage> {
         // Get huak's spanned table found in the Toml.
-        let table = &self.manifest.toml.project;
+        let table = &self.toml.project;
         let empty: Vec<String> = Vec::new();
         // Dependencies to list from.
         let from = &table.dependencies.as_ref().unwrap_or(&empty);
@@ -121,7 +83,7 @@ impl PythonConfig for Config {
     // TODO: More than toml.
     fn optional_package_list(&self, opt_group: &str) -> Vec<PythonPackage> {
         // Get huak's spanned table found in the Toml.
-        let table = &self.manifest.toml.project;
+        let table = &self.toml.project;
         let empty: Vec<String> = vec![];
 
         // Dependencies to list from.

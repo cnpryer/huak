@@ -33,13 +33,7 @@ pub fn install_project_dependencies(
         return Ok(());
     }
 
-    if let Some(deps) = &project
-        .config()
-        .manifest()
-        .toml
-        .project
-        .optional_dependencies
-    {
+    if let Some(deps) = &project.config().toml.project.optional_dependencies {
         for group in deps.keys() {
             install_packages(
                 &project.config().optional_package_list(group),
