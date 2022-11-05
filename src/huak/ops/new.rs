@@ -8,7 +8,6 @@ use crate::{
 
 /// Create an initialized project (TODO) in an environment.
 pub fn create_project(project: &Project) -> HuakResult<()> {
-    // TODO: Use available toml from manifest.
     let pyproject_toml = project.create_toml()?;
     let pyproject_path = project.root.join("pyproject.toml");
 

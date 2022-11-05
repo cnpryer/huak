@@ -85,7 +85,7 @@ impl Project {
             }
             Err(e) => return Err(e),
         };
-        let manifest_path = &config.manifest().path;
+        let manifest_path = &config.path;
 
         // Set the root to the directory the manifest file was found.
         // TODO: This is probably not the right way to do this.
