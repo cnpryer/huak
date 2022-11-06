@@ -249,7 +249,7 @@ mod tests {
         let _ = add_completion_bash();
 
         let file_content =
-            fs::read_to_string("test_files/test_bashrc").unwrap();
+            fs::read_to_string("resources/test_files/test_bashrc").unwrap();
 
         assert_eq!(
             format!(
@@ -269,7 +269,7 @@ eval "$(huak config completion)"
         let _ = remove_completion_bash();
 
         let file_content =
-            fs::read_to_string("test_files/test_bashrc").unwrap();
+            fs::read_to_string("resources/test_files/test_bashrc").unwrap();
 
         assert_eq!("# This stuff is in here so there is something that should be left over after
 # removing the bash completion script
@@ -292,7 +292,7 @@ eval "$(huak config completion)"
     fn test_adding_completion_fish(cmd: &mut Command) {
         let _ = add_completion_fish(cmd);
 
-        let result = std::fs::read_to_string("test_files/test_fish");
+        let result = std::fs::read_to_string("resources/test_files/test_fish");
 
         assert_eq!(true, result.is_ok());
     }
@@ -301,7 +301,7 @@ eval "$(huak config completion)"
     fn test_remove_completion_fish() {
         let _ = remove_completion_fish();
 
-        let result = std::fs::read("test_files/test_fish");
+        let result = std::fs::read("resources/test_files/test_fish");
         assert_eq!(true, result.is_err());
     }
 
@@ -320,7 +320,7 @@ eval "$(huak config completion)"
     fn test_adding_completion_zsh(cmd: &mut Command) {
         let _ = add_completion_zsh(cmd);
 
-        let result = std::fs::read_to_string("test_files/test_zsh");
+        let result = std::fs::read_to_string("resources/test_files/test_zsh");
 
         assert_eq!(true, result.is_ok());
     }
@@ -329,7 +329,7 @@ eval "$(huak config completion)"
     fn test_remove_completion_zsh() {
         let _ = remove_completion_zsh();
 
-        let result = std::fs::read("test_files/test_zsh");
+        let result = std::fs::read("resources/test_files/test_zsh");
         assert_eq!(true, result.is_err());
     }
 }
