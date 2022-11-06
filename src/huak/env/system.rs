@@ -7,7 +7,9 @@ use crate::errors::{HuakError, HuakResult};
 /// Returns the full path of the python binary in a sepcific order. Python 2 is depcreated so
 /// python3 is prefered. If there is no python3 some distributions also rename python3 to simply
 /// python. See [PEP394])https://peps.python.org/pep-0394/)
-pub fn find_python_binary_path(from_dir: Option<PathBuf>) -> HuakResult<String> {
+pub fn find_python_binary_path(
+    from_dir: Option<PathBuf>,
+) -> HuakResult<String> {
     let paths = match from_dir {
         Some(path) => vec![path],
         None => parse_path()?,
@@ -61,8 +63,8 @@ fn find_binary(bin_name: String, dir: &PathBuf) -> HuakResult<Option<String>> {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
     use super::*;
+    use std::path::PathBuf;
 
     #[test]
     fn find_custom_binary() {
