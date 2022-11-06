@@ -85,7 +85,7 @@ impl Project {
             }
             Err(e) => return Err(e),
         };
-        let manifest_path = &config.manifest().path;
+        let manifest_path = &config.path;
 
         // Set the root to the directory the manifest file was found.
         // TODO: This is probably not the right way to do this.
@@ -138,13 +138,13 @@ def test_version():
                 )?;
             }
             ProjectType::Application => {
-                fs::create_dir_all(self.root.join(name).join(&name))?;
+                fs::create_dir_all(self.root.join(name).join(name))?;
                 fs::write(
-                    &self.root.join(name).join(&name).join("__init__.py"),
+                    &self.root.join(name).join(name).join("__init__.py"),
                     "",
                 )?;
                 fs::write(
-                    &self.root.join(name).join(&name).join("main.py"),
+                    &self.root.join(name).join(name).join("main.py"),
                     r#"""\
 def main():
     print("Hello, World!")
