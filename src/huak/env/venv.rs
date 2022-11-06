@@ -184,7 +184,7 @@ impl Venv {
     pub fn python_alias(&self) -> String {
         let py = DEFAULT_PYTHON_ALIAS;
 
-        if let Ok(python) = crate::env::system::find_python_binary_paths() {
+        if let Ok(python) = crate::env::system::find_python_binary_path(None) {
             match OS {
                 "linux" => return python,
                 "macos" => return python,
