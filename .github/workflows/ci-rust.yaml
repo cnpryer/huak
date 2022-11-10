@@ -108,5 +108,5 @@ jobs:
           maturin-version: latest
           # Maturin's default command is 'build',
           # and target supported python version ('-i' flag) and store in dist, so we can upload all wheels at same time.
-          args: --release -i ${{ matrix.py-version }} --out dist
+          args: --release -i ${{ matrix.py-version }} --out dist --features openssl
 

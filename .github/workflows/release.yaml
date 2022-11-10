@@ -28,7 +28,7 @@ jobs:
           maturin-version: latest
           # Maturin's default command is 'build',
           # and target supported python version ('-i' flag) and store in dist, so we can upload all wheels at same time.
-          args: --release -i ${{ matrix.py-version }} --out dist
+          args: --release -i ${{ matrix.py-version }} --out dist --features openssl
 
       - name: Upload wheels
         uses: actions/upload-artifact@v2
@@ -71,7 +71,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           maturin-version: latest
-          args: --release -i ${{ matrix.py-version }} --out dist
+          args: --release -i ${{ matrix.py-version }} --out dist --features openssl
 
       - name: Save wheels
         uses: actions/upload-artifact@v2
@@ -106,7 +106,7 @@ jobs:
       - name: Build wheels - universal2
         uses: messense/maturin-action@v1
         with:
-          args: --release --universal2 --out dist
+          args: --release --universal2 --out dist --features openssl
 
       - name: Upload wheels
         uses: actions/upload-artifact@v2
