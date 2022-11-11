@@ -64,27 +64,55 @@ fn find_binary(bin_name: String, dir: &PathBuf) -> HuakResult<Option<String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
 
+    use tempfile::tempdir;
+
+    #[cfg(target_os = "windows")]
     #[test]
-    fn find_custom_binary() {
-        let binary_name: String = "test_bashrc".to_string();
+    fn test_python_search_windows() {
+        let directory = tempdir().unwrap();
 
-        let dir: PathBuf = "test_files".into();
+        fs::write(directory.path().join("python.exe"), "");
 
-        let correct_output = "test_files/test_bashrc".to_string();
+        let expected_python =
+            String::from(directory.path().join("python.exe").to_str().unwrap());
 
-        let found_bin = find_binary(binary_name, &dir).unwrap().unwrap();
-
-        assert_eq!(correct_output, found_bin);
+        assert_eq!(
+            find_binary("python.exe".to_string(), &directory.into_path())
+                .unwrap(),
+            Some(expected_python)
+        );
     }
 
+    #[cfg(target_os = "macos")]
     #[test]
-    fn find_correct_python() {
-        let test_path: PathBuf = "test_files/bin".into();
+    fn test_python_search_macos() {
+        let directory = tempdir().unwrap();
 
-        let python = find_python_binary_path(Some(test_path)).unwrap();
+        let _ = fs::write(directory.path().join("python"), "");
 
-        assert_eq!("test_files/bin/python3".to_string(), python);
+        let expected_python =
+            String::from(directory.path().join("python").to_str().unwrap());
+
+        assert_eq!(
+            find_binary("python".to_string(), &directory.into_path()).unwrap(),
+            Some(expected_python)
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn test_python_search_linux() {
+        let directory = tempdir().unwrap();
+
+        let _ = fs::write(directory.path().join("python3"), "");
+
+        let expected_python =
+            String::from(directory.path().join("python3").to_str().unwrap());
+
+        assert_eq!(
+            find_binary("python3".to_string(), &directory.into_path()).unwrap(),
+            Some(expected_python)
+        );
     }
 }
