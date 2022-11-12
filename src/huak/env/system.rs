@@ -112,7 +112,7 @@ mod tests {
             String::from(directory.path().join("python3").to_str().unwrap());
 
         assert_eq!(
-            find_binary("python", &directory.into_path()).unwrap(),
+            find_binary("python3", &directory.into_path()).unwrap(),
             Some(expected_python)
         );
     }
