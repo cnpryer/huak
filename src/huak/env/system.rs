@@ -72,7 +72,7 @@ mod tests {
     fn test_python_search_windows() {
         let directory = tempdir().unwrap();
 
-        fs::write(directory.path().join("python.exe"), "");
+        let _ = fs::write(directory.path().join("python.exe"), "");
 
         let expected_python =
             String::from(directory.path().join("python.exe").to_str().unwrap());
