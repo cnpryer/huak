@@ -53,6 +53,10 @@ fn find_binary(bin_name: String, dir: &PathBuf) -> HuakResult<Option<String>> {
     for dir_entry in read_dir.flatten() {
         if let Some(file_name) = dir_entry.file_name().to_str() {
             if file_name == bin_name {
+                #[cfg(target_os = "windows")]
+                return Ok(Some(format!("{}\\{}", dir.display(), bin_name)));
+
+                #[cfg(not(target_os = "windows"))]
                 return Ok(Some(format!("{}/{}", dir.display(), bin_name)));
             }
         }
