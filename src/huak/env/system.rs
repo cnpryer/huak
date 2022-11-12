@@ -16,13 +16,13 @@ pub fn find_python_binary_path(
     };
 
     for path in paths {
-        if let Ok(Some(python)) = find_binary("python3".to_string(), &path) {
+        if let Ok(Some(python)) = find_binary("python3", &path) {
             return Ok(python);
         }
-        if let Ok(Some(python)) = find_binary("python".to_string(), &path) {
+        if let Ok(Some(python)) = find_binary("python", &path) {
             return Ok(python);
         }
-        if let Ok(Some(python)) = find_binary("python2".to_string(), &path) {
+        if let Ok(Some(python)) = find_binary("python2", &path) {
             return Ok(python);
         }
     }
@@ -44,7 +44,7 @@ fn parse_path() -> HuakResult<Vec<PathBuf>> {
 /// to the binary by appending the bin name to the dir.
 ///
 /// returns on the first hit
-fn find_binary(bin_name: String, dir: &PathBuf) -> HuakResult<Option<String>> {
+fn find_binary(bin_name: &str, dir: &PathBuf) -> HuakResult<Option<String>> {
     let read_dir = match fs::read_dir(dir) {
         Ok(read_dir) => read_dir,
         Err(e) => return Err(HuakError::IOError(e)),
@@ -53,11 +53,9 @@ fn find_binary(bin_name: String, dir: &PathBuf) -> HuakResult<Option<String>> {
     for dir_entry in read_dir.flatten() {
         if let Some(file_name) = dir_entry.file_name().to_str() {
             if file_name == bin_name {
-                #[cfg(target_os = "windows")]
-                return Ok(Some(format!("{}\\{}", dir.display(), bin_name)));
-
-                #[cfg(not(target_os = "windows"))]
-                return Ok(Some(format!("{}/{}", dir.display(), bin_name)));
+                if let Some(joined_path) = dir_entry.path().to_str() {
+                    return Ok(Some(joined_path.to_string()));
+                }
             }
         }
     }
@@ -82,8 +80,7 @@ mod tests {
             String::from(directory.path().join("python.exe").to_str().unwrap());
 
         assert_eq!(
-            find_binary("python.exe".to_string(), &directory.into_path())
-                .unwrap(),
+            find_binary("python.exe", &directory.into_path()).unwrap(),
             Some(expected_python)
         );
     }
@@ -99,7 +96,7 @@ mod tests {
             String::from(directory.path().join("python").to_str().unwrap());
 
         assert_eq!(
-            find_binary("python".to_string(), &directory.into_path()).unwrap(),
+            find_binary("python", &directory.into_path()).unwrap(),
             Some(expected_python)
         );
     }
@@ -115,7 +112,7 @@ mod tests {
             String::from(directory.path().join("python3").to_str().unwrap());
 
         assert_eq!(
-            find_binary("python3".to_string(), &directory.into_path()).unwrap(),
+            find_binary("python", &directory.into_path()).unwrap(),
             Some(expected_python)
         );
     }
