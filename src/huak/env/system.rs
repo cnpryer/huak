@@ -71,10 +71,10 @@ mod tests {
 
     #[cfg(target_os = "windows")]
     #[test]
-    fn test_python_search_windows() {
+    fn test_python_search_windows() -> Result<(), std::io::Error> {
         let directory = tempdir().unwrap();
 
-        let _ = fs::write(directory.path().join("python.exe"), "");
+        fs::write(directory.path().join("python.exe"), "")?;
 
         let expected_python =
             String::from(directory.path().join("python.exe").to_str().unwrap());
@@ -83,14 +83,16 @@ mod tests {
             find_binary("python.exe", &directory.into_path()).unwrap(),
             Some(expected_python)
         );
+
+        Ok(())
     }
 
     #[cfg(target_os = "macos")]
     #[test]
-    fn test_python_search_macos() {
+    fn test_python_search_macos() -> Result<(), std::io::Error>  {
         let directory = tempdir().unwrap();
 
-        let _ = fs::write(directory.path().join("python"), "");
+        fs::write(directory.path().join("python"), "")?;
 
         let expected_python =
             String::from(directory.path().join("python").to_str().unwrap());
@@ -99,14 +101,16 @@ mod tests {
             find_binary("python", &directory.into_path()).unwrap(),
             Some(expected_python)
         );
+
+        Ok(())
     }
 
     #[cfg(target_os = "linux")]
     #[test]
-    fn test_python_search_linux() {
+    fn test_python_search_linux() -> Result<(), std::io::Error>  {
         let directory = tempdir().unwrap();
 
-        let _ = fs::write(directory.path().join("python3"), "");
+        fs::write(directory.path().join("python3"), "")?;
 
         let expected_python =
             String::from(directory.path().join("python3").to_str().unwrap());
@@ -115,5 +119,7 @@ mod tests {
             find_binary("python3", &directory.into_path()).unwrap(),
             Some(expected_python)
         );
+
+        Ok(())
     }
 }
