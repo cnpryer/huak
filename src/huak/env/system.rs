@@ -89,7 +89,7 @@ mod tests {
 
     #[cfg(target_os = "macos")]
     #[test]
-    fn test_python_search_macos() -> Result<(), std::io::Error>  {
+    fn test_python_search_macos() -> Result<(), std::io::Error> {
         let directory = tempdir().unwrap();
 
         fs::write(directory.path().join("python"), "")?;
@@ -107,7 +107,7 @@ mod tests {
 
     #[cfg(target_os = "linux")]
     #[test]
-    fn test_python_search_linux() -> Result<(), std::io::Error>  {
+    fn test_python_search_linux() -> Result<(), std::io::Error> {
         let directory = tempdir().unwrap();
 
         fs::write(directory.path().join("python3"), "")?;
