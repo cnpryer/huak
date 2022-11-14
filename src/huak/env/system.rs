@@ -51,10 +51,16 @@ fn find_binary(bin_name: &str, dir: &PathBuf) -> HuakResult<Option<String>> {
     };
 
     for dir_entry in read_dir.flatten() {
-        if let Some(file_name) = dir_entry.file_name().to_str() {
-            if file_name == bin_name {
-                if let Some(joined_path) = dir_entry.path().to_str() {
-                    return Ok(Some(joined_path.to_string()));
+        if let Ok(file_type) = dir_entry.file_type() {
+            if file_type.is_dir() {
+                if let Ok(bin) = find_binary(bin_name, &dir_entry.path()) {
+                    return Ok(bin);
+                }
+            } else if let Some(file_name) = dir_entry.file_name().to_str() {
+                if file_name == bin_name {
+                    if let Some(joined_path) = dir_entry.path().to_str() {
+                        return Ok(Some(joined_path.to_string()));
+                    }
                 }
             }
         }
