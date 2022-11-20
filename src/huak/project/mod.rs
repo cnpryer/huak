@@ -18,6 +18,18 @@ pub enum ProjectType {
     Application,
 }
 
+/// 
+#[derive(Default, Eq, PartialEq)]
+pub enum ProjectLayout {
+    #[default]
+    /// /src/project
+    Src,
+    /// //project
+    Standard,
+}
+
+
+
 /// The ``Project`` struct.
 /// The ``Project`` struct provides and API for maintaining project. The pattern for
 /// implementing a new command may involve creating operations that interacts
@@ -34,7 +46,11 @@ pub enum ProjectType {
 #[derive(Default)]
 pub struct Project {
     pub root: PathBuf,
+    pub name: String,
+    pub description: String,
     pub project_type: ProjectType,
+    pub project_layout: ProjectLayout,
+    
     config: Config,
     venv: Option<Venv>,
 }
@@ -61,6 +77,8 @@ impl Project {
             project_type,
             config,
             venv: None,
+            name,
+            ..Default::default()
         }
     }
 
@@ -93,15 +111,19 @@ impl Project {
             root = parent.to_path_buf()
         }
 
+        // TODO
+        let project_name = config.project_name().clone();
         // We can't know the project type here, but it probably doesn't matter
         // much. We'll just use the default.
-        let project_type = ProjectType::default();
+        // let project_type = ProjectType::default();
+        // let project_layout = ProjectLayout::default();
 
         Ok(Project {
             root,
-            project_type,
             config,
             venv: Some(venv),
+            name: project_name,
+            ..Default::default()
         })
     }
 
