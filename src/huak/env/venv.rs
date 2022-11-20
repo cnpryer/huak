@@ -18,8 +18,6 @@ const DEFAULT_SEARCH_STEPS: usize = 5;
 pub(crate) const DEFAULT_VENV_NAME: &str = ".venv";
 pub(crate) const BIN_NAME: &str = "bin";
 pub(crate) const WINDOWS_BIN_NAME: &str = "Scripts";
-pub(crate) const DEFAULT_PYTHON_ALIAS: &str = "python";
-//pub(crate) const PYTHON3_ALIAS: &str = "python3";
 pub(crate) const HUAK_VENV_ENV_VAR: &str = "HUAK_VENV_ACTIVE";
 
 /// A struct for Python venv.
@@ -192,17 +190,11 @@ impl Venv {
 
     /// Get the python binary from the venv.
     pub fn python_binary(&self) -> HuakResult<String> {
-        // TODO: Could do a find_python_binary_path here for modified Venvs.
-        let path = match OS {
-            "linux" | "macos" => Some(self.path.join("bin").join("python")),
-            "windows" => Some(self.path.join("Scripts").join("python.exe")),
-            _ => None,
-        };
+        let path = crate::env::system::find_python_binary_path(Some(
+            self.path.to_path_buf(),
+        ))?;
 
-        match path {
-            Some(it) => Ok(crate::utils::path::to_string(&it)?.to_string()),
-            None => Ok(DEFAULT_PYTHON_ALIAS.to_string()),
-        }
+        Ok(path)
     }
 
     /// Get the path to the bin folder (called Scripts on Windows).
