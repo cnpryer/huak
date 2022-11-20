@@ -25,7 +25,6 @@ jobs:
         with:
           target: ${{ matrix.target }}
           manylinux: auto
-          maturin-version: latest
           # Maturin's default command is 'build',
           # and target supported python version ('-i' flag) and store in dist, so we can upload all wheels at same time.
           args: --release -i ${{ matrix.py-version }} --out dist --features openssl
@@ -70,7 +69,6 @@ jobs:
         uses: messense/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          maturin-version: latest
           args: --release -i ${{ matrix.py-version }} --out dist --features openssl
 
       - name: Save wheels
