@@ -43,8 +43,20 @@ pub fn find_python_binary_path(
 
     for path in paths {
         for target in PYTHON_BINARY_TARGETS.iter() {
-            if let Ok(Some(python)) = find_binary(target.as_str(), &path, 0) {
-                return Ok(python);
+            #[cfg(unix)]
+            {
+                if let Ok(Some(python)) = find_binary(target.as_str(), &path, 0)
+                {
+                    return Ok(python);
+                }
+            }
+            #[cfg(windows)]
+            {
+                let mut exe = target.as_str().to_string();
+                exe.push_str(".exe");
+                if let Ok(Some(python)) = find_binary(&exe, &path, 0) {
+                    return Ok(python);
+                }
             }
         }
     }
