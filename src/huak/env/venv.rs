@@ -155,7 +155,8 @@ impl Venv {
 
         Ok(path)
     }
-    /// Create the venv at its path. No-op if it already exists.
+    /// Create the venv at its configured path if it doesn't already
+    /// exist.
     pub fn create(&self) -> HuakResult<()> {
         if self.path.exists() {
             return Ok(());
@@ -175,25 +176,33 @@ impl Venv {
 
         println!("Creating venv {}", self.path.display());
 
-        crate::utils::command::run_command(&self.python_alias(), &args, from)?;
+        // Create venv using system binary found from PATH variable.
+        // TODO: Refactor search system since this is redundant for
+        //       systems with the Python bin path added to the PATH.
+        //       Those systems should have an alias available anyway.
+        //       We want the create method to attempt to locate a
+        //       Python binary on the system if it isn't added to PATH.
+        match crate::env::system::find_python_binary_path(None) {
+            Ok(it) => crate::utils::command::run_command(&it, &args, from)?,
+            Err(e) => return Err(e),
+        };
 
         Ok(())
     }
 
-    /// Get the python alias associated with the venv.
-    pub fn python_alias(&self) -> String {
-        let py = DEFAULT_PYTHON_ALIAS;
-
-        if let Ok(python) = crate::env::system::find_python_binary_path(None) {
-            match OS {
-                "linux" => return python,
-                "macos" => return python,
-                _ => return py.to_string(),
-            }
+    /// Get the python binary from the venv.
+    pub fn python_binary(&self) -> HuakResult<String> {
+        // TODO: Could do a find_python_binary_path here for modified Venvs.
+        let path = match OS {
+            "linux" | "macos" => Some(self.path.join("bin").join("python")),
+            "windows" => Some(self.path.join("Scripts").join("python.exe")),
+            _ => None,
         };
 
-        py.to_string()
-        // TODO: Enum.
+        match path {
+            Some(it) => Ok(crate::utils::path::to_string(&it)?.to_string()),
+            None => Ok(DEFAULT_PYTHON_ALIAS.to_string()),
+        }
     }
 
     /// Get the path to the bin folder (called Scripts on Windows).

@@ -29,8 +29,8 @@ pub fn parse_filename(path: &Path) -> HuakResult<&str> {
 
 /// Convert a `Path` to a &str.
 pub fn to_string(path: &Path) -> HuakResult<&str> {
-    let pip_path = match path.to_str() {
-        Some(s) => s,
+    let res = match path.to_str() {
+        Some(it) => it,
         None => {
             return Err(HuakError::InternalError(format!(
                 "failed to convert {} to a string",
@@ -39,7 +39,7 @@ pub fn to_string(path: &Path) -> HuakResult<&str> {
         }
     };
 
-    Ok(pip_path)
+    Ok(res)
 }
 
 /// Search for manifest files using a path `from` to start from and
