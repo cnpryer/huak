@@ -180,10 +180,12 @@ impl Venv {
         //       Those systems should have an alias available anyway.
         //       We want the create method to attempt to locate a
         //       Python binary on the system if it isn't added to PATH.
-        match crate::env::system::find_python_binary_path(None) {
-            Ok(it) => crate::utils::command::run_command(&it, &args, from)?,
+        let py = match crate::env::system::find_python_binary_path(None) {
+            Ok(it) => it,
             Err(e) => return Err(e),
         };
+
+        crate::utils::command::run_command(&py, &args, from)?;
 
         Ok(())
     }

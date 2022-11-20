@@ -4,9 +4,6 @@ use std::path::PathBuf;
 
 use crate::errors::{HuakError, HuakResult};
 
-// TODO
-const RECURSION_LIMIT: usize = 5;
-
 const PYTHON_BINARY_TARGETS: [PythonBinary; 3] = [
     PythonBinary::Python3,
     PythonBinary::Python,
@@ -45,8 +42,7 @@ pub fn find_python_binary_path(
         for target in PYTHON_BINARY_TARGETS.iter() {
             #[cfg(unix)]
             {
-                if let Ok(Some(python)) = find_binary(target.as_str(), &path, 0)
-                {
+                if let Ok(Some(python)) = find_binary(target.as_str(), &path) {
                     return Ok(python);
                 }
             }
@@ -54,7 +50,7 @@ pub fn find_python_binary_path(
             {
                 let mut exe = target.as_str().to_string();
                 exe.push_str(".exe");
-                if let Ok(Some(python)) = find_binary(&exe, &path, 0) {
+                if let Ok(Some(python)) = find_binary(&exe, &path) {
                     return Ok(python);
                 }
             }
@@ -78,27 +74,16 @@ fn parse_path_var() -> HuakResult<Vec<PathBuf>> {
 /// to the binary by appending the bin name to the dir.
 ///
 /// returns on the first hit
-fn find_binary(
-    bin_name: &str,
-    dir: &PathBuf,
-    step: usize,
-) -> HuakResult<Option<String>> {
+fn find_binary(bin_name: &str, dir: &PathBuf) -> HuakResult<Option<String>> {
     let read_dir = match fs::read_dir(dir) {
         Ok(read_dir) => read_dir,
         Err(e) => return Err(HuakError::IOError(e)),
     };
 
-    // TODO
-    if step > RECURSION_LIMIT {
-        return Ok(None);
-    }
-
     for dir_entry in read_dir.flatten() {
         if let Ok(file_type) = dir_entry.file_type() {
             if file_type.is_dir() {
-                if let Ok(bin_path) =
-                    find_binary(bin_name, &dir_entry.path(), step + 1)
-                {
+                if let Ok(bin_path) = find_binary(bin_name, &dir_entry.path()) {
                     return Ok(bin_path);
                 }
             } else if let Some(file_name) = dir_entry.file_name().to_str() {
@@ -131,7 +116,7 @@ mod tests {
             String::from(directory.path().join("python.exe").to_str().unwrap());
 
         assert_eq!(
-            find_binary("python.exe", &directory.into_path(), 0).unwrap(),
+            find_binary("python.exe", &directory.into_path()).unwrap(),
             Some(expected_python)
         );
 
@@ -149,7 +134,7 @@ mod tests {
             String::from(directory.path().join("python").to_str().unwrap());
 
         assert_eq!(
-            find_binary("python", &directory.into_path(), 0).unwrap(),
+            find_binary("python", &directory.into_path()).unwrap(),
             Some(expected_python)
         );
 
@@ -167,7 +152,7 @@ mod tests {
             String::from(directory.path().join("python3").to_str().unwrap());
 
         assert_eq!(
-            find_binary("python3", &directory.into_path(), 0).unwrap(),
+            find_binary("python3", &directory.into_path()).unwrap(),
             Some(expected_python)
         );
 

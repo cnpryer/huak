@@ -225,6 +225,8 @@ where
 // TODO:
 //   - Use tempdir and mocking for testing these features.
 //   - Requires refactors of functions and their signatures.
+//   - Windows tests
+#[cfg(target_family = "unix")]
 #[cfg(test)]
 mod tests {
     use super::*;
