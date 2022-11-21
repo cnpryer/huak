@@ -14,8 +14,8 @@ classifiers = [
 ]
 
 [project.urls]
-Issues = "https://github.com/cnpryer/huak/issues"
-Documentation = "https://docs.rs/crate/huak"
+issues = "https://github.com/cnpryer/huak/issues"
+documentation = "https://docs.rs/crate/huak"
 homepage = "https://github.com/cnpryer/huak"
 repository = "https://github.com/cnpryer/huak"
 
