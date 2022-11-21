@@ -16,10 +16,9 @@ use crate::{
 
 const DEFAULT_SEARCH_STEPS: usize = 5;
 pub(crate) const DEFAULT_VENV_NAME: &str = ".venv";
+pub(crate) const DEFAULT_PYTHON_ALIAS: &str = "python";
 pub(crate) const BIN_NAME: &str = "bin";
 pub(crate) const WINDOWS_BIN_NAME: &str = "Scripts";
-pub(crate) const DEFAULT_PYTHON_ALIAS: &str = "python";
-pub(crate) const PYTHON3_ALIAS: &str = "python3";
 pub(crate) const HUAK_VENV_ENV_VAR: &str = "HUAK_VENV_ACTIVE";
 
 /// A struct for Python venv.
@@ -155,7 +154,8 @@ impl Venv {
 
         Ok(path)
     }
-    /// Create the venv at its path. No-op if it already exists.
+    /// Create the venv at its configured path if it doesn't already
+    /// exist.
     pub fn create(&self) -> HuakResult<()> {
         if self.path.exists() {
             return Ok(());
@@ -175,22 +175,38 @@ impl Venv {
 
         println!("Creating venv {}", self.path.display());
 
-        crate::utils::command::run_command(self.python_alias(), &args, from)?;
+        // Create venv using system binary found from PATH variable.
+        // TODO: Refactor implementation for searching for binary since this is redundant for
+        //       systems with the Python bin path added to the PATH. Those systems should
+        //       have an alias available anyway. We want the create method to attempt to
+        //       locate a Python binary on the system if it isn't added to PATH.
+        let py = match crate::env::system::find_python_binary_path(None) {
+            Ok(it) => it,
+            Err(e) => {
+                match e {
+                    // See TODO comment above. Windows PATH variable search is
+                    // incomplete, so this will attempt the alias if it's on the
+                    // PATH.
+                    HuakError::PythonNotFound => {
+                        DEFAULT_PYTHON_ALIAS.to_string()
+                    }
+                    _ => return Err(e),
+                }
+            }
+        };
+
+        crate::utils::command::run_command(&py, &args, from)?;
 
         Ok(())
     }
 
-    /// Get the python alias associated with the venv.
-    // TODO: Do better python resolution agnostic of Venv.
-    pub fn python_alias(&self) -> &str {
-        let (py, py3) = (DEFAULT_PYTHON_ALIAS, PYTHON3_ALIAS);
+    /// Get the python binary from the venv.
+    pub fn python_binary(&self) -> HuakResult<String> {
+        let path = crate::env::system::find_python_binary_path(Some(
+            self.path.to_path_buf(),
+        ))?;
 
-        // TODO: Enum.
-        match OS {
-            "linux" => py3,
-            "macos" => py3,
-            _ => py,
-        }
+        Ok(path)
     }
 
     /// Get the path to the bin folder (called Scripts on Windows).
