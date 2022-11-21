@@ -46,14 +46,6 @@ pub fn find_python_binary_path(
                     return Ok(python);
                 }
             }
-            #[cfg(windows)]
-            {
-                let mut exe = target.as_str().to_string();
-                exe.push_str(".exe");
-                if let Ok(Some(python)) = find_binary(&exe, &path) {
-                    return Ok(python);
-                }
-            }
         }
     }
 
