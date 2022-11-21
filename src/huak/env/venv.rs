@@ -16,6 +16,7 @@ use crate::{
 
 const DEFAULT_SEARCH_STEPS: usize = 5;
 pub(crate) const DEFAULT_VENV_NAME: &str = ".venv";
+pub(crate) const DEFAULT_PYTHON_ALIAS: &str = "python";
 pub(crate) const BIN_NAME: &str = "bin";
 pub(crate) const WINDOWS_BIN_NAME: &str = "Scripts";
 pub(crate) const HUAK_VENV_ENV_VAR: &str = "HUAK_VENV_ACTIVE";
@@ -175,14 +176,23 @@ impl Venv {
         println!("Creating venv {}", self.path.display());
 
         // Create venv using system binary found from PATH variable.
-        // TODO: Refactor search system since this is redundant for
-        //       systems with the Python bin path added to the PATH.
-        //       Those systems should have an alias available anyway.
-        //       We want the create method to attempt to locate a
-        //       Python binary on the system if it isn't added to PATH.
+        // TODO: Refactor implementation for searching for binary since this is redundant for
+        //       systems with the Python bin path added to the PATH. Those systems should
+        //       have an alias available anyway. We want the create method to attempt to
+        //       locate a Python binary on the system if it isn't added to PATH.
         let py = match crate::env::system::find_python_binary_path(None) {
             Ok(it) => it,
-            Err(e) => return Err(e),
+            Err(e) => {
+                match e {
+                    // See TODO comment above. Windows PATH variable search is
+                    // incomplete, so this will attempt the alias if it's on the
+                    // PATH.
+                    HuakError::PythonNotFound => {
+                        DEFAULT_PYTHON_ALIAS.to_string()
+                    }
+                    _ => return Err(e),
+                }
+            }
         };
 
         crate::utils::command::run_command(&py, &args, from)?;
