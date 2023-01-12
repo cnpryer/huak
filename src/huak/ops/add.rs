@@ -61,7 +61,7 @@ pub fn add_project_dependency(
 
     // Serialize pyproject.toml.
     let string = toml.to_string()?;
-    fs::write(&project.root().join("pyproject.toml"), string)?;
+    fs::write(project.root().join("pyproject.toml"), string)?;
 
     Ok(())
 }

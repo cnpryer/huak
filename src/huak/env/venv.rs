@@ -99,7 +99,7 @@ impl Venv {
         activation_command: &str,
     ) -> HuakResult<()> {
         let shell_path = get_shell_path()?;
-        let mut new_shell = expectrl::spawn(&shell_path)?;
+        let mut new_shell = expectrl::spawn(shell_path)?;
         let mut stdin = expectrl::stream::stdin::Stdin::open()?;
         new_shell.send_line(activation_command)?;
         if let Some((cols, rows)) = terminal_size::terminal_size() {
