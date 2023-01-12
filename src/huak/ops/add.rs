@@ -47,7 +47,11 @@ pub fn add_project_dependency(
     let package =
         PythonPackage::new(name.as_str(), None, Some(version.as_str()))?;
 
-    let venv = &Venv::from_path(project.root())?;
+    let venv = match Venv::from_path(project.root()) {
+        Ok(it) => it,
+        Err(HuakError::VenvNotFound) => Venv::new(project.root().join(".venv")),
+        Err(_) => return Err(HuakError::VenvNotFound),
+    };
 
     let dep = package.string();
 

@@ -1,10 +1,18 @@
-use crate::{env::venv::Venv, errors::HuakResult, project::Project};
+use crate::{
+    env::venv::Venv,
+    errors::{HuakError, HuakResult},
+    project::Project,
+};
 
 const MODULE: &str = "ruff";
 
 /// Fixes the lint error the project from its root.
 pub fn fix_project(project: &Project) -> HuakResult<()> {
-    let venv = &Venv::from_path(project.root())?;
+    let venv = match Venv::from_path(project.root()) {
+        Ok(it) => it,
+        Err(HuakError::VenvNotFound) => Venv::new(project.root().join(".venv")),
+        Err(_) => return Err(HuakError::VenvNotFound),
+    };
     let args = [".", "--fix", "--extend-exclude", venv.name()?];
 
     venv.exec_module(MODULE, &args, project.root())
@@ -21,7 +29,8 @@ mod tests {
     #[test]
     fn fix() {
         let project = create_mock_project_full().unwrap();
-        let venv = &Venv::from_path(project.root()).unwrap();
+        let cwd = std::env::current_dir().unwrap();
+        let venv = &Venv::new(cwd.join(".venv"));
         venv.exec_module("pip", &["install", MODULE], project.root())
             .unwrap();
 

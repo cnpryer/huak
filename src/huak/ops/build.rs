@@ -6,7 +6,11 @@ use crate::{
 const MODULE: &str = "build";
 
 pub fn build_project(project: &Project) -> Result<(), HuakError> {
-    let venv = &Venv::from_path(project.root())?;
+    let venv = match Venv::from_path(project.root()) {
+        Ok(it) => it,
+        Err(HuakError::VenvNotFound) => Venv::new(project.root().join(".venv")),
+        Err(_) => return Err(HuakError::VenvNotFound),
+    };
 
     let package = PythonPackage::from("build")?;
 

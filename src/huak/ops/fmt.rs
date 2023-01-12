@@ -7,7 +7,11 @@ pub fn fmt_project(
     project: &Project,
     is_check: &bool,
 ) -> Result<(), HuakError> {
-    let venv = &Venv::from_path(project.root())?;
+    let venv = match Venv::from_path(project.root()) {
+        Ok(it) => it,
+        Err(HuakError::VenvNotFound) => Venv::new(project.root().join(".venv")),
+        Err(_) => return Err(HuakError::VenvNotFound),
+    };
 
     match is_check {
         true => venv.exec_module(
@@ -34,7 +38,8 @@ mod tests {
     #[test]
     fn fmt() {
         let project = create_mock_project_full().unwrap();
-        let venv = &Venv::from_path(project.root()).unwrap();
+        let cwd = std::env::current_dir().unwrap();
+        let venv = &Venv::new(cwd.join(".venv"));
 
         venv.exec_module("pip", &["install", MODULE], project.root())
             .unwrap();

@@ -8,11 +8,10 @@ use crate::{
 /// Remove a dependency from a project by uninstalling it and updating the
 /// project's config.
 pub fn remove_project_dependency(
+    venv: &Venv,
     project: &Project,
     dependency: &str,
 ) -> Result<(), HuakError> {
-    let venv = &Venv::from_path(project.root())?;
-
     // TODO: #109
     venv.uninstall_package(dependency)?;
 
@@ -39,6 +38,8 @@ mod tests {
         // TODO: Optional deps test is passing but the operation wasn't fully
         //       implemented.
         let project = create_mock_project_full().unwrap();
+        let cwd = std::env::current_dir().unwrap();
+        let venv = Venv::new(cwd.join(".venv"));
         let toml_path = project.root().join("pyproject.toml");
         let toml = Toml::open(&toml_path).unwrap();
         let existed = toml
@@ -52,7 +53,7 @@ mod tests {
                 deps.values().flatten().any(|d| d.starts_with("pytest"))
             });
 
-        remove_project_dependency(&project, "click").unwrap();
+        remove_project_dependency(&venv, &project, "click").unwrap();
 
         let toml = Toml::open(&toml_path).unwrap();
         let exists = toml
