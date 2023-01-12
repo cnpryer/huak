@@ -1,10 +1,7 @@
-use crate::{
-    errors::{HuakError, HuakResult},
-    project::Project,
-};
+use crate::{env::venv::Venv, errors::HuakResult, project::Project};
 
 pub fn activate_project_venv(project: &Project) -> HuakResult<()> {
-    let venv = project.venv().as_ref().ok_or(HuakError::VenvNotFound)?;
+    let venv = &Venv::from_path(project.root())?;
 
     venv.create()?;
 

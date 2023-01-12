@@ -19,7 +19,7 @@ struct DeletePath {
 /// Clean build artifacts from a `Project`.
 pub fn clean_project(project: &Project) -> HuakResult<()> {
     // Just find dist at project root.
-    let dist_path = project.root.join("dist");
+    let dist_path = project.root().join("dist");
 
     // If it's there delete it, otherwise just return Ok.
     if !dist_path.is_dir() {
@@ -99,15 +99,15 @@ mod tests {
 
         let project =
             create_mock_project(directory.join("mock-project")).unwrap();
-        let had_dist = project.root.join("dist").exists();
+        let had_dist = project.root().join("dist").exists();
 
         clean_project(&project).unwrap();
 
         assert!(had_dist);
-        assert!(project.root.as_path().exists());
-        assert!(project.root.as_path().join("pyproject.toml").exists());
+        assert!(project.root().as_path().exists());
+        assert!(project.root().as_path().join("pyproject.toml").exists());
         assert!(project
-            .root
+            .root()
             .as_path()
             .join("mock_project")
             .join("__init__.pyc")

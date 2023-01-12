@@ -1,10 +1,7 @@
-use crate::{
-    errors::{HuakError, HuakResult},
-    project::Project,
-};
+use crate::{env::venv::Venv, errors::HuakResult, project::Project};
 
 pub fn run_command(project: &Project, command: &[String]) -> HuakResult<()> {
-    let venv = project.venv().as_ref().ok_or(HuakError::VenvNotFound)?;
+    let venv = &Venv::from_path(project.root())?;
     venv.exec_command(&command.join(" "))
 }
 
@@ -18,7 +15,8 @@ mod tests {
     #[test]
     fn run() {
         let project = create_mock_project_full().unwrap();
-        install_project_dependencies(&project, &vec![], true).unwrap();
+        let venv = Venv::from_path(project.root()).unwrap();
+        install_project_dependencies(&venv, &project, &vec![], true).unwrap();
 
         let command = "pip list --format=freeze > test_req.txt"
             .split_whitespace()

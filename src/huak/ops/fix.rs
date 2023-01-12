@@ -1,19 +1,13 @@
-use crate::{
-    errors::{HuakError, HuakResult},
-    project::Project,
-};
+use crate::{env::venv::Venv, errors::HuakResult, project::Project};
 
 const MODULE: &str = "ruff";
 
 /// Fixes the lint error the project from its root.
 pub fn fix_project(project: &Project) -> HuakResult<()> {
-    let venv = match project.venv() {
-        Some(v) => v,
-        _ => return Err(HuakError::VenvNotFound),
-    };
+    let venv = &Venv::from_path(project.root())?;
     let args = [".", "--fix", "--extend-exclude", venv.name()?];
 
-    venv.exec_module(MODULE, &args, &project.root)
+    venv.exec_module(MODULE, &args, project.root())
 }
 
 #[cfg(test)]
@@ -27,15 +21,12 @@ mod tests {
     #[test]
     fn fix() {
         let project = create_mock_project_full().unwrap();
-        project
-            .venv()
-            .as_ref()
-            .unwrap()
-            .exec_module("pip", &["install", MODULE], &project.root)
+        let venv = &Venv::from_path(project.root()).unwrap();
+        venv.exec_module("pip", &["install", MODULE], project.root())
             .unwrap();
 
         let lint_fix_filepath =
-            project.root.join("mock_project").join("fix_me.py");
+            project.root().join("mock_project").join("fix_me.py");
         let pre_fix_str = r#"
 import json # this gets removed(autofixed)
 

@@ -2,6 +2,7 @@ use std::env;
 use std::process::ExitCode;
 
 use crate::errors::{CliError, CliResult};
+use huak::env::venv::Venv;
 use huak::ops;
 use huak::project::Project;
 
@@ -13,7 +14,11 @@ pub fn run(groups: Option<Vec<String>>, all: bool) -> CliResult<()> {
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
 
+    let venv = Venv::from_path(project.root())
+        .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
+
     ops::install::install_project_dependencies(
+        &venv,
         &project,
         &groups.unwrap_or_default(),
         all,

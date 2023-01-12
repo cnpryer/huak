@@ -1,7 +1,8 @@
 use std::fs;
 
 use crate::{
-    config::pyproject::toml::Toml, errors::HuakError, project::Project,
+    config::pyproject::toml::Toml, env::venv::Venv, errors::HuakError,
+    project::Project,
 };
 
 /// Remove a dependency from a project by uninstalling it and updating the
@@ -10,21 +11,18 @@ pub fn remove_project_dependency(
     project: &Project,
     dependency: &str,
 ) -> Result<(), HuakError> {
-    let venv = match project.venv() {
-        Some(v) => v,
-        _ => return Err(HuakError::VenvNotFound),
-    };
+    let venv = &Venv::from_path(project.root())?;
 
     // TODO: #109
     venv.uninstall_package(dependency)?;
 
-    let mut toml = Toml::open(&project.root.join("pyproject.toml"))?;
+    let mut toml = Toml::open(&project.root().join("pyproject.toml"))?;
     toml.remove_dependency(dependency);
 
     // Serialize pyproject.toml.
     let string = toml.to_string()?;
 
-    fs::write(&project.root.join("pyproject.toml"), string)?;
+    fs::write(project.root().join("pyproject.toml"), string)?;
 
     Ok(())
 }
@@ -41,7 +39,7 @@ mod tests {
         // TODO: Optional deps test is passing but the operation wasn't fully
         //       implemented.
         let project = create_mock_project_full().unwrap();
-        let toml_path = project.root.join("pyproject.toml");
+        let toml_path = project.root().join("pyproject.toml");
         let toml = Toml::open(&toml_path).unwrap();
         let existed = toml
             .project
