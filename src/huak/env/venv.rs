@@ -49,7 +49,7 @@ impl Venv {
     /// Initialize a `Venv` by searching a directory for a venv. `from()` will search
     /// the parents directory for a configured number of recursive steps.
     // TODO: Improve the directory search (refactor manifest search into search utility).
-    pub fn from(from: &Path) -> HuakResult<Venv> {
+    pub fn from_path(from: &Path) -> HuakResult<Venv> {
         let names = vec![".venv", "venv"];
 
         // TODO: Redundancy.
@@ -99,7 +99,7 @@ impl Venv {
         activation_command: &str,
     ) -> HuakResult<()> {
         let shell_path = get_shell_path()?;
-        let mut new_shell = expectrl::spawn(&shell_path)?;
+        let mut new_shell = expectrl::spawn(shell_path)?;
         let mut stdin = expectrl::stream::stdin::Stdin::open()?;
         new_shell.send_line(activation_command)?;
         if let Some((cols, rows)) = terminal_size::terminal_size() {
@@ -330,7 +330,7 @@ mod tests {
         let first_venv = Venv::new(directory.join(".venv"));
         first_venv.create().unwrap();
 
-        let second_venv = Venv::from(&directory).unwrap();
+        let second_venv = Venv::from_path(&directory).unwrap();
 
         assert!(second_venv.path.exists());
         assert!(second_venv.module_path("pip").unwrap().exists());

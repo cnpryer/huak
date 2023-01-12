@@ -1,27 +1,14 @@
 mod config;
-pub use self::config::Config;
+pub use self::config::ProjectConfig;
 pub use self::config::PythonConfig;
-use crate::env::venv::{self, Venv};
+
 use crate::errors::HuakError;
 use crate::{config::pyproject::toml::Toml, errors::HuakResult};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// There are two kinds of project, application and library.
-/// Application projects usually have one or more entrypoint(s) in the form of
-/// runnable scripts while library projects do not.
-#[derive(Default, Eq, PartialEq)]
-pub enum ProjectType {
-    #[default]
-    Library,
-    Application,
-}
-
-/// The ``Project`` struct.
-/// The ``Project`` struct provides and API for maintaining project. The pattern for
-/// implementing a new command may involve creating operations that interacts
-/// with a `Project`.
+/// Every project has a root path and a project type.
 ///
 /// ``Project``s can be initialized using `from` or `new` initialization functions.
 /// ```rust
@@ -31,12 +18,27 @@ pub enum ProjectType {
 /// let cwd = env::current_dir().unwrap();
 /// let project = Project::from(cwd);
 /// ```
-#[derive(Default)]
 pub struct Project {
-    pub root: PathBuf,
-    pub project_type: ProjectType,
-    config: Config,
-    venv: Option<Venv>,
+    /// The path to the root directory of the project. Attempts to discover
+    /// the root path locally are used if one is not provided. The default
+    /// is the current working directory.
+    root: PathBuf,
+    /// A project can be application-like or library-like. A project defaults
+    /// as library-type.
+    project_type: ProjectType,
+    /// Project configuration contains data about dependancies and more.
+    config: ProjectConfig,
+}
+
+/// There are two kinds of projects: application and library.
+/// Application projects usually have one or more entrypoint(s) in the form of
+/// runnable scripts while library projects do not. TODO: Document the different
+/// advantages and disadvantages for each here.
+#[derive(Default, Eq, PartialEq)]
+pub enum ProjectType {
+    #[default]
+    Library,
+    Application,
 }
 
 impl Project {
@@ -50,17 +52,18 @@ impl Project {
     /// let project = Project::from(cwd);
     /// ```
     pub fn new(path: PathBuf, project_type: ProjectType) -> Project {
-        let mut config = Config::default();
+        let mut config = ProjectConfig::default();
+
         // TODO: Don't unwrap_or_else like this.
         let name = project_name_from_root(path.as_path())
             .unwrap_or_else(|_| "".to_string());
+
         config.set_project_name(name.as_str());
 
         Project {
             root: path,
             project_type,
             config,
-            venv: None,
         }
     }
 
@@ -76,15 +79,8 @@ impl Project {
     /// ```
     pub fn from(path: PathBuf) -> Result<Project, HuakError> {
         // TODO: Builder.
-        let config = Config::from(&path)?;
-        let venv = match Venv::from(&path) {
-            Ok(v) => v,
-            Err(HuakError::VenvNotFound) => {
-                Venv::new(path.join(venv::DEFAULT_VENV_NAME))
-            }
-            Err(e) => return Err(e),
-        };
-        let manifest_path = &config.path;
+        let config = ProjectConfig::from(&path)?;
+        let manifest_path = config.pyproject_path();
 
         // Set the root to the directory the manifest file was found.
         // TODO: This is probably not the right way to do this.
@@ -101,7 +97,6 @@ impl Project {
             root,
             project_type,
             config,
-            venv: Some(venv),
         })
     }
 
@@ -120,12 +115,12 @@ impl Project {
             ProjectType::Library => {
                 fs::create_dir_all(self.root.join("tests"))?;
                 fs::write(
-                    &self.root.join(name).join("__init__.py"),
+                    self.root.join(name).join("__init__.py"),
                     format!("__version__ = \"{version}\""),
                 )?;
-                fs::write(&self.root.join("tests").join("__init__.py"), "")?;
+                fs::write(self.root.join("tests").join("__init__.py"), "")?;
                 fs::write(
-                    &self.root.join("tests").join("test_version.py"),
+                    self.root.join("tests").join("test_version.py"),
                     format!(
                         r#"from {name} import __version__
 
@@ -139,11 +134,11 @@ def test_version():
             ProjectType::Application => {
                 fs::create_dir_all(self.root.join(name).join(name))?;
                 fs::write(
-                    &self.root.join(name).join(name).join("__init__.py"),
+                    self.root.join(name).join(name).join("__init__.py"),
                     "",
                 )?;
                 fs::write(
-                    &self.root.join(name).join(name).join("main.py"),
+                    self.root.join(name).join(name).join("main.py"),
                     r#"""\
 def main():
     print("Hello, World!")
@@ -177,20 +172,12 @@ if __name__ == "__main__":
     }
 
     /// Get a reference to the `Project` `Config`.
-    pub fn config(&self) -> &Config {
+    pub fn config(&self) -> &ProjectConfig {
         &self.config
     }
 
-    /// Get a reference to the `Project` `Venv`.
-    // TODO: Decouple to operate on `Config` data.
-    pub fn venv(&self) -> &Option<Venv> {
-        &self.venv
-    }
-
-    /// Set the `Project`'s `Venv`.
-    // TODO: Decouple to operate on `Config` data.
-    pub fn set_venv(&mut self, venv: Venv) {
-        self.venv = Some(venv);
+    pub fn root(&self) -> &PathBuf {
+        &self.root
     }
 }
 
@@ -214,18 +201,11 @@ mod tests {
         copy_dir(&mock_dir, &directory);
 
         let project1 = Project::from(directory.join("mock-project")).unwrap();
-        let venv = Venv::new(project1.root.join(".venv"));
-
-        venv.create().unwrap();
 
         let project2 =
             Project::from(directory.join("mock-project").join("mock_project"))
                 .unwrap();
 
         assert_eq!(project1.root, project2.root);
-        assert_eq!(
-            project1.venv().as_ref().unwrap().path,
-            project2.venv().as_ref().unwrap().path
-        );
     }
 }

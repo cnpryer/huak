@@ -1,13 +1,15 @@
 use crate::{
-    errors::HuakError, package::python::PythonPackage, project::Project,
+    env::venv::Venv, errors::HuakError, package::python::PythonPackage,
+    project::Project,
 };
 
 const MODULE: &str = "build";
 
 pub fn build_project(project: &Project) -> Result<(), HuakError> {
-    let venv = match project.venv() {
-        Some(it) => it,
-        None => return Err(HuakError::VenvNotFound),
+    let venv = match Venv::from_path(project.root()) {
+        Ok(it) => it,
+        Err(HuakError::VenvNotFound) => Venv::new(project.root().join(".venv")),
+        Err(_) => return Err(HuakError::VenvNotFound),
     };
 
     let package = PythonPackage::from("build")?;
@@ -16,7 +18,7 @@ pub fn build_project(project: &Project) -> Result<(), HuakError> {
         .map_err(|_| HuakError::PyPackageInstallFailure("build".to_string()))?;
 
     let args = ["-m", MODULE];
-    venv.exec_module("python", &args, &project.root)
+    venv.exec_module("python", &args, project.root())
         .map_err(|_| HuakError::BuildFailure)?;
 
     Ok(())

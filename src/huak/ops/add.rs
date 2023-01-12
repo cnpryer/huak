@@ -2,6 +2,7 @@ use std::fs;
 
 use crate::{
     config::pyproject::toml::Toml,
+    env::venv::Venv,
     errors::HuakError,
     package::{metadata::PyPi, python::PythonPackage},
     project::Project,
@@ -13,7 +14,7 @@ pub fn add_project_dependency(
     dependency: &str,
     is_dev: bool,
 ) -> Result<(), HuakError> {
-    let mut toml = Toml::open(&project.root.join("pyproject.toml"))?;
+    let mut toml = Toml::open(&project.root().join("pyproject.toml"))?;
 
     // TODO: .start_with is hacky. This will fail with more data in the string
     //       (like versions).
@@ -46,9 +47,10 @@ pub fn add_project_dependency(
     let package =
         PythonPackage::new(name.as_str(), None, Some(version.as_str()))?;
 
-    let venv = match project.venv() {
-        Some(v) => v,
-        None => return Err(HuakError::VenvNotFound),
+    let venv = match Venv::from_path(project.root()) {
+        Ok(it) => it,
+        Err(HuakError::VenvNotFound) => Venv::new(project.root().join(".venv")),
+        Err(_) => return Err(HuakError::VenvNotFound),
     };
 
     let dep = package.string();
@@ -63,7 +65,7 @@ pub fn add_project_dependency(
 
     // Serialize pyproject.toml.
     let string = toml.to_string()?;
-    fs::write(&project.root.join("pyproject.toml"), string)?;
+    fs::write(project.root().join("pyproject.toml"), string)?;
 
     Ok(())
 }
@@ -78,7 +80,7 @@ mod tests {
     fn adds_dependencies() {
         // TODO: Test optional dep.
         let project = create_mock_project_full().unwrap();
-        let toml_path = project.root.join("pyproject.toml");
+        let toml_path = project.root().join("pyproject.toml");
         let dependency = "isort";
         let toml = Toml::open(&toml_path).unwrap();
         let had_dep = toml

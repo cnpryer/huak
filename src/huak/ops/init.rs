@@ -11,14 +11,14 @@ pub fn init_project(project: &Project) -> HuakResult<()> {
     // TODO: Don't do this with a utility function.
     let toml = project.create_toml()?;
 
-    if project.root.join("pyproject.toml").exists() {
+    if project.root().join("pyproject.toml").exists() {
         return Err(HuakError::PyProjectTomlExists);
     }
 
     // Serialize pyproject.toml.
     let string = toml.to_string()?;
 
-    Ok(fs::write(&project.root.join("pyproject.toml"), string)?)
+    Ok(fs::write(project.root().join("pyproject.toml"), string)?)
 }
 
 #[cfg(test)]
@@ -35,6 +35,6 @@ mod tests {
 
         init_project(&project).unwrap();
 
-        assert!(project.root.join("pyproject.toml").exists());
+        assert!(project.root().join("pyproject.toml").exists());
     }
 }

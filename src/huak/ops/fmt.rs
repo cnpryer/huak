@@ -1,4 +1,4 @@
-use crate::{errors::HuakError, project::Project};
+use crate::{env::venv::Venv, errors::HuakError, project::Project};
 
 const MODULE: &str = "black";
 
@@ -7,21 +7,22 @@ pub fn fmt_project(
     project: &Project,
     is_check: &bool,
 ) -> Result<(), HuakError> {
-    let venv = match project.venv() {
-        Some(v) => v,
-        _ => return Err(HuakError::VenvNotFound),
+    let venv = match Venv::from_path(project.root()) {
+        Ok(it) => it,
+        Err(HuakError::VenvNotFound) => Venv::new(project.root().join(".venv")),
+        Err(_) => return Err(HuakError::VenvNotFound),
     };
 
     match is_check {
         true => venv.exec_module(
             MODULE,
             &[".", "--line-length", "79", "--check"],
-            &project.root,
+            project.root(),
         ),
         false => venv.exec_module(
             MODULE,
             &[".", "--line-length", "79"],
-            &project.root,
+            project.root(),
         ),
     }
 }
@@ -37,14 +38,14 @@ mod tests {
     #[test]
     fn fmt() {
         let project = create_mock_project_full().unwrap();
-        project
-            .venv()
-            .as_ref()
-            .unwrap()
-            .exec_module("pip", &["install", MODULE], &project.root)
+        let cwd = std::env::current_dir().unwrap();
+        let venv = &Venv::new(cwd.join(".venv"));
+
+        venv.exec_module("pip", &["install", MODULE], project.root())
             .unwrap();
 
-        let fmt_filepath = project.root.join("mock_project").join("fmt_me.py");
+        let fmt_filepath =
+            project.root().join("mock_project").join("fmt_me.py");
         let pre_fmt_str = r#"""
 def fn( ):
     pass"#;

@@ -9,7 +9,7 @@ use crate::{
 /// Create an initialized project (TODO) in an environment.
 pub fn create_project(project: &Project) -> HuakResult<()> {
     let pyproject_toml = project.create_toml()?;
-    let pyproject_path = project.root.join("pyproject.toml");
+    let pyproject_path = project.root().join("pyproject.toml");
 
     if pyproject_path.exists() {
         return Err(HuakError::PyProjectTomlExists);
@@ -26,7 +26,7 @@ pub fn create_project(project: &Project) -> HuakResult<()> {
 
 /// Initializes VCS (currently git) in the project
 pub fn init_vcs(project: &Project) -> HuakResult<()> {
-    if let Err(e) = Repository::init(&project.root) {
+    if let Err(e) = Repository::init(project.root()) {
         return Err(HuakError::GitError(e));
     }
     Ok(())
@@ -49,7 +49,7 @@ mod tests {
         let directory = tempdir().unwrap().into_path();
         let project = create_mock_project(directory).unwrap();
 
-        let toml_path = project.root.join("pyproject.toml");
+        let toml_path = project.root().join("pyproject.toml");
         let had_toml = toml_path.exists();
 
         create_project(&project).unwrap();
@@ -62,12 +62,12 @@ mod tests {
     fn create_app_project() {
         let directory = tempdir().unwrap().into_path().join("project");
         let project = Project::new(directory, ProjectType::Application);
-        let toml_path = project.root.join("pyproject.toml");
+        let toml_path = project.root().join("pyproject.toml");
 
         create_project(&project).unwrap();
         let toml = Toml::open(&toml_path).unwrap();
         let main_file_filepath = project
-            .root
+            .root()
             .join("project")
             .join(project.config().project_name())
             .join("main.py");
@@ -93,12 +93,12 @@ if __name__ == "__main__":
     fn create_lib_project() {
         let directory = tempdir().unwrap().into_path().join("project");
         let project = Project::new(directory, ProjectType::Library);
-        let toml_path = project.root.join("pyproject.toml");
+        let toml_path = project.root().join("pyproject.toml");
 
         create_project(&project).unwrap();
         let toml = Toml::open(&toml_path).unwrap();
         let test_file_filepath =
-            project.root.join("tests").join("test_version.py");
+            project.root().join("tests").join("test_version.py");
         let test_file = fs::read_to_string(&test_file_filepath).unwrap();
         let expected_test_file = format!(
             r#"from {} import __version__
@@ -110,7 +110,7 @@ def test_version():
             project.config().project_name()
         );
         let init_file_filepath =
-            project.root.join("project").join("__init__.py");
+            project.root().join("project").join("__init__.py");
         let init_file = fs::read_to_string(&init_file_filepath).unwrap();
         let expected_init_file = format!("__version__ = \"{}\"", "0.0.1");
 

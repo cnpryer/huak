@@ -12,19 +12,20 @@ const DEFAULT_SEARCH_STEPS: usize = 5;
 /// Traits for Python-specific configuration.
 pub trait PythonConfig {
     fn package_list(&self) -> Vec<PythonPackage>;
-    fn optional_package_list(&self, opt_group: &str) -> Vec<PythonPackage>;
+    fn optional_package_list(&self, group: &str) -> Vec<PythonPackage>;
 }
 
-// TODO: PythonConfig?
+/// Project configuration contains data from different Python project
+/// configuration files including a pyproject toml.
 #[derive(Default)]
-pub struct Config {
-    pub(crate) path: PathBuf,
-    pub(crate) toml: Toml,
+pub struct ProjectConfig {
+    pyproject_path: PathBuf,
+    pyproject_toml: Toml,
 }
 
 // TODO: Config refactor.
-impl Config {
-    pub fn from(path: &Path) -> HuakResult<Config> {
+impl ProjectConfig {
+    pub fn from(path: &Path) -> HuakResult<ProjectConfig> {
         let manifest_path = utils::path::search_parents_for_filepath(
             path,
             "pyproject.toml",
@@ -33,43 +34,51 @@ impl Config {
 
         let manifest_path = match manifest_path {
             Some(it) => it,
-            None => return Ok(Config::default()), // Just use the toml for now.
+            None => return Ok(ProjectConfig::default()), // Just use the toml for now.
         };
-        let toml = Toml::open(&manifest_path)?;
+        let pyproject_toml = Toml::open(&manifest_path)?;
 
-        Ok(Config {
-            path: manifest_path,
-            toml,
+        Ok(ProjectConfig {
+            pyproject_path: manifest_path,
+            pyproject_toml,
         })
     }
 
     /// Get a reference to the project name from manifest data.
     // TODO: Use more than toml.
     pub fn project_name(&self) -> &String {
-        let table = &self.toml.project;
+        let table = &self.pyproject_toml.project;
 
         &table.name
     }
 
     pub fn set_project_name(&mut self, name: &str) {
-        self.toml.project.name = name.to_string();
+        self.pyproject_toml.project.name = name.to_string();
     }
 
     /// Get a reference to the project version from manifest data.
     // TODO: Use more than toml.
     pub fn project_version(&self) -> &Option<String> {
-        let table = &self.toml.project;
+        let table = &self.pyproject_toml.project;
 
         &table.version
     }
+
+    pub fn pyproject_path(&self) -> &PathBuf {
+        &self.pyproject_path
+    }
+
+    pub fn pyproject_toml(&self) -> &Toml {
+        &self.pyproject_toml
+    }
 }
 
-impl PythonConfig for Config {
+impl PythonConfig for ProjectConfig {
     // Get vec of `PythonPackage`s from the manifest.
     // TODO: More than toml.
     fn package_list(&self) -> Vec<PythonPackage> {
         // Get huak's spanned table found in the Toml.
-        let table = &self.toml.project;
+        let table = &self.pyproject_toml.project;
         let empty: Vec<String> = Vec::new();
         // Dependencies to list from.
         let from = &table.dependencies.as_ref().unwrap_or(&empty);
@@ -83,7 +92,7 @@ impl PythonConfig for Config {
     // TODO: More than toml.
     fn optional_package_list(&self, opt_group: &str) -> Vec<PythonPackage> {
         // Get huak's spanned table found in the Toml.
-        let table = &self.toml.project;
+        let table = &self.pyproject_toml.project;
         let empty: Vec<String> = vec![];
 
         // Dependencies to list from.
