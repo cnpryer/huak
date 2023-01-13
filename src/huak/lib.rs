@@ -9,7 +9,7 @@
 //!
 //!### Milestones and Project Board
 //!
-//!See either **[this milestone list](https://github.com/cnpryer/huak/milestones)** or **[the issue board](https://github.com/users/cnpryer/projects/5)** to check the status of this project at any point in time.
+//!See **[the milestone list](https://github.com/cnpryer/huak/milestones)** to check the status of this project at any point in time.
 //!
 //!## Contents
 //!
