@@ -50,7 +50,7 @@ pub fn add_project_dependency(
     let venv = match Venv::from_path(project.root()) {
         Ok(it) => it,
         Err(HuakError::VenvNotFound) => Venv::new(project.root().join(".venv")),
-        Err(_) => return Err(HuakError::VenvNotFound),
+        Err(e) => return Err(e),
     };
 
     let dep = package.string();
