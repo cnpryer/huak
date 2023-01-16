@@ -6,7 +6,7 @@ license = "MIT"
 description = "A Python package manager written in Rust inspired by Cargo."
 repository = "https://github.com/cnpryer/huak.git"
 homepage = "https://github.com/cnpryer/huak.git"
-rust-version = "1.62.0"
+rust-version = "1.66.1"
 categories = [
     "development-tools"
 ]
@@ -28,7 +28,6 @@ serde_json = "1.0"
 reqwest = { version = "0.11", features = ["blocking", "json"] }
 pyproject-toml = "0.3.1"
 toml_edit = { version = "0.14.4", features = ["easy"] }
-pyo3 = { version = "0.17.1", features = ["abi3"] }
 expectrl = { version = "0.6.0", features = ["polling"] }
 terminal_size = "0.2.1"
 git2 = "0.15.0"
