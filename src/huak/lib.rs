@@ -7,7 +7,7 @@
 //!
 //!The goal is to create an opinionated tool to support a reliably inviting onboarding experience for the Python ecosystem, that feels responsive and snappy to use.
 //!
-//!### Milestones and Project Board
+//!### Project Status
 //!
 //!See **[the milestone list](https://github.com/cnpryer/huak/milestones)** to check the status of this project at any point in time.
 //!
