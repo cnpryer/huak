@@ -56,8 +56,6 @@ pub enum HuakError {
     PythonNotFound,
     #[error("No venv was found.")]
     VenvNotFound,
-    #[error("Venv already activated.")]
-    VenvActive,
     #[error("Expected env var not found.")]
     EnvVarError(#[from] std::env::VarError),
     #[error("A pyproject.toml could not be found.")]
