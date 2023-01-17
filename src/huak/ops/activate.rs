@@ -4,12 +4,8 @@ pub fn activate_project_venv(project: &Project) -> HuakResult<()> {
     let venv = &Venv::from_path(project.root())?;
 
     venv.create()?;
-
-    println!("Venv activated: {}", venv.path.display());
-
     venv.activate()?;
 
-    println!("Venv deactivated.");
     Ok(())
 }
 
