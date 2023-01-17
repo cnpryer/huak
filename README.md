@@ -32,9 +32,9 @@ See the [design doc](/docs/design_doc.md) for more workflow details.
 
 The goal is to create an opinionated tool to support a reliably inviting onboarding experience for the Python ecosystem, that feels responsive and snappy to use.
 
-### Milestones and Project Board
+### Project Status
 
-See either **[this milestone list](https://github.com/cnpryer/huak/milestones)** or **[the issue board](https://github.com/users/cnpryer/projects/5)** to check the status of this project at any point in time.
+See **[the milestone list](https://github.com/cnpryer/huak/milestones)** to check the status of this project at any point in time.
 
 ## README Contents
 
