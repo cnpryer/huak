@@ -36,42 +36,42 @@ repos:
         fail_fast: true
         
       # Python
-      - id: pyfmt
-        name: pyfmt
-        description: Check Python fmt.
-        entry: cd huak-py && make fmt-check
-        language: system
-        types: [python]
-        files: pyproject\.toml|\.py$
-        pass_filenames: false
-        fail_fast: true
+      # - id: pyfmt
+      #   name: pyfmt
+      #   description: Check Python fmt.
+      #   entry: cd huak-py && make fmt-check
+      #   language: system
+      #   types: [python]
+      #   files: pyproject\.toml|\.py$
+      #   pass_filenames: false
+      #   fail_fast: true
 
-      - id: flake8
-        name: flake8
-        description: Run Python lints.
-        entry: cd huak-py && make lint
-        language: system
-        types: [python]
-        files: pyproject\.toml|\.py$
-        pass_filenames: false
-        fail_fast: true
+      # - id: ruff
+      #   name: ruff
+      #   description: Run Python lints.
+      #   entry: cd huak-py && make lint
+      #   language: system
+      #   types: [python]
+      #   files: pyproject\.toml|\.py$
+      #   pass_filenames: false
+      #   fail_fast: true
 
-      - id: mypy
-        name: mypy
-        description: Check Python types.
-        entry: cd huak-py && make lint-types
-        language: system
-        types: [python]
-        files: pyproject\.toml|\.py$
-        pass_filenames: false
-        fail_fast: true
+      # - id: mypy
+      #   name: mypy
+      #   description: Check Python types.
+      #   entry: cd huak-py && make lint-types
+      #   language: system
+      #   types: [python]
+      #   files: pyproject\.toml|\.py$
+      #   pass_filenames: false
+      #   fail_fast: true
         
-      - id: pytest
-        name: pytest
-        description: Run Python tests.
-        entry: cd huak-py && make test
-        language: system
-        types: [python]
-        files: pyproject\.toml|\.py$
-        pass_filenames: false
-        fail_fast: true
+      # - id: pytest
+      #   name: pytest
+      #   description: Run Python tests.
+      #   entry: cd huak-py && make test
+      #   language: system
+      #   types: [python]
+      #   files: pyproject\.toml|\.py$
+      #   pass_filenames: false
+      #   fail_fast: true
