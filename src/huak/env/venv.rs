@@ -311,6 +311,21 @@ impl Venv {
     }
 }
 
+// Helper function to create a venv from a path. If it already exists, initialize
+// and return the Venv. If it doesn't then create a .venv at the path given.
+pub fn create_venv(dirpath: &Path) -> HuakResult<Venv> {
+    let venv = match Venv::from_path(dirpath) {
+        Ok(it) => it,
+        Err(HuakError::VenvNotFound) => Venv::new(dirpath.join(".venv")),
+        Err(e) => return Err(e),
+    };
+
+    // Attempt to create the venv. If it already exists nothing will happen.
+    venv.create()?;
+
+    Ok(venv)
+}
+
 #[cfg(test)]
 mod tests {
     use tempfile::tempdir;

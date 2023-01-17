@@ -1,4 +1,5 @@
 use crate::errors::CliError;
+use huak::env::venv::create_venv;
 use huak::ops;
 use huak::project::Project;
 use std::env;
@@ -14,8 +15,10 @@ pub fn run() -> CliResult<()> {
         Ok(p) => p,
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
+    let venv = create_venv(project.root())
+        .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
-    if let Err(e) = ops::fix::fix_project(&project) {
+    if let Err(e) = ops::fix::fix_project(&project, &venv) {
         return Err(CliError::new(e, ExitCode::FAILURE));
     };
 

@@ -14,6 +14,7 @@ pub fn run(groups: Option<Vec<String>>, all: bool) -> CliResult<()> {
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
 
+    // TODO: Create .venv anyway?
     let venv = Venv::from_path(project.root())
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 

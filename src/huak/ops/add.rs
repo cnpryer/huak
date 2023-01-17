@@ -8,9 +8,9 @@ use crate::{
     project::Project,
 };
 
-//(project: &Project, dependency: &str, _is_dev: bool) -> Result<(), HuakError>
 pub fn add_project_dependency(
     project: &Project,
+    venv: &Venv,
     dependency: &str,
     is_dev: bool,
 ) -> Result<(), HuakError> {
@@ -47,12 +47,6 @@ pub fn add_project_dependency(
     let package =
         PythonPackage::new(name.as_str(), None, Some(version.as_str()))?;
 
-    let venv = match Venv::from_path(project.root()) {
-        Ok(it) => it,
-        Err(HuakError::VenvNotFound) => Venv::new(project.root().join(".venv")),
-        Err(e) => return Err(e),
-    };
-
     let dep = package.string();
 
     venv.install_package(&package)
@@ -80,6 +74,8 @@ mod tests {
     fn adds_dependencies() {
         // TODO: Test optional dep.
         let project = create_mock_project_full().unwrap();
+        let cwd = std::env::current_dir().unwrap();
+        let venv = Venv::new(cwd.join(".venv"));
         let toml_path = project.root().join("pyproject.toml");
         let dependency = "isort";
         let toml = Toml::open(&toml_path).unwrap();
@@ -91,7 +87,7 @@ mod tests {
             .iter()
             .any(|d| d.starts_with(dependency));
 
-        add_project_dependency(&project, dependency, false).unwrap();
+        add_project_dependency(&project, &venv, dependency, false).unwrap();
 
         let toml = Toml::open(&toml_path).unwrap();
         let has_dep = toml

@@ -2,7 +2,7 @@ use std::process::ExitCode;
 
 use crate::errors::{CliError, CliResult};
 
-use huak::{ops, project::Project};
+use huak::{env::venv::create_venv, ops, project::Project};
 
 /// Run the `activate` command.
 pub fn run() -> CliResult<()> {
@@ -11,8 +11,10 @@ pub fn run() -> CliResult<()> {
         Ok(p) => p,
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
+    let venv = create_venv(project.root())
+        .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
-    ops::activate::activate_project_venv(&project)
+    ops::activate::activate_venv(&venv)
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
     Ok(())
 }
