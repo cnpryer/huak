@@ -75,7 +75,7 @@ impl Venv {
     pub fn activate(&self) -> HuakResult<()> {
         // Check if venv is already activated
         if env::var(HUAK_VENV_ENV_VAR).is_ok() {
-            return Err(HuakError::VenvActive);
+            return Ok(());
         }
 
         let script = self.get_activation_script()?;
