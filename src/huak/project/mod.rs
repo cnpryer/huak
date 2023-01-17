@@ -108,17 +108,17 @@ impl Project {
         };
 
         // Create package dir
-        fs::create_dir_all(self.root.join(name))?;
+        let src_path = self.root.join("src");
+        fs::create_dir_all(src_path.join(name))?;
 
         // Add directories and example python files to new project
         match self.project_type {
             ProjectType::Library => {
                 fs::create_dir_all(self.root.join("tests"))?;
                 fs::write(
-                    self.root.join(name).join("__init__.py"),
+                    src_path.join(name).join("__init__.py"),
                     format!("__version__ = \"{version}\""),
                 )?;
-                fs::write(self.root.join("tests").join("__init__.py"), "")?;
                 fs::write(
                     self.root.join("tests").join("test_version.py"),
                     format!(
@@ -132,13 +132,10 @@ def test_version():
                 )?;
             }
             ProjectType::Application => {
-                fs::create_dir_all(self.root.join(name).join(name))?;
+                fs::create_dir_all(src_path.join(name))?;
+                fs::write(src_path.join(name).join("__init__.py"), "")?;
                 fs::write(
-                    self.root.join(name).join(name).join("__init__.py"),
-                    "",
-                )?;
-                fs::write(
-                    self.root.join(name).join(name).join("main.py"),
+                    src_path.join(name).join("main.py"),
                     r#"""\
 def main():
     print("Hello, World!")
@@ -202,9 +199,13 @@ mod tests {
 
         let project1 = Project::from(directory.join("mock-project")).unwrap();
 
-        let project2 =
-            Project::from(directory.join("mock-project").join("mock_project"))
-                .unwrap();
+        let project2 = Project::from(
+            directory
+                .join("mock-project")
+                .join("src")
+                .join("mock_project"),
+        )
+        .unwrap();
 
         assert_eq!(project1.root, project2.root);
     }
