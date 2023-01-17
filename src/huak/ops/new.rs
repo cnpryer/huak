@@ -66,11 +66,8 @@ mod tests {
 
         create_project(&project).unwrap();
         let toml = Toml::open(&toml_path).unwrap();
-        let main_file_filepath = project
-            .root()
-            .join("project")
-            .join(project.config().project_name())
-            .join("main.py");
+        let main_file_filepath =
+            project.root().join("src").join("project").join("main.py");
         let main_file = fs::read_to_string(&main_file_filepath).unwrap();
         let expected_main_file = r#"""\
 def main():
@@ -109,8 +106,11 @@ def test_version():
 "#,
             project.config().project_name()
         );
-        let init_file_filepath =
-            project.root().join("project").join("__init__.py");
+        let init_file_filepath = project
+            .root()
+            .join("src")
+            .join("project")
+            .join("__init__.py");
         let init_file = fs::read_to_string(&init_file_filepath).unwrap();
         let expected_init_file = format!("__version__ = \"{}\"", "0.0.1");
 
