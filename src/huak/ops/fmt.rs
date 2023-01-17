@@ -5,14 +5,9 @@ const MODULE: &str = "black";
 /// Format Python code from the `Project`'s root.
 pub fn fmt_project(
     project: &Project,
+    venv: &Venv,
     is_check: &bool,
 ) -> Result<(), HuakError> {
-    let venv = match Venv::from_path(project.root()) {
-        Ok(it) => it,
-        Err(HuakError::VenvNotFound) => Venv::new(project.root().join(".venv")),
-        Err(_) => return Err(HuakError::VenvNotFound),
-    };
-
     match is_check {
         true => venv.exec_module(
             MODULE,
@@ -39,7 +34,7 @@ mod tests {
     fn fmt() {
         let project = create_mock_project_full().unwrap();
         let cwd = std::env::current_dir().unwrap();
-        let venv = &Venv::new(cwd.join(".venv"));
+        let venv = Venv::new(cwd.join(".venv"));
 
         venv.exec_module("pip", &["install", MODULE], project.root())
             .unwrap();
@@ -50,7 +45,7 @@ mod tests {
 def fn( ):
     pass"#;
         fs::write(&fmt_filepath, pre_fmt_str).unwrap();
-        fmt_project(&project, &false).unwrap();
+        fmt_project(&project, &venv, &false).unwrap();
         let post_fmt_str = fs::read_to_string(&fmt_filepath).unwrap();
 
         assert_ne!(pre_fmt_str, post_fmt_str);

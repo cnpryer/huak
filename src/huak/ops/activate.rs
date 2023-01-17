@@ -1,9 +1,6 @@
-use crate::{env::venv::Venv, errors::HuakResult, project::Project};
+use crate::{env::venv::Venv, errors::HuakResult};
 
-pub fn activate_project_venv(project: &Project) -> HuakResult<()> {
-    let venv = &Venv::from_path(project.root())?;
-
-    venv.create()?;
+pub fn activate_venv(venv: &Venv) -> HuakResult<()> {
     venv.activate()?;
 
     Ok(())
@@ -23,23 +20,11 @@ mod tests {
     // TODO
     fn venv_can_be_activated() {
         let project = create_mock_project_full().unwrap();
+        let venv = &Venv::from_path(project.root()).unwrap();
 
         assert!(std::env::var(HUAK_VENV_ENV_VAR).is_err());
 
-        let result = activate_project_venv(&project);
+        let result = activate_venv(&venv);
         assert!(result.is_ok());
-    }
-
-    #[test]
-    fn venv_cant_be_activated() {
-        let project = create_mock_project_full().unwrap();
-
-        std::env::set_var(HUAK_VENV_ENV_VAR, "1");
-        assert!(std::env::var(HUAK_VENV_ENV_VAR).is_ok());
-
-        let result = activate_project_venv(&project);
-        assert!(result.is_err());
-
-        std::env::remove_var(HUAK_VENV_ENV_VAR);
     }
 }

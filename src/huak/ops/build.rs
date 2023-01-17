@@ -5,13 +5,7 @@ use crate::{
 
 const MODULE: &str = "build";
 
-pub fn build_project(project: &Project) -> Result<(), HuakError> {
-    let venv = match Venv::from_path(project.root()) {
-        Ok(it) => it,
-        Err(HuakError::VenvNotFound) => Venv::new(project.root().join(".venv")),
-        Err(_) => return Err(HuakError::VenvNotFound),
-    };
-
+pub fn build_project(project: &Project, venv: &Venv) -> Result<(), HuakError> {
     let package = PythonPackage::from("build")?;
 
     venv.install_package(&package)
@@ -34,7 +28,9 @@ mod tests {
     #[test]
     fn build() {
         let project = create_mock_project_full().unwrap();
+        let cwd = std::env::current_dir().unwrap();
+        let venv = Venv::new(cwd.join(".venv"));
 
-        build_project(&project).unwrap();
+        build_project(&project, &venv).unwrap();
     }
 }

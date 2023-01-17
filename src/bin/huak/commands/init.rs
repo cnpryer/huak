@@ -8,7 +8,6 @@ use huak::project::Project;
 /// Run the `init` command.
 pub fn run() -> CliResult<()> {
     let cwd = env::current_dir()?;
-
     let project = match Project::from(cwd) {
         Ok(p) => p,
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),

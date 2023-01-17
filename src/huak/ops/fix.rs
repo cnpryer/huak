@@ -1,18 +1,9 @@
-use crate::{
-    env::venv::Venv,
-    errors::{HuakError, HuakResult},
-    project::Project,
-};
+use crate::{env::venv::Venv, errors::HuakResult, project::Project};
 
 const MODULE: &str = "ruff";
 
 /// Fixes the lint error the project from its root.
-pub fn fix_project(project: &Project) -> HuakResult<()> {
-    let venv = match Venv::from_path(project.root()) {
-        Ok(it) => it,
-        Err(HuakError::VenvNotFound) => Venv::new(project.root().join(".venv")),
-        Err(_) => return Err(HuakError::VenvNotFound),
-    };
+pub fn fix_project(project: &Project, venv: &Venv) -> HuakResult<()> {
     let args = [".", "--fix", "--extend-exclude", venv.name()?];
 
     venv.exec_module(MODULE, &args, project.root())
@@ -51,7 +42,7 @@ def fn():
 "#;
 
         fs::write(&lint_fix_filepath, pre_fix_str).unwrap();
-        fix_project(&project).unwrap();
+        fix_project(&project, &venv).unwrap();
         let post_fix_str = fs::read_to_string(&lint_fix_filepath).unwrap();
 
         assert_eq!(post_fix_str, expected);

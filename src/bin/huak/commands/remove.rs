@@ -2,8 +2,7 @@ use std::env;
 use std::process::ExitCode;
 
 use crate::errors::{CliError, CliResult};
-use huak::env::venv::Venv;
-use huak::errors::HuakError;
+use huak::env::venv::create_venv;
 use huak::ops;
 use huak::project::Project;
 
@@ -15,11 +14,8 @@ pub fn run(dependency: String) -> CliResult<()> {
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
 
-    let venv = match Venv::from_path(project.root()) {
-        Ok(it) => it,
-        Err(HuakError::VenvNotFound) => Venv::new(project.root().join(".venv")),
-        Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
-    };
+    let venv = create_venv(project.root())
+        .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
     ops::remove::remove_project_dependency(&venv, &project, &dependency)
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
