@@ -1,6 +1,7 @@
 use std::{
     env::{self, consts::OS},
     path::{Path, PathBuf},
+    str::FromStr,
 };
 
 #[allow(clippy::useless_attribute)]
@@ -246,7 +247,7 @@ impl Venv {
         self.create()?;
 
         let module_path = self.module_path(module)?;
-        let package = match PythonPackage::from(module) {
+        let package = match PythonPackage::from_str(module) {
             Ok(it) => it,
             // TODO: Don't do this post-decouple.
             Err(_) => {
@@ -290,7 +291,7 @@ impl Venv {
     /// Install a Python package to the venv.
     pub fn install_package(&self, package: &PythonPackage) -> HuakResult<()> {
         let cwd = env::current_dir()?;
-        let module_str = &package.string();
+        let module_str = &package.name;
         let args = ["install", module_str];
         let module = "pip";
 

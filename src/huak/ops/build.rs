@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::{
     env::venv::Venv, errors::HuakError, package::PythonPackage,
     project::Project,
@@ -6,7 +8,7 @@ use crate::{
 const MODULE: &str = "build";
 
 pub fn build_project(project: &Project, venv: &Venv) -> Result<(), HuakError> {
-    let package = PythonPackage::from("build")?;
+    let package = PythonPackage::from_str("build")?;
 
     venv.install_package(&package)
         .map_err(|_| HuakError::PyPackageInstallFailure("build".to_string()))?;
