@@ -291,7 +291,7 @@ impl Venv {
     /// Install a Python package to the venv.
     pub fn install_package(&self, package: &PythonPackage) -> HuakResult<()> {
         let cwd = env::current_dir()?;
-        let module_str = &package.string();
+        let module_str = &package.name;
         let args = ["install", module_str];
         let module = "pip";
 

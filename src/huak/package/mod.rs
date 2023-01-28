@@ -14,12 +14,9 @@ const VERSION_OPERATORS: [&str; 8] =
 /// # Examples
 /// ```
 /// use huak::package::PythonPackage;
-/// use std::str::FromStr;
 ///
-/// let python_pkg = PythonPackage::new("request", Some(">="), Some("2.28.1")).unwrap();
-/// // or
-/// let other_pkg = PythonPackage::from_str("problems==0.0.2").unwrap();
-/// println!("I've got 99 {} but huak ain't one", other_pkg);
+/// let python_pkg = PythonPackage::from_str_parts("request", Some(">="), Some("2.28.1")).unwrap();
+/// println!("I've got 99 {} but huak ain't one", python_pkg);
 /// ```
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct PythonPackage {
@@ -55,7 +52,7 @@ pub enum VersionOp {
 }
 
 impl PythonPackage {
-    pub fn new(
+    pub fn from_str_parts(
         name: &str,
         operator: Option<&str>,
         version: Option<&str>,
@@ -231,7 +228,7 @@ mod tests {
         let pkg_name = "test";
         let pkg_version: Option<&str> = Some("0.0.1");
         let python_pkg =
-            PythonPackage::new(pkg_name, None, pkg_version).unwrap();
+            PythonPackage::from_str_parts(pkg_name, None, pkg_version).unwrap();
         let py_pkg_fmt = format!("{}", python_pkg);
         assert_eq!(py_pkg_fmt, "test==0.0.1");
     }
