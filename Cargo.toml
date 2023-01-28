@@ -31,9 +31,10 @@ toml_edit = { version = "0.17.1", features = ["easy"] }
 expectrl = { version = "0.6.0", features = ["polling"] }
 terminal_size = "0.2.1"
 git2 = "0.15.0"
-
 # included to build PyPi Wheels (see .github/workflow/README.md)
 openssl = { version = "0.10", features = ["vendored"], optional = true }
+pep440_rs = { git = "https://github.com/konstin/pep440-rs", rev = "3148c9016cbc01a9e6116ae8080b10e14e985487", version = "0.1.1" }
+
 
 [dev-dependencies]
 tempfile = "3.0.4"
