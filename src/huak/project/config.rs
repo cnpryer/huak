@@ -85,7 +85,7 @@ impl PythonConfig for ProjectConfig {
 
         // Collect into vector of owned `PythonPackage` data.
         from.iter()
-            .filter_map(|d| PythonPackage::from(d).ok())
+            .filter_map(|d| PythonPackage::from_str(d).ok())
             .collect()
     }
     // Get vec of `PythonPackage`s from the manifest.
@@ -102,7 +102,7 @@ impl PythonConfig for ProjectConfig {
             .map_or(&empty, |deps| deps.get(opt_group).unwrap_or(&empty));
 
         from.iter()
-            .filter_map(|d| PythonPackage::from(d).ok())
+            .filter_map(|d| PythonPackage::from_str(d).ok())
             .collect()
     }
 }

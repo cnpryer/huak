@@ -246,7 +246,7 @@ impl Venv {
         self.create()?;
 
         let module_path = self.module_path(module)?;
-        let package = match PythonPackage::from(module) {
+        let package = match PythonPackage::from_str(module) {
             Ok(it) => it,
             // TODO: Don't do this post-decouple.
             Err(_) => {
