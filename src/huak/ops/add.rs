@@ -47,7 +47,7 @@ pub fn add_project_dependency(
     let package =
         PythonPackage::new(name.as_str(), None, Some(version.as_str()))?;
 
-    let dep = package.string();
+    let dep = &package.name;
 
     venv.install_package(&package)
         .map_err(|_| HuakError::PyPackageInstallFailure(dep.clone()))?;
