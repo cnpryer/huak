@@ -29,7 +29,7 @@ pub fn add_project_dependency(
         return Ok(());
     }
 
-    let url = format!("https://pypi.org/pypi/{}/json", dependency);
+    let url = format!("https://pypi.org/pypi/{dependency}/json");
     let res = match reqwest::blocking::get(url) {
         Ok(it) => it,
         // TODO: RequestError

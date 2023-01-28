@@ -280,7 +280,7 @@ impl Venv {
         let cwd = env::current_dir()?;
         crate::utils::command::run_command(
             &shell_path,
-            &["-c", &format!("{} && {}", activation_command, command)],
+            &["-c", &format!("{activation_command} && {command}")],
             cwd.as_path(),
         )?;
 

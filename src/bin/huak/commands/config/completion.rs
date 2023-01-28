@@ -108,7 +108,7 @@ pub fn add_completion_bash() -> CliResult<()> {
         Err(e) => return Err(CliError::from(e)),
     };
 
-    let file_path = format!("{}/.bashrc", home);
+    let file_path = format!("{home}/.bashrc");
 
     // opening file in append mode
     let mut file = File::options().append(true).open(file_path)?;
@@ -136,7 +136,7 @@ pub fn add_completion_fish(cli: &mut Command) -> CliResult<()> {
         Err(e) => return Err(CliError::from(e)),
     };
 
-    let target_file = format!("{}/.config/fish/completions/huak.fish", home);
+    let target_file = format!("{home}/.config/fish/completions/huak.fish");
 
     generate_target_file(target_file, cli)?;
     Ok(())
@@ -164,7 +164,7 @@ pub fn remove_completion_bash() -> CliResult<()> {
         Err(e) => return Err(CliError::from(e)),
     };
 
-    let file_path = format!("{}/.bashrc", home);
+    let file_path = format!("{home}/.bashrc");
 
     let file_content = std::fs::read_to_string(&file_path)?;
     let new_content = file_content.replace(
@@ -188,7 +188,7 @@ pub fn remove_completion_fish() -> CliResult<()> {
         Err(e) => return Err(CliError::from(e)),
     };
 
-    let target_file = format!("{}/.config/fish/completions/huak.fish", home);
+    let target_file = format!("{home}/.config/fish/completions/huak.fish");
 
     std::fs::remove_file(target_file)?;
 

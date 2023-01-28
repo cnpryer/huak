@@ -173,7 +173,7 @@ impl fmt::Display for VersionOp {
                 VersionOp::GreaterExcluding => ">",
             }
         };
-        write!(f, "{}", operator)
+        write!(f, "{operator}")
     }
 }
 
