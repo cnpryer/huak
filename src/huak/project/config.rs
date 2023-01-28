@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use crate::config::pyproject::toml::Toml;
 
 use crate::errors::HuakResult;
-use crate::package::python::PythonPackage;
+use crate::package::PythonPackage;
 use crate::utils;
 
 // TODO: Env/programmatically.

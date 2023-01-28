@@ -16,7 +16,7 @@ pub fn main() -> ExitCode {
     match cli.run() {
         Ok(_) => ExitCode::SUCCESS,
         Err(err) => {
-            eprintln!("{}", err);
+            eprintln!("{err}");
             err.exit_code
         }
     }

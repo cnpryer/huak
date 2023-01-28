@@ -1,9 +1,10 @@
 use serde_derive::{Deserialize, Serialize};
 
-// This models the response structure - check https://pypi.org/pypi/typer/json - typer is the package
+// TODO: Support more than https://pypi.org/pypi/<package name>/json
+//       Ex: See https://peps.python.org/pep-0503/
 #[derive(Serialize, Deserialize, Debug)]
-pub struct PyPi {
-    pub info: PyPiInfo,
+pub struct ProjectData {
+    pub info: PackageInfo,
     last_serial: u64,
     releases: serde_json::value::Value,
     urls: Vec<serde_json::value::Value>,
@@ -11,7 +12,7 @@ pub struct PyPi {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct PyPiInfo {
+pub struct PackageInfo {
     pub author: String,
     pub author_email: String,
     pub bugtrack_url: serde_json::value::Value,

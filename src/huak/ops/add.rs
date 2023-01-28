@@ -4,7 +4,7 @@ use crate::{
     config::pyproject::toml::Toml,
     env::venv::Venv,
     errors::HuakError,
-    package::{metadata::PyPi, python::PythonPackage},
+    package::{index::ProjectData, PythonPackage},
     project::Project,
 };
 
@@ -29,13 +29,13 @@ pub fn add_project_dependency(
         return Ok(());
     }
 
-    let url = format!("https://pypi.org/pypi/{}/json", dependency);
+    let url = format!("https://pypi.org/pypi/{dependency}/json");
     let res = match reqwest::blocking::get(url) {
         Ok(it) => it,
         // TODO: RequestError
         Err(e) => return Err(HuakError::InternalError(e.to_string())),
     };
-    let json: PyPi = match res.json() {
+    let json: ProjectData = match res.json() {
         Ok(it) => it,
         // TODO: PyPIError
         Err(e) => return Err(HuakError::InternalError(e.to_string())),

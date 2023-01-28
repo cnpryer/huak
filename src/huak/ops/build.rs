@@ -1,5 +1,5 @@
 use crate::{
-    env::venv::Venv, errors::HuakError, package::python::PythonPackage,
+    env::venv::Venv, errors::HuakError, package::PythonPackage,
     project::Project,
 };
 
