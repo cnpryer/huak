@@ -119,10 +119,6 @@ impl PythonPackage {
 
         Ok(package)
     }
-
-    pub fn string(&self) -> &String {
-        &self.name
-    }
 }
 
 /// Display a PythonPackage as the name and version when available.
