@@ -14,6 +14,8 @@ const VERSION_OPERATORS: [&str; 8] =
 /// # Examples
 /// ```
 /// use huak::package::PythonPackage;
+/// use std::str::FromStr;
+///
 /// let python_pkg = PythonPackage::new("request", Some(">="), Some("2.28.1")).unwrap();
 /// // or
 /// let other_pkg = PythonPackage::from_str("problems==0.0.2").unwrap();
@@ -88,6 +90,8 @@ impl PythonPackage {
 /// # Examples
 /// ```
 /// use huak::package::PythonPackage;
+/// use std::str::FromStr;
+///
 /// let my_pkg = PythonPackage::from_str("requests==2.28.1").unwrap();
 /// println!("{}", my_pkg); // output: "request==2.28.1"
 /// ```
@@ -117,6 +121,8 @@ impl fmt::Display for PythonPackage {
 /// # Examples
 /// ```
 /// use huak::package::PythonPackage;
+/// use std::str::FromStr;
+///
 /// let my_pkg = PythonPackage::from_str("requests==2.28.1");
 /// ```
 impl FromStr for PythonPackage {
