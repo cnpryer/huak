@@ -76,6 +76,12 @@ pub enum HuakError {
     BuildFailure,
     #[error("Failed to find the project's version.")]
     VersionNotFound,
+    #[error("Invalid version operator {0}.")]
+    PyPackageInvalidOperator(String),
+    #[error("Invalid version {0}.")]
+    PyPackageInvalidVersion(String),
+    #[error("Unable to build the version specifier.")]
+    PyPackageVersionSpecifierError,
     #[error("Error related to pseudo-terminal: {0}.")]
     ExpectrlError(#[from] expectrl::Error),
     #[error("Project name not found.")]
