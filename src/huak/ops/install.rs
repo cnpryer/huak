@@ -1,7 +1,7 @@
 use crate::{
     env::venv::Venv,
     errors::{HuakError, HuakResult},
-    package::python::PythonPackage,
+    package::PythonPackage,
     project::{Project, PythonConfig},
 };
 

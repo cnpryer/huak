@@ -7,7 +7,7 @@ use std::{
 #[allow(unused_imports)]
 use crate::{
     errors::{HuakError, HuakResult},
-    package::python::PythonPackage,
+    package::PythonPackage,
     utils::{
         path::search_parents_for_filepath,
         shell::{get_shell_name, get_shell_path, get_shell_source_command},

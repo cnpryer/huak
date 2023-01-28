@@ -4,7 +4,7 @@ use crate::{
     config::pyproject::toml::Toml,
     env::venv::Venv,
     errors::HuakError,
-    package::{metadata::PyPi, python::PythonPackage},
+    package::{index::ProjectData, PythonPackage},
     project::Project,
 };
 
@@ -35,7 +35,7 @@ pub fn add_project_dependency(
         // TODO: RequestError
         Err(e) => return Err(HuakError::InternalError(e.to_string())),
     };
-    let json: PyPi = match res.json() {
+    let json: ProjectData = match res.json() {
         Ok(it) => it,
         // TODO: PyPIError
         Err(e) => return Err(HuakError::InternalError(e.to_string())),
