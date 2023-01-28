@@ -44,8 +44,7 @@ pub fn add_project_dependency(
     // Get the version
     let version = json.info.version;
     let name = json.info.name;
-    let package =
-        PythonPackage::new(name.as_str(), None, Some(version.as_str()))?;
+    let package = PythonPackage::new(name.as_str(), None, &version)?;
 
     let dep = package.string();
 

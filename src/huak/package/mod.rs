@@ -4,7 +4,7 @@ use core::fmt;
 use std::str::FromStr;
 
 use crate::errors::HuakError;
-use pep440_rs::Operator;
+use pep440_rs::{Operator, Version, VersionSpecifier};
 
 /// Version operators used in dependency strings.
 const VERSION_OPERATORS: [&str; 8] =
@@ -15,46 +15,35 @@ const VERSION_OPERATORS: [&str; 8] =
 /// # Examples
 /// ```
 /// use huak::package::PythonPackage;
-/// let python_pkg = PythonPackage::new("request", Some(">="), Some("2.28.1")).unwrap();
+/// let python_pkg = PythonPackage::new("request", Some(">="), "2.28.1").unwrap();
 /// // or
 /// let other_pkg = PythonPackage::from("problems==0.0.2").unwrap();
 /// println!("I've got 99 {} but huak ain't one", other_pkg);
 /// ```
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct PythonPackage {
     /// The name of the python package, pretty straight forward, why are you reading this?
     pub name: String,
-    /// The operator represents PEP's Version Specifiers, such as "==" or "<="
-    pub operator: Option<Operator>,
-    /// The semantic version associated with a python package
-    pub version: Option<String>,
+    /// The package's version specifier of the package such as `>1.2.3.
+    pub version_specifier: Option<VersionSpecifier>,
 }
 
 impl PythonPackage {
     pub fn new(
         name: &str,
         operator: Option<&str>,
-        version: Option<&str>,
+        version: &str,
     ) -> Result<PythonPackage, HuakError> {
         let op = match operator {
-            Some(it) => Some(Operator::from_str(it).map_err(|_| {
-                HuakError::InvalidVersionOperator(it.to_string())
-            })?),
-            None => {
-                if version.is_none() {
-                    None
-                } else {
-                    Some(Operator::Equal)
-                }
-            }
+            Some(it) => create_operator_from_str(it)?,
+            None => Operator::Equal,
         };
-
-        let ver = version.map(|it| it.to_string());
+        let ver = create_version_from_str(version)?;
+        let specifier = create_version_specifier(op, ver, false)?;
 
         Ok(PythonPackage {
             name: name.to_string(),
-            operator: op,
-            version: ver,
+            version_specifier: Some(specifier),
         })
     }
 
@@ -84,18 +73,19 @@ impl PythonPackage {
             Some(it) => {
                 let pkg_components = pkg_string.split(it);
                 let pkg_vec = pkg_components.collect::<Vec<&str>>();
+                let name = pkg_vec[0].to_string();
+                let operator = create_operator_from_str(it)?;
+                let version = create_version_from_str(pkg_vec[1])?;
+                let specifier =
+                    create_version_specifier(operator, version, false)?;
                 PythonPackage {
-                    name: pkg_vec[0].to_string(),
-                    operator: Some(Operator::from_str(it).map_err(|_| {
-                        HuakError::InvalidVersionOperator(it.to_string())
-                    })?),
-                    version: Some(pkg_vec[1].to_string()),
+                    name,
+                    version_specifier: Some(specifier),
                 }
             }
             None => PythonPackage {
                 name: pkg_string.to_string(),
-                operator: None,
-                version: None,
+                ..Default::default()
             },
         };
 
@@ -104,6 +94,22 @@ impl PythonPackage {
 
     pub fn string(&self) -> &String {
         &self.name
+    }
+
+    pub fn operator(&self) -> Option<&Operator> {
+        if let Some(specifier) = &self.version_specifier {
+            return Some(specifier.operator());
+        }
+
+        None
+    }
+
+    pub fn version(&self) -> Option<&Version> {
+        if let Some(specifier) = &self.version_specifier {
+            return Some(specifier.version());
+        }
+
+        None
     }
 }
 
@@ -118,9 +124,9 @@ impl PythonPackage {
 impl fmt::Display for PythonPackage {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // check if a version is specified
-        if let Some(ver) = &self.version {
+        if let Some(ver) = self.version() {
             // check if a version specifier (operator) is supplied
-            if let Some(operator) = &self.operator {
+            if let Some(operator) = self.operator() {
                 write!(f, "{}{}{}", self.name, operator, ver)
             } else {
                 // if no version specifier, default to '=='
@@ -133,6 +139,31 @@ impl fmt::Display for PythonPackage {
     }
 }
 
+// Build a PEP 440 Version Operator from an str.
+// Return a Huak-friendly Result.
+fn create_operator_from_str(op: &str) -> Result<Operator, HuakError> {
+    Operator::from_str(op)
+        .map_err(|_| HuakError::PyPackageInvalidOperator(op.to_string()))
+}
+
+// Build a PEP 440 Version from an str.
+// Return a Huak-friendly Result.
+fn create_version_from_str(ver: &str) -> Result<Version, HuakError> {
+    Version::from_str(ver)
+        .map_err(|_| HuakError::PyPackageInvalidVersion(ver.to_string()))
+}
+
+// Build a PEP 440 Version Specifier from an Operator and a Version.
+// Returns a Huak-friendly Result.
+fn create_version_specifier(
+    op: Operator,
+    ver: Version,
+    star: bool,
+) -> Result<VersionSpecifier, HuakError> {
+    VersionSpecifier::new(op, ver, star)
+        .map_err(|_| HuakError::PyPackageVersionSpecifierError)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -141,7 +172,7 @@ mod tests {
     #[test]
     fn display_python_package() {
         let pkg_name = "test";
-        let pkg_version: Option<&str> = Some("0.0.1");
+        let pkg_version = "0.0.1";
         let python_pkg =
             PythonPackage::new(pkg_name, None, pkg_version).unwrap();
         let py_pkg_fmt = format!("{}", python_pkg);
@@ -158,18 +189,21 @@ mod tests {
     #[test]
     fn create_python_package_struct_from_string() {
         let dependency = "test".to_string();
-        let version: String = "0.1.0".to_string();
-        let operator: String = "!=".to_string();
+        let version = "0.1.0";
+        let operator = "!=";
         let new_pkg_from_string = PythonPackage::from(&format!(
             "{}{}{}",
             dependency, operator, version
         ))
         .unwrap();
         assert_eq!(new_pkg_from_string.name, dependency);
-        if let Some(op_from_new_pkg) = new_pkg_from_string.operator {
-            assert_eq!(format!("{}", op_from_new_pkg), operator);
+        if let Some(it) = new_pkg_from_string.operator() {
+            assert_eq!(format!("{}", it), operator);
         }
-        assert_eq!(new_pkg_from_string.version.unwrap(), version);
+        assert_eq!(
+            new_pkg_from_string.version().unwrap(),
+            &Version::from_str(version).unwrap()
+        );
     }
 
     #[test]
