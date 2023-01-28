@@ -1,6 +1,7 @@
 use std::{
     env::{self, consts::OS},
     path::{Path, PathBuf},
+    str::FromStr,
 };
 
 #[allow(clippy::useless_attribute)]

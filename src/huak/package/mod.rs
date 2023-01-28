@@ -78,17 +78,51 @@ impl PythonPackage {
         })
     }
 
-    /// Instantiate a PythonPackage struct from a String
-    /// # Arguments
-    ///
-    /// * 'pkg_string' - A string slice representing PEP-0440 python package
-    ///
-    /// # Examples
-    /// ```
-    /// use huak::package::PythonPackage;
-    /// let my_pkg = PythonPackage::from_str("requests==2.28.1");
-    /// ```
-    pub fn from_str(pkg_string: &str) -> Result<PythonPackage, HuakError> {
+    pub fn string(&self) -> &String {
+        &self.name
+    }
+}
+
+/// Display a PythonPackage as the name and version when available.
+/// Can be used to format PythonPackage as a String
+/// # Examples
+/// ```
+/// use huak::package::PythonPackage;
+/// let my_pkg = PythonPackage::from_str("requests==2.28.1").unwrap();
+/// println!("{}", my_pkg); // output: "request==2.28.1"
+/// ```
+impl fmt::Display for PythonPackage {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // check if a version is specified
+        if let Some(ver) = &self.version {
+            // check if a version specifier (operator) is supplied
+            if let Some(operator) = &self.operator {
+                write!(f, "{}{}{}", self.name, operator, ver)
+            } else {
+                // if no version specifier, default to '=='
+                write!(f, "{}=={}", self.name, ver)
+            }
+        } else {
+            // if no version, just display python package name
+            write!(f, "{}", self.name)
+        }
+    }
+}
+
+/// Instantiate a PythonPackage struct from a String
+/// # Arguments
+///
+/// * 'pkg_string' - A string slice representing PEP-0440 python package
+///
+/// # Examples
+/// ```
+/// use huak::package::PythonPackage;
+/// let my_pkg = PythonPackage::from_str("requests==2.28.1");
+/// ```
+impl FromStr for PythonPackage {
+    type Err = HuakError;
+
+    fn from_str(pkg_string: &str) -> Result<PythonPackage, HuakError> {
         // unfortunately, we have to redeclare the operators here or bring in a 3rd party crate (like strum)
         // to derive an iterable from out VersionOp enum
         let version_operators = VERSION_OPERATORS.into_iter();
@@ -118,36 +152,6 @@ impl PythonPackage {
         };
 
         Ok(package)
-    }
-
-    pub fn string(&self) -> &String {
-        &self.name
-    }
-}
-
-/// Display a PythonPackage as the name and version when available.
-/// Can be used to format PythonPackage as a String
-/// # Examples
-/// ```
-/// use huak::package::PythonPackage;
-/// let my_pkg = PythonPackage::from_str("requests==2.28.1").unwrap();
-/// println!("{}", my_pkg); // output: "request==2.28.1"
-/// ```
-impl fmt::Display for PythonPackage {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // check if a version is specified
-        if let Some(ver) = &self.version {
-            // check if a version specifier (operator) is supplied
-            if let Some(operator) = &self.operator {
-                write!(f, "{}{}{}", self.name, operator, ver)
-            } else {
-                // if no version specifier, default to '=='
-                write!(f, "{}=={}", self.name, ver)
-            }
-        } else {
-            // if no version, just display python package name
-            write!(f, "{}", self.name)
-        }
     }
 }
 

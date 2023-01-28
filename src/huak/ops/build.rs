@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::{
     env::venv::Venv, errors::HuakError, package::PythonPackage,
     project::Project,
