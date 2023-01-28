@@ -4,6 +4,7 @@ use core::fmt;
 use std::str::FromStr;
 
 use crate::errors::HuakError;
+use pep440_rs::Operator;
 
 /// Version operators used in dependency strings.
 const VERSION_OPERATORS: [&str; 8] =
@@ -24,32 +25,9 @@ pub struct PythonPackage {
     /// The name of the python package, pretty straight forward, why are you reading this?
     pub name: String,
     /// Th operator represents PEP's Version Specifiers, such as "==" or "<="
-    pub operator: Option<VersionOp>,
+    pub operator: Option<Operator>,
     /// The semantic version associated with a python package
     pub version: Option<String>,
-}
-
-/// Python Package version specifiers per PEP-0440
-/// <https://peps.python.org/pep-0440/#version-specifiers>
-#[derive(Clone, Eq, PartialEq, Debug)]
-pub enum VersionOp {
-    /// "~=" Releases expected to be compatible with this version (e.g. ~= 1.4)
-    Compatible,
-    /// "==" Releases matching this version (e.g., == 1.4.1) the default
-    Matching,
-    /// "!=" Version Exclusion (e.g., != 1.4*)
-    Exclusion,
-    /// ">=" Releases greater than or equal to this version
-    GreaterIncluding,
-    /// "<=" Releases lesser than or equal to this version
-    LesserIncluding,
-    /// "<" Releases greater than this version
-    GreaterExcluding,
-    /// ">" Releases lesser than this version
-    LesserExcluding,
-    /// "===" Releases that do not match semantic version (e.g., ===foobar)
-    /// maintained for legacy purposes, do not use unless necessary
-    ArbitraryEqual,
 }
 
 impl PythonPackage {
@@ -59,12 +37,14 @@ impl PythonPackage {
         version: Option<&str>,
     ) -> Result<PythonPackage, HuakError> {
         let op = match operator {
-            Some(it) => Some(VersionOp::from_str(it)?),
+            Some(it) => Some(Operator::from_str(it).map_err(|_| {
+                HuakError::InvalidVersionOperator(it.to_string())
+            })?),
             None => {
                 if version.is_none() {
                     None
                 } else {
-                    Some(VersionOp::default())
+                    Some(Operator::Equal)
                 }
             }
         };
@@ -106,7 +86,9 @@ impl PythonPackage {
                 let pkg_vec = pkg_components.collect::<Vec<&str>>();
                 PythonPackage {
                     name: pkg_vec[0].to_string(),
-                    operator: Some(VersionOp::from_str(it)?),
+                    operator: Some(Operator::from_str(it).map_err(|_| {
+                        HuakError::InvalidVersionOperator(it.to_string())
+                    })?),
                     version: Some(pkg_vec[1].to_string()),
                 }
             }
@@ -151,66 +133,6 @@ impl fmt::Display for PythonPackage {
     }
 }
 
-/// Display VersionOp enum (e.g., format!("{}", my_version_op);)
-/// used internally by PythonPackage
-/// # Examples
-/// ```
-/// use huak::package::VersionOp;
-/// println!("{}", VersionOp::Exclusion); // output: "!="
-/// let ver_string = format!("{}", VersionOp::Compatible); // ver_string is "~="
-/// ```
-impl fmt::Display for VersionOp {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let operator = {
-            match self {
-                VersionOp::Compatible => "~=",
-                VersionOp::Matching => "==",
-                VersionOp::Exclusion => "!=",
-                VersionOp::ArbitraryEqual => "===",
-                VersionOp::LesserIncluding => "<=",
-                VersionOp::LesserExcluding => "<",
-                VersionOp::GreaterIncluding => ">=",
-                VersionOp::GreaterExcluding => ">",
-            }
-        };
-        write!(f, "{operator}")
-    }
-}
-
-/// Convert a string to our VersionOp enum
-/// used internally by PythonPackage
-///
-/// # Examples
-/// ```
-/// use std::str::FromStr;
-/// use huak::package::VersionOp;
-/// let ver_op_string = "==";
-/// let ver_op_enum = VersionOp::from_str(ver_op_string).unwrap();
-/// ```
-impl FromStr for VersionOp {
-    type Err = HuakError;
-    fn from_str(s: &str) -> Result<Self, self::HuakError> {
-        match s {
-            "~=" => Ok(VersionOp::Compatible),
-            "==" => Ok(VersionOp::Matching),
-            "!=" => Ok(VersionOp::Exclusion),
-            "===" => Ok(VersionOp::ArbitraryEqual),
-            "<=" => Ok(VersionOp::LesserIncluding),
-            "<" => Ok(VersionOp::LesserExcluding),
-            ">=" => Ok(VersionOp::GreaterIncluding),
-            ">" => Ok(VersionOp::GreaterExcluding),
-            _ => Err(self::HuakError::InvalidPyPackageVersionOp(s.to_string())),
-        }
-    }
-}
-
-/// Set the VersionOp enum to the default value
-impl Default for VersionOp {
-    fn default() -> Self {
-        VersionOp::Matching
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -228,7 +150,7 @@ mod tests {
     // test future changes do not break VersionOp's implementation std::fmt::Display
     #[test]
     fn display_version_operator() {
-        let compatible_fmt = format!("{}", VersionOp::Compatible);
+        let compatible_fmt = format!("{}", Operator::TildeEqual);
         assert_eq!("~=", compatible_fmt);
     }
 

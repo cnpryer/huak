@@ -76,6 +76,8 @@ pub enum HuakError {
     BuildFailure,
     #[error("Failed to find the project's version.")]
     VersionNotFound,
+    #[error("Invalid version operator {0}.")]
+    InvalidVersionOperator(String),
     #[error("Error related to pseudo-terminal: {0}.")]
     ExpectrlError(#[from] expectrl::Error),
     #[error("Project name not found.")]
