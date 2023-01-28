@@ -24,7 +24,7 @@ const VERSION_OPERATORS: [&str; 8] =
 pub struct PythonPackage {
     /// The name of the python package, pretty straight forward, why are you reading this?
     pub name: String,
-    /// Th operator represents PEP's Version Specifiers, such as "==" or "<="
+    /// The operator represents PEP's Version Specifiers, such as "==" or "<="
     pub operator: Option<Operator>,
     /// The semantic version associated with a python package
     pub version: Option<String>,
