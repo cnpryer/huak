@@ -1,7 +1,7 @@
 use crate::{env::venv::Venv, errors::HuakResult};
 
-pub fn activate_venv(venv: &Venv) -> HuakResult<()> {
-    venv.activate()?;
+pub fn activate_venv(python_environment: &Venv) -> HuakResult<()> {
+    python_environment.activate()?;
 
     Ok(())
 }

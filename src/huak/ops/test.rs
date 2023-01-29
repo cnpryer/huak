@@ -3,14 +3,9 @@ use crate::{env::venv::Venv, errors::HuakResult, project::Project};
 const MODULE: &str = "pytest";
 
 /// Test a project using `pytest`.
-pub fn test_project(project: &Project, venv: &Venv) -> HuakResult<()> {
-    let args = [];
-
-    // TODO: not sure if the PyTestError was something you wanted to override
-    // the internal HuakError, so leaving as comment for now.
-    // match venv.exec_module(MODULE, &args, &project.root) {
-    //     Ok(_) => Ok(()),
-    //     Err(e) => Err(HuakError::PyTestError(Box::new(e))),
-    // }
-    venv.exec_module(MODULE, &args, project.root())
+pub fn test_project(
+    project: &Project,
+    python_environment: &Venv,
+) -> HuakResult<()> {
+    python_environment.exec_module(MODULE, &[], project.root())
 }

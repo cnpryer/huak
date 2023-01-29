@@ -1,5 +1,6 @@
 use pyproject_toml::Project;
 
+#[derive(Clone)]
 /// Builder struct to create load default Project data into pyproject-toml-rs.
 pub struct ProjectBuilder {}
 

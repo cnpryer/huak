@@ -40,11 +40,11 @@ pub enum Commands {
     /// Add a dependency to the existing project.
     Add {
         dependency: String,
-        /// Adds an optional dependency.
+        /// Adds an optional dependency group.
         #[arg(long)]
-        dev: bool,
+        group: Option<String>,
     },
-    /// Check for vulnerable dependencies and license compatibility.
+    /// Check for vulnerable dependencies and license compatibility*.
     Audit,
     /// Build tarball and wheel for the project.
     Build,
@@ -59,7 +59,7 @@ pub enum Commands {
         /// Remove all .pyc files and __pycache__ directories.
         pycache: bool,
     },
-    /// Generates documentation for the project.
+    /// Generates documentation for the project*.
     Doc {
         #[arg(long)]
         check: bool,
@@ -73,15 +73,19 @@ pub enum Commands {
         check: bool,
     },
     /// Initialize the existing project.
-    Init,
+    Init {
+        /// Use a application template [default].
+        #[arg(long, conflicts_with = "lib")]
+        app: bool,
+        /// Use a library template.
+        #[arg(long, conflicts_with = "app")]
+        lib: bool,
+    },
     /// Install the dependencies of an existing project.
     Install {
         /// Install optional dependency groups
-        #[arg(long, conflicts_with = "all", num_args = 1..)]
+        #[arg(long, num_args = 1..)]
         groups: Option<Vec<String>>,
-        /// Install main and all optional dependencies.
-        #[arg(long)]
-        all: bool,
     },
     /// Lint the project's Python code.
     Lint {
@@ -90,22 +94,27 @@ pub enum Commands {
     },
     /// Create a new project at <path>.
     New {
+        /// Use a application template [default].
+        #[arg(long, conflicts_with = "lib")]
+        app: bool,
         /// Use a library template.
         #[arg(long, conflicts_with = "app")]
         lib: bool,
-        /// Use a application template [default].
-        #[arg(long)]
-        app: bool,
         /// Path and name of the python package
         path: String,
         /// Don't initialize VCS in the new project
         #[arg(long)]
         no_vcs: bool,
     },
-    /// Builds and uploads current project to a registry.
+    /// Builds and uploads current project to a registry*.
     Publish,
     /// Remove a dependency from the project.
-    Remove { dependency: String },
+    Remove {
+        dependency: String,
+        /// Remove from optional dependency group
+        #[arg(long, num_args = 1)]
+        group: Option<String>,
+    },
     /// Run a command within the project's environment context.
     Run {
         #[arg(trailing_var_arg = true)]
@@ -113,7 +122,7 @@ pub enum Commands {
     },
     /// Test the project's Python code.
     Test,
-    /// Update dependencies added to the project.
+    /// Update dependencies added to the project*.
     Update {
         #[arg(default_value = "*")]
         dependency: String,
@@ -128,15 +137,17 @@ impl Cli {
         match self.command {
             Commands::Config { command } => config::run(command),
             Commands::Activate => activate::run(),
-            Commands::Add { dependency, dev } => add::run(dependency, dev),
+            Commands::Add { dependency, group } => add::run(dependency, group),
             Commands::Audit => audit::run(),
             Commands::Build => build::run(),
             Commands::Clean { pycache } => clean::run(pycache),
             Commands::Doc { check } => doc::run(check),
             Commands::Fix => fix::run(),
             Commands::Fmt { check } => fmt::run(check),
-            Commands::Init => init::run(),
-            Commands::Install { groups, all } => install::run(groups, all),
+            // --lib is the default, so it's unnecessary to handle. If --app is not passed, assume --lib.
+            #[allow(unused_variables)]
+            Commands::Init { app, lib } => init::run(app),
+            Commands::Install { groups } => install::run(groups),
             Commands::Lint { fix } => lint::run(fix),
             // --lib is the default, so it's unnecessary to handle. If --app is not passed, assume --lib.
             #[allow(unused_variables)]
@@ -147,7 +158,9 @@ impl Cli {
                 no_vcs,
             } => new::run(path, app, no_vcs),
             Commands::Publish => publish::run(),
-            Commands::Remove { dependency } => remove::run(dependency),
+            Commands::Remove { dependency, group } => {
+                remove::run(dependency, group)
+            }
             Commands::Run { command } => run::run(command),
             Commands::Test => test::run(),
             Commands::Update { dependency } => update::run(dependency),

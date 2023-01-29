@@ -1,4 +1,5 @@
 pub mod index;
+pub mod installer;
 
 use core::fmt;
 use std::str::FromStr;

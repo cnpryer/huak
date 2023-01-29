@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::{fs, path::Path};
 
 use crate::errors::{HuakError, HuakResult};
@@ -9,18 +8,7 @@ use serde_derive::{Deserialize, Serialize};
 use super::build_system::BuildSystemBuilder;
 use super::project::ProjectBuilder;
 
-/// Toml configuration deser and ser structure.
-/// ```toml
-/// [tool.huak]
-/// # ...
-/// [tool.huak.dependencies]
-/// # ...
-/// [tool.huak.dev-dependencies]
-/// # ...
-/// [tool.build-system]
-/// # ...
-/// ```
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Toml {
     pub project: Project,
     #[serde(rename = "build-system")]
@@ -66,47 +54,6 @@ impl Toml {
 
     pub(crate) fn to_string(&self) -> HuakResult<String> {
         Ok(toml_edit::ser::to_string_pretty(&self)?)
-    }
-}
-
-impl Toml {
-    pub fn add_dependency(&mut self, dependency: &str) {
-        match &mut self.project.dependencies {
-            Some(dependencies) => {
-                dependencies.push(dependency.to_string());
-            }
-            None => {
-                self.project.dependencies = Some(vec![dependency.to_string()]);
-            }
-        }
-    }
-
-    pub fn add_optional_dependency(&mut self, group: &str, dependency: &str) {
-        match &mut self.project.optional_dependencies {
-            Some(deps) => deps
-                .entry(group.to_string())
-                .or_insert_with(Vec::new)
-                .push(dependency.to_string()),
-            None => {
-                self.project.optional_dependencies = Some(HashMap::from([(
-                    group.to_string(),
-                    vec![dependency.to_string()],
-                )]));
-            }
-        }
-    }
-
-    pub fn remove_dependency(&mut self, dependency: &str) {
-        // TODO: Do better than .starts_with
-        if let Some(deps) = &mut self.project.dependencies {
-            deps.retain(|s| !s.starts_with(dependency));
-        }
-
-        if let Some(deps) = &mut self.project.optional_dependencies {
-            for (_, group_deps) in deps.iter_mut() {
-                group_deps.retain(|s| !s.starts_with(dependency));
-            }
-        }
     }
 }
 

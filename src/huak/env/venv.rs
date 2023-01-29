@@ -62,7 +62,7 @@ impl Venv {
             };
         }
 
-        Err(HuakError::PyVenvNotFound)
+        Err(HuakError::PyVenvNotFoundError)
     }
 
     /// Get the name of the Venv (ex: ".venv").
@@ -81,7 +81,7 @@ impl Venv {
 
         let script = self.get_activation_script()?;
         if !script.exists() {
-            return Err(HuakError::PyVenvNotFound);
+            return Err(HuakError::PyVenvNotFoundError);
         }
         let source_command = get_shell_source_command()?;
         let activation_command =
@@ -219,6 +219,7 @@ impl Venv {
     }
 
     /// Get the path to the module passed from the venv.
+    /// TODO: "Module" might be misleading.
     pub fn module_path(&self, module: &str) -> HuakResult<PathBuf> {
         let bin_path = self.bin_path();
         let mut path = bin_path.join(module);
@@ -319,7 +320,7 @@ impl Venv {
 pub fn create_venv(dirpath: &Path) -> HuakResult<Venv> {
     let venv = match Venv::from_path(dirpath) {
         Ok(it) => it,
-        Err(HuakError::PyVenvNotFound) => Venv::new(dirpath.join(".venv")),
+        Err(HuakError::PyVenvNotFoundError) => Venv::new(dirpath.join(".venv")),
         Err(e) => return Err(e),
     };
 

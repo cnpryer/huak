@@ -3,10 +3,13 @@ use crate::{env::venv::Venv, errors::HuakResult, project::Project};
 const MODULE: &str = "ruff";
 
 /// Fixes the lint error the project from its root.
-pub fn fix_project(project: &Project, venv: &Venv) -> HuakResult<()> {
-    let args = [".", "--fix", "--extend-exclude", venv.name()?];
+pub fn fix_project(
+    project: &Project,
+    python_environment: &Venv,
+) -> HuakResult<()> {
+    let args = [".", "--fix", "--extend-exclude", python_environment.name()?];
 
-    venv.exec_module(MODULE, &args, project.root())
+    python_environment.exec_module(MODULE, &args, project.root())
 }
 
 #[cfg(test)]

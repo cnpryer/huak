@@ -11,14 +11,14 @@ use std::process::ExitCode;
 pub fn run() -> CliResult<()> {
     // This command runs from the context of the cwd.
     let cwd = env::current_dir()?;
-    let project = match Project::from(cwd) {
+    let project = match Project::from_directory(cwd) {
         Ok(p) => p,
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
-    let venv = create_venv(project.root())
+    let python_environment = create_venv(project.root())
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
-    ops::test::test_project(&project, &venv)
+    ops::test::test_project(&project, &python_environment)
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
     Ok(())

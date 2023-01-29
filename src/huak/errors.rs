@@ -33,19 +33,19 @@ pub enum HuakError {
     #[error("A linter error occurred: {0}.")]
     LinterError(String),
     #[error("Failed to build the project.")]
-    PyPackageBuildFailure,
+    PyPackageBuildError,
+    #[error("A package index error occurred: {0}.")]
+    PyPackageIndexError(String),
     #[error("Failed to initialize Python package: {0}.")]
     PyPackageInitalizationError(String),
     #[error("Failed to install Python package: {0}.")]
-    PyPackageInstallationFailure(String),
+    PyPackageInstallationError(String),
     #[error("Invalid version operator: {0}.")]
     PyPackageInvalidVersionOperator(String),
     #[error("Invalid version: {0}.")]
     PyPackageInvalidVersion(String),
     #[error("Unable to build the version specifier.")]
     PyPackageVersionSpecifierError,
-    #[error("No venv was found.")]
-    PyVenvNotFound,
     #[error(
         "The project's manifest file could not be found. \
 Currently only pyproject.toml files are supported."
@@ -60,6 +60,8 @@ Currently only pyproject.toml files are supported."
 install Python (https://www.python.org/)."
     )]
     PythonNotFoundError,
+    #[error("No venv was found.")]
+    PyVenvNotFoundError,
     #[error("A testing error occurred: {0}.")]
     TestingError(String),
     #[error("Failed to deserialize toml: {0}.")]

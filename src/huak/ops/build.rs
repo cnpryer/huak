@@ -7,16 +7,20 @@ use crate::{
 
 const MODULE: &str = "build";
 
-pub fn build_project(project: &Project, venv: &Venv) -> Result<(), HuakError> {
+pub fn build_project(
+    project: &Project,
+    python_environment: &Venv,
+) -> Result<(), HuakError> {
     let package = PythonPackage::from_str("build")?;
 
-    venv.install_package(&package).map_err(|_| {
-        HuakError::PyPackageInstallationFailure("build".to_string())
+    python_environment.install_package(&package).map_err(|_| {
+        HuakError::PyPackageInstallationError("build".to_string())
     })?;
 
     let args = ["-m", MODULE];
-    venv.exec_module("python", &args, project.root())
-        .map_err(|_| HuakError::PyPackageBuildFailure)?;
+    python_environment
+        .exec_module("python", &args, project.root())
+        .map_err(|_| HuakError::PyPackageBuildError)?;
 
     Ok(())
 }

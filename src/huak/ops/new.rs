@@ -1,27 +1,15 @@
 use git2::Repository;
-use std::fs;
 
 use crate::{
     errors::{HuakError, HuakResult},
     project::Project,
 };
 
-/// Create an initialized project (TODO) in an environment.
-pub fn create_project(project: &Project) -> HuakResult<()> {
-    let pyproject_toml = project.create_toml()?;
-    let pyproject_path = project.root().join("pyproject.toml");
-
-    if pyproject_path.exists() {
-        return Err(HuakError::PyProjectTomlExistsError);
-    }
-    // bootstrap new project with lib or app template
-    project.create_from_template()?;
-
-    // Serialize pyproject.toml and write to file
-    let pyproject_content = pyproject_toml.to_string()?;
-    fs::write(&pyproject_path, pyproject_content)?;
-
-    Ok(())
+/// TODO: Dow we need to mutate here?
+pub fn create_project(project: &mut Project) -> HuakResult<()> {
+    project.init_project_file()?;
+    project.bootstrap()?;
+    project.project_file.serialize()
 }
 
 /// Initializes VCS (currently git) in the project
@@ -34,6 +22,8 @@ pub fn init_vcs(project: &Project) -> HuakResult<()> {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+
     use tempfile::tempdir;
 
     use super::*;
@@ -47,12 +37,12 @@ mod tests {
     #[test]
     fn creates_project() {
         let directory = tempdir().unwrap().into_path();
-        let project = create_mock_project(directory).unwrap();
+        let mut project = create_mock_project(directory).unwrap();
 
         let toml_path = project.root().join("pyproject.toml");
         let had_toml = toml_path.exists();
 
-        create_project(&project).unwrap();
+        create_project(&mut project).unwrap();
 
         assert!(!had_toml);
         assert!(toml_path.exists());
@@ -61,10 +51,10 @@ mod tests {
     #[test]
     fn create_app_project() {
         let directory = tempdir().unwrap().into_path().join("project");
-        let project = Project::new(directory, ProjectType::Application);
+        let mut project = Project::new(directory, ProjectType::Application);
         let toml_path = project.root().join("pyproject.toml");
 
-        create_project(&project).unwrap();
+        create_project(&mut project).unwrap();
         let toml = Toml::open(&toml_path).unwrap();
         let main_file_filepath =
             project.root().join("src").join("project").join("main.py");
@@ -89,10 +79,10 @@ if __name__ == "__main__":
     #[test]
     fn create_lib_project() {
         let directory = tempdir().unwrap().into_path().join("project");
-        let project = Project::new(directory, ProjectType::Library);
+        let mut project = Project::new(directory, ProjectType::Library);
         let toml_path = project.root().join("pyproject.toml");
 
-        create_project(&project).unwrap();
+        create_project(&mut project).unwrap();
         let toml = Toml::open(&toml_path).unwrap();
         let test_file_filepath =
             project.root().join("tests").join("test_version.py");
@@ -104,7 +94,7 @@ if __name__ == "__main__":
 def test_version():
     __version__
 "#,
-            project.config().project_name()
+            project.project_file.project_name().unwrap()
         );
         let init_file_filepath = project
             .root()

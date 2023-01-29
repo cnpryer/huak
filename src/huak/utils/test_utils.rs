@@ -2,7 +2,11 @@ use std::{env, path::PathBuf};
 
 use tempfile::tempdir;
 
-use crate::{env::venv::Venv, errors::HuakError, project::Project};
+use crate::{
+    env::venv::Venv,
+    errors::HuakError,
+    project::{Project, ProjectType},
+};
 
 use super::path::copy_dir;
 
@@ -25,7 +29,7 @@ pub fn create_mock_project(path: PathBuf) -> Result<Project, HuakError> {
     let cwd = env::current_dir()?;
     create_venv(cwd.join(".venv"))?;
 
-    Ok(Project::from(path)?)
+    Ok(Project::new(path, ProjectType::default()))
 }
 
 /// Creates a mock `Project`, copying it from "mock_project" directory

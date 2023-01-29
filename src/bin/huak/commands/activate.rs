@@ -7,7 +7,7 @@ use huak::{env::venv::create_venv, ops, project::Project};
 /// Run the `activate` command.
 pub fn run() -> CliResult<()> {
     let cwd = std::env::current_dir()?;
-    let project = match Project::from(cwd) {
+    let project = match Project::from_directory(cwd) {
         Ok(p) => p,
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };

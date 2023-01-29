@@ -6,7 +6,7 @@ pub fn get_project_version(project: &Project) -> Result<&str, HuakError> {
         return Err(HuakError::PyProjectFileNotFound);
     }
 
-    let version = project.config().project_version();
+    let version = project.project_file.project_version();
 
     match version {
         Some(version) => Ok(version),
