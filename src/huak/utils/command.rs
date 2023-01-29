@@ -11,13 +11,13 @@ pub(crate) fn run_command(
     from: &Path,
 ) -> HuakResult<(i32, String)> {
     let (code, msg) = match should_mute() {
-        true => run_command_with_output(cmd, args, from)?,
-        false => run_command_with_spawn(cmd, args, from)?,
+        true => run_command_quiet(cmd, args, from)?,
+        false => run_command_noisy(cmd, args, from)?,
     };
 
     if code != 0 {
         // TODO: Capture status codes.
-        return Err(HuakError::InternalError(msg));
+        return Err(HuakError::WrappedCommandError(msg));
     }
 
     Ok((code, msg))
@@ -25,16 +25,16 @@ pub(crate) fn run_command(
 
 /// Mute command utilities with HUAK_MUTE_COMMAND ("True", "true").
 fn should_mute() -> bool {
-    let _mute = match env::var("HUAK_MUTE_COMMAND") {
+    let mute = match env::var("HUAK_MUTE_COMMAND") {
         Ok(m) => m,
         Err(_) => "False".to_string(),
     };
 
-    matches!(_mute.as_str(), "TRUE" | "True" | "true" | "1")
+    matches!(mute.as_str(), "TRUE" | "True" | "true" | "1")
 }
 
 /// Run initialized command with .output() to mute stdout.
-fn run_command_with_output(
+fn run_command_quiet(
     cmd: &str,
     args: &[&str],
     from: &Path,
@@ -55,7 +55,7 @@ fn run_command_with_output(
 }
 
 /// Run command and capture entire stdout.
-fn run_command_with_spawn(
+fn run_command_noisy(
     cmd: &str,
     args: &[&str],
     from: &Path,
@@ -71,7 +71,9 @@ fn run_command_with_spawn(
     let status = match child.try_wait() {
         Ok(Some(s)) => s,
         Ok(None) => child.wait()?,
-        Err(e) => return Err(HuakError::from(e)),
+        Err(e) => {
+            return Err(HuakError::from(e));
+        }
     };
 
     // TODO: Capture through spawn.
