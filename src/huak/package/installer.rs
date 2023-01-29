@@ -6,13 +6,13 @@ use crate::{
 use super::{index::PackageIndexData, PythonPackage};
 
 #[derive(Default)]
-pub struct PythonPackageInstaller {
+pub struct Installer {
     pub ignore_cache: bool,
 }
 
-impl PythonPackageInstaller {
+impl Installer {
     pub fn new() -> Self {
-        PythonPackageInstaller {
+        Installer {
             ..Default::default()
         }
     }
@@ -40,7 +40,7 @@ impl PythonPackageInstaller {
         };
 
         python_environment.install_package(&package).map_err(|_| {
-            HuakError::PyPackageInstallFailure(package.to_string())
+            HuakError::PyPackageInstallationError(package.to_string())
         })?;
 
         Ok(())

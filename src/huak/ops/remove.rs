@@ -3,7 +3,7 @@ use crate::{env::venv::Venv, errors::HuakError, project::Project};
 /// Remove a dependency from a project by uninstalling it and updating the
 /// project's config.
 pub fn remove_project_dependency(
-    project: &mut Project,
+    project: &Project,
     venv: &Venv,
     dependency: &str,
     group: Option<String>,
@@ -11,7 +11,7 @@ pub fn remove_project_dependency(
     // TODO: #109
     venv.uninstall_package(dependency)?;
 
-    let project_file = &mut project.project_file;
+    let mut project_file = project.project_file.clone();
 
     project_file.remove_dependency(dependency, group)?;
     project_file.serialize()

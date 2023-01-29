@@ -1,6 +1,7 @@
 use crate::{errors::HuakResult, project::Project};
 
 /// Initialize a project by adding a pyproject.toml to the dir.
+/// TODO: Do we need to mutate here?
 pub fn init_project(project: &mut Project) -> HuakResult<()> {
     project.init_project_file()?;
     project.project_file.serialize()

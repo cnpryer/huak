@@ -82,7 +82,7 @@ impl Project {
         let project_filepath = match &project_file.filepath {
             Some(it) => it,
             None => {
-                return Err(HuakError::PyProjectFileMissingError);
+                return Err(HuakError::PyProjectFileNotFound);
             }
         };
 
@@ -114,13 +114,13 @@ impl Project {
         let name = match self.project_file.project_name() {
             Some(it) => it,
             None => {
-                return Err(HuakError::ProjectNameNotFoundError);
+                return Err(HuakError::PyProjectFileNotFound);
             }
         };
 
         let version = match self.project_file.project_version() {
             Some(it) => it,
-            None => return Err(HuakError::VersionNotFound),
+            None => return Err(HuakError::PyProjectVersionNotFound),
         };
 
         // Create package dir
@@ -195,7 +195,7 @@ if __name__ == "__main__":
             return Ok(());
         }
 
-        Err(HuakError::PyProjectFileMissingError)
+        Err(HuakError::PyProjectFileNotFound)
     }
 
     pub fn root(&self) -> &PathBuf {

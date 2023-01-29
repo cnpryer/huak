@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::{
     env::venv::Venv,
     errors::HuakError,
-    package::{installer::PythonPackageInstaller, PythonPackage},
+    package::{installer::Installer, PythonPackage},
     project::Project,
 };
 
@@ -58,9 +58,9 @@ use crate::{
 ///       b. The group of the dependency has changed.
 pub fn add_project_dependency(
     package: &PythonPackage,
-    project: &mut Project,
+    project: &Project,
     python_environment: &Venv,
-    installer: &PythonPackageInstaller,
+    installer: &Installer,
     dependency_group: Option<String>,
 ) -> Result<(), HuakError> {
     let (in_dependency_list, is_new_version);
@@ -98,8 +98,8 @@ pub fn add_project_dependency(
         package
     };
 
-    let project_file = &mut project.project_file;
-    dbg!(in_dependency_list, is_new_version);
+    let mut project_file = project.project_file.clone();
+
     if !in_dependency_list | is_new_version {
         match &dependency_group {
             Some(it) => {
@@ -131,7 +131,7 @@ mod tests {
         project.init_project_file().unwrap();
         let cwd = std::env::current_dir().unwrap();
         let venv = Venv::new(cwd.join(".venv"));
-        let installer = PythonPackageInstaller::new();
+        let installer = Installer::new();
         let toml_path = project.root().join("pyproject.toml");
         let package = PythonPackage::from_str("isort").unwrap();
         let toml = Toml::open(&toml_path).unwrap();

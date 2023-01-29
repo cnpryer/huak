@@ -147,7 +147,7 @@ impl fmt::Display for PythonPackage {
 // Return a Huak-friendly Result.
 fn create_operator_from_str(op: &str) -> Result<Operator, HuakError> {
     Operator::from_str(op)
-        .map_err(|_| HuakError::PyPackageInvalidOperator(op.to_string()))
+        .map_err(|_| HuakError::PyPackageInvalidVersionOperator(op.to_string()))
 }
 
 // Build a PEP 440 Version from an str.

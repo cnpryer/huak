@@ -9,7 +9,7 @@ use huak::project::Project;
 /// Run the `remove` command.
 pub fn run(dependency: String, group: Option<String>) -> CliResult<()> {
     let cwd = env::current_dir()?;
-    let mut project = match Project::from_directory(cwd) {
+    let project = match Project::from_directory(cwd) {
         Ok(p) => p,
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
@@ -17,13 +17,8 @@ pub fn run(dependency: String, group: Option<String>) -> CliResult<()> {
     let venv = create_venv(project.root())
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
-    ops::remove::remove_project_dependency(
-        &mut project,
-        &venv,
-        &dependency,
-        group,
-    )
-    .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
+    ops::remove::remove_project_dependency(&project, &venv, &dependency, group)
+        .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
     Ok(())
 }

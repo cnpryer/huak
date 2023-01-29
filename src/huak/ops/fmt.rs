@@ -5,16 +5,16 @@ const MODULE: &str = "black";
 /// Format Python code from the `Project`'s root.
 pub fn fmt_project(
     project: &Project,
-    venv: &Venv,
+    python_environment: &Venv,
     is_check: &bool,
 ) -> Result<(), HuakError> {
     match is_check {
-        true => venv.exec_module(
+        true => python_environment.exec_module(
             MODULE,
             &[".", "--line-length", "79", "--check"],
             project.root(),
         ),
-        false => venv.exec_module(
+        false => python_environment.exec_module(
             MODULE,
             &[".", "--line-length", "79"],
             project.root(),

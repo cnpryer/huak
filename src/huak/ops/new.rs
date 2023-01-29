@@ -5,7 +5,7 @@ use crate::{
     project::Project,
 };
 
-/// Create an initialized project (TODO) in an environment.
+/// TODO: Dow we need to mutate here?
 pub fn create_project(project: &mut Project) -> HuakResult<()> {
     project.init_project_file()?;
     project.bootstrap()?;

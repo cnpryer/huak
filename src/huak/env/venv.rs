@@ -62,7 +62,7 @@ impl Venv {
             };
         }
 
-        Err(HuakError::VenvNotFound)
+        Err(HuakError::PyVenvNotFoundError)
     }
 
     /// Get the name of the Venv (ex: ".venv").
@@ -81,7 +81,7 @@ impl Venv {
 
         let script = self.get_activation_script()?;
         if !script.exists() {
-            return Err(HuakError::VenvNotFound);
+            return Err(HuakError::PyVenvNotFoundError);
         }
         let source_command = get_shell_source_command()?;
         let activation_command =
@@ -165,7 +165,7 @@ impl Venv {
         let from = match self.path.parent() {
             Some(p) => p,
             _ => {
-                return Err(HuakError::ConfigurationError(
+                return Err(HuakError::HuakConfigurationError(
                     "Invalid venv path, no parent directory.".into(),
                 ))
             }
@@ -188,7 +188,7 @@ impl Venv {
                     // See TODO comment above. Windows PATH variable search is
                     // incomplete, so this will attempt the alias if it's on the
                     // PATH.
-                    HuakError::PythonNotFound => {
+                    HuakError::PythonNotFoundError => {
                         DEFAULT_PYTHON_ALIAS.to_string()
                     }
                     _ => return Err(e),
@@ -252,7 +252,9 @@ impl Venv {
             Ok(it) => it,
             // TODO: Don't do this post-decouple.
             Err(_) => {
-                return Err(HuakError::PyPackageInitError(module.to_string()))
+                return Err(HuakError::PyPackageInitalizationError(
+                    module.to_string(),
+                ))
             }
         };
 
@@ -318,7 +320,7 @@ impl Venv {
 pub fn create_venv(dirpath: &Path) -> HuakResult<Venv> {
     let venv = match Venv::from_path(dirpath) {
         Ok(it) => it,
-        Err(HuakError::VenvNotFound) => Venv::new(dirpath.join(".venv")),
+        Err(HuakError::PyVenvNotFoundError) => Venv::new(dirpath.join(".venv")),
         Err(e) => return Err(e),
     };
 

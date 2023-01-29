@@ -18,7 +18,7 @@ pub fn run() -> CliResult<()> {
         println!("{it}-{version}");
     } else {
         return Err(CliError::new(
-            HuakError::ProjectNameNotFoundError,
+            HuakError::PyProjectFileNotFound,
             ExitCode::FAILURE,
         ));
     }

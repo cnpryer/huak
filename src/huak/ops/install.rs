@@ -1,7 +1,7 @@
 use crate::{
     env::venv::Venv,
     errors::{HuakError, HuakResult},
-    package::installer::PythonPackageInstaller,
+    package::installer::Installer,
     project::Project,
 };
 
@@ -9,12 +9,12 @@ use crate::{
 pub fn install_project_dependencies(
     project: &Project,
     python_environment: &Venv,
-    installer: &PythonPackageInstaller,
+    installer: &Installer,
     groups: &Vec<String>,
 ) -> HuakResult<()> {
     // TODO: Doing this venv handling seems hacky.
     if !project.root().join("pyproject.toml").exists() {
-        return Err(HuakError::PyProjectTomlNotFound);
+        return Err(HuakError::PyProjectFileNotFound);
     }
 
     installer.install_packages(
@@ -36,7 +36,7 @@ pub fn install_project_dependencies(
 pub mod tests {
 
     use crate::{
-        env::venv::Venv, package::installer::PythonPackageInstaller,
+        env::venv::Venv, package::installer::Installer,
         utils::test_utils::create_mock_project_full,
     };
 
@@ -50,7 +50,7 @@ pub mod tests {
 
         let cwd = std::env::current_dir().unwrap();
         let venv = &Venv::new(cwd.join(".venv"));
-        let installer = PythonPackageInstaller::new();
+        let installer = Installer::new();
 
         venv.uninstall_package("black").unwrap();
         let black_path = venv.module_path("black").unwrap();

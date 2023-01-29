@@ -48,13 +48,13 @@ impl From<std::io::Error> for CliError {
 
 impl From<reqwest::Error> for CliError {
     fn from(err: reqwest::Error) -> CliError {
-        CliError::new(HuakError::HttpError(err), BASIC_ERROR_CODE)
+        CliError::new(HuakError::HTTPError(err), BASIC_ERROR_CODE)
     }
 }
 
 impl From<std::str::Utf8Error> for CliError {
     fn from(err: std::str::Utf8Error) -> CliError {
-        CliError::new(HuakError::Utf8Error(err), BASIC_ERROR_CODE)
+        CliError::new(HuakError::UTF8Error(err), BASIC_ERROR_CODE)
     }
 }
 

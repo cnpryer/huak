@@ -11,7 +11,7 @@ use crate::utils;
 const DEFAULT_SEARCH_STEPS: usize = 5;
 
 // TODO: Potentially use `File` (currently not using buf)
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct ProjectFile {
     pub filepath: Option<PathBuf>,
     pub data: Option<Toml>,
@@ -125,7 +125,7 @@ impl ProjectFile {
             if let Some(it_path) = &self.filepath {
                 fs::write(it_path, string)?;
             } else {
-                return Err(HuakError::PyProjectFileMissingError);
+                return Err(HuakError::PyProjectFileNotFound);
             }
         }
         Ok(())

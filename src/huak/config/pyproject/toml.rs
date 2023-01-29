@@ -8,18 +8,7 @@ use serde_derive::{Deserialize, Serialize};
 use super::build_system::BuildSystemBuilder;
 use super::project::ProjectBuilder;
 
-/// Toml configuration deser and ser structure.
-/// ```toml
-/// [tool.huak]
-/// # ...
-/// [tool.huak.dependencies]
-/// # ...
-/// [tool.huak.dev-dependencies]
-/// # ...
-/// [tool.build-system]
-/// # ...
-/// ```
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Toml {
     pub project: Project,
     #[serde(rename = "build-system")]
