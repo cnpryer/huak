@@ -12,7 +12,7 @@ pub fn init_project(project: &Project) -> HuakResult<()> {
     let toml = project.create_toml()?;
 
     if project.root().join("pyproject.toml").exists() {
-        return Err(HuakError::PyProjectTomlExists);
+        return Err(HuakError::PyProjectTomlExistsError);
     }
 
     // Serialize pyproject.toml.

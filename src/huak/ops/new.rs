@@ -12,7 +12,7 @@ pub fn create_project(project: &Project) -> HuakResult<()> {
     let pyproject_path = project.root().join("pyproject.toml");
 
     if pyproject_path.exists() {
-        return Err(HuakError::PyProjectTomlExists);
+        return Err(HuakError::PyProjectTomlExistsError);
     }
     // bootstrap new project with lib or app template
     project.create_from_template()?;

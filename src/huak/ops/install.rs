@@ -14,7 +14,7 @@ pub fn install_project_dependencies(
 ) -> HuakResult<()> {
     // TODO: Doing this venv handling seems hacky.
     if !project.root().join("pyproject.toml").exists() {
-        return Err(HuakError::PyProjectTomlNotFound);
+        return Err(HuakError::PyProjectFileNotFound);
     }
 
     install_packages(&project.config().package_list(), venv)?;

@@ -17,7 +17,7 @@ pub(crate) fn run_command(
 
     if code != 0 {
         // TODO: Capture status codes.
-        return Err(HuakError::UnknownError(msg));
+        return Err(HuakError::InternalError(msg));
     }
 
     Ok((code, msg))

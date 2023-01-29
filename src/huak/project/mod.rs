@@ -104,7 +104,7 @@ impl Project {
         let name = self.config.project_name();
         let version = match self.config.project_version() {
             Some(it) => it,
-            None => return Err(HuakError::VersionNotFound),
+            None => return Err(HuakError::PyProjectVersionNotFound),
         };
 
         // Create package dir
