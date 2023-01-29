@@ -18,10 +18,10 @@ mod tests {
     #[test]
     fn run() {
         let project = create_mock_project_full().unwrap();
-        let venv = Venv::from_path(project.root()).unwrap();
+        let venv = Venv::from_directory(project.root()).unwrap();
         let installer = Installer::new();
 
-        install_project_dependencies(&project, &venv, &installer, &vec![])
+        install_project_dependencies(&project, &venv, &installer, &None)
             .unwrap();
 
         let command = "pip list --format=freeze > test_req.txt"

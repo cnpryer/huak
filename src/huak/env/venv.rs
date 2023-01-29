@@ -50,7 +50,7 @@ impl Venv {
     /// Initialize a `Venv` by searching a directory for a venv. `from()` will search
     /// the parents directory for a configured number of recursive steps.
     // TODO: Improve the directory search (refactor manifest search into search utility).
-    pub fn from_path(from: &Path) -> HuakResult<Venv> {
+    pub fn from_directory(from: &Path) -> HuakResult<Venv> {
         let names = vec![".venv", "venv"];
 
         // TODO: Redundancy.
@@ -318,7 +318,7 @@ impl Venv {
 // Helper function to create a venv from a path. If it already exists, initialize
 // and return the Venv. If it doesn't then create a .venv at the path given.
 pub fn create_venv(dirpath: &Path) -> HuakResult<Venv> {
-    let venv = match Venv::from_path(dirpath) {
+    let venv = match Venv::from_directory(dirpath) {
         Ok(it) => it,
         Err(HuakError::PyVenvNotFoundError) => Venv::new(dirpath.join(".venv")),
         Err(e) => return Err(e),
@@ -344,12 +344,12 @@ mod tests {
     }
 
     #[test]
-    fn from() {
+    fn from_directory() {
         let directory = tempdir().unwrap().into_path();
         let first_venv = Venv::new(directory.join(".venv"));
         first_venv.create().unwrap();
 
-        let second_venv = Venv::from_path(&directory).unwrap();
+        let second_venv = Venv::from_directory(&directory).unwrap();
 
         assert!(second_venv.path.exists());
         assert!(second_venv.module_path("pip").unwrap().exists());

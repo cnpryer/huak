@@ -17,7 +17,7 @@ pub fn run(groups: Option<Vec<String>>) -> CliResult<()> {
     };
 
     // Attempt to locate the project's venv. If none is found, attempt to create one.
-    let venv = match Venv::from_path(project.root()) {
+    let python_environment = match Venv::from_directory(project.root()) {
         Ok(it) => it,
         Err(HuakError::PyVenvNotFoundError) => {
             let it = Venv::new(project.root().join(".venv"));
@@ -32,9 +32,9 @@ pub fn run(groups: Option<Vec<String>>) -> CliResult<()> {
 
     ops::install::install_project_dependencies(
         &project,
-        &venv,
+        &python_environment,
         &installer,
-        &groups.unwrap_or_default(),
+        &groups,
     )
     .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 

@@ -79,7 +79,7 @@ impl Project {
     pub fn from_directory(path: PathBuf) -> Result<Project, HuakError> {
         // TODO: Builder.
         let project_file = ProjectFile::from_directory(&path)?;
-        let project_filepath = match &project_file.filepath {
+        let project_file_filepath = match &project_file.filepath {
             Some(it) => it,
             None => {
                 return Err(HuakError::PyProjectFileNotFound);
@@ -89,7 +89,7 @@ impl Project {
         // Set the root to the directory the manifest file was found.
         // TODO: This is probably not the right way to do this.
         let mut root = path;
-        if let Some(parent) = project_filepath.parent() {
+        if let Some(parent) = project_file_filepath.parent() {
             root = parent.to_path_buf()
         }
 
