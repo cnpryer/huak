@@ -216,7 +216,7 @@ mod tests {
     use crate::utils::{path::copy_dir, test_utils::get_resource_dir};
 
     #[test]
-    fn from() {
+    fn from_directory() {
         let directory = tempdir().unwrap().into_path();
         let mock_dir = get_resource_dir().join("mock-project");
 

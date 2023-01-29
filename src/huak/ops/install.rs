@@ -1,7 +1,9 @@
+use std::str::FromStr;
+
 use crate::{
     env::venv::Venv,
     errors::{HuakError, HuakResult},
-    package::installer::Installer,
+    package::{installer::Installer, PythonPackage},
     project::Project,
 };
 
@@ -18,13 +20,23 @@ pub fn install_project_dependencies(
     }
 
     installer.install_packages(
-        &project.project_file.dependency_list(),
+        &project
+            .project_file
+            .dependency_list()
+            .iter()
+            .filter_map(|d| PythonPackage::from_str(d).ok())
+            .collect(),
         python_environment,
     )?;
 
     for group in groups {
         installer.install_packages(
-            &project.project_file.optional_package_list(group),
+            &project
+                .project_file
+                .optional_dependency_list(group)
+                .iter()
+                .filter_map(|d| PythonPackage::from_str(d).ok())
+                .collect(),
             python_environment,
         )?
     }

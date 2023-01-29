@@ -88,30 +88,25 @@ impl ProjectFile {
         None
     }
 
-    pub fn dependency_list(&self) -> Vec<PythonPackage> {
+    // TODO: Dont clone
+    pub fn dependency_list(&self) -> Vec<String> {
         if let Some(it_data) = &self.data {
             if let Some(it_list) = it_data.project.dependencies.as_ref() {
-                return it_list
-                    .iter()
-                    .filter_map(|d| PythonPackage::from_str(d).ok())
-                    .collect();
+                return it_list.clone();
             }
         }
 
         vec![]
     }
 
-    // TODO: Check if "group" used it's always "optional"
-    pub fn optional_package_list(&self, group: &str) -> Vec<PythonPackage> {
+    // TODO: Dont clone
+    pub fn optional_dependency_list(&self, group: &str) -> Vec<String> {
         // TODO: Look into Option handling with method chaining or some mapping pattern
         //       without using unwrap
         if let Some(it_data) = &self.data {
             if let Some(it_list) = &it_data.project.optional_dependencies {
                 if let Some(it_group) = it_list.get(group) {
-                    return it_group
-                        .iter()
-                        .filter_map(|d| PythonPackage::from_str(d).ok())
-                        .collect();
+                    return it_group.clone();
                 }
             }
         }
@@ -170,7 +165,7 @@ impl ProjectFile {
     pub fn remove_dependency(
         &mut self,
         dependency: &str,
-        group: Option<String>,
+        group: &Option<String>,
     ) -> HuakResult<()> {
         if let Some(it_data) = &mut self.data {
             match &group {
@@ -304,4 +299,337 @@ fn remove_from_dependency_list(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use tempfile::tempdir;
+
+    use super::*;
+
+    #[test]
+    fn from_filepath() {
+        let filepath = tempdir().unwrap().into_path().join("test.toml");
+        let string = r#"[project]
+name = "Test"
+version = "0.1.0"
+description = ""
+dependencies = ["click==8.1.3", "black==22.8.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=6", "mock"]
+
+[[project.authors]]
+name = "Chris Pryer"
+email = "cnpryer@gmail.com"
+
+[build-system]
+requires = ["huak-core>=1.0.0"]
+build-backend = "huak.core.build.api"
+"#;
+
+        // toml_edit does not preserve the ordering of the tables
+        let expected_output = r#"[project]
+name = "Test"
+version = "0.1.0"
+description = ""
+dependencies = [
+    "click==8.1.3",
+    "black==22.8.0",
+]
+
+[[project.authors]]
+name = "Chris Pryer"
+email = "cnpryer@gmail.com"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=6",
+    "mock",
+]
+
+[build-system]
+requires = ["huak-core>=1.0.0"]
+build-backend = "huak.core.build.api"
+"#;
+
+        let toml = Toml::from(string).unwrap();
+        fs::write(&filepath, toml.to_string().unwrap()).unwrap();
+        assert_eq!(
+            expected_output,
+            ProjectFile::from_filepath(&filepath)
+                .unwrap()
+                .data
+                .unwrap()
+                .to_string()
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn serialize() {
+        let filepath = tempdir().unwrap().into_path().join("test.toml");
+        let string = r#"[project]
+name = "Test"
+version = "0.1.0"
+description = ""
+dependencies = ["click==8.1.3", "black==22.8.0"]
+
+[project.optional-dependencies]
+test = ["pytest>=6", "mock"]
+
+[[project.authors]]
+name = "Chris Pryer"
+email = "cnpryer@gmail.com"
+
+[build-system]
+requires = ["huak-core>=1.0.0"]
+build-backend = "huak.core.build.api"
+"#;
+
+        // toml_edit does not preserve the ordering of the tables
+        let expected_output = r#"[project]
+name = "Test"
+version = "0.1.0"
+description = ""
+dependencies = [
+    "click==8.1.3",
+    "black==22.8.0",
+]
+
+[[project.authors]]
+name = "Chris Pryer"
+email = "cnpryer@gmail.com"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=6",
+    "mock",
+]
+
+[build-system]
+requires = ["huak-core>=1.0.0"]
+build-backend = "huak.core.build.api"
+"#;
+
+        let toml = Toml::from(string).unwrap();
+        fs::write(&filepath, toml.to_string().unwrap()).unwrap();
+        assert_eq!(
+            expected_output,
+            Toml::open(&filepath).unwrap().to_string().unwrap()
+        );
+    }
+
+    #[test]
+    fn dependency_list() {
+        let filepath = tempdir().unwrap().into_path().join("test.toml");
+        let string = r#"[project]
+name = "Test"
+version = "0.1.0"
+description = ""
+dependencies = ["click==8.1.3", "black==22.8.0"]
+
+[[project.authors]]
+name = "Chris Pryer"
+email = "cnpryer@gmail.com"
+
+[build-system]
+requires = ["huak-core>=1.0.0"]
+build-backend = "huak.core.build.api"
+"#;
+        let toml = Toml::from(string).unwrap();
+        fs::write(&filepath, toml.to_string().unwrap()).unwrap();
+
+        let project_file = ProjectFile::from_filepath(&filepath).unwrap();
+        let expected_dependencies = vec!["click==8.1.3", "black==22.8.0"];
+
+        assert_eq!(project_file.dependency_list(), expected_dependencies);
+    }
+
+    #[test]
+    fn optional_dependency_list() {
+        let filepath = tempdir().unwrap().into_path().join("test.toml");
+        let string = r#"[project]
+name = "Test"
+version = "0.1.0"
+description = ""
+
+[project.optional-dependencies]
+test = ["click==8.1.3", "black==22.8.0"]
+
+[[project.authors]]
+name = "Chris Pryer"
+email = "cnpryer@gmail.com"
+
+[build-system]
+requires = ["huak-core>=1.0.0"]
+build-backend = "huak.core.build.api"
+"#;
+        let toml = Toml::from(string).unwrap();
+        fs::write(&filepath, toml.to_string().unwrap()).unwrap();
+
+        let project_file = ProjectFile::from_filepath(&filepath).unwrap();
+        let expected_dependencies = vec!["click==8.1.3", "black==22.8.0"];
+
+        assert_eq!(
+            project_file.optional_dependency_list("test"),
+            expected_dependencies
+        );
+    }
+
+    #[test]
+    fn search_dependency_list() {
+        let filepath = tempdir().unwrap().into_path().join("test.toml");
+        let string = r#"[project]
+name = "Test"
+version = "0.1.0"
+description = ""
+dependencies = ["black==22.8.0"]
+
+[project.optional-dependencies]
+test = ["click==8.1.3"]
+
+[[project.authors]]
+name = "Chris Pryer"
+email = "cnpryer@gmail.com"
+
+[build-system]
+requires = ["huak-core>=1.0.0"]
+build-backend = "huak.core.build.api"
+"#;
+        let toml = Toml::from(string).unwrap();
+        fs::write(&filepath, toml.to_string().unwrap()).unwrap();
+
+        let project_file = ProjectFile::from_filepath(&filepath).unwrap();
+        let expected_dependency = "black==22.8.0";
+        let expected_optional_dependency = "click==8.1.3";
+
+        assert_eq!(
+            project_file
+                .search_dependency_list(
+                    &PythonPackage::from_str("black").unwrap(),
+                    &None
+                )
+                .unwrap(),
+            Some(expected_dependency)
+        );
+        assert_eq!(
+            project_file
+                .search_dependency_list(
+                    &PythonPackage::from_str("click").unwrap(),
+                    &Some("test".to_string())
+                )
+                .unwrap(),
+            Some(expected_optional_dependency)
+        );
+    }
+
+    #[test]
+    fn add_dependency() {
+        let filepath = tempdir().unwrap().into_path().join("test.toml");
+        let string = r#"[project]
+name = "Test"
+version = "0.1.0"
+description = ""
+dependencies = ["black==22.8.0"]
+
+[[project.authors]]
+name = "Chris Pryer"
+email = "cnpryer@gmail.com"
+
+[build-system]
+requires = ["huak-core>=1.0.0"]
+build-backend = "huak.core.build.api"
+"#;
+        let toml = Toml::from(string).unwrap();
+        fs::write(&filepath, toml.to_string().unwrap()).unwrap();
+
+        let mut project_file = ProjectFile::from_filepath(&filepath).unwrap();
+        let original_dependencies = project_file.dependency_list().clone();
+        project_file.add_dependency("package").unwrap();
+
+        assert_ne!(original_dependencies, project_file.dependency_list());
+        assert_eq!(project_file.dependency_list().last().unwrap(), "package");
+    }
+
+    #[test]
+    fn add_optional_dependency() {
+        let filepath = tempdir().unwrap().into_path().join("test.toml");
+        let string = r#"[project]
+name = "Test"
+version = "0.1.0"
+description = ""
+
+[project.optional-dependencies]
+test = ["black==22.8.0"]
+
+[[project.authors]]
+name = "Chris Pryer"
+email = "cnpryer@gmail.com"
+
+[build-system]
+requires = ["huak-core>=1.0.0"]
+build-backend = "huak.core.build.api"
+"#;
+        let toml = Toml::from(string).unwrap();
+        fs::write(&filepath, toml.to_string().unwrap()).unwrap();
+
+        let mut project_file = ProjectFile::from_filepath(&filepath).unwrap();
+        let original_dependencies =
+            project_file.optional_dependency_list("test").clone();
+        project_file
+            .add_optional_dependency("package", "test")
+            .unwrap();
+
+        assert_ne!(
+            original_dependencies,
+            project_file.optional_dependency_list("test")
+        );
+        assert_eq!(
+            project_file
+                .optional_dependency_list("test")
+                .last()
+                .unwrap(),
+            "package"
+        );
+    }
+
+    #[test]
+    fn remove_dependency() {
+        let filepath = tempdir().unwrap().into_path().join("test.toml");
+        let string = r#"[project]
+name = "Test"
+version = "0.1.0"
+description = ""
+dependencies = ["black==22.8.0"]
+
+[project.optional-dependencies]
+test = ["test"]
+
+[[project.authors]]
+name = "Chris Pryer"
+email = "cnpryer@gmail.com"
+
+[build-system]
+requires = ["huak-core>=1.0.0"]
+build-backend = "huak.core.build.api"
+"#;
+        let toml = Toml::from(string).unwrap();
+        fs::write(&filepath, toml.to_string().unwrap()).unwrap();
+
+        let mut project_file = ProjectFile::from_filepath(&filepath).unwrap();
+        let original_dependencies = project_file.dependency_list().clone();
+        let original_optional_dependencies =
+            project_file.optional_dependency_list("test").clone();
+        project_file.remove_dependency("black", &None).unwrap();
+        project_file
+            .remove_dependency("test", &Some("test".to_string()))
+            .unwrap();
+
+        assert!(!original_dependencies.is_empty());
+        assert!(!original_optional_dependencies.is_empty());
+
+        assert!(project_file.dependency_list().is_empty());
+        assert!(project_file.optional_dependency_list("test").is_empty());
+    }
 }

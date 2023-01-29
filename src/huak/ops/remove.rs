@@ -6,7 +6,7 @@ pub fn remove_project_dependency(
     project: &Project,
     venv: &Venv,
     dependency: &str,
-    group: Option<String>,
+    group: &Option<String>,
 ) -> Result<(), HuakError> {
     // TODO: #109
     venv.uninstall_package(dependency)?;
@@ -47,7 +47,7 @@ mod tests {
                 deps.values().flatten().any(|d| d.starts_with("pytest"))
             });
 
-        remove_project_dependency(&mut project, &venv, "click", None).unwrap();
+        remove_project_dependency(&mut project, &venv, "click", &None).unwrap();
 
         let toml = Toml::open(&toml_path).unwrap();
         let exists = toml

@@ -17,8 +17,13 @@ pub fn run(dependency: String, group: Option<String>) -> CliResult<()> {
     let venv = create_venv(project.root())
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
-    ops::remove::remove_project_dependency(&project, &venv, &dependency, group)
-        .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
+    ops::remove::remove_project_dependency(
+        &project,
+        &venv,
+        &dependency,
+        &group,
+    )
+    .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
     Ok(())
 }
