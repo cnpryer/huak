@@ -79,8 +79,7 @@ fn get_package_index_data(
     let url = format!("https://pypi.org/pypi/{name}/json");
     let res = match reqwest::blocking::get(url) {
         Ok(it) => it,
-        // TODO: RequestError
-        Err(e) => return Err(HuakError::InternalError(e.to_string())),
+        Err(e) => return Err(HuakError::PyPackageIndexError(e.to_string())),
     };
     match res.json() {
         Ok(it) => Ok(it),

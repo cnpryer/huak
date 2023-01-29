@@ -34,6 +34,8 @@ pub enum HuakError {
     LinterError(String),
     #[error("Failed to build the project.")]
     PyPackageBuildError,
+    #[error("A package index error occurred: {0}.")]
+    PyPackageIndexError(String),
     #[error("Failed to initialize Python package: {0}.")]
     PyPackageInitalizationError(String),
     #[error("Failed to install Python package: {0}.")]
