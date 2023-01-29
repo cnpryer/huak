@@ -50,7 +50,7 @@ pub fn add_project_dependency(
     let dep = &package.name;
 
     venv.install_package(&package)
-        .map_err(|_| HuakError::PyPackageInstallFailure(dep.clone()))?;
+        .map_err(|_| HuakError::PyPackageInstallationFailure(dep.clone()))?;
 
     match is_dev {
         true => toml.add_optional_dependency("dev", dep),

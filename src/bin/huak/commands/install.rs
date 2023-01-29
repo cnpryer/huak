@@ -18,7 +18,7 @@ pub fn run(groups: Option<Vec<String>>, all: bool) -> CliResult<()> {
     // Attempt to locate the project's venv. If none is found, attempt to create one.
     let venv = match Venv::from_path(project.root()) {
         Ok(it) => it,
-        Err(HuakError::VenvNotFound) => {
+        Err(HuakError::PyVenvNotFound) => {
             let it = Venv::new(project.root().join(".venv"));
             it.create()
                 .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;

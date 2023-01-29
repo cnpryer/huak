@@ -20,7 +20,7 @@ pub fn run(
 ) -> CliResult<()> {
     if (install || uninstall) && shell.is_none() {
         return Err(CliError::new(
-            HuakError::ConfigurationError("No shell provided".to_string()),
+            HuakError::HuakConfigurationError("No shell provided".to_string()),
             ExitCode::FAILURE,
         ));
     }
@@ -45,7 +45,9 @@ fn run_with_install(shell: Option<Shell>) -> CliResult<()> {
         Some(it) => it,
         None => {
             return Err(CliError::new(
-                HuakError::ConfigurationError("No shell provided".to_string()),
+                HuakError::HuakConfigurationError(
+                    "No shell provided".to_string(),
+                ),
                 ExitCode::FAILURE,
             ))
         }
@@ -59,7 +61,7 @@ fn run_with_install(shell: Option<Shell>) -> CliResult<()> {
         Shell::Zsh => add_completion_zsh(&mut cmd),
         _ => {
             return Err(CliError::new(
-                HuakError::ConfigurationError("Invalid shell".to_string()),
+                HuakError::HuakConfigurationError("Invalid shell".to_string()),
                 ExitCode::FAILURE,
             ));
         }
@@ -73,7 +75,9 @@ fn run_with_uninstall(shell: Option<Shell>) -> CliResult<()> {
         Some(it) => it,
         None => {
             return Err(CliError::new(
-                HuakError::ConfigurationError("No shell provided".to_string()),
+                HuakError::HuakConfigurationError(
+                    "No shell provided".to_string(),
+                ),
                 ExitCode::FAILURE,
             ))
         }
@@ -86,7 +90,7 @@ fn run_with_uninstall(shell: Option<Shell>) -> CliResult<()> {
         Shell::Zsh => remove_completion_zsh(),
         _ => {
             return Err(CliError::new(
-                HuakError::ConfigurationError("Invalid shell".to_string()),
+                HuakError::HuakConfigurationError("Invalid shell".to_string()),
                 ExitCode::FAILURE,
             ));
         }

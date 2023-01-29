@@ -10,12 +10,13 @@ const MODULE: &str = "build";
 pub fn build_project(project: &Project, venv: &Venv) -> Result<(), HuakError> {
     let package = PythonPackage::from_str("build")?;
 
-    venv.install_package(&package)
-        .map_err(|_| HuakError::PyPackageInstallFailure("build".to_string()))?;
+    venv.install_package(&package).map_err(|_| {
+        HuakError::PyPackageInstallationFailure("build".to_string())
+    })?;
 
     let args = ["-m", MODULE];
     venv.exec_module("python", &args, project.root())
-        .map_err(|_| HuakError::BuildFailure)?;
+        .map_err(|_| HuakError::PyPackageBuildFailure)?;
 
     Ok(())
 }
