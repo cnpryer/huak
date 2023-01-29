@@ -194,20 +194,16 @@ impl ProjectFile {
         group: &Option<String>,
     ) -> HuakResult<Option<&str>> {
         if let Some(it_data) = &self.data {
-            let list;
-
-            // TODO: Clean up.
-            match group {
-                // If there's a group, and if it exists, search it.
-                // Otherwise there's nothing to search.
+            // Get list of dependencies to search
+            let list = match group {
+                // If there's a group, and if it exists, search it. Otherwise there's
+                // nothing to search.
                 Some(it_group) => {
                     if let Some(it_groups) =
                         &it_data.project.optional_dependencies
                     {
                         match it_groups.get(it_group) {
-                            Some(it_list) => {
-                                list = it_list;
-                            }
+                            Some(it_list) => it_list,
                             None => return Ok(None),
                         }
                     } else {
@@ -218,12 +214,12 @@ impl ProjectFile {
                 // listed dependencies. Otherwise there's nothing to search.
                 None => {
                     if let Some(it_list) = &it_data.project.dependencies {
-                        list = it_list;
+                        it_list
                     } else {
                         return Ok(None);
                     }
                 }
-            }
+            };
 
             // Iterate over the existing list of dependencies and return a match on
             // package name.
