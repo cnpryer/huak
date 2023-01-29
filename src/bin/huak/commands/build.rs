@@ -7,7 +7,7 @@ use crate::errors::{CliError, CliResult};
 /// Run the `build` command.
 pub fn run() -> CliResult<()> {
     let cwd = env::current_dir()?;
-    let project = match Project::from(cwd) {
+    let project = match Project::from_directory(cwd) {
         Ok(it) => it,
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };

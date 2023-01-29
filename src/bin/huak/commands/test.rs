@@ -11,7 +11,7 @@ use std::process::ExitCode;
 pub fn run() -> CliResult<()> {
     // This command runs from the context of the cwd.
     let cwd = env::current_dir()?;
-    let project = match Project::from(cwd) {
+    let project = match Project::from_directory(cwd) {
         Ok(p) => p,
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };

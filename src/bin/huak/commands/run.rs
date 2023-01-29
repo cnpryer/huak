@@ -9,8 +9,8 @@ use huak::project::Project;
 /// Run the `run` command.
 pub fn run(command: Vec<String>) -> CliResult<()> {
     let cwd = env::current_dir()?;
-    let project =
-        Project::from(cwd).map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
+    let project = Project::from_directory(cwd)
+        .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
     let venv = create_venv(project.root())
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 

@@ -87,6 +87,10 @@ Commands:
   update    Update dependencies added to the project*
   version   Display the version of the project
   help      Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
 ```
 _"*" indicates first-pass of implementation is incomplete._
 

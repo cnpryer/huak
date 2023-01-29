@@ -62,8 +62,10 @@ pub enum HuakError {
     PyProjectTomlNotFound, // TODO: Manifest
     #[error("Failed to install Python package: {0}.")]
     PyPackageInstallFailure(String),
+    #[error("The project file is missing.")]
+    PyProjectFileMissingError,
     #[error("A pyproject.toml already exists.")]
-    PyProjectTomlExists,
+    PyProjectTomlExistsError,
     #[error("Failed to init Python package: {0}.")]
     PyPackageInitError(String),
     #[error("Failed to deserialize toml: {0}.")]
@@ -85,7 +87,7 @@ pub enum HuakError {
     #[error("Error related to pseudo-terminal: {0}.")]
     ExpectrlError(#[from] expectrl::Error),
     #[error("Project name not found.")]
-    ProjectNameNotFound,
+    ProjectNameNotFoundError,
     #[error("Git error: {0}.")]
     GitError(#[from] git2::Error),
 }

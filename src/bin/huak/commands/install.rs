@@ -5,12 +5,13 @@ use crate::errors::{CliError, CliResult};
 use huak::env::venv::Venv;
 use huak::errors::HuakError;
 use huak::ops;
+use huak::package::installer::PythonPackageInstaller;
 use huak::project::Project;
 
 /// Run the `install` command.
-pub fn run(groups: Option<Vec<String>>, all: bool) -> CliResult<()> {
+pub fn run(groups: Option<Vec<String>>) -> CliResult<()> {
     let cwd = env::current_dir()?;
-    let project = match Project::from(cwd) {
+    let project = match Project::from_directory(cwd) {
         Ok(p) => p,
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
@@ -27,11 +28,13 @@ pub fn run(groups: Option<Vec<String>>, all: bool) -> CliResult<()> {
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
 
+    let installer = PythonPackageInstaller::new();
+
     ops::install::install_project_dependencies(
-        &venv,
         &project,
+        &venv,
+        &installer,
         &groups.unwrap_or_default(),
-        all,
     )
     .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 

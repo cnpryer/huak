@@ -219,6 +219,7 @@ impl Venv {
     }
 
     /// Get the path to the module passed from the venv.
+    /// TODO: "Module" might be misleading.
     pub fn module_path(&self, module: &str) -> HuakResult<PathBuf> {
         let bin_path = self.bin_path();
         let mut path = bin_path.join(module);

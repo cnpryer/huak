@@ -8,6 +8,7 @@ pub fn run_command(venv: &Venv, command: &[String]) -> HuakResult<()> {
 mod tests {
     use super::*;
     use crate::ops::install::install_project_dependencies;
+    use crate::package::installer::PythonPackageInstaller;
     use crate::utils::test_utils::create_mock_project_full;
 
     #[ignore = "currently untestable"]
@@ -15,7 +16,10 @@ mod tests {
     fn run() {
         let project = create_mock_project_full().unwrap();
         let venv = Venv::from_path(project.root()).unwrap();
-        install_project_dependencies(&venv, &project, &vec![], true).unwrap();
+        let installer = PythonPackageInstaller::new();
+
+        install_project_dependencies(&project, &venv, &installer, &vec![])
+            .unwrap();
 
         let command = "pip list --format=freeze > test_req.txt"
             .split_whitespace()

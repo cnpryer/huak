@@ -3,7 +3,7 @@ use serde_derive::{Deserialize, Serialize};
 // TODO: Support more than https://pypi.org/pypi/<package name>/json
 //       Ex: See https://peps.python.org/pep-0503/
 #[derive(Serialize, Deserialize, Debug)]
-pub struct ProjectData {
+pub struct PackageIndexData {
     pub info: PackageInfo,
     last_serial: u64,
     releases: serde_json::value::Value,

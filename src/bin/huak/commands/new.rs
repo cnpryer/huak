@@ -36,9 +36,9 @@ pub fn run(path: String, is_app: bool, no_vcs: bool) -> CliResult<()> {
         ));
     }
 
-    let project = Project::new(path, project_type);
+    let mut project = Project::new(path, project_type);
 
-    ops::new::create_project(&project)
+    ops::new::create_project(&mut project)
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
     if !no_vcs {
