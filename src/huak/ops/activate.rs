@@ -20,7 +20,7 @@ mod tests {
     // TODO
     fn venv_can_be_activated() {
         let project = create_mock_project_full().unwrap();
-        let venv = &Venv::from_path(project.root()).unwrap();
+        let venv = &Venv::from_directory(project.root()).unwrap();
 
         assert!(std::env::var(HUAK_VENV_ENV_VAR).is_err());
 

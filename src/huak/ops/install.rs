@@ -12,7 +12,7 @@ pub fn install_project_dependencies(
     project: &Project,
     python_environment: &Venv,
     installer: &Installer,
-    groups: &Vec<String>,
+    groups: &Option<Vec<String>>,
 ) -> HuakResult<()> {
     // TODO: Doing this venv handling seems hacky.
     if !project.root().join("pyproject.toml").exists() {
@@ -29,16 +29,18 @@ pub fn install_project_dependencies(
         python_environment,
     )?;
 
-    for group in groups {
-        installer.install_packages(
-            &project
-                .project_file
-                .optional_dependency_list(group)
-                .iter()
-                .filter_map(|d| PythonPackage::from_str(d).ok())
-                .collect(),
-            python_environment,
-        )?
+    if let Some(them) = groups {
+        for group in them {
+            installer.install_packages(
+                &project
+                    .project_file
+                    .optional_dependency_list(group)
+                    .iter()
+                    .filter_map(|d| PythonPackage::from_str(d).ok())
+                    .collect(),
+                python_environment,
+            )?
+        }
     }
 
     Ok(())
@@ -72,13 +74,13 @@ pub mod tests {
         let pytest_path = venv.module_path("pytest").unwrap();
         let had_pytest = pytest_path.exists();
 
-        install_project_dependencies(&project, &venv, &installer, &vec![])
+        install_project_dependencies(&project, &venv, &installer, &None)
             .unwrap();
         install_project_dependencies(
             &project,
             &venv,
             &installer,
-            &vec!["test".to_string()],
+            &Some(vec!["test".to_string()]),
         )
         .unwrap();
 
