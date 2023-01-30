@@ -102,7 +102,6 @@ impl FromStr for PythonPackage {
         match parse_version_specifiers(spec_str) {
             Ok(them) => match them.first() {
                 Some(it_spec) => {
-                    dbg!(it_spec.to_string());
                     let name = match pkg_string.strip_suffix(&spec_str) {
                         Some(it) => it,
                         None => pkg_string,
