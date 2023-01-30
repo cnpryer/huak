@@ -10,65 +10,59 @@ pub type HuakResult<T> = Result<T, HuakError>;
 
 #[derive(Error, Debug)]
 pub enum HuakError {
-    #[error("A Clap error occurred: {0}")]
+    #[error("a problem with argument parsing occurred: {0}")]
     ClapError(#[from] clap::Error),
-    #[error("{0} already exists")]
+    #[error("a directory already exists: {0}")]
     DirectoryExists(PathBuf),
-    #[error("Expected environment variable not found: {0}")]
+    #[error("a problem with the environment occurred: {0}")]
     EnvVarError(#[from] std::env::VarError),
-    #[error("A pseudo-terminal error occurred: {0}")]
+    #[error("a problem with the pseudo-terminal occurred: {0}")]
     ExpectrlError(#[from] expectrl::Error),
-    #[error("A formatter error occurred: {0}")]
+    #[error("a problem with the formatter occurred: {0}")]
     FormatterError(String),
-    #[error("A Git error occurred: {0}")]
+    #[error("a problem with git occurred: {0}")]
     GitError(#[from] git2::Error),
-    #[error("An HTTP error occurred: {0}")]
+    #[error("a problem with http occurred: {0}")]
     HTTPError(#[from] reqwest::Error),
-    #[error("A Huak configuration error occurred: {0}")]
+    #[error("a problem with huak configuration occurred: {0}")]
     HuakConfigurationError(String),
-    #[error("An internal error occurred: {0}")]
+    #[error("a problem with huak's internals occurred: {0}")]
     InternalError(String),
-    #[error("An IO error occurred: {0}")]
+    #[error("a problem with io occurred: {0}")]
     IOError(#[from] io::Error),
-    #[error("A linter error occurred: {0}")]
+    #[error("a problem with the linter occurred: {0}")]
     LinterError(String),
-    #[error("Failed to build the project")]
+    #[error("a problem with building the project occurred")]
     PyPackageBuildError,
-    #[error("A package index error occurred: {0}")]
+    #[error("a problem with the package index occurred: {0}")]
     PyPackageIndexError(String),
-    #[error("Failed to initialize Python package: {0}")]
+    #[error("a problem with package initialization occurred: {0}")]
     PyPackageInitalizationError(String),
-    #[error("Failed to install Python package: {0}")]
+    #[error("a problem with package installation occurred: {0}")]
     PyPackageInstallationError(String),
-    #[error("Invalid version operator: {0}")]
+    #[error("a problem with the package version operator occurred: {0}")]
     PyPackageInvalidVersionOperator(String),
-    #[error("Invalid version: {0}")]
+    #[error("a problem with the package version occurred: {0}")]
     PyPackageInvalidVersion(String),
-    #[error("Unable to build the version specifier")]
+    #[error("a problem with the package version specifier occurred")]
     PyPackageVersionSpecifierError,
-    #[error(
-        "The project's manifest file could not be found. \
-Currently only pyproject.toml files are supported."
-    )]
+    #[error("a project file could not be found")]
     PyProjectFileNotFound,
-    #[error("A pyproject.toml already exists")]
+    #[error("a pyproject.toml already exists")]
     PyProjectTomlExistsError,
-    #[error("Failed to find the project's version")]
+    #[error("a problem with locating the project's version number occurred")]
     PyProjectVersionNotFound,
-    #[error(
-        "Python was not found on your operating system. Please \
-install Python (https://www.python.org/)."
-    )]
+    #[error("a python interpreter could not be found")]
     PythonNotFoundError,
-    #[error("No venv was found.")]
+    #[error("a venv could not be found")]
     PyVenvNotFoundError,
-    #[error("A testing error occurred: {0}")]
+    #[error("a problem with the test utility occurred: {0}")]
     TestingError(String),
-    #[error("Failed to deserialize toml: {0}")]
+    #[error("a problem with toml deserialization occurred: {0}")]
     TOMLDeserializationError(#[from] toml_edit::de::Error),
-    #[error("Failed to serialize toml: {0}")]
+    #[error("a problem with toml serialization occurred {0}")]
     TOMLSerializationError(#[from] toml_edit::ser::Error),
-    #[error("A UTF-8 error occurred: {0}")]
+    #[error("a problem with utf-8 parsing occurred: {0}")]
     UTF8Error(#[from] std::str::Utf8Error),
     #[error("{0}")]
     WrappedCommandError(String),
