@@ -19,27 +19,29 @@ pub fn install_project_dependencies(
         return Err(HuakError::PyProjectFileNotFound);
     }
 
-    installer.install_packages(
-        &project
-            .project_file
-            .dependency_list()
-            .iter()
-            .filter_map(|d| PythonPackage::from_str(d).ok())
-            .collect(),
-        python_environment,
-    )?;
+    if let Some(deps) = project.project_file.dependency_list() {
+        installer.install_packages(
+            &deps
+                .iter()
+                .filter_map(|x| PythonPackage::from_str(x).ok())
+                .collect(),
+            python_environment,
+        )?;
+    }
 
     if let Some(them) = groups {
         for group in them {
-            installer.install_packages(
-                &project
-                    .project_file
-                    .optional_dependency_list(group)
-                    .iter()
-                    .filter_map(|d| PythonPackage::from_str(d).ok())
-                    .collect(),
-                python_environment,
-            )?
+            if let Some(deps) =
+                project.project_file.optional_dependency_list(group)
+            {
+                installer.install_packages(
+                    &deps
+                        .iter()
+                        .filter_map(|x| PythonPackage::from_str(x).ok())
+                        .collect(),
+                    python_environment,
+                )?;
+            }
         }
     }
 
