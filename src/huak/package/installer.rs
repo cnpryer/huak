@@ -21,7 +21,7 @@ impl Installer {
         &self,
         package: &PythonPackage,
         python_environment: &Venv,
-    ) -> Result<(), HuakError> {
+    ) -> HuakResult<()> {
         let package = match self.search_installed(package)? {
             Some(_) => todo!(),
             None => {
@@ -58,16 +58,14 @@ impl Installer {
         Ok(())
     }
 
-    pub fn last_installed_package(
-        &self,
-    ) -> Result<Option<PythonPackage>, HuakError> {
+    pub fn last_installed_package(&self) -> HuakResult<Option<PythonPackage>> {
         Ok(None)
     }
 
     pub fn search_installed(
         &self,
         _package: &PythonPackage,
-    ) -> Result<Option<Vec<PythonPackage>>, HuakError> {
+    ) -> HuakResult<Option<Vec<PythonPackage>>> {
         Ok(None)
     }
 }

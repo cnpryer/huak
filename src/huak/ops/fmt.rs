@@ -1,4 +1,4 @@
-use crate::{env::venv::Venv, errors::HuakError, project::Project};
+use crate::{env::venv::Venv, errors::HuakResult, project::Project};
 
 const MODULE: &str = "black";
 
@@ -7,7 +7,7 @@ pub fn fmt_project(
     project: &Project,
     python_environment: &Venv,
     is_check: &bool,
-) -> Result<(), HuakError> {
+) -> HuakResult<()> {
     match is_check {
         true => python_environment.exec_module(
             MODULE,
