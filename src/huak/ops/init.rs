@@ -1,9 +1,19 @@
-use crate::{errors::HuakResult, project::Project};
+use crate::{
+    errors::{HuakError, HuakResult},
+    project::Project,
+};
 
 /// Initialize a project by adding a pyproject.toml to the dir.
 /// TODO: Do we need to mutate here?
 pub fn init_project(project: &mut Project) -> HuakResult<()> {
     project.init_project_file()?;
+
+    if let Some(path) = &project.project_file.filepath {
+        if path.exists() {
+            return Err(HuakError::PyProjectTomlExistsError);
+        }
+    }
+
     project.project_file.serialize()
 }
 
