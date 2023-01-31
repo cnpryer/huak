@@ -100,8 +100,8 @@ impl FromStr for PythonPackage {
 
         // TODO: More than one specifier
         match parse_version_specifiers(spec_str) {
-            Ok(them) => match them.first() {
-                Some(it_spec) => {
+            Ok(some_specs) => match some_specs.first() {
+                Some(some_spec) => {
                     let name = match pkg_string.strip_suffix(&spec_str) {
                         Some(it) => it,
                         None => pkg_string,
@@ -109,7 +109,7 @@ impl FromStr for PythonPackage {
 
                     Ok(PythonPackage {
                         name: name.to_string(),
-                        version_specifier: Some(it_spec.clone()),
+                        version_specifier: Some(some_spec.clone()),
                     })
                 }
                 None => Ok(PythonPackage {

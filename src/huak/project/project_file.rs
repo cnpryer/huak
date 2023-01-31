@@ -63,9 +63,9 @@ impl ProjectFile {
     /// Get a reference to the project version from project file data.
     pub fn project_version(&self) -> Option<&str> {
         // NOTE: This feels like a messy way to retain ownership.
-        if let Some(it_data) = &self.data {
-            if let Some(it_path) = &it_data.project.version {
-                return Some(it_path);
+        if let Some(some_data) = &self.data {
+            if let Some(some_path) = &some_data.project.version {
+                return Some(some_path);
             }
         }
 
@@ -89,8 +89,8 @@ impl ProjectFile {
     }
 
     pub fn dependency_list(&self) -> Option<&Vec<String>> {
-        if let Some(it_data) = &self.data {
-            return it_data.project.dependencies.as_ref();
+        if let Some(some_data) = &self.data {
+            return some_data.project.dependencies.as_ref();
         }
 
         None
@@ -100,9 +100,9 @@ impl ProjectFile {
         &self,
         group: &str,
     ) -> Option<&Vec<String>> {
-        if let Some(it_data) = &self.data {
-            if let Some(it_list) = &it_data.project.optional_dependencies {
-                return it_list.get(group);
+        if let Some(some_data) = &self.data {
+            if let Some(some_list) = &some_data.project.optional_dependencies {
+                return some_list.get(group);
             }
         }
 
@@ -110,10 +110,10 @@ impl ProjectFile {
     }
 
     pub fn serialize(&self) -> HuakResult<()> {
-        if let Some(it_data) = &self.data {
-            let string = it_data.to_string()?;
-            if let Some(it_path) = &self.filepath {
-                fs::write(it_path, string)?;
+        if let Some(some_data) = &self.data {
+            let string = some_data.to_string()?;
+            if let Some(some_path) = &self.filepath {
+                fs::write(some_path, string)?;
             } else {
                 return Err(HuakError::PyProjectFileNotFound);
             }
@@ -123,9 +123,9 @@ impl ProjectFile {
     }
 
     pub fn add_dependency(&mut self, dependency: &str) -> HuakResult<()> {
-        if let Some(it_data) = &mut self.data {
-            if let Some(it_list) = &mut it_data.project.dependencies {
-                add_to_dependency_list(it_list, dependency)?;
+        if let Some(some_data) = &mut self.data {
+            if let Some(some_list) = &mut some_data.project.dependencies {
+                add_to_dependency_list(some_list, dependency)?;
             }
         }
 
@@ -137,16 +137,17 @@ impl ProjectFile {
         dependency: &str,
         group: &str,
     ) -> HuakResult<()> {
-        if let Some(it_data) = &mut self.data {
-            if let Some(it_groups) = &mut it_data.project.optional_dependencies
+        if let Some(some_data) = &mut self.data {
+            if let Some(some_groups) =
+                &mut some_data.project.optional_dependencies
             {
-                match &mut it_groups.entry(group.to_string()) {
-                    std::collections::hash_map::Entry::Occupied(it_entry) => {
-                        let list = it_entry.get_mut();
+                match &mut some_groups.entry(group.to_string()) {
+                    std::collections::hash_map::Entry::Occupied(some_entry) => {
+                        let list = some_entry.get_mut();
                         add_to_dependency_list(list, dependency)?
                     }
                     std::collections::hash_map::Entry::Vacant(_) => {
-                        it_groups.insert(
+                        some_groups.insert(
                             group.to_string(),
                             vec![dependency.to_string()],
                         );
@@ -163,20 +164,22 @@ impl ProjectFile {
         dependency: &str,
         group: &Option<String>,
     ) -> HuakResult<()> {
-        if let Some(it_data) = &mut self.data {
+        if let Some(some_data) = &mut self.data {
             match &group {
-                Some(it_group) => {
-                    if let Some(it_groups) =
-                        &mut it_data.project.optional_dependencies
+                Some(some_group) => {
+                    if let Some(some_groups) =
+                        &mut some_data.project.optional_dependencies
                     {
-                        if let Some(it_list) = it_groups.get_mut(it_group) {
-                            remove_from_dependency_list(it_list, dependency)?;
+                        if let Some(some_list) = some_groups.get_mut(some_group)
+                        {
+                            remove_from_dependency_list(some_list, dependency)?;
                         }
                     }
                 }
                 None => {
-                    if let Some(it_list) = &mut it_data.project.dependencies {
-                        remove_from_dependency_list(it_list, dependency)?;
+                    if let Some(some_list) = &mut some_data.project.dependencies
+                    {
+                        remove_from_dependency_list(some_list, dependency)?;
                     }
                 }
             }
@@ -190,17 +193,17 @@ impl ProjectFile {
         package: &PythonPackage,
         group: &Option<String>,
     ) -> HuakResult<Option<&str>> {
-        if let Some(it_data) = &self.data {
+        if let Some(some_data) = &self.data {
             // Get list of dependencies to search
             let list = match group {
                 // If there's a group, and if it exists, search it. Otherwise there's
                 // nothing to search.
-                Some(it_group) => {
-                    if let Some(it_groups) =
-                        &it_data.project.optional_dependencies
+                Some(some_group) => {
+                    if let Some(some_groups) =
+                        &some_data.project.optional_dependencies
                     {
-                        match it_groups.get(it_group) {
-                            Some(it_list) => it_list,
+                        match some_groups.get(some_group) {
+                            Some(some_list) => some_list,
                             None => return Ok(None),
                         }
                     } else {
@@ -210,8 +213,8 @@ impl ProjectFile {
                 // If there's no group and there's dependencies listed, search the
                 // listed dependencies. Otherwise there's nothing to search.
                 None => {
-                    if let Some(it_list) = &it_data.project.dependencies {
-                        it_list
+                    if let Some(some_list) = &some_data.project.dependencies {
+                        some_list
                     } else {
                         return Ok(None);
                     }
@@ -225,8 +228,8 @@ impl ProjectFile {
                 .map(|x| PythonPackage::from_str(x))
                 .enumerate()
                 .find(|x| {
-                    if let Ok(it_x) = &x.1 {
-                        it_x.name == package.name
+                    if let Ok(some_x) = &x.1 {
+                        some_x.name == package.name
                     } else {
                         false
                     }
@@ -251,8 +254,8 @@ fn add_to_dependency_list(
         .map(|x| PythonPackage::from_str(x))
         .enumerate()
         .find(|x| {
-            if let Ok(it_x) = &x.1 {
-                it_x.name == package.name
+            if let Ok(some_x) = &x.1 {
+                some_x.name == package.name
             } else {
                 false
             }
@@ -279,8 +282,8 @@ fn remove_from_dependency_list(
         .map(|x| PythonPackage::from_str(x))
         .enumerate()
         .find(|x| {
-            if let Ok(it_x) = &x.1 {
-                it_x.name == package.name
+            if let Ok(some_x) = &x.1 {
+                some_x.name == package.name
             } else {
                 false
             }
