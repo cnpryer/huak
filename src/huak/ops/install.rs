@@ -29,8 +29,8 @@ pub fn install_project_dependencies(
         )?;
     }
 
-    if let Some(them) = groups {
-        for group in them {
+    if let Some(some_groups) = groups {
+        for group in some_groups {
             if let Some(deps) =
                 project.project_file.optional_dependency_list(group)
             {
