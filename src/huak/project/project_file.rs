@@ -88,30 +88,25 @@ impl ProjectFile {
         None
     }
 
-    // TODO: Dont clone
-    pub fn dependency_list(&self) -> Vec<String> {
+    pub fn dependency_list(&self) -> Option<&Vec<String>> {
         if let Some(it_data) = &self.data {
-            if let Some(it_list) = it_data.project.dependencies.as_ref() {
-                return it_list.clone();
-            }
+            return it_data.project.dependencies.as_ref();
         }
 
-        vec![]
+        None
     }
 
-    // TODO: Dont clone
-    pub fn optional_dependency_list(&self, group: &str) -> Vec<String> {
-        // TODO: Look into Option handling with method chaining or some mapping pattern
-        //       without using unwrap
+    pub fn optional_dependency_list(
+        &self,
+        group: &str,
+    ) -> Option<&Vec<String>> {
         if let Some(it_data) = &self.data {
             if let Some(it_list) = &it_data.project.optional_dependencies {
-                if let Some(it_group) = it_list.get(group) {
-                    return it_group.clone();
-                }
+                return it_list.get(group);
             }
         }
 
-        vec![]
+        None
     }
 
     pub fn serialize(&self) -> HuakResult<()> {
@@ -123,6 +118,7 @@ impl ProjectFile {
                 return Err(HuakError::PyProjectFileNotFound);
             }
         }
+
         Ok(())
     }
 
@@ -185,6 +181,7 @@ impl ProjectFile {
                 }
             }
         }
+
         Ok(())
     }
 
@@ -439,7 +436,10 @@ build-backend = "huak.core.build.api"
         let project_file = ProjectFile::from_filepath(&filepath).unwrap();
         let expected_dependencies = vec!["click==8.1.3", "black==22.8.0"];
 
-        assert_eq!(project_file.dependency_list(), expected_dependencies);
+        assert_eq!(
+            project_file.dependency_list().unwrap(),
+            &expected_dependencies
+        );
     }
 
     #[test]
@@ -468,8 +468,8 @@ build-backend = "huak.core.build.api"
         let expected_dependencies = vec!["click==8.1.3", "black==22.8.0"];
 
         assert_eq!(
-            project_file.optional_dependency_list("test"),
-            expected_dependencies
+            project_file.optional_dependency_list("test").unwrap(),
+            &expected_dependencies
         );
     }
 
@@ -541,11 +541,18 @@ build-backend = "huak.core.build.api"
         fs::write(&filepath, toml.to_string().unwrap()).unwrap();
 
         let mut project_file = ProjectFile::from_filepath(&filepath).unwrap();
-        let original_dependencies = project_file.dependency_list().clone();
+        let original_dependencies =
+            project_file.dependency_list().unwrap().clone();
         project_file.add_dependency("package").unwrap();
 
-        assert_ne!(original_dependencies, project_file.dependency_list());
-        assert_eq!(project_file.dependency_list().last().unwrap(), "package");
+        assert_ne!(
+            &original_dependencies,
+            project_file.dependency_list().unwrap()
+        );
+        assert_eq!(
+            project_file.dependency_list().unwrap().last().unwrap(),
+            "package"
+        );
     }
 
     #[test]
@@ -571,19 +578,22 @@ build-backend = "huak.core.build.api"
         fs::write(&filepath, toml.to_string().unwrap()).unwrap();
 
         let mut project_file = ProjectFile::from_filepath(&filepath).unwrap();
-        let original_dependencies =
-            project_file.optional_dependency_list("test").clone();
+        let original_dependencies = project_file
+            .optional_dependency_list("test")
+            .unwrap()
+            .clone();
         project_file
             .add_optional_dependency("package", "test")
             .unwrap();
 
         assert_ne!(
-            original_dependencies,
-            project_file.optional_dependency_list("test")
+            &original_dependencies,
+            project_file.optional_dependency_list("test").unwrap()
         );
         assert_eq!(
             project_file
                 .optional_dependency_list("test")
+                .unwrap()
                 .last()
                 .unwrap(),
             "package"
@@ -614,9 +624,12 @@ build-backend = "huak.core.build.api"
         fs::write(&filepath, toml.to_string().unwrap()).unwrap();
 
         let mut project_file = ProjectFile::from_filepath(&filepath).unwrap();
-        let original_dependencies = project_file.dependency_list().clone();
-        let original_optional_dependencies =
-            project_file.optional_dependency_list("test").clone();
+        let original_dependencies =
+            project_file.dependency_list().unwrap().clone();
+        let original_optional_dependencies = project_file
+            .optional_dependency_list("test")
+            .unwrap()
+            .clone();
         project_file.remove_dependency("black", &None).unwrap();
         project_file
             .remove_dependency("test", &Some("test".to_string()))
@@ -625,7 +638,10 @@ build-backend = "huak.core.build.api"
         assert!(!original_dependencies.is_empty());
         assert!(!original_optional_dependencies.is_empty());
 
-        assert!(project_file.dependency_list().is_empty());
-        assert!(project_file.optional_dependency_list("test").is_empty());
+        assert!(project_file.dependency_list().unwrap().is_empty());
+        assert!(project_file
+            .optional_dependency_list("test")
+            .unwrap()
+            .is_empty());
     }
 }
