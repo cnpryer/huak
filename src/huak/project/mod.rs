@@ -76,7 +76,7 @@ impl Project {
     /// let cwd = env::current_dir().unwrap();
     /// let project = Project::from_directory(cwd);
     /// ```
-    pub fn from_directory(path: PathBuf) -> Result<Project, HuakError> {
+    pub fn from_directory(path: PathBuf) -> HuakResult<Project> {
         // TODO: Builder.
         let project_file = ProjectFile::from_directory(&path)?;
         let project_file_filepath = match &project_file.filepath {

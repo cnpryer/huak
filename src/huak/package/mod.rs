@@ -4,7 +4,7 @@ pub mod installer;
 use core::fmt;
 use std::str::FromStr;
 
-use crate::errors::HuakError;
+use crate::errors::{HuakError, HuakResult};
 use pep440_rs::{
     parse_version_specifiers, Operator, Version, VersionSpecifier,
 };
@@ -34,7 +34,7 @@ impl PythonPackage {
         name: &str,
         operator: Option<&str>,
         version: &str,
-    ) -> Result<PythonPackage, HuakError> {
+    ) -> HuakResult<PythonPackage> {
         let op = match operator {
             Some(it) => create_operator_from_str(it)?,
             None => Operator::Equal,
@@ -80,7 +80,7 @@ impl PythonPackage {
 impl FromStr for PythonPackage {
     type Err = HuakError;
 
-    fn from_str(pkg_string: &str) -> Result<PythonPackage, HuakError> {
+    fn from_str(pkg_string: &str) -> HuakResult<PythonPackage> {
         // TODO: Improve the method used to parse the version portion
         // Search for the first character that isn't part of the package's name
         let found = pkg_string
@@ -154,14 +154,14 @@ impl fmt::Display for PythonPackage {
 
 // Build a PEP 440 Version Operator from an str.
 // Return a Huak-friendly Result.
-fn create_operator_from_str(op: &str) -> Result<Operator, HuakError> {
+fn create_operator_from_str(op: &str) -> HuakResult<Operator> {
     Operator::from_str(op)
         .map_err(|_| HuakError::PyPackageInvalidVersionOperator(op.to_string()))
 }
 
 // Build a PEP 440 Version from an str.
 // Return a Huak-friendly Result.
-fn create_version_from_str(ver: &str) -> Result<Version, HuakError> {
+fn create_version_from_str(ver: &str) -> HuakResult<Version> {
     Version::from_str(ver)
         .map_err(|_| HuakError::PyPackageInvalidVersion(ver.to_string()))
 }
@@ -172,7 +172,7 @@ fn create_version_specifier(
     op: Operator,
     ver: Version,
     star: bool,
-) -> Result<VersionSpecifier, HuakError> {
+) -> HuakResult<VersionSpecifier> {
     VersionSpecifier::new(op, ver, star)
         .map_err(|_| HuakError::PyPackageVersionSpecifierError)
 }

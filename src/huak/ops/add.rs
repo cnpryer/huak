@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{
     env::venv::Venv,
-    errors::HuakError,
+    errors::HuakResult,
     package::{installer::Installer, PythonPackage},
     project::Project,
 };
@@ -62,7 +62,7 @@ pub fn add_project_dependency(
     python_environment: &Venv,
     installer: &Installer,
     dependency_group: Option<String>,
-) -> Result<(), HuakError> {
+) -> HuakResult<()> {
     let (in_dependency_list, is_new_version);
     let package = match &project
         .project_file
