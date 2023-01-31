@@ -25,35 +25,26 @@ impl Default for Toml {
 }
 
 impl Toml {
-    pub(crate) fn from(string: &str) -> HuakResult<Toml> {
-        Ok(toml_edit::de::from_str(string)?)
+    pub(crate) fn from(string: &str) -> Result<Toml, toml_edit::de::Error> {
+        toml_edit::de::from_str(string)
     }
 
     pub(crate) fn open(path: &Path) -> HuakResult<Toml> {
         let toml = match fs::read_to_string(path) {
             Ok(s) => s,
-            Err(_) => {
-                return Err(HuakError::InternalError(format!(
-                    "failed to read toml file from {}",
-                    path.display()
-                )))
-            }
+            Err(e) => return Err(HuakError::IOError(e)),
         };
 
         let toml = match Toml::from(&toml) {
             Ok(t) => t,
-            Err(_) => {
-                return Err(HuakError::InternalError(
-                    "failed to build toml".into(),
-                ))
-            }
+            Err(e) => return Err(HuakError::TOMLDeserializationError(e)),
         };
 
         Ok(toml)
     }
 
-    pub(crate) fn to_string(&self) -> HuakResult<String> {
-        Ok(toml_edit::ser::to_string_pretty(&self)?)
+    pub(crate) fn to_string(&self) -> Result<String, toml_edit::ser::Error> {
+        toml_edit::ser::to_string_pretty(&self)
     }
 }
 
