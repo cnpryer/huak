@@ -1,7 +1,10 @@
-use crate::{errors::HuakError, project::Project};
+use crate::{
+    errors::{HuakError, HuakResult},
+    project::Project,
+};
 
 /// Get the version of a project.
-pub fn get_project_version(project: &Project) -> Result<&str, HuakError> {
+pub fn get_project_version(project: &Project) -> HuakResult<&str> {
     if !project.root().join("pyproject.toml").exists() {
         return Err(HuakError::PyProjectFileNotFound);
     }

@@ -1,15 +1,18 @@
-use crate::{env::venv::Venv, errors::HuakError, project::Project};
+use crate::{
+    env::venv::Venv, errors::HuakResult, package::installer::Installer,
+    project::Project,
+};
 
 /// Remove a dependency from a project by uninstalling it and updating the
 /// project's config.
 pub fn remove_project_dependency(
     project: &Project,
-    venv: &Venv,
+    py_env: &Venv,
     dependency: &str,
+    installer: &Installer,
     group: &Option<String>,
-) -> Result<(), HuakError> {
-    // TODO: #109
-    venv.uninstall_package(dependency)?;
+) -> HuakResult<()> {
+    installer.uninstall_package(dependency, py_env)?;
 
     let mut project_file = project.project_file.clone();
 
@@ -34,6 +37,7 @@ mod tests {
         let mut project = create_mock_project_full().unwrap();
         let cwd = std::env::current_dir().unwrap();
         let venv = Venv::new(cwd.join(".venv"));
+        let installer = Installer::new();
         let toml_path = project.root().join("pyproject.toml");
         let toml = Toml::open(&toml_path).unwrap();
         let existed = toml
@@ -47,7 +51,14 @@ mod tests {
                 deps.values().flatten().any(|d| d.starts_with("pytest"))
             });
 
-        remove_project_dependency(&mut project, &venv, "click", &None).unwrap();
+        remove_project_dependency(
+            &mut project,
+            &venv,
+            "click",
+            &installer,
+            &None,
+        )
+        .unwrap();
 
         let toml = Toml::open(&toml_path).unwrap();
         let exists = toml

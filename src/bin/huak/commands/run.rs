@@ -11,10 +11,10 @@ pub fn run(command: Vec<String>) -> CliResult<()> {
     let cwd = env::current_dir()?;
     let project = Project::from_directory(cwd)
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
-    let python_environment = create_venv(project.root())
+    let py_env = create_venv(project.root())
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
-    ops::run::run_command(&python_environment, &command)
+    ops::run::run_command(&command, &project, &py_env)
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
     Ok(())
