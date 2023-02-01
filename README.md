@@ -5,7 +5,7 @@
 
 <div align="center">
 
-<a href="https://docs.rs/crate/huak"><img src="https://github.com/cnpryer/huak/blob/master/docs/assets/img/logo.png" alt="Huak logo" width="300" role="img"></a>
+<img src="https://github.com/cnpryer/huak/blob/master/docs/assets/img/logo.png" alt="Huak logo" width="300" role="img"/>
 
 </div>
 
