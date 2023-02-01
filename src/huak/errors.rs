@@ -10,82 +10,62 @@ pub type HuakResult<T> = Result<T, HuakError>;
 
 #[derive(Error, Debug)]
 pub enum HuakError {
-    #[error(
-        "This feature is not implemented. See https://github.com/cnpryer/huak/milestones."
-    )]
-    NotImplemented,
-    #[error("Some arguments were missing.")]
-    MissingArguments,
-    #[error(
-        "An unknown error occurred: {0}. Please file a bug report at \
-        https://github.com/cnpryer/huak/issues/new?\
-        assignees=&labels=bug&template=BUG_REPORT.md&title="
-    )]
-    UnknownError(String),
-    #[error("An IO error occurred: {0}.")]
-    IOError(#[from] io::Error),
-    #[error(
-        "This is an unknown command. Please rerun with the `--help` flag."
-    )]
-    UnknownCommand,
-    #[error("{0}")]
+    #[error("a problem with argument parsing occurred: {0}")]
     ClapError(#[from] clap::Error),
-    #[error("{0}")]
-    ConfigurationError(String),
-    #[error("{0} already exists and may not be empty!")]
+    #[error("a directory already exists: {0}")]
     DirectoryExists(PathBuf),
-    #[error("An HTTP error occurred: {0}.")]
-    HttpError(#[from] reqwest::Error),
-    #[error("An error occurred while parsing bytes to a string: {0}.")]
-    Utf8Error(#[from] std::str::Utf8Error),
-    #[error("{0}")]
-    InternalError(String),
-    // TODO: make RuffError, PyBlackError, PyTestError, etc, take in whatever you
-    // feel makes the most sense. I have them as String for now, since I can't find
-    // usages anywhere and can't tell what they should derive from.
-    #[error("Ruff Error: {0}")]
-    RuffError(String),
-    #[error("Black Error: {0}")]
-    PyBlackError(String),
-    #[error("Pytest Error: {0}")]
-    PyTestError(String),
-    #[error(
-        "Python was not found on your operating system. Please \
-        install Python at https://www.python.org/."
-    )]
-    PythonNotFound,
-    #[error("No venv was found.")]
-    VenvNotFound,
-    #[error("Expected env var not found.")]
+    #[error("a problem with the environment occurred: {0}")]
     EnvVarError(#[from] std::env::VarError),
-    #[error("A pyproject.toml could not be found.")]
-    PyProjectTomlNotFound, // TODO: Manifest
-    #[error("Failed to install Python package: {0}.")]
-    PyPackageInstallFailure(String),
-    #[error("A pyproject.toml already exists.")]
-    PyProjectTomlExists,
-    #[error("Failed to init Python package: {0}.")]
-    PyPackageInitError(String),
-    #[error("Failed to deserialize toml: {0}.")]
-    TomlDeserializeError(#[from] toml_edit::de::Error),
-    #[error("Failed to serialize toml: {0}.")]
-    TomlSerializeError(#[from] toml_edit::ser::Error),
-    #[error("Invalid Python package version operator: {0}.")]
-    InvalidPyPackageVersionOp(String),
-    #[error("Failed to build the project.")]
-    BuildFailure,
-    #[error("Failed to find the project's version.")]
-    VersionNotFound,
-    #[error("Invalid version operator {0}.")]
-    PyPackageInvalidOperator(String),
-    #[error("Invalid version {0}.")]
-    PyPackageInvalidVersion(String),
-    #[error("Unable to build the version specifier.")]
-    PyPackageVersionSpecifierError,
-    #[error("Error related to pseudo-terminal: {0}.")]
+    #[error("a problem with the pseudo-terminal occurred: {0}")]
     ExpectrlError(#[from] expectrl::Error),
-    #[error("Project name not found.")]
-    ProjectNameNotFound,
-    #[error("Git error: {0}.")]
+    #[error("a problem with the formatter occurred: {0}")]
+    FormatterError(String),
+    #[error("a problem with git occurred: {0}")]
     GitError(#[from] git2::Error),
+    #[error("a problem with http occurred: {0}")]
+    HTTPError(#[from] reqwest::Error),
+    #[error("a problem with huak configuration occurred: {0}")]
+    HuakConfigurationError(String),
+    #[error("a problem with huak's internals occurred: {0}")]
+    InternalError(String),
+    #[error("a problem with io occurred: {0}")]
+    IOError(#[from] io::Error),
+    #[error("a problem with the linter occurred: {0}")]
+    LinterError(String),
+    #[error("an installed python module could not be found: {0}")]
+    PyModuleMissingError(String),
+    #[error("a problem with building the project occurred")]
+    PyPackageBuildError,
+    #[error("a problem with the package index occurred: {0}")]
+    PyPackageIndexError(String),
+    #[error("a problem with package initialization occurred: {0}")]
+    PyPackageInitalizationError(String),
+    #[error("a problem with package installation occurred: {0}")]
+    PyPackageInstallationError(String),
+    #[error("a problem with the package version operator occurred: {0}")]
+    PyPackageInvalidVersionOperator(String),
+    #[error("a problem with the package version occurred: {0}")]
+    PyPackageInvalidVersion(String),
+    #[error("a problem with the package version specifier occurred")]
+    PyPackageVersionSpecifierError,
+    #[error("a project file could not be found")]
+    PyProjectFileNotFound,
+    #[error("a pyproject.toml already exists")]
+    PyProjectTomlExistsError,
+    #[error("a problem with locating the project's version number occurred")]
+    PyProjectVersionNotFound,
+    #[error("a python interpreter could not be found")]
+    PythonNotFoundError,
+    #[error("a venv could not be found")]
+    PyVenvNotFoundError,
+    #[error("a problem with the test utility occurred: {0}")]
+    TestingError(String),
+    #[error("a problem with toml deserialization occurred: {0}")]
+    TOMLDeserializationError(#[from] toml_edit::de::Error),
+    #[error("a problem with toml serialization occurred {0}")]
+    TOMLSerializationError(#[from] toml_edit::ser::Error),
+    #[error("a problem with utf-8 parsing occurred: {0}")]
+    UTF8Error(#[from] std::str::Utf8Error),
+    #[error("{0}")]
+    WrappedCommandError(String),
 }

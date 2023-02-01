@@ -1,14 +1,16 @@
 pub mod index;
+pub mod installer;
 
 use core::fmt;
 use std::str::FromStr;
 
-use crate::errors::HuakError;
-use pep440_rs::{Operator, Version, VersionSpecifier};
+use crate::errors::{HuakError, HuakResult};
+use pep440_rs::{
+    parse_version_specifiers, Operator, Version, VersionSpecifier,
+};
 
-/// Version operators used in dependency strings.
-const VERSION_OPERATORS: [&str; 8] =
-    ["==", "~=", "!=", ">=", "<=", ">", "<", "==="];
+/// Version part characters
+const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
 
 /// A Python package struct that encapsulates a packages name and version in accordance with PEP
 /// see <https://peps.python.org/pep-0440/>
@@ -32,7 +34,7 @@ impl PythonPackage {
         name: &str,
         operator: Option<&str>,
         version: &str,
-    ) -> Result<PythonPackage, HuakError> {
+    ) -> HuakResult<PythonPackage> {
         let op = match operator {
             Some(it) => create_operator_from_str(it)?,
             None => Operator::Equal,
@@ -78,39 +80,47 @@ impl PythonPackage {
 impl FromStr for PythonPackage {
     type Err = HuakError;
 
-    fn from_str(pkg_string: &str) -> Result<PythonPackage, HuakError> {
-        // unfortunately, we have to redeclare the operators here or bring in a 3rd party crate (like strum)
-        // to derive an iterable from out VersionOp enum
-        let version_operators = VERSION_OPERATORS.into_iter();
-        let mut op: Option<&str> = None;
-        // TODO: Collect from filter on iter. Maybe contains.
-        for i in version_operators {
-            if pkg_string.contains(i) {
-                op = Some(i);
-                break;
+    fn from_str(pkg_string: &str) -> HuakResult<PythonPackage> {
+        // TODO: Improve the method used to parse the version portion
+        // Search for the first character that isn't part of the package's name
+        let found = pkg_string
+            .chars()
+            .enumerate()
+            .find(|x| VERSION_OPERATOR_CHARACTERS.contains(&x.1));
+
+        let spec_str = match found {
+            Some(it) => &pkg_string[it.0..],
+            None => {
+                return Ok(PythonPackage {
+                    name: pkg_string.to_string(),
+                    version_specifier: None,
+                });
             }
-        }
-        let package = match op {
-            Some(it) => {
-                let pkg_components = pkg_string.split(it);
-                let pkg_vec = pkg_components.collect::<Vec<&str>>();
-                let name = pkg_vec[0].to_string();
-                let operator = create_operator_from_str(it)?;
-                let version = create_version_from_str(pkg_vec[1])?;
-                let specifier =
-                    create_version_specifier(operator, version, false)?;
-                PythonPackage {
-                    name,
-                    version_specifier: Some(specifier),
-                }
-            }
-            None => PythonPackage {
-                name: pkg_string.to_string(),
-                ..Default::default()
-            },
         };
 
-        Ok(package)
+        // TODO: More than one specifier
+        match parse_version_specifiers(spec_str) {
+            Ok(some_specs) => match some_specs.first() {
+                Some(some_spec) => {
+                    let name = match pkg_string.strip_suffix(&spec_str) {
+                        Some(it) => it,
+                        None => pkg_string,
+                    };
+
+                    Ok(PythonPackage {
+                        name: name.to_string(),
+                        version_specifier: Some(some_spec.clone()),
+                    })
+                }
+                None => Ok(PythonPackage {
+                    name: pkg_string.to_string(),
+                    version_specifier: None,
+                }),
+            },
+            Err(e) => {
+                Err(HuakError::PyPackageInitalizationError(e.to_string()))
+            }
+        }
     }
 }
 
@@ -144,14 +154,14 @@ impl fmt::Display for PythonPackage {
 
 // Build a PEP 440 Version Operator from an str.
 // Return a Huak-friendly Result.
-fn create_operator_from_str(op: &str) -> Result<Operator, HuakError> {
+fn create_operator_from_str(op: &str) -> HuakResult<Operator> {
     Operator::from_str(op)
-        .map_err(|_| HuakError::PyPackageInvalidOperator(op.to_string()))
+        .map_err(|_| HuakError::PyPackageInvalidVersionOperator(op.to_string()))
 }
 
 // Build a PEP 440 Version from an str.
 // Return a Huak-friendly Result.
-fn create_version_from_str(ver: &str) -> Result<Version, HuakError> {
+fn create_version_from_str(ver: &str) -> HuakResult<Version> {
     Version::from_str(ver)
         .map_err(|_| HuakError::PyPackageInvalidVersion(ver.to_string()))
 }
@@ -162,7 +172,7 @@ fn create_version_specifier(
     op: Operator,
     ver: Version,
     star: bool,
-) -> Result<VersionSpecifier, HuakError> {
+) -> HuakResult<VersionSpecifier> {
     VersionSpecifier::new(op, ver, star)
         .map_err(|_| HuakError::PyPackageVersionSpecifierError)
 }

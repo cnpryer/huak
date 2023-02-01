@@ -49,7 +49,7 @@ pub fn find_python_binary_path(
         }
     }
 
-    Err(HuakError::PythonNotFound)
+    Err(HuakError::PythonNotFoundError)
 }
 
 /// Gets the PATH environment variable and splits this on ':'.

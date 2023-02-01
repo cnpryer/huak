@@ -1,57 +1,54 @@
+use std::str::FromStr;
+
 use crate::{
     env::venv::Venv,
     errors::{HuakError, HuakResult},
-    package::PythonPackage,
-    project::{Project, PythonConfig},
+    package::{installer::Installer, PythonPackage},
+    project::Project,
 };
+
+const MODULE: &str = "pip";
 
 /// Install all of the projects defined dependencies.
 pub fn install_project_dependencies(
-    venv: &Venv,
     project: &Project,
-    groups: &Vec<String>,
-    all: bool,
+    py_env: &Venv,
+    installer: &Installer,
+    groups: &Option<Vec<String>>,
 ) -> HuakResult<()> {
     // TODO: Doing this venv handling seems hacky.
     if !project.root().join("pyproject.toml").exists() {
-        return Err(HuakError::PyProjectTomlNotFound);
+        return Err(HuakError::PyProjectFileNotFound);
     }
 
-    install_packages(&project.config().package_list(), venv)?;
+    if !py_env.module_path(MODULE)?.exists() {
+        return Err(HuakError::PyModuleMissingError("pip".to_string()));
+    }
 
-    if !all {
-        for group in groups {
-            install_packages(
-                &project.config().optional_package_list(group),
-                venv,
-            )?
+    if let Some(deps) = project.project_file.dependency_list() {
+        installer.install_packages(
+            &deps
+                .iter()
+                .filter_map(|x| PythonPackage::from_str(x).ok())
+                .collect(),
+            py_env,
+        )?;
+    }
+
+    if let Some(some_groups) = groups {
+        for group in some_groups {
+            if let Some(deps) =
+                project.project_file.optional_dependency_list(group)
+            {
+                installer.install_packages(
+                    &deps
+                        .iter()
+                        .filter_map(|x| PythonPackage::from_str(x).ok())
+                        .collect(),
+                    py_env,
+                )?;
+            }
         }
-        return Ok(());
-    }
-
-    if let Some(deps) = &project
-        .config()
-        .pyproject_toml()
-        .project
-        .optional_dependencies
-    {
-        for group in deps.keys() {
-            install_packages(
-                &project.config().optional_package_list(group),
-                venv,
-            )?;
-        }
-    }
-
-    Ok(())
-}
-
-fn install_packages(
-    packages: &Vec<PythonPackage>,
-    venv: &Venv,
-) -> HuakResult<()> {
-    for package in packages {
-        venv.install_package(package)?;
     }
 
     Ok(())
@@ -60,31 +57,38 @@ fn install_packages(
 #[cfg(test)]
 pub mod tests {
 
-    use crate::{env::venv::Venv, utils::test_utils::create_mock_project_full};
+    use crate::{
+        env::venv::Venv, package::installer::Installer,
+        utils::test_utils::create_mock_project_full,
+    };
 
     use super::install_project_dependencies;
 
     // TODO
     #[test]
     fn installs_dependencies() {
-        let project = create_mock_project_full().unwrap();
+        let mut project = create_mock_project_full().unwrap();
+        project.init_project_file().unwrap();
+
         let cwd = std::env::current_dir().unwrap();
         let venv = &Venv::new(cwd.join(".venv"));
+        let installer = Installer::new();
 
-        venv.uninstall_package("black").unwrap();
+        installer.uninstall_package("black", &venv).unwrap();
         let black_path = venv.module_path("black").unwrap();
         let had_black = black_path.exists();
 
-        venv.uninstall_package("pytest").unwrap();
+        installer.uninstall_package("pytest", &venv).unwrap();
         let pytest_path = venv.module_path("pytest").unwrap();
         let had_pytest = pytest_path.exists();
 
-        install_project_dependencies(&venv, &project, &vec![], false).unwrap();
+        install_project_dependencies(&project, &venv, &installer, &None)
+            .unwrap();
         install_project_dependencies(
-            &venv,
             &project,
-            &vec!["test".to_string()],
-            false,
+            &venv,
+            &installer,
+            &Some(vec!["test".to_string()]),
         )
         .unwrap();
 

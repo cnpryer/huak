@@ -1,5 +1,4 @@
 name: Rust CI
-# This top level workflow controls the what and when of the CI pipeline for Rust components of huak
 
 on:
   push:
@@ -8,6 +7,7 @@ on:
     paths:
       - 'src/**'
       - 'Cargo.toml'
+      - 'Cargo.lock'
       - '.github/workflows/ci-rust.yaml'
   pull_request:
     branches:
@@ -15,10 +15,11 @@ on:
     paths:
       - 'src/**'
       - 'Cargo.toml'
+      - 'Cargo.lock'
       - '.github/workflows/ci-rust.yaml'
 
 jobs:
-  test_and_build:
+  test-and-build:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -29,18 +30,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - uses: actions/cache@v3
-        env:
-          cache-name: cache-cargo
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
+      - uses: Swatinem/rust-cache@v1
       - name: Test
         env:
           HUAK_MUTE_COMMAND: 1
@@ -49,7 +39,7 @@ jobs:
       - name: Build
         run: cargo build --release
 
-  lint_and_fmt:
+  lint-and-fmt:
     name: Lint and check fmt
     runs-on: ubuntu-latest
     steps:
@@ -60,25 +50,10 @@ jobs:
           toolchain: stable
           override: true
           components: rustfmt, clippy
-
-      - name: Cache Cargo
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-cargo
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-
+      - uses: Swatinem/rust-cache@v1
       - name: Run formatting checks
         run: |
           cargo fmt --all -- --check
-
       - name: Run lints
         env:
           RUSTFLAGS: -C debuginfo=0
@@ -86,18 +61,16 @@ jobs:
           cargo clippy --all-features
           cargo clippy -- -D warnings
 
-  # The 'linux' job uses the manylinux docker image to build wheels that can be used by most linux distros.
   dry-release:
     name: Build with maturin
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # These are the CPU architectures...
         target: [x86_64, i686]
     steps:
       - uses: actions/checkout@v3
+      - uses: Swatinem/rust-cache@v1
       - name: build wheels
-        # see example at https://github.com/messense/crfs-rs/blob/main/.github/workflows/Python.yml
         uses: messense/maturin-action@v1
         with:
           target: ${{ matrix.target }}

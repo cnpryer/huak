@@ -1,6 +1,5 @@
-mod config;
-pub use self::config::ProjectConfig;
-pub use self::config::PythonConfig;
+mod project_file;
+pub use self::project_file::ProjectFile;
 
 use crate::errors::HuakError;
 use crate::{config::pyproject::toml::Toml, errors::HuakResult};
@@ -16,18 +15,18 @@ use std::path::{Path, PathBuf};
 /// use huak::project::Project;
 ///
 /// let cwd = env::current_dir().unwrap();
-/// let project = Project::from(cwd);
+/// let project = Project::from_directory(cwd);
 /// ```
 pub struct Project {
     /// The path to the root directory of the project. Attempts to discover
     /// the root path locally are used if one is not provided. The default
     /// is the current working directory.
-    root: PathBuf,
+    pub root: PathBuf,
     /// A project can be application-like or library-like. A project defaults
     /// as library-type.
-    project_type: ProjectType,
-    /// Project configuration contains data about dependancies and more.
-    config: ProjectConfig,
+    pub project_type: ProjectType,
+    /// Project file contains data about dependancies and more (TODO: put PEP here).
+    pub project_file: ProjectFile,
 }
 
 /// There are two kinds of projects: application and library.
@@ -49,21 +48,21 @@ impl Project {
     /// use huak::project::Project;
     ///
     /// let cwd = env::current_dir().unwrap();
-    /// let project = Project::from(cwd);
+    /// let project = Project::from_directory(cwd);
     /// ```
     pub fn new(path: PathBuf, project_type: ProjectType) -> Project {
-        let mut config = ProjectConfig::default();
+        let mut project_file = ProjectFile::default();
 
         // TODO: Don't unwrap_or_else like this.
         let name = project_name_from_root(path.as_path())
             .unwrap_or_else(|_| "".to_string());
 
-        config.set_project_name(name.as_str());
+        project_file.set_project_name(name.as_str());
 
         Project {
             root: path,
             project_type,
-            config,
+            project_file,
         }
     }
 
@@ -75,17 +74,22 @@ impl Project {
     /// use huak::project::Project;
     ///
     /// let cwd = env::current_dir().unwrap();
-    /// let project = Project::from(cwd);
+    /// let project = Project::from_directory(cwd);
     /// ```
-    pub fn from(path: PathBuf) -> Result<Project, HuakError> {
+    pub fn from_directory(path: PathBuf) -> HuakResult<Project> {
         // TODO: Builder.
-        let config = ProjectConfig::from(&path)?;
-        let manifest_path = config.pyproject_path();
+        let project_file = ProjectFile::from_directory(&path)?;
+        let project_file_filepath = match &project_file.filepath {
+            Some(it) => it,
+            None => {
+                return Err(HuakError::PyProjectFileNotFound);
+            }
+        };
 
         // Set the root to the directory the manifest file was found.
         // TODO: This is probably not the right way to do this.
         let mut root = path;
-        if let Some(parent) = manifest_path.parent() {
+        if let Some(parent) = project_file_filepath.parent() {
             root = parent.to_path_buf()
         }
 
@@ -96,15 +100,27 @@ impl Project {
         Ok(Project {
             root,
             project_type,
-            config,
+            project_file,
         })
     }
 
-    pub fn create_from_template(&self) -> HuakResult<()> {
-        let name = self.config.project_name();
-        let version = match self.config.project_version() {
+    pub fn bootstrap(&self) -> HuakResult<()> {
+        if let Some(it) = &self.project_file.filepath {
+            if it.exists() {
+                return Err(HuakError::PyProjectTomlExistsError);
+            }
+        }
+
+        let name = match self.project_file.project_name() {
             Some(it) => it,
-            None => return Err(HuakError::VersionNotFound),
+            None => {
+                return Err(HuakError::PyProjectFileNotFound);
+            }
+        };
+
+        let version = match self.project_file.project_version() {
+            Some(it) => it,
+            None => return Err(HuakError::PyProjectVersionNotFound),
         };
 
         // Create package dir
@@ -151,26 +167,35 @@ if __name__ == "__main__":
         Ok(())
     }
 
-    /// Create project toml.
-    // TODO: Config implementations?
-    pub fn create_toml(&self) -> HuakResult<Toml> {
-        let mut toml = Toml::default();
-        let name = project_name_from_root(&self.root)?;
-
-        if matches!(self.project_type, ProjectType::Application) {
-            let entrypoint = format!("{name}.main:main");
-            toml.project.scripts =
-                Some(HashMap::from([(name.clone(), entrypoint)]))
+    pub fn init_project_file(&mut self) -> HuakResult<()> {
+        if self.project_file.filepath.is_none() {
+            self.project_file.filepath = Some(self.root.join("pyproject.toml"));
         }
 
-        toml.project.name = name;
+        if let Some(it) = &self.project_file.filepath {
+            let mut toml = if it.exists() {
+                Toml::open(it)?
+            } else {
+                Toml::default()
+            };
 
-        Ok(toml)
-    }
+            let name = project_name_from_root(&self.root)?;
 
-    /// Get a reference to the `Project` `Config`.
-    pub fn config(&self) -> &ProjectConfig {
-        &self.config
+            if matches!(self.project_type, ProjectType::Application)
+                && toml.project.scripts.is_none()
+            {
+                let entrypoint = format!("{name}.main:main");
+                toml.project.scripts =
+                    Some(HashMap::from([(name.clone(), entrypoint)]))
+            }
+
+            toml.project.name = name;
+            self.project_file.data = Some(toml);
+
+            return Ok(());
+        }
+
+        Err(HuakError::PyProjectFileNotFound)
     }
 
     pub fn root(&self) -> &PathBuf {
@@ -191,15 +216,16 @@ mod tests {
     use crate::utils::{path::copy_dir, test_utils::get_resource_dir};
 
     #[test]
-    fn from() {
+    fn from_directory() {
         let directory = tempdir().unwrap().into_path();
         let mock_dir = get_resource_dir().join("mock-project");
 
         copy_dir(&mock_dir, &directory);
 
-        let project1 = Project::from(directory.join("mock-project")).unwrap();
+        let project1 =
+            Project::from_directory(directory.join("mock-project")).unwrap();
 
-        let project2 = Project::from(
+        let project2 = Project::from_directory(
             directory
                 .join("mock-project")
                 .join("src")

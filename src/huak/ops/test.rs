@@ -1,16 +1,25 @@
-use crate::{env::venv::Venv, errors::HuakResult, project::Project};
+use std::str::FromStr;
+
+use crate::{
+    env::{runner::Runner, venv::Venv},
+    errors::HuakResult,
+    package::{installer::Installer, PythonPackage},
+    project::Project,
+};
 
 const MODULE: &str = "pytest";
 
 /// Test a project using `pytest`.
-pub fn test_project(project: &Project, venv: &Venv) -> HuakResult<()> {
-    let args = [];
+pub fn test_project(
+    project: &Project,
+    py_env: &Venv,
+    installer: &Installer,
+) -> HuakResult<()> {
+    if !py_env.module_path(MODULE)?.exists() {
+        let package = PythonPackage::from_str(MODULE)?;
+        installer.install_package(&package, py_env)?;
+    }
 
-    // TODO: not sure if the PyTestError was something you wanted to override
-    // the internal HuakError, so leaving as comment for now.
-    // match venv.exec_module(MODULE, &args, &project.root) {
-    //     Ok(_) => Ok(()),
-    //     Err(e) => Err(HuakError::PyTestError(Box::new(e))),
-    // }
-    venv.exec_module(MODULE, &args, project.root())
+    let runner = Runner::new()?;
+    runner.run_installed_module(MODULE, &[], py_env, Some(project.root()))
 }

@@ -1,7 +1,6 @@
 use std::{
     env::{self, consts::OS},
     path::{Path, PathBuf},
-    str::FromStr,
 };
 
 #[allow(clippy::useless_attribute)]
@@ -50,7 +49,7 @@ impl Venv {
     /// Initialize a `Venv` by searching a directory for a venv. `from()` will search
     /// the parents directory for a configured number of recursive steps.
     // TODO: Improve the directory search (refactor manifest search into search utility).
-    pub fn from_path(from: &Path) -> HuakResult<Venv> {
+    pub fn from_directory(from: &Path) -> HuakResult<Venv> {
         let names = vec![".venv", "venv"];
 
         // TODO: Redundancy.
@@ -62,7 +61,7 @@ impl Venv {
             };
         }
 
-        Err(HuakError::VenvNotFound)
+        Err(HuakError::PyVenvNotFoundError)
     }
 
     /// Get the name of the Venv (ex: ".venv").
@@ -70,6 +69,16 @@ impl Venv {
         let name = crate::utils::path::parse_filename(self.path.as_path())?;
 
         Ok(name)
+    }
+
+    /// Check if the Venv is a valid Python environment that can be used.
+    pub fn validate(&self) -> HuakResult<()> {
+        // TODO: Make this more robust.
+        if self.path.exists() {
+            return Ok(());
+        }
+
+        Err(HuakError::PyVenvNotFoundError)
     }
 
     /// Activates the virtual environment in the current shell
@@ -81,54 +90,15 @@ impl Venv {
 
         let script = self.get_activation_script()?;
         if !script.exists() {
-            return Err(HuakError::VenvNotFound);
+            return Err(HuakError::PyVenvNotFoundError);
         }
         let source_command = get_shell_source_command()?;
         let activation_command =
             format!("{} {}", source_command, script.display());
 
         env::set_var(HUAK_VENV_ENV_VAR, "1");
-        self.spawn_pseudo_terminal(&activation_command)?;
+        spawn_pseudo_terminal(&activation_command)?;
 
-        Ok(())
-    }
-
-    /// Spawn a pseudo-terminal with current shell and source activation script
-    #[cfg(unix)]
-    fn spawn_pseudo_terminal(
-        &self,
-        activation_command: &str,
-    ) -> HuakResult<()> {
-        let shell_path = get_shell_path()?;
-        let mut new_shell = expectrl::spawn(shell_path)?;
-        let mut stdin = expectrl::stream::stdin::Stdin::open()?;
-        new_shell.send_line(activation_command)?;
-        if let Some((cols, rows)) = terminal_size::terminal_size() {
-            new_shell
-                .set_window_size(cols.0, rows.0)
-                .map_err(|e| HuakError::InternalError(e.to_string()))?;
-        }
-        new_shell.interact(&mut stdin, std::io::stdout()).spawn()?;
-        stdin.close()?;
-        Ok(())
-    }
-
-    /// Spawn a pseudo-terminal with current shell and source activation script
-    #[cfg(windows)]
-    fn spawn_pseudo_terminal(
-        &self,
-        activation_command: &str,
-    ) -> HuakResult<()> {
-        let shell_path = get_shell_path()?;
-        let mut sh = expectrl::spawn(shell_path)?;
-        let stdin = expectrl::stream::stdin::Stdin::open()?;
-
-        sh.send_line(&activation_command)?;
-
-        sh.interact(stdin, std::io::stdout()).spawn()?;
-
-        let stdin = expectrl::stream::stdin::Stdin::open()?;
-        stdin.close()?;
         Ok(())
     }
 
@@ -137,7 +107,7 @@ impl Venv {
     ///
     /// Takes current shell into account.
     /// Returns errors if it fails to get correct env vars.
-    fn get_activation_script(&self) -> HuakResult<PathBuf> {
+    pub fn get_activation_script(&self) -> HuakResult<PathBuf> {
         let shell_name = get_shell_name()?;
 
         let suffix = match shell_name.as_str() {
@@ -165,7 +135,7 @@ impl Venv {
         let from = match self.path.parent() {
             Some(p) => p,
             _ => {
-                return Err(HuakError::ConfigurationError(
+                return Err(HuakError::HuakConfigurationError(
                     "Invalid venv path, no parent directory.".into(),
                 ))
             }
@@ -188,7 +158,7 @@ impl Venv {
                     // See TODO comment above. Windows PATH variable search is
                     // incomplete, so this will attempt the alias if it's on the
                     // PATH.
-                    HuakError::PythonNotFound => {
+                    HuakError::PythonNotFoundError => {
                         DEFAULT_PYTHON_ALIAS.to_string()
                     }
                     _ => return Err(e),
@@ -219,6 +189,7 @@ impl Venv {
     }
 
     /// Get the path to the module passed from the venv.
+    /// TODO: "Module" might be misleading.
     pub fn module_path(&self, module: &str) -> HuakResult<PathBuf> {
         let bin_path = self.bin_path();
         let mut path = bin_path.join(module);
@@ -234,90 +205,14 @@ impl Venv {
             ))),
         }
     }
-
-    /// Run a module installed to the venv as an aliased command from the current working dir.
-    pub fn exec_module(
-        &self,
-        module: &str,
-        args: &[&str],
-        from: &Path,
-    ) -> HuakResult<()> {
-        // Create the venv if it doesn't exist.
-        // TODO: Fix this.
-        self.create()?;
-
-        let module_path = self.module_path(module)?;
-        let package = match PythonPackage::from_str(module) {
-            Ok(it) => it,
-            // TODO: Don't do this post-decouple.
-            Err(_) => {
-                return Err(HuakError::PyPackageInitError(module.to_string()))
-            }
-        };
-
-        if !module_path.exists() {
-            self.install_package(&package)?;
-        }
-
-        let module_path = crate::utils::path::to_string(module_path.as_path())?;
-
-        crate::utils::command::run_command(module_path, args, from)?;
-
-        Ok(())
-    }
-
-    /// Run a command in the context of the venv.
-    pub fn exec_command(&self, command: &str) -> HuakResult<()> {
-        // Create the venv if it doesn't exist.
-        // TODO: Fix this.
-        self.create()?;
-
-        let source_command = get_shell_source_command()?;
-        let script = self.get_activation_script()?;
-        let activation_command =
-            format!("{} {}", source_command, script.display());
-
-        let shell_path = get_shell_path()?;
-        let cwd = env::current_dir()?;
-        crate::utils::command::run_command(
-            &shell_path,
-            &["-c", &format!("{activation_command} && {command}")],
-            cwd.as_path(),
-        )?;
-
-        Ok(())
-    }
-
-    /// Install a Python package to the venv.
-    pub fn install_package(&self, package: &PythonPackage) -> HuakResult<()> {
-        let cwd = env::current_dir()?;
-        let module_str = &package.name;
-        let args = ["install", module_str];
-        let module = "pip";
-
-        self.exec_module(module, &args, cwd.as_path())?;
-
-        Ok(())
-    }
-
-    /// Uninstall a dependency from the venv.
-    pub fn uninstall_package(&self, name: &str) -> HuakResult<()> {
-        let cwd = env::current_dir()?;
-        let module = "pip";
-        let args = ["uninstall", name, "-y"];
-
-        self.exec_module(module, &args, cwd.as_path())?;
-
-        Ok(())
-    }
 }
 
 // Helper function to create a venv from a path. If it already exists, initialize
 // and return the Venv. If it doesn't then create a .venv at the path given.
 pub fn create_venv(dirpath: &Path) -> HuakResult<Venv> {
-    let venv = match Venv::from_path(dirpath) {
+    let venv = match Venv::from_directory(dirpath) {
         Ok(it) => it,
-        Err(HuakError::VenvNotFound) => Venv::new(dirpath.join(".venv")),
+        Err(HuakError::PyVenvNotFoundError) => Venv::new(dirpath.join(".venv")),
         Err(e) => return Err(e),
     };
 
@@ -325,6 +220,39 @@ pub fn create_venv(dirpath: &Path) -> HuakResult<Venv> {
     venv.create()?;
 
     Ok(venv)
+}
+
+/// Spawn a pseudo-terminal with current shell and source activation script
+#[cfg(unix)]
+fn spawn_pseudo_terminal(activation_command: &str) -> HuakResult<()> {
+    let shell_path = get_shell_path()?;
+    let mut new_shell = expectrl::spawn(shell_path)?;
+    let mut stdin = expectrl::stream::stdin::Stdin::open()?;
+    new_shell.send_line(activation_command)?;
+    if let Some((cols, rows)) = terminal_size::terminal_size() {
+        new_shell
+            .set_window_size(cols.0, rows.0)
+            .map_err(|e| HuakError::InternalError(e.to_string()))?;
+    }
+    new_shell.interact(&mut stdin, std::io::stdout()).spawn()?;
+    stdin.close()?;
+    Ok(())
+}
+
+/// Spawn a pseudo-terminal with current shell and source activation script
+#[cfg(windows)]
+fn spawn_pseudo_terminal(activation_command: &str) -> HuakResult<()> {
+    let shell_path = get_shell_path()?;
+    let mut sh = expectrl::spawn(shell_path)?;
+    let stdin = expectrl::stream::stdin::Stdin::open()?;
+
+    sh.send_line(&activation_command)?;
+
+    sh.interact(stdin, std::io::stdout()).spawn()?;
+
+    let stdin = expectrl::stream::stdin::Stdin::open()?;
+    stdin.close()?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -341,12 +269,12 @@ mod tests {
     }
 
     #[test]
-    fn from() {
+    fn from_directory() {
         let directory = tempdir().unwrap().into_path();
         let first_venv = Venv::new(directory.join(".venv"));
         first_venv.create().unwrap();
 
-        let second_venv = Venv::from_path(&directory).unwrap();
+        let second_venv = Venv::from_directory(&directory).unwrap();
 
         assert!(second_venv.path.exists());
         assert!(second_venv.module_path("pip").unwrap().exists());

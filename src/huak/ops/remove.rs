@@ -1,35 +1,32 @@
-use std::fs;
-
 use crate::{
-    config::pyproject::toml::Toml, env::venv::Venv, errors::HuakError,
+    env::venv::Venv, errors::HuakResult, package::installer::Installer,
     project::Project,
 };
 
 /// Remove a dependency from a project by uninstalling it and updating the
 /// project's config.
 pub fn remove_project_dependency(
-    venv: &Venv,
     project: &Project,
+    py_env: &Venv,
     dependency: &str,
-) -> Result<(), HuakError> {
-    // TODO: #109
-    venv.uninstall_package(dependency)?;
+    installer: &Installer,
+    group: &Option<String>,
+) -> HuakResult<()> {
+    installer.uninstall_package(dependency, py_env)?;
 
-    let mut toml = Toml::open(&project.root().join("pyproject.toml"))?;
-    toml.remove_dependency(dependency);
+    let mut project_file = project.project_file.clone();
 
-    // Serialize pyproject.toml.
-    let string = toml.to_string()?;
-
-    fs::write(project.root().join("pyproject.toml"), string)?;
-
-    Ok(())
+    project_file.remove_dependency(dependency, group)?;
+    project_file.serialize()
 }
 
 #[cfg(test)]
 mod tests {
 
-    use crate::utils::test_utils::create_mock_project_full;
+    use crate::{
+        config::pyproject::toml::Toml,
+        utils::test_utils::create_mock_project_full,
+    };
 
     use super::*;
 
@@ -37,9 +34,10 @@ mod tests {
     fn removes_dependencies() {
         // TODO: Optional deps test is passing but the operation wasn't fully
         //       implemented.
-        let project = create_mock_project_full().unwrap();
+        let mut project = create_mock_project_full().unwrap();
         let cwd = std::env::current_dir().unwrap();
         let venv = Venv::new(cwd.join(".venv"));
+        let installer = Installer::new();
         let toml_path = project.root().join("pyproject.toml");
         let toml = Toml::open(&toml_path).unwrap();
         let existed = toml
@@ -53,7 +51,14 @@ mod tests {
                 deps.values().flatten().any(|d| d.starts_with("pytest"))
             });
 
-        remove_project_dependency(&venv, &project, "click").unwrap();
+        remove_project_dependency(
+            &mut project,
+            &venv,
+            "click",
+            &installer,
+            &None,
+        )
+        .unwrap();
 
         let toml = Toml::open(&toml_path).unwrap();
         let exists = toml
@@ -65,7 +70,7 @@ mod tests {
 
         let exists = exists
             && toml.project.optional_dependencies.map_or(false, |deps| {
-                deps.values().flatten().any(|d| d.starts_with("pytest"))
+                deps.values().flatten().any(|d| d.starts_with("click"))
             });
 
         assert!(existed);

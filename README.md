@@ -1,5 +1,4 @@
 [![ci-rust](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml)
-[![crates.io](https://img.shields.io/crates/v/huak.svg)](https://crates.io/crates/huak)
 [![discord](https://img.shields.io/discord/1022879330470199347?color=7289DA&logo=discord)](https://discord.gg/St3menxFZT)
 
 # huak
@@ -53,10 +52,6 @@ Install with `pip`:
 
 `❯ pip install huak --pre`
 
-Install with `cargo`:
-
-`❯ cargo install huak --version` [![crates.io](https://img.shields.io/crates/v/huak.svg?label="")](https://crates.io/crates/huak)
-
 Around 0.1.0 you'll be able to install `huak` using `brew`. More distribution plans will be finalized closer to 0.1.0.
 
 ```console
@@ -87,6 +82,10 @@ Commands:
   update    Update dependencies added to the project*
   version   Display the version of the project
   help      Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
 ```
 _"*" indicates first-pass of implementation is incomplete._
 

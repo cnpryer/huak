@@ -9,12 +9,12 @@ use huak::project::Project;
 /// Run the `run` command.
 pub fn run(command: Vec<String>) -> CliResult<()> {
     let cwd = env::current_dir()?;
-    let project =
-        Project::from(cwd).map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
-    let venv = create_venv(project.root())
+    let project = Project::from_directory(cwd)
+        .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
+    let py_env = create_venv(project.root())
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
-    ops::run::run_command(&venv, &command)
+    ops::run::run_command(&command, &project, &py_env)
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
     Ok(())

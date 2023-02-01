@@ -3,6 +3,7 @@ use pyproject_toml::BuildSystem;
 const HUAK_REQUIRES: &str = "hatchling";
 const HUAK_BUILD_BACKEND: &str = "hatchling.build";
 
+#[derive(Clone)]
 /// Builder struct to create load default BuildSystem data into pyproject-toml-rs.
 pub struct BuildSystemBuilder {}
 

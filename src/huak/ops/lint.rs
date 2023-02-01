@@ -1,10 +1,27 @@
-use crate::{env::venv::Venv, errors::HuakResult, project::Project};
+use std::str::FromStr;
+
+use crate::{
+    env::{runner::Runner, venv::Venv},
+    errors::HuakResult,
+    package::{installer::Installer, PythonPackage},
+    project::Project,
+};
 
 const MODULE: &str = "ruff";
 
 /// Lint the project from its root.
-pub fn lint_project(project: &Project, venv: &Venv) -> HuakResult<()> {
-    let args = [".", "--extend-exclude", venv.name()?];
+pub fn lint_project(
+    project: &Project,
+    py_env: &Venv,
+    installer: &Installer,
+) -> HuakResult<()> {
+    if !py_env.module_path(MODULE)?.exists() {
+        let package = PythonPackage::from_str(MODULE)?;
+        installer.install_package(&package, py_env)?;
+    }
 
-    venv.exec_module(MODULE, &args, project.root())
+    let args = [".", "--extend-exclude", py_env.name()?];
+    let runner = Runner::new()?;
+
+    runner.run_installed_module(MODULE, &args, py_env, Some(project.root()))
 }
