@@ -5,7 +5,7 @@
 
 <div align="center">
 
-<a href="https://docs.rs/crate/huak"><img src="docs/assets/img/logo.png" alt="Huak logo" width="300" role="img"></a>
+<a href="https://docs.rs/crate/huak"><img src="https://github.com/cnpryer/huak/blob/master/docs/assets/img/logo.png" alt="Huak logo" width="300" role="img"></a>
 
 </div>
 
@@ -15,7 +15,7 @@
 
 A Python package manager written in Rust. The [Cargo](https://github.com/rust-lang/cargo) for Python.
 
-> ⚠️ Disclaimer: The `huak` [PoC](https://github.com/cnpryer/huak/milestones) is mostly complete.
+> ⚠️ Disclaimer: `huak` is in an experimental state.
 
 Huak aims to support a base workflow for developing Python packages and projects. The process is linear and purpose oriented, establishing better familiarization with the steps.
 
@@ -111,7 +111,7 @@ I love Rust's onboarding experience. Cargo has played a large role. It's a great
 
 ### 3. Fast ⚡️
 
-There's room for faster tooling in the Python ecosystem. One of the guiding principles will be "Is this the fastest it can be?"
+There's room for faster tooling in the Python ecosystem. One of the guiding principles will be "Is this the fastest it can be?".
 
 ### 4. Python 🤝 Rust
 
