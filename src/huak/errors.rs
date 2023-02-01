@@ -32,6 +32,8 @@ pub enum HuakError {
     IOError(#[from] io::Error),
     #[error("a problem with the linter occurred: {0}")]
     LinterError(String),
+    #[error("an installed python module could not be found: {0}")]
+    PyModuleMissingError(String),
     #[error("a problem with building the project occurred")]
     PyPackageBuildError,
     #[error("a problem with the package index occurred: {0}")]

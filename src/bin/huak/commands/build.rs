@@ -1,6 +1,9 @@
 use std::{env, process::ExitCode};
 
-use huak::{env::venv::create_venv, ops, project::Project};
+use huak::{
+    env::venv::create_venv, ops, package::installer::Installer,
+    project::Project,
+};
 
 use crate::errors::{CliError, CliResult};
 
@@ -11,10 +14,12 @@ pub fn run() -> CliResult<()> {
         Ok(it) => it,
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
-    let venv = create_venv(project.root())
+    let py_env = create_venv(project.root())
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
-    ops::build::build_project(&project, &venv)
+    let installer = Installer::new();
+
+    ops::build::build_project(&project, &py_env, &installer)
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
     Ok(())

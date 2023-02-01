@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
 use crate::{
-    env::venv::Venv,
+    env::{runner::Runner, venv::Venv},
     errors::{HuakError, HuakResult},
-    package::PythonPackage,
+    package::{installer::Installer, PythonPackage},
     project::Project,
 };
 
@@ -11,17 +11,18 @@ const MODULE: &str = "build";
 
 pub fn build_project(
     project: &Project,
-    python_environment: &Venv,
+    py_env: &Venv,
+    installer: &Installer,
 ) -> HuakResult<()> {
-    let package = PythonPackage::from_str("build")?;
-
-    python_environment.install_package(&package).map_err(|_| {
-        HuakError::PyPackageInstallationError("build".to_string())
-    })?;
+    if !py_env.module_path(MODULE)?.exists() {
+        let package = PythonPackage::from_str("build")?;
+        installer.install_package(&package, py_env)?;
+    }
 
     let args = ["-m", MODULE];
-    python_environment
-        .exec_module("python", &args, project.root())
+    let runner = Runner::new()?;
+    runner
+        .run_installed_module("python", &args, py_env, Some(project.root()))
         .map_err(|_| HuakError::PyPackageBuildError)?;
 
     Ok(())
@@ -39,7 +40,8 @@ mod tests {
         let project = create_mock_project_full().unwrap();
         let cwd = std::env::current_dir().unwrap();
         let venv = Venv::new(cwd.join(".venv"));
+        let installer = Installer::new();
 
-        build_project(&project, &venv).unwrap();
+        build_project(&project, &venv, &installer).unwrap();
     }
 }

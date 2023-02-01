@@ -59,7 +59,7 @@ use crate::{
 pub fn add_project_dependency(
     package: &PythonPackage,
     project: &Project,
-    python_environment: &Venv,
+    py_env: &Venv,
     installer: &Installer,
     dependency_group: Option<String>,
 ) -> HuakResult<()> {
@@ -86,7 +86,7 @@ pub fn add_project_dependency(
         }
     };
 
-    installer.install_package(&package, python_environment)?;
+    installer.install_package(&package, py_env)?;
 
     let package = if package.version().is_none() {
         if let Some(it) = installer.last_installed_package()? {

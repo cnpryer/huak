@@ -1,6 +1,7 @@
 use crate::errors::CliError;
 use huak::env::venv::create_venv;
 use huak::ops;
+use huak::package::installer::Installer;
 use huak::project::Project;
 use std::env;
 use std::process::ExitCode;
@@ -15,12 +16,13 @@ pub fn run(fix: bool) -> CliResult<()> {
         Ok(p) => p,
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
-    let venv = create_venv(project.root())
+    let py_env = create_venv(project.root())
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
+    let installer = Installer::new();
 
     let res = match fix {
-        true => ops::fix::fix_project(&project, &venv),
-        false => ops::lint::lint_project(&project, &venv),
+        true => ops::fix::fix_project(&project, &py_env, &installer),
+        false => ops::lint::lint_project(&project, &py_env, &installer),
     };
 
     res.map_err(|e| CliError::new(e, ExitCode::FAILURE))?;

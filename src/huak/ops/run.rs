@@ -1,10 +1,17 @@
-use crate::{env::venv::Venv, errors::HuakResult};
+use crate::{
+    env::{runner::Runner, venv::Venv},
+    errors::HuakResult,
+    project::Project,
+};
 
 pub fn run_command(
-    python_envrionment: &Venv,
     command: &[String],
+    project: &Project,
+    py_env: &Venv,
 ) -> HuakResult<()> {
-    python_envrionment.exec_command(&command.join(" "))
+    // TODO: Might make sense to add runner as a parameter for this operation
+    let runner = Runner::new()?;
+    runner.run_str_command(&command.join(" "), py_env, Some(project.root()))
 }
 
 #[cfg(test)]
@@ -28,7 +35,7 @@ mod tests {
             .split_whitespace()
             .map(|s| s.to_string())
             .collect::<Vec<String>>();
-        run_command(&venv, &command).unwrap();
+        run_command(&command, &project, &venv).unwrap();
 
         let data = std::fs::read_to_string("test_req.txt").unwrap();
         assert!(data.contains("black"));
