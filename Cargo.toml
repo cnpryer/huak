@@ -21,7 +21,7 @@ clap_complete = "4.1"
 
 thiserror = "1.0.38"
 fs_extra = "1.2.0"
-glob = "0.3.0"
+glob = "0.3.1"
 serde = "1.0.152"
 serde_derive = "1.0.144"
 serde_json = "1.0"
