@@ -7,10 +7,12 @@ use crate::{
     project::Project,
 };
 
+const MODULE: &str = "pip";
+
 /// Install all of the projects defined dependencies.
 pub fn install_project_dependencies(
     project: &Project,
-    python_environment: &Venv,
+    py_env: &Venv,
     installer: &Installer,
     groups: &Option<Vec<String>>,
 ) -> HuakResult<()> {
@@ -19,13 +21,17 @@ pub fn install_project_dependencies(
         return Err(HuakError::PyProjectFileNotFound);
     }
 
+    if !py_env.module_path(MODULE)?.exists() {
+        return Err(HuakError::PyModuleMissingError("pip".to_string()));
+    }
+
     if let Some(deps) = project.project_file.dependency_list() {
         installer.install_packages(
             &deps
                 .iter()
                 .filter_map(|x| PythonPackage::from_str(x).ok())
                 .collect(),
-            python_environment,
+            py_env,
         )?;
     }
 
@@ -39,7 +45,7 @@ pub fn install_project_dependencies(
                         .iter()
                         .filter_map(|x| PythonPackage::from_str(x).ok())
                         .collect(),
-                    python_environment,
+                    py_env,
                 )?;
             }
         }
@@ -68,11 +74,11 @@ pub mod tests {
         let venv = &Venv::new(cwd.join(".venv"));
         let installer = Installer::new();
 
-        venv.uninstall_package("black").unwrap();
+        installer.uninstall_package("black", &venv).unwrap();
         let black_path = venv.module_path("black").unwrap();
         let had_black = black_path.exists();
 
-        venv.uninstall_package("pytest").unwrap();
+        installer.uninstall_package("pytest", &venv).unwrap();
         let pytest_path = venv.module_path("pytest").unwrap();
         let had_pytest = pytest_path.exists();
 

@@ -1,11 +1,25 @@
-use crate::{env::venv::Venv, errors::HuakResult, project::Project};
+use std::str::FromStr;
+
+use crate::{
+    env::{runner::Runner, venv::Venv},
+    errors::HuakResult,
+    package::{installer::Installer, PythonPackage},
+    project::Project,
+};
 
 const MODULE: &str = "pytest";
 
 /// Test a project using `pytest`.
 pub fn test_project(
     project: &Project,
-    python_environment: &Venv,
+    py_env: &Venv,
+    installer: &Installer,
 ) -> HuakResult<()> {
-    python_environment.exec_module(MODULE, &[], project.root())
+    if !py_env.module_path(MODULE)?.exists() {
+        let package = PythonPackage::from_str(MODULE)?;
+        installer.install_package(&package, py_env)?;
+    }
+
+    let runner = Runner::new()?;
+    runner.run_installed_module(MODULE, &[], py_env, Some(project.root()))
 }
