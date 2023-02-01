@@ -20,13 +20,9 @@
 //!
 //!## Installation
 //!
-//!A PoC, Alpha releases, and an 0.1.0 are expected.
-//!
-//!During the [Alpha phase](https://github.com/cnpryer/huak/milestones) you'll need to explicitly install the latest pre-release available.
-//!
-//!`❯ pip install huak --pre
-//!
-//!Around 0.1.0 you'll be able to install `huak` using `brew` or `pip`. Distribution plans will be finalized closer to 0.1.0.
+//!```bash
+//! ❯ pip install huak
+//!```
 //!
 //!## Shell completion
 //!

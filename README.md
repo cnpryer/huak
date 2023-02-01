@@ -1,3 +1,5 @@
+
+[![pypi-release](https://img.shields.io/pypi/v/huak.svg)](https://pypi.org/project/huak/)
 [![ci-rust](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml)
 [![discord](https://img.shields.io/discord/1022879330470199347?color=7289DA&logo=discord)](https://discord.gg/St3menxFZT)
 
@@ -5,7 +7,7 @@
 
 <div align="center">
 
-<a href="https://docs.rs/crate/huak"><img src="https://github.com/cnpryer/huak/blob/master/docs/assets/img/logo.png" alt="Huak logo" width="300" role="img"></a>
+<img src="https://raw.githubusercontent.com/cnpryer/huak/master/docs/assets/img/logo.png" alt="Huak logo" width="300" role="img"/>
 
 </div>
 
@@ -37,6 +39,7 @@ See **[the milestone list](https://github.com/cnpryer/huak/milestones)** to chec
 ## README Contents
 
 - [Installation](#installation)
+- [Usage](#usage)
 - [Documentation](#documentation)
 - [Goals and Motivation](#goals)
 - [Contributing](#contributing)
@@ -44,15 +47,11 @@ See **[the milestone list](https://github.com/cnpryer/huak/milestones)** to chec
 
 ## Installation
 
-A PoC, Alpha releases, and an 0.1.0 are expected.
+```
+❯ pip install huak
+```
 
-During the [Alpha phase](https://github.com/cnpryer/huak/milestones) you'll need to explicitly install the latest pre-release available.
-
-Install with `pip`:
-
-`❯ pip install huak --pre`
-
-Around 0.1.0 you'll be able to install `huak` using `brew`. More distribution plans will be finalized closer to 0.1.0.
+## Usage
 
 ```console
 ❯ huak help
