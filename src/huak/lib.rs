@@ -20,8 +20,8 @@
 //!
 //!## Installation
 //!
-//!```
-//!❯ pip install huak
+//!```bash
+//! ❯ pip install huak
 //!```
 //!
 //!## Shell completion
