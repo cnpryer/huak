@@ -2,11 +2,7 @@ use std::{env, path::PathBuf};
 
 use tempfile::tempdir;
 
-use crate::{
-    env::venv::Venv,
-    errors::HuakError,
-    project::{Project, ProjectType},
-};
+use crate::{env::venv::Venv, errors::HuakResult, project::Project};
 
 use super::path::copy_dir;
 
@@ -15,7 +11,7 @@ pub fn get_resource_dir() -> PathBuf {
     PathBuf::from(cwd).join("resources")
 }
 
-pub fn create_venv(path: PathBuf) -> Result<Venv, HuakError> {
+pub fn create_venv(path: PathBuf) -> HuakResult<Venv> {
     let venv = Venv::new(path);
 
     venv.create()?;
@@ -25,15 +21,15 @@ pub fn create_venv(path: PathBuf) -> Result<Venv, HuakError> {
 
 // Creates a mock `Project` from a `path`. A mock `Project` is given a
 // re-usable .venv from cwd
-pub fn create_mock_project(path: PathBuf) -> Result<Project, HuakError> {
+pub fn create_mock_project(path: PathBuf) -> HuakResult<Project> {
     let cwd = env::current_dir()?;
     create_venv(cwd.join(".venv"))?;
 
-    Ok(Project::new(path, ProjectType::default()))
+    Ok((Project::from_directory(path)).unwrap())
 }
 
 /// Creates a mock `Project`, copying it from "mock_project" directory
-pub fn create_mock_project_full() -> Result<Project, HuakError> {
+pub fn create_mock_project_full() -> HuakResult<Project> {
     let directory = tempdir().unwrap().into_path();
     let mock_project_path = get_resource_dir().join("mock-project");
     copy_dir(&mock_project_path, &directory);

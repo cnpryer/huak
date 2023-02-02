@@ -4,7 +4,7 @@ use crate::{
 };
 
 /// Initialize a project by adding a pyproject.toml to the dir.
-/// TODO: Do we need to mutate here?
+// TODO: Do we need to mutate here?
 pub fn init_project(project: &mut Project) -> HuakResult<()> {
     project.init_project_file()?;
 

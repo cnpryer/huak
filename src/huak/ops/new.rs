@@ -28,16 +28,14 @@ mod tests {
 
     use super::*;
 
-    use crate::{
-        config::pyproject::toml::Toml, project::ProjectType,
-        utils::test_utils::create_mock_project,
-    };
+    use crate::{config::pyproject::toml::Toml, project::ProjectType};
 
     // TODO
     #[test]
     fn creates_project() {
         let directory = tempdir().unwrap().into_path();
-        let mut project = create_mock_project(directory).unwrap();
+        // Default should be Library
+        let mut project = Project::new(directory, ProjectType::default());
 
         let toml_path = project.root().join("pyproject.toml");
         let had_toml = toml_path.exists();
