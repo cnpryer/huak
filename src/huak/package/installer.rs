@@ -94,28 +94,31 @@ fn get_package_index_data(
     }
 }
 
-/// Install a Python package to the venv.
+/// Install a Python package to a python environment.
 fn install_package_with_pip(
     package: &PythonPackage,
     py_env: &Venv,
 ) -> HuakResult<()> {
-    let module_str = &package.name;
-    let args = ["install", module_str];
-    let module = "pip";
-
     let runner = Runner::new()?;
-    runner.run_installed_module(module, &args, py_env, None)?;
+    runner.run_installed_module(
+        "pip",
+        &["install", &package.name],
+        py_env,
+        None,
+    )?;
 
     Ok(())
 }
 
-/// Uninstall a dependency from the venv.
+/// Uninstall a dependency from a python environment.
 fn uninstall_package_with_pip(name: &str, py_env: &Venv) -> HuakResult<()> {
-    let module = "pip";
-    let args = ["uninstall", name, "-y"];
-
     let runner = Runner::new()?;
-    runner.run_installed_module(module, &args, py_env, None)?;
+    runner.run_installed_module(
+        "pip",
+        &["uninstall", name, "-y"],
+        py_env,
+        None,
+    )?;
 
     Ok(())
 }
