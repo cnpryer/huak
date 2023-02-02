@@ -201,6 +201,20 @@ if __name__ == "__main__":
     pub fn root(&self) -> &PathBuf {
         &self.root
     }
+
+    /// Check if the project file lists any dependencies (including optional).
+    pub fn has_dependencies(&self) -> bool {
+        !self
+            .project_file
+            .dependency_list()
+            .unwrap_or(&vec![])
+            .is_empty()
+            | !self
+                .project_file
+                .optional_dependencies()
+                .unwrap_or(&HashMap::new())
+                .is_empty()
+    }
 }
 
 fn project_name_from_root(root: &Path) -> HuakResult<String> {

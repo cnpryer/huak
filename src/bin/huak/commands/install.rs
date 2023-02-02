@@ -16,6 +16,10 @@ pub fn run(groups: Option<Vec<String>>) -> CliResult<()> {
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
 
+    if !project.has_dependencies() {
+        return Ok(());
+    }
+
     // Attempt to locate the project's venv. If none is found, attempt to create one.
     let py_env = match Venv::from_directory(project.root()) {
         Ok(it) => it,
