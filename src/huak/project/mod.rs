@@ -133,17 +133,21 @@ impl Project {
                 fs::create_dir_all(self.root.join("tests"))?;
                 fs::write(
                     src_path.join(name).join("__init__.py"),
-                    format!("__version__ = \"{version}\""),
+                    format!(
+                        "__version__ = \"{version}\"
+"
+                    ),
                 )?;
                 fs::write(
                     self.root.join("tests").join("test_version.py"),
                     format!(
-                        r#"from {name} import __version__
+                        "\
+from {name} import __version__
 
 
 def test_version():
     __version__
-"#
+"
                     ),
                 )?;
             }
@@ -152,14 +156,14 @@ def test_version():
                 fs::write(src_path.join(name).join("__init__.py"), "")?;
                 fs::write(
                     src_path.join(name).join("main.py"),
-                    r#"""\
+                    "\
 def main():
-    print("Hello, World!")
+    print(\"Hello, World!\")
 
 
-if __name__ == "__main__":
+if __name__ == \"__main__\":
     main()
-"""#,
+",
                 )?;
             }
         }
