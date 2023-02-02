@@ -16,16 +16,19 @@ pub fn install_project_dependencies(
     installer: &Installer,
     groups: &Option<Vec<String>>,
 ) -> HuakResult<()> {
-    // TODO: Doing this venv handling seems hacky.
     if !project.root().join("pyproject.toml").exists() {
         return Err(HuakError::PyProjectFileNotFound);
     }
 
     if !py_env.module_path(MODULE)?.exists() {
-        return Err(HuakError::PyModuleMissingError("pip".to_string()));
+        return Err(HuakError::PyModuleMissingError(MODULE.to_string()));
     }
 
     if let Some(deps) = project.project_file.dependency_list() {
+        if deps.is_empty() {
+            return Ok(());
+        }
+
         installer.install_packages(
             &deps
                 .iter()

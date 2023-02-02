@@ -1,17 +1,13 @@
-use std::{
-    env::{self, consts::OS},
-    path::{Path, PathBuf},
-};
-
-#[allow(clippy::useless_attribute)]
-#[allow(unused_imports)]
 use crate::{
     errors::{HuakError, HuakResult},
-    package::PythonPackage,
     utils::{
         path::search_parents_for_filepath,
         shell::{get_shell_name, get_shell_path, get_shell_source_command},
     },
+};
+use std::{
+    env::{self, consts::OS},
+    path::{Path, PathBuf},
 };
 
 const DEFAULT_SEARCH_STEPS: usize = 5;

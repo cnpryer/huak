@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -100,10 +101,18 @@ impl ProjectFile {
         &self,
         group: &str,
     ) -> Option<&Vec<String>> {
+        if let Some(deps) = self.optional_dependencies() {
+            return deps.get(group);
+        }
+
+        None
+    }
+
+    pub fn optional_dependencies(
+        &self,
+    ) -> Option<&HashMap<String, Vec<String>>> {
         if let Some(some_data) = &self.data {
-            if let Some(some_list) = &some_data.project.optional_dependencies {
-                return some_list.get(group);
-            }
+            return some_data.project.optional_dependencies.as_ref();
         }
 
         None
