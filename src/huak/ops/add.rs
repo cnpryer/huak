@@ -58,7 +58,7 @@ use crate::{
 ///       b. The group of the dependency has changed.
 pub fn add_project_dependency(
     package: &PythonPackage,
-    project: &Project,
+    project: &mut Project,
     py_env: &Venv,
     installer: &Installer,
     dependency_group: Option<String>,
@@ -98,47 +98,44 @@ pub fn add_project_dependency(
         package
     };
 
-    let mut project_file = project.project_file.clone();
-
     if !in_dependency_list | is_new_version {
         match &dependency_group {
             Some(it) => {
-                project_file
+                project
+                    .project_file
                     .add_optional_dependency(&package.to_string(), it)?;
             }
             None => {
-                project_file.add_dependency(&package.to_string())?;
+                project.project_file.add_dependency(&package.to_string())?;
             }
         }
     }
 
-    project_file.serialize()
+    project.project_file.serialize()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use crate::{
-        config::pyproject::toml::Toml,
-        utils::test_utils::create_mock_project_full,
-    };
+    use crate::utils::test_utils::create_mock_project_full;
 
     #[test]
-    fn adds_dependencies() {
+    fn add_dependency() {
         // TODO: Test optional dep.
         let mut project = create_mock_project_full().unwrap();
         project.init_project_file().unwrap();
         let cwd = std::env::current_dir().unwrap();
         let venv = Venv::new(cwd.join(".venv"));
         let installer = Installer::new();
-        let toml_path = project.root().join("pyproject.toml");
-        let package = PythonPackage::from_str("isort").unwrap();
-        let toml = Toml::open(&toml_path).unwrap();
-        let had_dep = toml
-            .project
-            .dependencies
-            .as_ref()
+        let package = PythonPackage::from_str("mock").unwrap();
+        let reinstall_mock = venv.module_path("mock").unwrap().exists();
+
+        installer.uninstall_package(&package.name, &venv).unwrap();
+
+        let had_dep = project
+            .project_file
+            .dependency_list()
             .unwrap_or(&Vec::new())
             .iter()
             .any(|d| d.starts_with(&package.name));
@@ -146,11 +143,9 @@ mod tests {
         add_project_dependency(&package, &mut project, &venv, &installer, None)
             .unwrap();
 
-        let toml = Toml::open(&toml_path).unwrap();
-        let has_dep = toml
-            .project
-            .dependencies
-            .as_ref()
+        let has_dep = project
+            .project_file
+            .dependency_list()
             .unwrap_or(&Vec::new())
             .iter()
             .any(|d| d.starts_with(&package.name));
@@ -159,5 +154,53 @@ mod tests {
         assert!(has_dep);
 
         // TODO: #123 - destruction/deconstruction
+        if reinstall_mock {
+            installer.install_package(&package, &venv).unwrap();
+        }
+    }
+
+    #[test]
+    fn add_optional_dependency() {
+        // TODO: Test optional dep.
+        let mut project = create_mock_project_full().unwrap();
+        project.init_project_file().unwrap();
+        let cwd = std::env::current_dir().unwrap();
+        let venv = Venv::new(cwd.join(".venv"));
+        let installer = Installer::new();
+        let package = PythonPackage::from_str("isort==5.12.0").unwrap();
+        let reinstall_isort = venv.module_path("isort").unwrap().exists();
+
+        installer.uninstall_package(&package.name, &venv).unwrap();
+
+        let had_dep = project
+            .project_file
+            .optional_dependency_list("test")
+            .unwrap_or(&Vec::new())
+            .iter()
+            .any(|d| d.starts_with(&package.name));
+
+        add_project_dependency(
+            &package,
+            &mut project,
+            &venv,
+            &installer,
+            Some("test".to_string()),
+        )
+        .unwrap();
+
+        let has_dep = project
+            .project_file
+            .optional_dependency_list("test")
+            .unwrap_or(&Vec::new())
+            .iter()
+            .any(|d| d.starts_with(&package.name));
+
+        assert!(!had_dep);
+        assert!(has_dep);
+
+        // TODO: #123 - destruction/deconstruction
+        if reinstall_isort {
+            installer.install_package(&package, &venv).unwrap();
+        }
     }
 }

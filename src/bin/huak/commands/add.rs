@@ -14,7 +14,7 @@ pub fn run(dependency: String, group: Option<String>) -> CliResult<()> {
         .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
 
     let cwd = env::current_dir()?;
-    let project = match Project::from_directory(cwd) {
+    let mut project = match Project::from_directory(cwd) {
         Ok(p) => p,
         Err(e) => return Err(CliError::new(e, ExitCode::FAILURE)),
     };
@@ -25,7 +25,7 @@ pub fn run(dependency: String, group: Option<String>) -> CliResult<()> {
 
     ops::add::add_project_dependency(
         python_package,
-        &project,
+        &mut project,
         &venv,
         &installer,
         group,
