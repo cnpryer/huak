@@ -120,8 +120,8 @@ impl ProjectFile {
 
     pub fn serialize(&self) -> HuakResult<()> {
         if let Some(some_data) = &self.data {
-            let string = some_data.to_string()?;
             if let Some(some_path) = &self.filepath {
+                let string = some_data.to_string()?;
                 fs::write(some_path, string)?;
             } else {
                 return Err(HuakError::PyProjectFileNotFound);
