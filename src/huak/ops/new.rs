@@ -59,14 +59,14 @@ mod tests {
         let main_file_filepath =
             project.root().join("src").join("project").join("main.py");
         let main_file = fs::read_to_string(&main_file_filepath).unwrap();
-        let expected_main_file = r#"""\
+        let expected_main_file = "\
 def main():
-    print("Hello, World!")
+    print(\"Hello, World!\")
 
 
-if __name__ == "__main__":
+if __name__ == \"__main__\":
     main()
-"""#;
+";
 
         assert!(toml.project.scripts.is_some());
         assert_eq!(
@@ -102,7 +102,8 @@ def test_version():
             .join("project")
             .join("__init__.py");
         let init_file = fs::read_to_string(&init_file_filepath).unwrap();
-        let expected_init_file = format!("__version__ = \"{}\"", "0.0.1");
+        let expected_init_file = "__version__ = \"0.0.1\"
+";
 
         assert!(toml.project.scripts.is_none());
         assert_eq!(test_file, expected_test_file);
