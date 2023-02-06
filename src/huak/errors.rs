@@ -28,6 +28,8 @@ pub enum HuakError {
     HuakConfigurationError(String),
     #[error("a problem with huak's internals occurred: {0}")]
     InternalError(String),
+    #[error("a version number could not be parsed: {0}")]
+    InvalidVersionString(String),
     #[error("a problem with io occurred: {0}")]
     IOError(#[from] io::Error),
     #[error("a problem with the linter occurred: {0}")]
@@ -56,6 +58,10 @@ pub enum HuakError {
     PyProjectVersionNotFound,
     #[error("a python interpreter could not be found")]
     PythonNotFoundError,
+    #[error(
+        "a problem occurred parsing the virtual environment's config file: {0}"
+    )]
+    PyVenvInvalidConfigFile(String),
     #[error("a venv could not be found")]
     PyVenvNotFoundError,
     #[error("a problem with the test utility occurred: {0}")]

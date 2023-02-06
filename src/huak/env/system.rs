@@ -32,7 +32,7 @@ impl PythonBinary {
 /// TODO: Refactor to evaluate against each file during the search.
 pub fn find_python_binary_path(
     from_dir: Option<PathBuf>,
-) -> HuakResult<String> {
+) -> HuakResult<PathBuf> {
     let paths = match from_dir {
         Some(path) => vec![path],
         None => parse_path_var()?,
@@ -40,16 +40,18 @@ pub fn find_python_binary_path(
 
     for path in paths {
         for target in PYTHON_BINARY_TARGETS.iter() {
+            #[cfg(windows)]
+            let name = format!("{}.exe", target.as_str());
             #[cfg(unix)]
-            {
-                if let Ok(Some(python)) = find_binary(target.as_str(), &path) {
-                    return Ok(python);
-                }
+            let name = target;
+            if let Ok(Some(python)) = find_binary(name.as_str(), &path) {
+                return Ok(PathBuf::from(python));
             }
         }
     }
 
-    Err(HuakError::PythonNotFoundError)
+    // TODO: https://github.com/brettcannon/python-launcher
+    Ok(PathBuf::from(PythonBinary::Python.as_str()))
 }
 
 /// Gets the PATH environment variable and splits this on ':'.
@@ -62,6 +64,8 @@ fn parse_path_var() -> HuakResult<Vec<PathBuf>> {
     Ok(path_str.split(':').map(|dir| dir.into()).collect())
 }
 
+/// NOTE: This is hacky. Waiting on either python-launcher https://github.com/brettcannon/python-launcher
+///       or I'll end up rolling the robust implementations myself.
 /// Takes a binary name and searches the entire dir, if it finds the binary it will return the path
 /// to the binary by appending the bin name to the dir.
 ///

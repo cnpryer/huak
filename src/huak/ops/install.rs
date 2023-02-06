@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    env::venv::Venv,
+    env::python_environment::Venv,
     errors::{HuakError, HuakResult},
     package::{installer::Installer, PythonPackage},
     project::Project,
@@ -61,7 +61,7 @@ pub fn install_project_dependencies(
 pub mod tests {
 
     use crate::{
-        env::venv::Venv, package::installer::Installer,
+        env::python_environment::Venv, package::installer::Installer,
         utils::test_utils::create_mock_project_full,
     };
 
@@ -74,7 +74,7 @@ pub mod tests {
         project.init_project_file().unwrap();
 
         let cwd = std::env::current_dir().unwrap();
-        let venv = &Venv::new(cwd.join(".venv"));
+        let venv = &Venv::new(&cwd.join(".venv"));
         let installer = Installer::new();
 
         installer.uninstall_package("black", &venv).unwrap();

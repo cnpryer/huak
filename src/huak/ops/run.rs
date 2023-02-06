@@ -1,5 +1,5 @@
 use crate::{
-    env::{runner::Runner, venv::Venv},
+    env::{python_environment::Venv, runner::Runner},
     errors::HuakResult,
     project::Project,
 };
@@ -16,16 +16,19 @@ pub fn run_command(
 
 #[cfg(test)]
 mod tests {
+    use std::env::current_dir;
+
     use super::*;
     use crate::ops::install::install_project_dependencies;
     use crate::package::installer::Installer;
     use crate::utils::test_utils::create_mock_project_full;
 
-    #[ignore = "currently untestable"]
+    #[ignore = "unfinished"]
     #[test]
     fn run() {
         let project = create_mock_project_full().unwrap();
-        let venv = Venv::from_directory(project.root()).unwrap();
+        let cwd = current_dir().unwrap();
+        let venv = Venv::from_directory(&cwd).unwrap();
         let installer = Installer::new();
 
         install_project_dependencies(&project, &venv, &installer, &None)
@@ -37,11 +40,12 @@ mod tests {
             .collect::<Vec<String>>();
         run_command(&command, &project, &venv).unwrap();
 
-        let data = std::fs::read_to_string("test_req.txt").unwrap();
+        let data = std::fs::read_to_string(project.root().join("test_req.txt"))
+            .unwrap();
         assert!(data.contains("black"));
         assert!(data.contains("click"));
         assert!(data.contains("pytest"));
 
-        std::fs::remove_file("test_req.txt").unwrap();
+        std::fs::remove_file(project.root().join("test_req.txt")).unwrap();
     }
 }

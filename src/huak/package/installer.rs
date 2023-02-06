@@ -1,5 +1,5 @@
 use crate::{
-    env::{runner::Runner, venv::Venv},
+    env::{python_environment::Venv, runner::Runner},
     errors::{HuakError, HuakResult},
 };
 

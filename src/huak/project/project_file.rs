@@ -1,7 +1,7 @@
 use std::collections::HashMap;
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::{env, fs};
 
 use crate::config::pyproject::toml::Toml;
 
@@ -32,10 +32,10 @@ impl ProjectFile {
         // TODO:
         //   - Allow more than pyproject.toml
         //   - Use .parent or similar path search utilities
-        let filepath = utils::path::search_parents_for_filepath(
+        let filepath = utils::path::search_directories_for_file(
             path,
             "pyproject.toml",
-            DEFAULT_SEARCH_STEPS,
+            search_max_steps(),
         )?;
 
         if let Some(it) = filepath {
@@ -304,6 +304,14 @@ fn remove_from_dependency_list(
     }
 
     Ok(())
+}
+
+fn search_max_steps() -> usize {
+    env::var("HUAK_PROJECT_FILE_SEARCH_MAX_STEPS")
+        .ok()
+        .map_or(DEFAULT_SEARCH_STEPS, |s| {
+            s.parse().ok().unwrap_or(DEFAULT_SEARCH_STEPS)
+        })
 }
 
 #[cfg(test)]

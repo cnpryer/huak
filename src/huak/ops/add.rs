@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    env::venv::Venv,
+    env::python_environment::Venv,
     errors::HuakResult,
     package::{installer::Installer, PythonPackage},
     project::Project,
@@ -126,7 +126,7 @@ mod tests {
         let mut project = create_mock_project_full().unwrap();
         project.init_project_file().unwrap();
         let cwd = std::env::current_dir().unwrap();
-        let venv = Venv::new(cwd.join(".venv"));
+        let venv = Venv::new(&cwd.join(".venv"));
         let installer = Installer::new();
         let package = PythonPackage::from_str("mock").unwrap();
         let reinstall_mock = venv.module_path("mock").unwrap().exists();
@@ -165,7 +165,7 @@ mod tests {
         let mut project = create_mock_project_full().unwrap();
         project.init_project_file().unwrap();
         let cwd = std::env::current_dir().unwrap();
-        let venv = Venv::new(cwd.join(".venv"));
+        let venv = Venv::new(&cwd.join(".venv"));
         let installer = Installer::new();
         let package = PythonPackage::from_str("isort==5.12.0").unwrap();
         let reinstall_isort = venv.module_path("isort").unwrap().exists();

@@ -1,5 +1,5 @@
 use crate::errors::CliError;
-use huak::env::venv::create_venv;
+use huak::env::python_environment::create_venv;
 use huak::ops;
 use huak::package::installer::Installer;
 use huak::project::Project;

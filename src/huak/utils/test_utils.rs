@@ -2,17 +2,18 @@ use std::{env, path::PathBuf};
 
 use tempfile::tempdir;
 
-use crate::{env::venv::Venv, errors::HuakResult, project::Project};
+use crate::{
+    env::python_environment::Venv, errors::HuakResult, project::Project,
+};
 
 use super::path::copy_dir;
 
 pub fn get_resource_dir() -> PathBuf {
-    let cwd = env!("CARGO_MANIFEST_DIR");
-    PathBuf::from(cwd).join("resources")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources")
 }
 
 pub fn create_venv(path: PathBuf) -> HuakResult<Venv> {
-    let venv = Venv::new(path);
+    let venv = Venv::new(&path);
 
     venv.create()?;
 

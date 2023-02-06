@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-use super::venv::Venv;
+use super::python_environment::{Activatable, Venv};
 
 #[derive(Default)]
 pub struct Runner {
@@ -61,7 +61,7 @@ impl Runner {
     ) -> HuakResult<()> {
         py_env.validate()?;
 
-        let script = py_env.get_activation_script()?;
+        let script = py_env.get_activation_script_path()?;
         let activation_command =
             format!("{} {}", get_shell_source_command()?, script.display());
 

@@ -1,6 +1,6 @@
 use crate::errors::{CliError, CliResult};
 use huak::{
-    env::venv::create_venv, ops, package::installer::Installer,
+    env::python_environment::create_venv, ops, package::installer::Installer,
     project::Project,
 };
 use std::{env, process::ExitCode};

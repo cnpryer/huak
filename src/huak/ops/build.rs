@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    env::{runner::Runner, venv::Venv},
+    env::{python_environment::Venv, runner::Runner},
     errors::{HuakError, HuakResult},
     package::{installer::Installer, PythonPackage},
     project::Project,
@@ -39,7 +39,7 @@ mod tests {
     fn build() {
         let project = create_mock_project_full().unwrap();
         let cwd = std::env::current_dir().unwrap();
-        let venv = Venv::new(cwd.join(".venv"));
+        let venv = Venv::new(&cwd.join(".venv"));
         let installer = Installer::new();
 
         build_project(&project, &venv, &installer).unwrap();

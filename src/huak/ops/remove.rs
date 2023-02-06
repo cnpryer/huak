@@ -1,6 +1,6 @@
 use crate::{
-    env::venv::Venv, errors::HuakResult, package::installer::Installer,
-    project::Project,
+    env::python_environment::Venv, errors::HuakResult,
+    package::installer::Installer, project::Project,
 };
 
 /// Remove a dependency from a project by uninstalling it and updating the
@@ -36,7 +36,7 @@ mod tests {
         //       implemented.
         let mut project = create_mock_project_full().unwrap();
         let cwd = std::env::current_dir().unwrap();
-        let venv = Venv::new(cwd.join(".venv"));
+        let venv = Venv::new(&cwd.join(".venv"));
         let installer = Installer::new();
         // TODO: #123 - destruction/deconstruction
         let reinstall_isort = venv.module_path("isort").unwrap().exists();

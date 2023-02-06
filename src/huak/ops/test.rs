@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    env::{runner::Runner, venv::Venv},
+    env::{python_environment::Venv, runner::Runner},
     errors::HuakResult,
     package::{installer::Installer, PythonPackage},
     project::Project,
