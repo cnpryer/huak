@@ -1,6 +1,6 @@
 [package]
 name = "huak"
-version = "0.0.10-alpha.2"
+version = "0.0.10-alpha.3"
 edition = "2021"
 license = "MIT"
 description = "A Python package manager written in Rust inspired by Cargo."
