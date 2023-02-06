@@ -1,3 +1,4 @@
+pub mod dist_info;
 pub mod index;
 pub mod installer;
 

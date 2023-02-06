@@ -2,7 +2,7 @@ use std::env;
 use std::process::ExitCode;
 
 use crate::errors::{CliError, CliResult};
-use huak::env::venv::create_venv;
+use huak::env::python_environment::create_venv;
 use huak::ops;
 use huak::project::Project;
 

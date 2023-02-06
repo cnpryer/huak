@@ -2,7 +2,7 @@ use std::process::ExitCode;
 
 use crate::errors::{CliError, CliResult};
 
-use huak::{env::venv::create_venv, ops, project::Project};
+use huak::{env::python_environment::create_venv, ops, project::Project};
 
 /// Run the `activate` command.
 pub fn run() -> CliResult<()> {

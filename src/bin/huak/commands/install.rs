@@ -2,7 +2,7 @@ use std::env;
 use std::process::ExitCode;
 
 use crate::errors::{CliError, CliResult};
-use huak::env::venv::Venv;
+use huak::env::python_environment::Venv;
 use huak::errors::HuakError;
 use huak::ops;
 use huak::package::installer::Installer;
@@ -24,7 +24,7 @@ pub fn run(groups: Option<Vec<String>>) -> CliResult<()> {
     let py_env = match Venv::from_directory(project.root()) {
         Ok(it) => it,
         Err(HuakError::PyVenvNotFoundError) => {
-            let it = Venv::new(project.root().join(".venv"));
+            let it = Venv::new(&project.root().join(".venv"));
             it.create()
                 .map_err(|e| CliError::new(e, ExitCode::FAILURE))?;
             it

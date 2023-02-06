@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    env::{runner::Runner, venv::Venv},
+    env::{python_environment::Venv, runner::Runner},
     errors::HuakResult,
     package::{installer::Installer, PythonPackage},
     project::Project,
@@ -50,7 +50,7 @@ mod tests {
     fn fmt() {
         let project = create_mock_project_full().unwrap();
         let cwd = std::env::current_dir().unwrap();
-        let venv = Venv::new(cwd.join(".venv"));
+        let venv = Venv::new(&cwd.join(".venv"));
         let runner = Runner::new().unwrap();
         let installer = Installer::new();
 
@@ -63,8 +63,11 @@ mod tests {
             )
             .unwrap();
 
-        let fmt_filepath =
-            project.root().join("mock_project").join("fmt_me.py");
+        let fmt_filepath = project
+            .root()
+            .join("src")
+            .join("mock_project")
+            .join("fmt_me.py");
         let pre_fmt_str = r#"""
 def fn( ):
     pass"#;

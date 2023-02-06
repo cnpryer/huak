@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use fs_extra::dir;
 
@@ -42,14 +45,40 @@ pub fn to_string(path: &Path) -> HuakResult<&str> {
     Ok(res)
 }
 
-/// Search for manifest files using a path `from` to start from and
-/// `steps` to recurse.
-pub fn search_parents_for_filepath(
+/// Copies one directory into another.
+pub fn copy_dir(from: &Path, to: &Path) {
+    if !from.exists() {
+        eprintln!("resource archive does not exist");
+    }
+
+    if !to.exists() {
+        eprintln!("`to` {} does not exist", to.display());
+    }
+
+    // Copy mock project dir to target dir
+    let copy_options = dir::CopyOptions::new();
+    dir::copy(from, to, &copy_options).unwrap();
+}
+
+// Notes about the Python Environment work:
+// - I don’t think there are any built-in (standardization) ways to determine when a package was installed. You could probably look at certain file metadata, but I’m not sure how reliable that is.
+// - Cache dir should be managed by the installer.
+/// NOTE: This is a special function that walks directories upward and only one level
+/// deep.
+/// TODO: Maybe rename.
+/// Search for the path to a target file from a given directory's path and the filename.
+/// The search is executed with the following steps:
+///   1. Get all sub-directories.
+///   2. Search all sub-directories one level for `filename`.
+///   3. If `filename` is found, return its path.
+///   4. Else step one level up from its parent's path and decrement the
+///      recursion limit.
+pub fn search_directories_for_file(
     from: &Path,
     filename: &str,
-    steps: usize,
+    recursion_limit: usize,
 ) -> HuakResult<Option<PathBuf>> {
-    if steps == 0 {
+    if !from.exists() || recursion_limit == 0 {
         return Ok(None);
     }
 
@@ -57,28 +86,28 @@ pub fn search_parents_for_filepath(
         return Ok(Some(from.join(filename)));
     }
 
-    if let Some(parent) = from.parent() {
-        return search_parents_for_filepath(parent, filename, steps - 1);
+    // Search all sub-directories one step. Exclude any directories that were already searched.
+    let subdirectories: Vec<PathBuf> = fs::read_dir(from)?
+        .into_iter()
+        .filter(|it| it.is_ok())
+        .map(|it| it.expect("failed to map dir entry").path()) // TODO: Is there better than .expect?
+        .filter(|it| it.is_dir())
+        .collect();
+
+    // TODO: This is not efficient.
+    for dir in subdirectories.iter() {
+        if dir.join(filename).exists() {
+            return Ok(Some(dir.join(filename)));
+        }
     }
 
-    Ok(None)
-}
-
-/// Copies one directory into another.
-pub fn copy_dir(from: &PathBuf, to: &PathBuf) -> bool {
-    if !Path::new(from).is_file() {
-        eprintln!("resource archive does not exist");
-    }
-
-    if !Path::new(to).is_dir() {
-        eprintln!("`to` {} does not exist", to.display());
-    }
-
-    // Copy mock project dir to target dir
-    let copy_options = dir::CopyOptions::new();
-    dir::copy(from.as_path(), to.as_path(), &copy_options).unwrap();
-
-    true
+    // If nothing is found from searching the subdirectories then perform the same search from
+    // the parent directory.
+    return search_directories_for_file(
+        from.parent().ok_or(HuakError::PyVenvNotFoundError)?,
+        filename,
+        recursion_limit - 1,
+    );
 }
 
 #[cfg(test)]
@@ -107,7 +136,7 @@ mod tests {
 
         copy_dir(&from, &tmp);
 
-        let res = search_parents_for_filepath(
+        let res = search_directories_for_file(
             &tmp.join("mock-project"),
             "pyproject.toml",
             5,
