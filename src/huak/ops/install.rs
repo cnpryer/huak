@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    env::python_environment::Venv,
+    env::python_environment::{PythonEnvironment, Venv},
     errors::{HuakError, HuakResult},
     package::{installer::Installer, PythonPackage},
     project::Project,
@@ -61,7 +61,8 @@ pub fn install_project_dependencies(
 pub mod tests {
 
     use crate::{
-        env::python_environment::Venv, package::installer::Installer,
+        env::python_environment::{PythonEnvironment, Venv},
+        package::installer::Installer,
         utils::test_utils::create_mock_project_full,
     };
 
