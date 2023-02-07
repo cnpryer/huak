@@ -95,7 +95,7 @@ mod tests {
             .join("resources")
             .join("mock-project");
 
-        copy_dir(&from_dir, &directory);
+        copy_dir(&from_dir, &directory.join("mock-project")).unwrap();
 
         let project =
             create_mock_project(directory.join("mock-project")).unwrap();

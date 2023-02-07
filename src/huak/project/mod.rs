@@ -238,7 +238,7 @@ mod tests {
         let directory = tempdir().unwrap().into_path();
         let mock_dir = get_resource_dir().join("mock-project");
 
-        copy_dir(&mock_dir, &directory);
+        copy_dir(&mock_dir, &directory.join("mock-project")).unwrap();
 
         let project1 =
             Project::from_directory(directory.join("mock-project")).unwrap();

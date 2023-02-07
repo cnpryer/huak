@@ -3,8 +3,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use fs_extra::dir;
-
 use crate::errors::{HuakError, HuakResult};
 
 /// Return the filename from a `Path`.
@@ -45,19 +43,43 @@ pub fn to_string(path: &Path) -> HuakResult<&str> {
     Ok(res)
 }
 
-/// Copies one directory into another.
-pub fn copy_dir(from: &Path, to: &Path) {
-    if !from.exists() {
-        eprintln!("resource archive does not exist");
+/// Copy contents from one directory into a new directory at a provided `to` full path.
+/// If the `to` directory doesn't exist this function creates it.
+pub fn copy_dir(from: &Path, to: &Path) -> HuakResult<()> {
+    let mut stack = Vec::new();
+    stack.push(PathBuf::from(from));
+
+    let target_root = to.to_path_buf();
+    let from_component_count = from.to_path_buf().components().count();
+
+    while let Some(working_path) = stack.pop() {
+        // Collects the trailing components of the path
+        let src: PathBuf = working_path
+            .components()
+            .skip(from_component_count)
+            .collect();
+
+        let dest = if src.components().count() == 0 {
+            target_root.clone()
+        } else {
+            target_root.join(&src)
+        };
+
+        if !dest.exists() {
+            fs::create_dir_all(&dest)?;
+        }
+
+        for entry in fs::read_dir(working_path)? {
+            let path = entry?.path();
+            if path.is_dir() {
+                stack.push(path);
+            } else if let Some(filename) = path.file_name() {
+                fs::copy(&path, dest.join(filename))?;
+            }
+        }
     }
 
-    if !to.exists() {
-        eprintln!("`to` {} does not exist", to.display());
-    }
-
-    // Copy mock project dir to target dir
-    let copy_options = dir::CopyOptions::new();
-    dir::copy(from, to, &copy_options).unwrap();
+    Ok(())
 }
 
 // Notes about the Python Environment work:
@@ -123,7 +145,7 @@ mod tests {
         let tmp = tempdir().unwrap().into_path();
         let from = get_resource_dir().join("mock-project");
 
-        copy_dir(&from, &tmp);
+        copy_dir(&from, &tmp.join("mock-project")).unwrap();
 
         assert!(tmp.join("mock-project").exists());
         assert!(tmp.join("mock-project").join("pyproject.toml").exists());
@@ -134,7 +156,7 @@ mod tests {
         let tmp = tempdir().unwrap().into_path();
         let from = get_resource_dir().join("mock-project");
 
-        copy_dir(&from, &tmp);
+        copy_dir(&from, &tmp.join("mock-project")).unwrap();
 
         let res = search_directories_for_file(
             &tmp.join("mock-project"),
