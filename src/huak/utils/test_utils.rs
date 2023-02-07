@@ -35,7 +35,7 @@ pub fn create_mock_project(path: PathBuf) -> HuakResult<Project> {
 pub fn create_mock_project_full() -> HuakResult<Project> {
     let directory = tempdir().unwrap().into_path();
     let mock_project_path = get_resource_dir().join("mock-project");
-    copy_dir(&mock_project_path, &directory);
+    copy_dir(&mock_project_path, &directory.join("mock-project")).unwrap();
 
     create_mock_project(directory.join("mock-project"))
 }
