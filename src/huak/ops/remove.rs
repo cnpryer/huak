@@ -25,7 +25,8 @@ mod tests {
     use std::str::FromStr;
 
     use crate::{
-        package::PythonPackage, utils::test_utils::create_mock_project_full,
+        env::python_environment::PythonEnvironment, package::PythonPackage,
+        utils::test_utils::create_mock_project_full,
     };
 
     use super::*;

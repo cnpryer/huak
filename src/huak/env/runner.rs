@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-use super::python_environment::{Activatable, Venv};
+use super::python_environment::{Activatable, PythonEnvironment, Venv};
 
 #[derive(Default)]
 pub struct Runner {

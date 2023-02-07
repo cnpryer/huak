@@ -45,19 +45,32 @@ const HUAK_VENV_ENV_VAR: &str = "HUAK_VENV_ACTIVE";
 //   - (Eventually) __pypackages__ directory
 pub trait PythonEnvironment {
     /// Creates the Python environment on the system.
-    fn create(&self);
+    fn create(&self) -> HuakResult<()>;
+    /// Get the name of the Python environment.
+    fn name(&self) -> HuakResult<&str>;
     /// Get the full path to the environment directory (root).
     fn path(&self) -> &PathBuf;
-    /// Get the full path the the executable binary for the Python interpreter.
-    fn interpreter(&self) -> &PathBuf;
+    /// Get the full path the the executable binary for the Python interpreter the
+    /// Python environment uses.
+    fn interpreter_path(&self) -> &PathBuf;
+    /// Get the full path the the executable binary for the Python interpreter that
+    /// was used to create the environment (same as interpreter_path if it's the
+    /// original system installation).
+    fn base_interpreter_path(&self) -> &PathBuf;
     /// Get the full path to site-packages directory.
     fn site_packages_path(&self) -> &PathBuf;
     /// Get the name of the bin directory. On windows this is called Scripts.
     fn bin_name(&self) -> &str;
     /// Get the path to the bin directory. On wintows this ends with Scripts.
-    fn bin_path(&self) -> &PathBuf;
+    fn bin_path(&self) -> PathBuf;
+    /// Get the path to a Python module (executable or psuedo executable Python program)
+    /// installed to the bin or Scripts directory.
+    fn module_path(&self, module: &str) -> HuakResult<PathBuf>;
     /// Get the distribution information for each installed package.
-    fn package_dist_info(&self, package: &PythonPackage) -> DistInfo;
+    fn package_dist_info(
+        &self,
+        package: &PythonPackage,
+    ) -> HuakResult<Option<DistInfo>>;
     /// Ensure that a Python package is installed to the environment.
     fn package_is_installed(&self, package: &PythonPackage) -> bool;
 }
@@ -96,13 +109,30 @@ impl Venv {
         Ok(Venv { data })
     }
 
-    pub fn data(&self) -> &EnvironmentData {
+    fn data(&self) -> &EnvironmentData {
         &self.data
     }
 
-    /// Create the venv at its configured path if it doesn't already
-    /// exist.
-    pub fn create(&self) -> HuakResult<()> {
+    /// Check if the Venv is a valid Python environment that can be used.
+    pub fn validate(&self) -> HuakResult<()> {
+        // TODO: Make this more robust.
+        if self.path().exists() {
+            return Ok(());
+        }
+
+        Err(HuakError::PyVenvNotFoundError)
+    }
+}
+
+impl Default for Venv {
+    fn default() -> Venv {
+        let cwd = env::current_dir().unwrap_or_default();
+        Venv::new(&cwd.join(DEFAULT_VENV_NAME))
+    }
+}
+
+impl PythonEnvironment for Venv {
+    fn create(&self) -> HuakResult<()> {
         if self.path().exists() {
             return Ok(());
         }
@@ -150,24 +180,25 @@ impl Venv {
         Ok(())
     }
 
-    /// Get the name of the Venv (ex: ".venv").
-    pub fn name(&self) -> HuakResult<&str> {
+    fn name(&self) -> HuakResult<&str> {
         let name = crate::utils::path::parse_filename(self.path().as_path())?;
 
         Ok(name)
     }
 
-    pub fn path(&self) -> &PathBuf {
+    fn path(&self) -> &PathBuf {
         &self.data.path
     }
 
-    pub fn bin_path(&self) -> PathBuf {
+    fn bin_path(&self) -> PathBuf {
         self.path().join(bin_name())
     }
 
-    /// Get the path to the module passed from the venv.
-    /// TODO: "Module" might be misleading.
-    pub fn module_path(&self, module: &str) -> HuakResult<PathBuf> {
+    fn bin_name(&self) -> &str {
+        bin_name()
+    }
+
+    fn module_path(&self, module: &str) -> HuakResult<PathBuf> {
         let bin_path = self.bin_path();
         let mut path = bin_path.join(module);
 
@@ -183,21 +214,27 @@ impl Venv {
         }
     }
 
-    /// Check if the Venv is a valid Python environment that can be used.
-    pub fn validate(&self) -> HuakResult<()> {
-        // TODO: Make this more robust.
-        if self.path().exists() {
-            return Ok(());
-        }
-
-        Err(HuakError::PyVenvNotFoundError)
+    fn interpreter_path(&self) -> &PathBuf {
+        self.data().interpreter_path()
     }
-}
 
-impl Default for Venv {
-    fn default() -> Venv {
-        let cwd = env::current_dir().unwrap_or_default();
-        Venv::new(&cwd.join(DEFAULT_VENV_NAME))
+    fn base_interpreter_path(&self) -> &PathBuf {
+        self.data().base_interpreter_path()
+    }
+
+    fn site_packages_path(&self) -> &PathBuf {
+        &self.data().site_packages_path
+    }
+
+    fn package_dist_info(
+        &self,
+        _package: &PythonPackage,
+    ) -> HuakResult<Option<DistInfo>> {
+        todo!()
+    }
+
+    fn package_is_installed(&self, _package: &PythonPackage) -> bool {
+        todo!()
     }
 }
 
@@ -269,8 +306,13 @@ pub fn create_venv(dirpath: &Path) -> HuakResult<Venv> {
 fn environment_data_from_venv_config_path(
     path: &PathBuf,
 ) -> HuakResult<EnvironmentData> {
+    let root = path.parent().ok_or(HuakError::PythonNotFoundError)?;
     let config = VirtualConfig::from_config_path(path)?;
     let interpreter = Interpreter {
+        path: root.join(bin_name()).join("python"),
+        version: config.version.to_string(),
+    };
+    let base_interpreter = Interpreter {
         path: config
             .executable
             .unwrap_or(find_python_binary_path(None).unwrap_or_default()), // TODO: Search on windows isn't great yet.
@@ -282,16 +324,21 @@ fn environment_data_from_venv_config_path(
     #[cfg(unix)]
     let site_packages_path = path
         .join("lib")
-        .join(format!("python{}", interpreter.version))
+        .join(format!(
+            "python{}",
+            interpreter
+                .version
+                .splitn(2, '.')
+                .collect::<Vec<&str>>()
+                .join(".")
+        ))
         .join("site-packages");
     let bin_path = path.join(bin_name());
 
     Ok(EnvironmentData {
-        path: path
-            .parent()
-            .ok_or(HuakError::PyVenvNotFoundError)?
-            .to_path_buf(),
-        interpreter: Some(interpreter),
+        path: root.to_path_buf(),
+        interpreter,
+        base_interpreter,
         site_packages_path,
         bin_path,
     })
@@ -352,7 +399,8 @@ pub fn env_var() -> &'static str {
 #[derive(Default)]
 pub struct EnvironmentData {
     pub path: PathBuf,
-    interpreter: Option<Interpreter>,
+    interpreter: Interpreter,
+    base_interpreter: Interpreter,
     pub site_packages_path: PathBuf,
     pub bin_path: PathBuf,
 }
@@ -362,20 +410,20 @@ impl EnvironmentData {
         EnvironmentData::default()
     }
 
-    pub fn interpreter_path(&self) -> Option<&PathBuf> {
-        if let Some(it) = &self.interpreter {
-            return Some(&it.path);
-        }
-
-        None
+    pub fn interpreter_path(&self) -> &PathBuf {
+        &self.interpreter.path
     }
 
-    pub fn interpreter_version(&self) -> Option<&String> {
-        if let Some(it) = &self.interpreter {
-            return Some(&it.version);
-        }
+    pub fn interpreter_version(&self) -> &String {
+        &self.interpreter.version
+    }
 
-        None
+    pub fn base_interpreter_path(&self) -> &PathBuf {
+        &self.base_interpreter.path
+    }
+
+    pub fn base_interpreter_version(&self) -> &String {
+        &self.base_interpreter.version
     }
 }
 
@@ -429,8 +477,7 @@ impl VirtualConfig {
                 include_system_site_packages =
                     value.parse().ok().unwrap_or_default();
             } else if name == "version" {
-                // TODO: Make more robust.
-                version = value.splitn(2, '.').collect();
+                version = value.to_string();
             } else if name == "executable" {
                 executable = Some(PathBuf::from(value));
             } else if name == "command" {
@@ -448,6 +495,7 @@ impl VirtualConfig {
     }
 }
 
+#[derive(Default)]
 struct Interpreter {
     path: PathBuf,
     version: String,

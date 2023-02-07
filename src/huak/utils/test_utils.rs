@@ -3,7 +3,9 @@ use std::{env, path::PathBuf};
 use tempfile::tempdir;
 
 use crate::{
-    env::python_environment::Venv, errors::HuakResult, project::Project,
+    env::python_environment::{PythonEnvironment, Venv},
+    errors::HuakResult,
+    project::Project,
 };
 
 use super::path::copy_dir;

@@ -15,7 +15,7 @@ mod tests {
 
     use super::*;
 
-    use crate::env::python_environment::env_var;
+    use crate::env::python_environment::{env_var, PythonEnvironment};
 
     #[ignore = "currently untestable"]
     #[test]

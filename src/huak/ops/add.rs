@@ -118,7 +118,10 @@ pub fn add_project_dependency(
 mod tests {
     use super::*;
 
-    use crate::utils::test_utils::create_mock_project_full;
+    use crate::{
+        env::python_environment::PythonEnvironment,
+        utils::test_utils::create_mock_project_full,
+    };
 
     #[test]
     fn add_dependency() {
