@@ -228,13 +228,14 @@ impl PythonEnvironment for Venv {
 
     fn package_dist_info(
         &self,
-        _package: &PythonPackage,
+        package: &PythonPackage,
     ) -> HuakResult<Option<DistInfo>> {
-        todo!()
+        DistInfo::from_package(package, &self.data.site_packages_path)
     }
 
-    fn package_is_installed(&self, _package: &PythonPackage) -> bool {
-        todo!()
+    // NOTE: Hacky use of package_dist_info (TODO?)
+    fn package_is_installed(&self, package: &PythonPackage) -> bool {
+        matches!(self.package_dist_info(package).ok(), Some(it) if it.is_some())
     }
 }
 

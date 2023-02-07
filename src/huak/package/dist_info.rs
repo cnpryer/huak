@@ -1,10 +1,12 @@
 use std::{
-    fs::File,
+    fs::{self, File},
     io::{BufReader, Read},
     path::{Path, PathBuf},
 };
 
 use crate::errors::HuakResult;
+
+use super::PythonPackage;
 
 /// Package distribtion info stored in the site-packages directory adjacent to the
 /// installed package artifact.
@@ -32,8 +34,43 @@ pub struct DistInfo {
 }
 
 impl DistInfo {
-    /// Construct the disttribution info data from the package's dist-info path.
-    pub fn from_path(path: &Path) -> HuakResult<DistInfo> {
+    /// Construct the distribution info data from a `PythonPackage`, searching the provided full
+    /// site-packages path. This initilization searches the site-packages directory for the first
+    /// directory matching the package's name (excluding version information). Then .dist-info is
+    /// appended to the path if it doesn't already exist. In theory the first path found should always
+    /// be the installed package directory.
+    pub fn from_package(
+        package: &PythonPackage,
+        site_packages_path: &Path,
+    ) -> HuakResult<Option<DistInfo>> {
+        // Collect all directories that match the package name
+        let candidates: Vec<PathBuf> = fs::read_dir(site_packages_path)?
+        .into_iter()
+        .filter(|it| it.is_ok())
+        .map(|it| it.expect("failed to map dir entry").path()) // TODO: Is there better than .expect?
+        .filter(|it| it.is_dir() && matches!(it.file_name(), Some(f) if f.to_string_lossy().starts_with(&package.name)))
+        .collect();
+
+        if candidates.is_empty() {
+            return Ok(None);
+        }
+
+        // Filter for the dist-info suffix and grab the first collected.
+        let path = match candidates
+            .iter()
+            .filter(|it| it.ends_with("dist-info"))
+            .collect::<Vec<&PathBuf>>()
+            .first()
+        {
+            Some(it) => *it,
+            None => return Ok(None),
+        };
+
+        DistInfo::from_path(path)
+    }
+
+    /// Construct the distribution info data from the package's dist-info path.
+    pub fn from_path(path: &Path) -> HuakResult<Option<DistInfo>> {
         let installer_file = File::open(path.join("INSTALLER"))?;
         let metadata_file = File::open(path.join("METADATA"))?;
         let license_file = File::open(path.join("LICENSE")).ok();
@@ -41,14 +78,14 @@ impl DistInfo {
         let requested_file = File::open(path.join("REQUESTED")).ok();
         let wheel_file = File::open(path.join("WHEEL")).ok();
 
-        Ok(DistInfo {
+        Ok(Some(DistInfo {
             installer_file,
             license_file,
             metadata_file,
             record_file,
             requested_file,
             wheel_file,
-        })
+        }))
     }
 
     /// Get the name of the installer listed in the INSTALLER file.
