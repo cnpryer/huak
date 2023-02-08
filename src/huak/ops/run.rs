@@ -17,35 +17,38 @@ pub fn run_command(
 #[cfg(test)]
 mod tests {
     use std::env::current_dir;
+    use std::str::FromStr;
 
     use super::*;
-    use crate::ops::install::install_project_dependencies;
+    use crate::env::python_environment::PythonEnvironment;
     use crate::package::installer::Installer;
+    use crate::package::PythonPackage;
     use crate::utils::test_utils::create_mock_project_full;
 
-    #[ignore = "unfinished"]
     #[test]
     fn run() {
         let project = create_mock_project_full().unwrap();
         let cwd = current_dir().unwrap();
-        let venv = Venv::from_directory(&cwd).unwrap();
+        let py_env = Venv::from_directory(&cwd).unwrap();
         let installer = Installer::new();
+        let test_package = PythonPackage::from_str("pytest").unwrap();
+        let reinstall = py_env.module_path("pytest").unwrap().exists();
+        installer.uninstall_package("pytest", &py_env).unwrap();
+        installer.install_package(&test_package, &py_env).unwrap();
+        let existed = py_env.module_path("pytest").unwrap().exists();
 
-        install_project_dependencies(&project, &venv, &installer, &None)
-            .unwrap();
-
-        let command = "pip list --format=freeze > test_req.txt"
+        let command = "pip uninstall pytest -y"
             .split_whitespace()
             .map(|s| s.to_string())
             .collect::<Vec<String>>();
-        run_command(&command, &project, &venv).unwrap();
+        run_command(&command, &project, &py_env).unwrap();
 
-        let data = std::fs::read_to_string(project.root().join("test_req.txt"))
-            .unwrap();
-        assert!(data.contains("black"));
-        assert!(data.contains("click"));
-        assert!(data.contains("pytest"));
+        assert!(existed);
+        assert!(!py_env.module_path("pytest").unwrap().exists());
 
-        std::fs::remove_file(project.root().join("test_req.txt")).unwrap();
+        // TODO: #123 - destruction/deconstruction
+        if reinstall {
+            installer.install_package(&test_package, &py_env).unwrap()
+        }
     }
 }
