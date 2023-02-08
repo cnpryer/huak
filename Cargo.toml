@@ -34,6 +34,7 @@ git2 = "0.16.1"
 openssl = { version = "0.10", features = ["vendored"], optional = true }
 pep440_rs = { git = "https://github.com/konstin/pep440-rs", rev = "3148c9016cbc01a9e6116ae8080b10e14e985487", version = "0.1.1" }
 colored = "2.0.0"
+human-panic = "1.1.0"
 
 
 [dev-dependencies]
