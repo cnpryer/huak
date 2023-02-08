@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     errors::{HuakError, HuakResult},
-    utils::{self, path, shell::get_shell_name},
+    utils::{path, shell::get_shell_name},
 };
 
 use super::python_environment::{PythonEnvironment, Venv};
@@ -64,12 +64,16 @@ impl Runner {
         };
 
         let program = get_shell_name()?;
-        let mut path_var =
-            format!("{}:", utils::path::to_string(&py_env.bin_path())?);
-        path_var.push_str(&env::var("PATH")?);
+        let mut paths =
+            env::split_paths(&env::var("PATH")?).collect::<Vec<_>>();
+        paths.insert(0, py_env.bin_path());
 
         process::Command::new(program)
-            .env("PATH", path_var)
+            .env(
+                "PATH",
+                env::join_paths(paths)
+                    .map_err(|e| HuakError::InternalError(e.to_string()))?,
+            )
             .args([flag, command])
             .current_dir(from.unwrap_or(&self.home))
             .spawn()?
