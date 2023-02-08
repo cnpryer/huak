@@ -22,7 +22,7 @@ pub fn get_shell_name() -> HuakResult<String> {
 /// Returns an error if it fails to get correct env vars.
 #[cfg(unix)]
 pub fn get_shell_path() -> HuakResult<String> {
-    std::env::var("SHELL").or(Ok(".".to_string()))
+    std::env::var("SHELL").or(Ok("sh".to_string()))
 }
 
 /// Gets the path of the current shell from env var

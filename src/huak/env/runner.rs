@@ -63,9 +63,15 @@ impl Runner {
             "windows" => utils::path::to_string(&script)?.to_string(),
             _ => format!("source {}", script.display()),
         };
+        let program = get_shell_name()?;
+        let program = if program.as_str() == "sh" {
+            ".".to_string()
+        } else {
+            program
+        };
 
         crate::utils::command::run_command(
-            &get_shell_name()?,
+            &program,
             &["-c", &format!("{activation_command} && {command}")],
             from.unwrap_or(self.home.as_path()),
         )?;
