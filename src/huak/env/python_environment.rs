@@ -11,7 +11,7 @@ use crate::{
     utils::{
         self,
         path::search_directories_for_file,
-        shell::{get_shell_name, get_shell_path, get_shell_source_command},
+        shell::{get_shell_name, get_shell_path},
     },
 };
 
@@ -251,9 +251,10 @@ impl Activatable for Venv {
         if !script.exists() {
             return Err(HuakError::PyVenvNotFoundError);
         }
-        let source_command = get_shell_source_command()?;
-        let activation_command =
-            format!("{} {}", source_command, script.display());
+        let activation_command = match OS {
+            "windows" => utils::path::to_string(&script)?.to_string(),
+            _ => format!("source {}", script.display()),
+        };
 
         spawn_pseudo_terminal(&activation_command)?;
 
