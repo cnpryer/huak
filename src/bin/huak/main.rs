@@ -4,6 +4,7 @@
 use std::process::ExitCode;
 
 use clap::Parser;
+use human_panic::setup_panic;
 
 mod commands;
 use colored::Colorize;
@@ -12,6 +13,7 @@ mod errors;
 
 /// Launch Huak's cli process.
 pub fn main() -> ExitCode {
+    setup_panic!();
     let cli = Cli::parse();
 
     match cli.run() {
