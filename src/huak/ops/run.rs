@@ -31,17 +31,17 @@ mod tests {
         let cwd = current_dir().unwrap();
         let py_env = Venv::from_directory(&cwd).unwrap();
         let installer = Installer::new();
-        let test_package = PythonPackage::from_str("secretset").unwrap();
+        let test_package = PythonPackage::from_str("xlcsv").unwrap();
         installer.install_package(&test_package, &py_env).unwrap();
-        let existed = py_env.module_path("secretset").unwrap().exists();
+        let existed = py_env.module_path("xlcsv").unwrap().exists();
 
-        let command = "pip uninstall secretset -y"
+        let command = "pip uninstall xlcsv -y"
             .split_whitespace()
             .map(|s| s.to_string())
             .collect::<Vec<String>>();
         run_command(&command, &project, &py_env).unwrap();
 
         assert!(existed);
-        assert!(!py_env.module_path("secretset").unwrap().exists());
+        assert!(!py_env.module_path("xlcsv").unwrap().exists());
     }
 }
