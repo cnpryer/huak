@@ -1,6 +1,7 @@
 use std::{
-    env::{consts::OS, current_dir},
+    env::{self, consts::OS, current_dir},
     path::{Path, PathBuf},
+    process,
 };
 
 use crate::{
@@ -8,7 +9,7 @@ use crate::{
     utils::{self, path, shell::get_shell_name},
 };
 
-use super::python_environment::{Activatable, PythonEnvironment, Venv};
+use super::python_environment::{PythonEnvironment, Venv};
 
 #[derive(Default)]
 pub struct Runner {
@@ -57,24 +58,22 @@ impl Runner {
         from: Option<&Path>,
     ) -> HuakResult<()> {
         py_env.validate()?;
-
-        let script = py_env.get_activation_script_path()?;
-        let activation_command = match OS {
-            "windows" => utils::path::to_string(&script)?.to_string(),
-            _ => format!("source {}", script.display()),
+        let flag = match OS {
+            "windows" => "/C",
+            _ => "-c",
         };
+
         let program = get_shell_name()?;
-        let program = if program.as_str() == "sh" {
-            ".".to_string()
-        } else {
-            program
-        };
+        let mut path_var =
+            format!("{}:", utils::path::to_string(&py_env.bin_path())?);
+        path_var.push_str(&env::var("PATH")?);
 
-        crate::utils::command::run_command(
-            &program,
-            &["-c", &format!("{activation_command} && {command}")],
-            from.unwrap_or(self.home.as_path()),
-        )?;
+        process::Command::new(program)
+            .env("PATH", path_var)
+            .args([flag, command])
+            .current_dir(from.unwrap_or(&self.home))
+            .spawn()?
+            .wait()?;
 
         Ok(())
     }
