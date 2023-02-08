@@ -1,14 +1,11 @@
 use std::{
-    env::current_dir,
+    env::{consts::OS, current_dir},
     path::{Path, PathBuf},
 };
 
 use crate::{
     errors::{HuakError, HuakResult},
-    utils::{
-        path,
-        shell::{get_shell_path, get_shell_source_command},
-    },
+    utils::{self, path, shell::get_shell_name},
 };
 
 use super::python_environment::{Activatable, PythonEnvironment, Venv};
@@ -62,11 +59,13 @@ impl Runner {
         py_env.validate()?;
 
         let script = py_env.get_activation_script_path()?;
-        let activation_command =
-            format!("{} {}", get_shell_source_command()?, script.display());
+        let activation_command = match OS {
+            "windows" => utils::path::to_string(&script)?.to_string(),
+            _ => format!("source {}", script.display()),
+        };
 
         crate::utils::command::run_command(
-            &get_shell_path()?,
+            &get_shell_name()?,
             &["-c", &format!("{activation_command} && {command}")],
             from.unwrap_or(self.home.as_path()),
         )?;

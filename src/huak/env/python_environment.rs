@@ -11,7 +11,7 @@ use crate::{
     utils::{
         self,
         path::search_directories_for_file,
-        shell::{get_shell_name, get_shell_path, get_shell_source_command},
+        shell::{get_shell_name, get_shell_path},
     },
 };
 
@@ -23,7 +23,7 @@ const DEFAULT_PYTHON_ALIAS: &str = "python";
 const UNIX_BIN_DIRECTORY_NAME: &str = "bin";
 const WINDOWS_SCRIPT_DIRECTORY_NAME: &str = "Scripts";
 const VIRTUAL_ENVIRONMENT_CONFIG_NAME: &str = "pyvenv.cfg";
-const HUAK_VENV_ENV_VAR: &str = "HUAK_VENV_ACTIVE";
+const VENV_ENV_VAR: &str = "VIRTUAL_ENV";
 
 // A Python environment to Huak is an environment that
 //   - Python packages can be installed to
@@ -243,7 +243,7 @@ impl Activatable for Venv {
     /// Activates the virtual environment in the current shell
     fn activate(&self) -> HuakResult<()> {
         // Check if venv is already activated
-        if env::var(HUAK_VENV_ENV_VAR).is_ok() {
+        if env::var(VENV_ENV_VAR).is_ok() {
             return Ok(());
         }
 
@@ -251,11 +251,11 @@ impl Activatable for Venv {
         if !script.exists() {
             return Err(HuakError::PyVenvNotFoundError);
         }
-        let source_command = get_shell_source_command()?;
-        let activation_command =
-            format!("{} {}", source_command, script.display());
+        let activation_command = match OS {
+            "windows" => utils::path::to_string(&script)?.to_string(),
+            _ => format!("source {}", script.display()),
+        };
 
-        env::set_var(HUAK_VENV_ENV_VAR, "1");
         spawn_pseudo_terminal(&activation_command)?;
 
         Ok(())
@@ -393,8 +393,8 @@ fn bin_name() -> &'static str {
     }
 }
 
-pub fn env_var() -> &'static str {
-    HUAK_VENV_ENV_VAR
+pub fn venv_env_var() -> &'static str {
+    VENV_ENV_VAR
 }
 
 #[derive(Default)]

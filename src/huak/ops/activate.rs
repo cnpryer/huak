@@ -15,7 +15,7 @@ mod tests {
 
     use super::*;
 
-    use crate::env::python_environment::{env_var, PythonEnvironment};
+    use crate::env::python_environment::{venv_env_var, PythonEnvironment};
 
     #[ignore = "currently untestable"]
     #[test]
@@ -25,7 +25,7 @@ mod tests {
         let venv = &Venv::new(&cwd.join(".venv"));
         venv.create().unwrap();
 
-        assert!(std::env::var(env_var()).is_err());
+        assert!(std::env::var(venv_env_var()).is_err());
 
         let result = activate_venv(&venv);
         assert!(result.is_ok());
