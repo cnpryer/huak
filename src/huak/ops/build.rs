@@ -5,7 +5,7 @@ use crate::{
         python_environment::{PythonEnvironment, Venv},
         runner::Runner,
     },
-    errors::{HuakError, HuakResult},
+    errors::HuakResult,
     package::{installer::Installer, PythonPackage},
     project::Project,
 };
@@ -18,15 +18,18 @@ pub fn build_project(
     installer: &Installer,
 ) -> HuakResult<()> {
     if !py_env.module_path(MODULE)?.exists() {
-        let package = PythonPackage::from_str("build")?;
+        let package = PythonPackage::from_str(MODULE)?;
         installer.install_package(&package, py_env)?;
     }
 
     let args = ["-m", MODULE];
     let runner = Runner::new()?;
-    runner
-        .run_installed_module("python", &args, py_env, Some(project.root()))
-        .map_err(|_| HuakError::PyPackageBuildError)?;
+    runner.run_installed_module(
+        "python",
+        &args,
+        py_env,
+        Some(project.root()),
+    )?;
 
     Ok(())
 }
