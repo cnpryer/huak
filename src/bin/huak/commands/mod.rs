@@ -106,7 +106,7 @@ pub enum Commands {
         #[arg(long)]
         no_vcs: bool,
     },
-    /// Builds and uploads current project to a registry*.
+    /// Builds and uploads current project to a registry.
     Publish,
     /// Remove a dependency from the project.
     Remove {
