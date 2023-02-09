@@ -8,6 +8,7 @@ pub mod init;
 pub mod install;
 pub mod lint;
 pub mod new;
+pub mod publish;
 pub mod remove;
 pub mod run;
 pub mod test;
