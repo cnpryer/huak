@@ -24,6 +24,8 @@ const UNIX_BIN_DIRECTORY_NAME: &str = "bin";
 const WINDOWS_SCRIPT_DIRECTORY_NAME: &str = "Scripts";
 const VIRTUAL_ENVIRONMENT_CONFIG_NAME: &str = "pyvenv.cfg";
 const VENV_ENV_VAR: &str = "VIRTUAL_ENV";
+const CONDA_ENV_VAR: &str = "CONDA_PREFIX";
+const CONDA_DEFAULT_ENV_VAR: &str = "CONDA_DEFAULT_ENV";
 
 // A Python environment to Huak is an environment that
 //   - Python packages can be installed to
@@ -243,7 +245,7 @@ impl Activatable for Venv {
     /// Activates the virtual environment in the current shell
     fn activate(&self) -> HuakResult<()> {
         // Check if venv is already activated
-        if env::var(VENV_ENV_VAR).is_ok() {
+        if env::var(VENV_ENV_VAR).is_ok() | env::var(CONDA_ENV_VAR).is_ok() {
             return Ok(());
         }
 
@@ -395,6 +397,18 @@ fn bin_name() -> &'static str {
 
 pub fn venv_env_var() -> &'static str {
     VENV_ENV_VAR
+}
+
+pub fn conda_env_var() -> &'static str {
+    CONDA_ENV_VAR
+}
+
+pub fn conda_default_env_var() -> &'static str {
+    CONDA_DEFAULT_ENV_VAR
+}
+
+pub fn conda_env_is_base() -> bool {
+    CONDA_DEFAULT_ENV_VAR == "base"
 }
 
 #[derive(Default)]
