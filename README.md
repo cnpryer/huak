@@ -43,7 +43,6 @@ See **[the milestone list](https://github.com/cnpryer/huak/milestones)** to chec
 - [Documentation](#documentation)
 - [Goals and Motivation](#goals)
 - [Contributing](#contributing)
-- [More](#more)
 
 ## Installation
 
@@ -88,38 +87,26 @@ Options:
 ```
 _"*" indicates first-pass of implementation is incomplete._
 
-Note that `huak activate` is currently only partially supported on Windows. See the related [issue](https://github.com/cnpryer/huak/issues/302) for more details.
+> ⚠️ Note that `huak activate` is currently only partially supported on Windows. See [#302](https://github.com/cnpryer/huak/issues/302).
 
 ## Documentation
 
-If you've cloned the repository, run `cargo doc --open`.
-
-Some documentation for 0.0.x releases will land on docs.rs. Around the 0.1.0 release I'd like to have more robust documentation about Huak for users, contributors, and the curious.
+More documentation can be found [here](./docs/user_guide.md).
 
 ## Goals
 
-Besides some of my own experience with the Python ecosystem, there are a few additional guiding principles steering the development of Huak:
+### 1. Just use `huak` ✨
 
-### 1. Open to open source 📚
+The Rust ecosystem has a fantastic onboarding experience. Cargo plays a large role. Huak can provide the same experience for Python.
 
-Open source has done a lot for me both from a tooling and professional development perspective. I'd love to offer Huak as a way to help onboard the absolute and relative newcomers (like myself).
+### 2. Fast ⚡️
 
-### 2. Just use `huak` ✨
+There's room for faster tooling in the Python ecosystem. One of the guiding principles will be *"Is this the fastest it can be?"*.
 
-I love Rust's onboarding experience. Cargo has played a large role. It's a great tool for newcomers to use to get their feet wet. Huak can provide the same experience for Python.
+### 3. Python 🤝 Rust
 
-### 3. Fast ⚡️
-
-There's room for faster tooling in the Python ecosystem. One of the guiding principles will be "Is this the fastest it can be?".
-
-### 4. Python 🤝 Rust
-
-JavaScript has seen a "Going Rust" sub-community pop up. Python seems to be getting one too. Huak would be able to fuel contributions to the intersection of these two languages.
+JavaScript has seen a "Going Rust" sub-community pop up. Huak is positioned well to help sustain future development of Rust-based software for the Python ecosystem.
 
 ## Contributing
 
 Please read our [contributing guide](/docs/CONTRIBUTING.md) before you start contributing.
-
-## More
-
-See the [design doc](/docs/design_doc.md) for more about the project, design motivations, and various architecture docs.
