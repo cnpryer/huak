@@ -25,17 +25,17 @@ To create a new project use the `new` command.
 
 ```
 ~/github took 2s 
-❯ huak new my-project --lib
+❯ huak new my-project
 ```
 
 ### Or initialize an existing project
 
 ```
 ~/github/existing-project 
-❯ huak init --lib
+❯ huak init
 ```
 
-`huak` distinguishes between library and application-like projects. Projects default to the library type if a type isn't specified.
+`huak` distinguishes between library and application-like projects. Projects default to the library type if a type isn't specified. Specify the type with either the `--lib` or `--app` flag.
 
 Initializing an existing project adds a `pyproject.toml` to the current directory. Bootstrapping the project with the `new` command creates a Python project with the following structure:
 
