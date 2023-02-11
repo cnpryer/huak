@@ -112,11 +112,20 @@ my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 took 2s
 
 The `--fix` flag can be used to address any auto-fixable issues.
 
+`huak` wraps tools like `ruff` for some of its commands. To configure a wrapped tool such as `ruff` use the pyproject.toml file:
+
+```toml
+[tool.ruff]
+# ...
+```
+
+Some wrapped tools' features may not be accessible using this method. See [#467](https://github.com/cnpryer/huak/issues/467) for the status on this issue.
+
 ### Test your code
 
 Use the `test` command to test your project.
 
-> ⚠️ Currently your Python project won't be recognized by the interpreter without installing it to the environment. See [459](https://github.com/cnpryer/huak/issues/459).
+> ⚠️ Currently your Python project won't be recognized by the interpreter without installing it to the environment. See [#459](https://github.com/cnpryer/huak/issues/459).
 
 ```
 my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0
