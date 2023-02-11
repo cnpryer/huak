@@ -99,6 +99,9 @@ impl Venv {
     /// Initialize a `Venv` by searching a directory for a venv. `from_directory()` will search
     /// the parents directory for a configured number of recursive steps. A virtual environment
     /// is identified by its configuration file (pyvenv.cfg).
+    /// When the first virtual environment is found, from_directory checks that the virtual
+    /// environment found is accompanied by a pyproject.toml in the same directory, indicating
+    /// that the search found the virtual environment associated with a marked project.
     pub fn from_directory(path: &Path) -> HuakResult<Venv> {
         let config_path = search_directories_for_file(
             path,
@@ -106,7 +109,15 @@ impl Venv {
             search_max_steps(),
         )?
         .ok_or(HuakError::PyVenvNotFoundError)?;
+
         let data = environment_data_from_venv_config_path(&config_path)?;
+
+        // Make sure the venv found from the search is at a marked project's root.
+        if let Some(parent) = data.path.parent() {
+            if !parent.join("pyproject.toml").exists() {
+                return Err(HuakError::PyVenvNotFoundError);
+            }
+        }
 
         Ok(Venv { data })
     }
@@ -520,6 +531,11 @@ struct Interpreter {
 mod tests {
     use tempfile::tempdir;
 
+    use crate::{
+        ops::new::create_project,
+        project::{Project, ProjectType},
+    };
+
     use super::*;
 
     #[test]
@@ -534,6 +550,9 @@ mod tests {
         let directory = tempdir().unwrap().into_path();
         let first_venv = Venv::new(&directory.join(".venv"));
         first_venv.create().unwrap();
+        let mut project =
+            Project::new(directory.clone(), ProjectType::default());
+        create_project(&mut project).unwrap();
         let second_venv = Venv::from_directory(&directory).unwrap();
 
         assert!(second_venv.path().exists());
