@@ -1,6 +1,6 @@
 [project]
 name = "huak"
-version = "0.0.10a6"
+version = "0.0.10a7"
 description = "A Python package manager written in Rust inspired by Cargo."
 authors = [
     {email = "cnpryer@gmail.com"},
