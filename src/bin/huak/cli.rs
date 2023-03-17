@@ -2,27 +2,6 @@ use crate::errors::CliResult;
 
 use clap::{Parser, Subcommand};
 
-pub(crate) mod activate;
-pub(crate) mod add;
-pub(crate) mod audit;
-pub(crate) mod build;
-pub(crate) mod clean;
-pub(crate) mod config;
-pub(crate) mod doc;
-pub(crate) mod fix;
-pub(crate) mod fmt;
-pub(crate) mod init;
-pub(crate) mod install;
-pub(crate) mod lint;
-pub(crate) mod new;
-pub(crate) mod publish;
-pub(crate) mod remove;
-pub(crate) mod run;
-pub(crate) mod test;
-pub(crate) mod update;
-pub(crate) mod version;
-
-// Main CLI struct.
 
 /// A Python package manager written in Rust inspired by Cargo.
 #[derive(Parser)]
@@ -135,20 +114,20 @@ pub enum Commands {
 impl Cli {
     pub fn run(self) -> CliResult<()> {
         match self.command {
-            Commands::Config { command } => config::run(command),
-            Commands::Activate => activate::run(),
-            Commands::Add { dependency, group } => add::run(dependency, group),
-            Commands::Audit => audit::run(),
-            Commands::Build => build::run(),
-            Commands::Clean { pycache } => clean::run(pycache),
-            Commands::Doc { check } => doc::run(check),
+            Commands::Config { command } => config(command),
+            Commands::Activate => activate(),
+            Commands::Add { dependency, group } => add(dependency, group),
+            Commands::Audit => audit(),
+            Commands::Build => build(),
+            Commands::Clean { pycache } => clean(pycache),
+            Commands::Doc { check } => doc(check),
             Commands::Fix => fix::run(),
-            Commands::Fmt { check } => fmt::run(check),
+            Commands::Fmt { check } => fmt(check),
             // --lib is the default, so it's unnecessary to handle. If --app is not passed, assume --lib.
             #[allow(unused_variables)]
-            Commands::Init { app, lib } => init::run(app),
-            Commands::Install { groups } => install::run(groups),
-            Commands::Lint { fix } => lint::run(fix),
+            Commands::Init { app, lib } => init(app),
+            Commands::Install { groups } => install(groups),
+            Commands::Lint { fix } => lint(fix),
             // --lib is the default, so it's unnecessary to handle. If --app is not passed, assume --lib.
             #[allow(unused_variables)]
             Commands::New {
@@ -156,15 +135,15 @@ impl Cli {
                 app,
                 lib,
                 no_vcs,
-            } => new::run(path, app, no_vcs),
-            Commands::Publish => publish::run(),
+            } => new(path, app, no_vcs),
+            Commands::Publish => publish(),
             Commands::Remove { dependency, group } => {
-                remove::run(dependency, group)
+                remove(dependency, group)
             }
-            Commands::Run { command } => run::run(command),
-            Commands::Test => test::run(),
-            Commands::Update { dependency } => update::run(dependency),
-            Commands::Version => version::run(),
+            Commands::Run { command } => run(command),
+            Commands::Test => test(),
+            Commands::Update { dependency } => update(dependency),
+            Commands::Version => version(),
         }
     }
 }

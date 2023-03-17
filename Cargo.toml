@@ -15,26 +15,20 @@ categories = [
 name = "huak"
 path = "./src/huak/lib.rs"
 
-[dependencies]
-clap = {version = "4.1.4", features = ["cargo", "derive"]}
-clap_complete = "4.1"
-thiserror = "1.0.38"
-glob = "0.3.1"
-serde = "1.0.152"
-serde_derive = "1.0.144"
-serde_json = "1.0"
-reqwest = { version = "0.11", features = ["blocking", "json"] }
-pyproject-toml = "0.3.3"
-toml_edit = { version = "0.18.1", features = ["easy"] }
-expectrl = { version = "0.6.0", features = ["polling"] }
-terminal_size = "0.2.3"
-git2 = "0.16.1"
-# included to build PyPi Wheels (see .github/workflow/README.md)
-openssl = { version = "0.10", features = ["vendored"], optional = true }
-pep440_rs = { git = "https://github.com/konstin/pep440-rs", rev = "3148c9016cbc01a9e6116ae8080b10e14e985487", version = "0.1.1" }
-colored = "2.0.0"
-human-panic = "1.1.0"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[dependencies]
+clap = { version = "4.1.8", features = ["cargo", "derive"] }
+git2 = "0.16.1"
+pep440_rs = { git = "https://github.com/konstin/pep440-rs", rev = "3148c9016cbc01a9e6116ae8080b10e14e985487", version = "0.1.1" }
+pyproject-toml = "0.3.3"
+reqwest = { version = "0.11.14", features = ["blocking", "json"] }
+serde = { version = "1.0.156", features = ["derive"] }
+serde_json = "1.0.94"
+termcolor = "1.2.0"
+thiserror = "1.0.38"
+toml = "0.7.3"
+toml_edit = "0.19.4"
 
 [dev-dependencies]
-tempfile = "3.0.4"
+tempfile = "3.4.0"

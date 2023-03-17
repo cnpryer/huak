@@ -6,9 +6,8 @@ use std::process::ExitCode;
 use clap::Parser;
 use human_panic::setup_panic;
 
-mod commands;
 use colored::Colorize;
-use commands::Cli;
+use cli::Cli;
 mod errors;
 
 /// Launch Huak's cli process.
