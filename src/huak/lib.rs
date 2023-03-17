@@ -1,4 +1,4 @@
-use error::{HuakError, HuakResult};
+pub use error::{Error, HuakResult};
 use pep440_rs::{Operator as VersionOperator, Version};
 use pyproject_toml::PyProjectToml as ProjectToml;
 use serde::{Deserialize, Serialize};
@@ -72,7 +72,7 @@ impl Project {
         project.project_layout = ProjectLayout {
             root: path
                 .parent()
-                .ok_or(HuakError::ProjectRootMissingError)?
+                .ok_or(Error::ProjectRootMissingError)?
                 .to_path_buf(),
             pyproject_toml_path: path.to_path_buf(),
         };
@@ -101,8 +101,13 @@ impl Project {
     }
 
     /// Get a group of optional dependencies from the Python project's project file.
-    pub fn optional_dependencey_group(&self, group_name: &str) -> HuakResult<Vec<Package>> {
-        if let Some(dependencies) = self.pyproject_toml.optional_dependencey_group(group_name) {
+    pub fn optional_dependencey_group(
+        &self,
+        group_name: &str,
+    ) -> HuakResult<Vec<Package>> {
+        if let Some(dependencies) =
+            self.pyproject_toml.optional_dependencey_group(group_name)
+        {
             return dependencies
                 .iter()
                 .map(|dep| Package::from_str(dep))
@@ -117,7 +122,11 @@ impl Project {
     }
 
     /// Add a Python package as a dependency to the project' project file.
-    pub fn add_optional_dependency(&mut self, package_str: &str, group_name: &str) {
+    pub fn add_optional_dependency(
+        &mut self,
+        package_str: &str,
+        group_name: &str,
+    ) {
         self.pyproject_toml
             .add_optional_dependency(package_str, group_name)
     }
@@ -128,7 +137,11 @@ impl Project {
     }
 
     /// Remove an optional dependency from the project's project file.
-    pub fn remove_optional_dependency(&mut self, package_str: &str, group_name: &str) {
+    pub fn remove_optional_dependency(
+        &mut self,
+        package_str: &str,
+        group_name: &str,
+    ) {
         self.pyproject_toml
             .remove_optional_dependency(package_str, group_name);
     }
@@ -234,7 +247,10 @@ impl PyProjectToml {
     }
 
     /// Get a group of optional dependencies from the Python project.
-    pub fn optional_dependencey_group(&self, group_name: &str) -> Option<&Vec<String>> {
+    pub fn optional_dependencey_group(
+        &self,
+        group_name: &str,
+    ) -> Option<&Vec<String>> {
         if let Some(project) = self.project.as_ref() {
             if let Some(dependencies) = &project.optional_dependencies {
                 return dependencies.get(group_name);
@@ -253,7 +269,11 @@ impl PyProjectToml {
     }
 
     /// Add a Python package as a dependency to the project.
-    pub fn add_optional_dependency(&mut self, package_str: &str, group_name: &str) {
+    pub fn add_optional_dependency(
+        &mut self,
+        package_str: &str,
+        group_name: &str,
+    ) {
         self.project.as_mut().map(|project| {
             if let Some(group) = project.optional_dependencies.as_mut() {
                 if let Some(dependencies) = group.get_mut(group_name) {
@@ -278,7 +298,11 @@ impl PyProjectToml {
     }
 
     /// Remove an optional dependency from the project.
-    pub fn remove_optional_dependency(&mut self, package_str: &str, group_name: &str) {
+    pub fn remove_optional_dependency(
+        &mut self,
+        package_str: &str,
+        group_name: &str,
+    ) {
         self.project.as_mut().map(|project| {
             if let Some(group) = project.optional_dependencies.as_mut() {
                 if let Some(dependencies) = group.get_mut(group_name) {
@@ -437,7 +461,10 @@ impl VirtualEnvironment {
     }
 
     /// Uninstall many Python packages from the environment.
-    pub fn uninstall_packages(&mut self, package_names: &[&str]) -> HuakResult<()> {
+    pub fn uninstall_packages(
+        &mut self,
+        package_names: &[&str],
+    ) -> HuakResult<()> {
         todo!()
     }
 
@@ -453,33 +480,51 @@ impl VirtualEnvironment {
 
     /// Get a package from the system's site-packages directory if it is already
     /// installed.
-    pub fn find_base_site_packages_package(&self, name: &str) -> Option<Package> {
+    pub fn find_base_site_packages_package(
+        &self,
+        name: &str,
+    ) -> Option<Package> {
         todo!()
     }
 
     /// Get a package's dist info from the system's site-packages directory if it is
     /// there.
-    pub fn find_base_site_packages_dist_info(&self, name: &str) -> Option<DistInfo> {
+    pub fn find_base_site_packages_dist_info(
+        &self,
+        name: &str,
+    ) -> Option<DistInfo> {
         todo!()
     }
 
     /// Add a package to the site-packages directory.
-    fn add_package_to_site_packages(&mut self, package: &Package) -> HuakResult<()> {
+    fn add_package_to_site_packages(
+        &mut self,
+        package: &Package,
+    ) -> HuakResult<()> {
         todo!()
     }
 
     /// Add a package to the system's site-packages directory.
-    fn add_package_to_base_site_packages(&mut self, package: &Package) -> HuakResult<()> {
+    fn add_package_to_base_site_packages(
+        &mut self,
+        package: &Package,
+    ) -> HuakResult<()> {
         todo!()
     }
 
     /// Remove a package from the site-packages directory.
-    fn remove_package_from_site_packages(&mut self, package: &Package) -> HuakResult<()> {
+    fn remove_package_from_site_packages(
+        &mut self,
+        package: &Package,
+    ) -> HuakResult<()> {
         todo!()
     }
 
     /// Remove a package from the system's site-packages directory.
-    fn remove_package_from_base_site_packages(&mut self, package: &Package) -> HuakResult<()> {
+    fn remove_package_from_base_site_packages(
+        &mut self,
+        package: &Package,
+    ) -> HuakResult<()> {
         todo!()
     }
 
@@ -490,7 +535,10 @@ impl VirtualEnvironment {
     }
 
     /// Activate the Python environment with a given terminal.
-    pub fn activate_with_terminal(&self, terminal: &mut Terminal) -> HuakResult<()> {
+    pub fn activate_with_terminal(
+        &self,
+        terminal: &mut Terminal,
+    ) -> HuakResult<()> {
         todo!()
     }
 
@@ -505,7 +553,10 @@ impl VirtualEnvironment {
     }
 
     /// Set the installer of the virtual environment.
-    pub fn with_installer_config(&mut self, config: &InstallerConfig) -> &mut VirtualEnvironment {
+    pub fn with_installer_config(
+        &mut self,
+        config: &InstallerConfig,
+    ) -> &mut VirtualEnvironment {
         self.installer.set_config(*config);
         self
     }
@@ -621,7 +672,7 @@ impl Package {
 }
 
 impl FromStr for Package {
-    type Err = HuakError;
+    type Err = Error;
 
     /// Create a Python package from str.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -689,7 +740,7 @@ impl PackageIndexClient {
         let url = format!("https://pypi.org/pypi/{}/json", package.name());
         reqwest::blocking::get(url)?
             .json()
-            .map_err(|e| HuakError::ReqwestError(e))
+            .map_err(|e| Error::ReqwestError(e))
     }
 }
 
@@ -994,9 +1045,10 @@ build-backend = "hatchling.build"
     #[test]
     /// NOTE: This test depends on local virtual environment.
     fn python_environment_executable_dir_name() {
-        let python_environment =
-            VirtualEnvironment::from_path(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".venv"))
-                .unwrap();
+        let python_environment = VirtualEnvironment::from_path(
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".venv"),
+        )
+        .unwrap();
 
         assert!(python_environment.executables_dir_path().exists());
         #[cfg(unix)]
@@ -1014,9 +1066,10 @@ build-backend = "hatchling.build"
     #[test]
     /// NOTE: This test depends on local virtual environment.
     fn python_environment_python_config() {
-        let python_environment =
-            VirtualEnvironment::from_path(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".venv"))
-                .unwrap();
+        let python_environment = VirtualEnvironment::from_path(
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".venv"),
+        )
+        .unwrap();
         let python_path = python_environment.python_path();
         let venv_root = python_path.parent().unwrap().parent().unwrap();
 

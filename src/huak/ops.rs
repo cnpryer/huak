@@ -1,7 +1,7 @@
 ///! This module implements various operations to interact with valid workspaces
 ///! existing on a system.
 use crate::{
-    error::{HuakError, HuakResult},
+    error::{Error, HuakResult},
     sys::{self, Terminal, Verbosity},
     Package, Project, ProjectType, PyProjectToml,
 };
@@ -33,7 +33,10 @@ impl OperationConfig {
         &self.root
     }
 
-    pub fn with_root(&mut self, path: impl AsRef<Path>) -> &mut OperationConfig {
+    pub fn with_root(
+        &mut self,
+        path: impl AsRef<Path>,
+    ) -> &mut OperationConfig {
         self.root = path.as_ref().to_path_buf();
         self
     }
@@ -42,7 +45,10 @@ impl OperationConfig {
         self.build_options.as_ref()
     }
 
-    pub fn with_build_options(&mut self, options: BuildOptions) -> &mut OperationConfig {
+    pub fn with_build_options(
+        &mut self,
+        options: BuildOptions,
+    ) -> &mut OperationConfig {
         self.build_options = Some(options);
         self
     }
@@ -51,7 +57,10 @@ impl OperationConfig {
         self.format_options.as_ref()
     }
 
-    pub fn with_format_options(&mut self, options: FormatOptions) -> &mut OperationConfig {
+    pub fn with_format_options(
+        &mut self,
+        options: FormatOptions,
+    ) -> &mut OperationConfig {
         self.format_options = Some(options);
         self
     }
@@ -60,7 +69,10 @@ impl OperationConfig {
         self.lint_options.as_ref()
     }
 
-    pub fn with_lint_options(&mut self, options: LintOptions) -> &mut OperationConfig {
+    pub fn with_lint_options(
+        &mut self,
+        options: LintOptions,
+    ) -> &mut OperationConfig {
         self.lint_options = Some(options);
         self
     }
@@ -69,7 +81,10 @@ impl OperationConfig {
         self.publish_options.as_ref()
     }
 
-    pub fn with_publish_options(&mut self, options: PublishOptions) -> &mut OperationConfig {
+    pub fn with_publish_options(
+        &mut self,
+        options: PublishOptions,
+    ) -> &mut OperationConfig {
         self.publish_options = Some(options);
         self
     }
@@ -78,7 +93,10 @@ impl OperationConfig {
         self.installer_options.as_ref()
     }
 
-    pub fn with_installer_options(&mut self, options: InstallerOptions) -> &mut OperationConfig {
+    pub fn with_installer_options(
+        &mut self,
+        options: InstallerOptions,
+    ) -> &mut OperationConfig {
         self.installer_options = Some(options);
         self
     }
@@ -87,7 +105,10 @@ impl OperationConfig {
         self.terminal_options.as_ref()
     }
 
-    pub fn with_terminal_options(&mut self, options: TerminalOptions) -> &mut OperationConfig {
+    pub fn with_terminal_options(
+        &mut self,
+        options: TerminalOptions,
+    ) -> &mut OperationConfig {
         self.terminal_options = Some(options);
         self
     }
@@ -156,7 +177,8 @@ pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
     let mut cmd = cmd
         .env(
             "PATH",
-            std::env::join_paths(paths).map_err(|e| HuakError::InternalError(e.to_string()))?,
+            std::env::join_paths(paths)
+                .map_err(|e| Error::InternalError(e.to_string()))?,
         )
         .current_dir(config.root());
     // TODO: Propagate CLI config
@@ -178,7 +200,8 @@ pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
     let mut cmd = cmd
         .env(
             "PATH",
-            std::env::join_paths(paths).map_err(|e| HuakError::InternalError(e.to_string()))?,
+            std::env::join_paths(paths)
+                .map_err(|e| Error::InternalError(e.to_string()))?,
         )
         .current_dir(config.root())
         .arg(".");
@@ -194,7 +217,9 @@ pub fn init_project(config: &OperationConfig) -> HuakResult<()> {
 }
 
 /// Install a Python project's dependencies to an environment.
-pub fn install_project_dependencies(config: &OperationConfig) -> HuakResult<()> {
+pub fn install_project_dependencies(
+    config: &OperationConfig,
+) -> HuakResult<()> {
     let mut venv = crate::find_venv()?;
     let project = Project::from_manifest(config.root().join("pyproject.toml"))?;
     let packages = project.dependencies()?;
@@ -224,7 +249,8 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
     let mut cmd = cmd
         .env(
             "PATH",
-            std::env::join_paths(paths).map_err(|e| HuakError::InternalError(e.to_string()))?,
+            std::env::join_paths(paths)
+                .map_err(|e| Error::InternalError(e.to_string()))?,
         )
         .current_dir(config.root())
         .arg(".");
@@ -260,7 +286,8 @@ pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
     let mut cmd = cmd
         .env(
             "PATH",
-            std::env::join_paths(paths).map_err(|e| HuakError::InternalError(e.to_string()))?,
+            std::env::join_paths(paths)
+                .map_err(|e| Error::InternalError(e.to_string()))?,
         )
         .current_dir(config.root())
         .arg("upload")
@@ -275,7 +302,8 @@ pub fn remove_project_dependencies(
     dependency_names: &[&str],
 ) -> HuakResult<()> {
     let mut venv = crate::find_venv()?;
-    let mut project = Project::from_manifest(config.root().join("pyproject.toml"))?;
+    let mut project =
+        Project::from_manifest(config.root().join("pyproject.toml"))?;
     for dependency in dependency_names {
         project.remove_dependency(dependency);
     }
@@ -289,7 +317,8 @@ pub fn remove_project_optional_dependencies(
     group: &str,
 ) -> HuakResult<()> {
     let mut venv = crate::find_venv()?;
-    let mut project = Project::from_manifest(config.root().join("pyproject.toml"))?;
+    let mut project =
+        Project::from_manifest(config.root().join("pyproject.toml"))?;
     for dependency in dependency_names {
         project.remove_optional_dependency(dependency, group);
     }
@@ -297,7 +326,10 @@ pub fn remove_project_optional_dependencies(
 }
 
 /// Run a command from within a Python project's context.
-pub fn run_command_str_with_context(config: &OperationConfig, command: &str) -> HuakResult<()> {
+pub fn run_command_str_with_context(
+    config: &OperationConfig,
+    command: &str,
+) -> HuakResult<()> {
     let venv = crate::find_venv()?;
     let mut terminal = Terminal::new();
     let mut paths = sys::env_path_values();
@@ -306,7 +338,8 @@ pub fn run_command_str_with_context(config: &OperationConfig, command: &str) -> 
     let cmd = cmd
         .env(
             "PATH",
-            std::env::join_paths(paths).map_err(|e| HuakError::InternalError(e.to_string()))?,
+            std::env::join_paths(paths)
+                .map_err(|e| Error::InternalError(e.to_string()))?,
         )
         .current_dir(config.root())
         .arg(command);
@@ -324,7 +357,8 @@ pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
     let cmd = cmd
         .env(
             "PATH",
-            std::env::join_paths(paths).map_err(|e| HuakError::InternalError(e.to_string()))?,
+            std::env::join_paths(paths)
+                .map_err(|e| Error::InternalError(e.to_string()))?,
         )
         .current_dir(config.root());
     // TODO: Propagate CLI config
@@ -365,17 +399,26 @@ mod tests {
     #[test]
     fn test_add_project_dependencies() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(&test_resources_dir_path().join("mock-project"), &dir).unwrap();
+        crate::fs::copy_dir(
+            &test_resources_dir_path().join("mock-project"),
+            &dir,
+        )
+        .unwrap();
         let deps = [Package::from_str("ruff").unwrap()];
         let mut config = OperationConfig::new();
         let config = config.with_root(dir.join("mock-project"));
 
         add_project_dependencies(&config, &deps).unwrap();
 
-        let project = Project::from_manifest(config.root().join("pyproject.toml")).unwrap();
-        let venv = VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
-        let ser_toml =
-            PyProjectToml::from_path(dir.join("mock-project").join("pyproject.toml")).unwrap();
+        let project =
+            Project::from_manifest(config.root().join("pyproject.toml"))
+                .unwrap();
+        let venv =
+            VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
+        let ser_toml = PyProjectToml::from_path(
+            dir.join("mock-project").join("pyproject.toml"),
+        )
+        .unwrap();
 
         assert!(venv.find_site_packages_package("ruff").is_some());
         assert!(deps
@@ -395,7 +438,11 @@ mod tests {
     #[test]
     fn test_add_optional_project_dependencies() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(&test_resources_dir_path().join("mock-project"), &dir).unwrap();
+        crate::fs::copy_dir(
+            &test_resources_dir_path().join("mock-project"),
+            &dir,
+        )
+        .unwrap();
         let deps = [Package::from_str("ruff").unwrap()];
         let group = "test";
         let mut config = OperationConfig::new();
@@ -403,10 +450,15 @@ mod tests {
 
         add_project_optional_dependencies(&config, &deps, group).unwrap();
 
-        let project = Project::from_manifest(config.root().join("pyproject.toml")).unwrap();
-        let venv = VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
-        let ser_toml =
-            PyProjectToml::from_path(dir.join("mock-project").join("pyproject.toml")).unwrap();
+        let project =
+            Project::from_manifest(config.root().join("pyproject.toml"))
+                .unwrap();
+        let venv =
+            VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
+        let ser_toml = PyProjectToml::from_path(
+            dir.join("mock-project").join("pyproject.toml"),
+        )
+        .unwrap();
 
         assert!(venv.find_site_packages_package("ruff").is_some());
         assert!(deps.iter().all(|item| project
@@ -427,7 +479,11 @@ mod tests {
     #[test]
     fn test_build_project() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(&test_resources_dir_path().join("mock-project"), &dir).unwrap();
+        crate::fs::copy_dir(
+            &test_resources_dir_path().join("mock-project"),
+            &dir,
+        )
+        .unwrap();
         let mut config = OperationConfig::new();
         let config = config.with_root(dir.join("mock-project"));
 
@@ -442,10 +498,16 @@ mod tests {
     #[test]
     fn test_fmt_project() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(&test_resources_dir_path().join("mock-project"), &dir).unwrap();
+        crate::fs::copy_dir(
+            &test_resources_dir_path().join("mock-project"),
+            &dir,
+        )
+        .unwrap();
         let mut config = OperationConfig::new();
         let config = config.with_root(dir.join("mock-project"));
-        let project = Project::from_manifest(config.root().join("pyproject.toml")).unwrap();
+        let project =
+            Project::from_manifest(config.root().join("pyproject.toml"))
+                .unwrap();
         let fmt_filepath = project
             .root()
             .join("src")
@@ -476,7 +538,9 @@ def fn( ):
 
         init_project(&config).unwrap();
 
-        let project = Project::from_manifest(config.root().join("pyproject.toml")).unwrap();
+        let project =
+            Project::from_manifest(config.root().join("pyproject.toml"))
+                .unwrap();
         let toml_path = project.root().join("pyproject.toml");
         let ser_toml = PyProjectToml::from_path(toml_path).unwrap();
 
@@ -489,7 +553,11 @@ def fn( ):
     #[test]
     fn test_install_project_dependencies() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(&test_resources_dir_path().join("mock-project"), &dir).unwrap();
+        crate::fs::copy_dir(
+            &test_resources_dir_path().join("mock-project"),
+            &dir,
+        )
+        .unwrap();
         let mut config = OperationConfig::new();
         let config = config.with_root(dir.join("mock-project"));
         let mut venv = VirtualEnvironment::from_path(".venv").unwrap();
@@ -505,7 +573,11 @@ def fn( ):
     #[test]
     fn test_install_project_optional_dependencies() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(&test_resources_dir_path().join("mock-project"), &dir).unwrap();
+        crate::fs::copy_dir(
+            &test_resources_dir_path().join("mock-project"),
+            &dir,
+        )
+        .unwrap();
         let mut config = OperationConfig::new();
         let config = config.with_root(dir.join("mock-project"));
         let mut venv = VirtualEnvironment::from_path(".venv").unwrap();
@@ -526,10 +598,16 @@ def fn( ):
     #[test]
     fn test_fix_project_lints() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(&test_resources_dir_path().join("mock-project"), &dir).unwrap();
+        crate::fs::copy_dir(
+            &test_resources_dir_path().join("mock-project"),
+            &dir,
+        )
+        .unwrap();
         let mut config = OperationConfig::new();
         let config = config.with_root(dir.join("mock-project"));
-        let project = Project::from_manifest(config.root().join("pyproject.toml")).unwrap();
+        let project =
+            Project::from_manifest(config.root().join("pyproject.toml"))
+                .unwrap();
         let lint_fix_filepath = project
             .root()
             .join("src")
@@ -579,8 +657,11 @@ def fn():
 
         create_new_lib_project(&config).unwrap();
 
-        let project = Project::from_manifest(config.root().join("pyproject.toml")).unwrap();
-        let test_file_filepath = project.root().join("tests").join("test_version.py");
+        let project =
+            Project::from_manifest(config.root().join("pyproject.toml"))
+                .unwrap();
+        let test_file_filepath =
+            project.root().join("tests").join("test_version.py");
         let test_file = std::fs::read_to_string(&test_file_filepath).unwrap();
         let expected_test_file = format!(
             r#"from {} import __version__
@@ -620,9 +701,12 @@ def test_version():
 
         create_new_app_project(&config).unwrap();
 
-        let project = Project::from_manifest(config.root().join("pyproject.toml")).unwrap();
+        let project =
+            Project::from_manifest(config.root().join("pyproject.toml"))
+                .unwrap();
         let ser_toml = project.pyproject_toml();
-        let main_file_filepath = project.root().join("src").join("project").join("main.py");
+        let main_file_filepath =
+            project.root().join("src").join("project").join("main.py");
         let main_file = std::fs::read_to_string(&main_file_filepath).unwrap();
         let expected_main_file = "\
 def main():
@@ -658,11 +742,18 @@ main()
     #[test]
     fn test_remove_project_dependencies() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(&test_resources_dir_path().join("mock-project"), &dir).unwrap();
+        crate::fs::copy_dir(
+            &test_resources_dir_path().join("mock-project"),
+            &dir,
+        )
+        .unwrap();
         let mut config = OperationConfig::new();
         let config = config.with_root(dir.join("mock-project"));
-        let project = Project::from_manifest(config.root().join("pyproject.toml")).unwrap();
-        let venv = VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
+        let project =
+            Project::from_manifest(config.root().join("pyproject.toml"))
+                .unwrap();
+        let venv =
+            VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
         let black_package = venv.find_site_packages_package("black");
         let venv_had_black = black_package.is_some();
         let black_package = black_package.unwrap();
@@ -674,8 +765,11 @@ main()
 
         remove_project_dependencies(&config, &[black_package.name()]).unwrap();
 
-        let project = Project::from_manifest(config.root().join("pyproject.toml")).unwrap();
-        let mut venv = VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
+        let project =
+            Project::from_manifest(config.root().join("pyproject.toml"))
+                .unwrap();
+        let mut venv =
+            VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
         let venv_has_black = venv.find_site_packages_package("black").is_some();
         let toml_has_black = project
             .pyproject_toml()
@@ -693,11 +787,18 @@ main()
     #[test]
     fn test_remove_project_optional_dependencies() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(&test_resources_dir_path().join("mock-project"), &dir).unwrap();
+        crate::fs::copy_dir(
+            &test_resources_dir_path().join("mock-project"),
+            &dir,
+        )
+        .unwrap();
         let mut config = OperationConfig::new();
         let config = config.with_root(dir.join("mock-project"));
-        let project = Project::from_manifest(config.root().join("pyproject.toml")).unwrap();
-        let venv = VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
+        let project =
+            Project::from_manifest(config.root().join("pyproject.toml"))
+                .unwrap();
+        let venv =
+            VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
         let pytest_package = venv.find_site_packages_package("pytest");
         let venv_had_pytest = pytest_package.is_some();
         let pytest_package = pytest_package.unwrap();
@@ -707,11 +808,20 @@ main()
             .unwrap()
             .contains(&pytest_package.dependency_string());
 
-        remove_project_optional_dependencies(&config, &[pytest_package.name()], "test").unwrap();
+        remove_project_optional_dependencies(
+            &config,
+            &[pytest_package.name()],
+            "test",
+        )
+        .unwrap();
 
-        let project = Project::from_manifest(config.root().join("pyproject.toml")).unwrap();
-        let mut venv = VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
-        let venv_has_pytest = venv.find_site_packages_package("pytest").is_some();
+        let project =
+            Project::from_manifest(config.root().join("pyproject.toml"))
+                .unwrap();
+        let mut venv =
+            VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
+        let venv_has_pytest =
+            venv.find_site_packages_package("pytest").is_some();
         let toml_has_pytest = project
             .pyproject_toml()
             .dependencies()
@@ -728,15 +838,21 @@ main()
     #[test]
     fn test_run_command_with_context() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(&test_resources_dir_path().join("mock-project"), &dir).unwrap();
+        crate::fs::copy_dir(
+            &test_resources_dir_path().join("mock-project"),
+            &dir,
+        )
+        .unwrap();
         let mut config = OperationConfig::new();
         let config = config.with_root(dir.join("mock-project"));
-        let venv = VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
+        let venv =
+            VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
         let venv_had_xlcsv = venv.find_site_packages_package("xlcsv").is_some();
 
         run_command_str_with_context(&config, "pip install xlcsv").unwrap();
 
-        let mut venv = VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
+        let mut venv =
+            VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
         let venv_has_xlcsv = venv.find_site_packages_package("xlcsv").is_some();
         venv.uninstall_packages(&["xlcsv"]).unwrap();
 

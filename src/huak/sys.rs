@@ -105,7 +105,12 @@ impl Terminal {
     }
 
     /// Shortcut to right-align a status message.
-    pub fn status_with_color<T, U>(&mut self, status: T, message: U, color: Color) -> HuakResult<()>
+    pub fn status_with_color<T, U>(
+        &mut self,
+        status: T,
+        message: U,
+        color: Color,
+    ) -> HuakResult<()>
     where
         T: std::fmt::Display,
         U: std::fmt::Display,
@@ -114,13 +119,19 @@ impl Terminal {
     }
 
     /// Print an error message.
-    pub fn print_error<T: std::fmt::Display>(&mut self, message: T) -> HuakResult<()> {
+    pub fn print_error<T: std::fmt::Display>(
+        &mut self,
+        message: T,
+    ) -> HuakResult<()> {
         self.output
             .message_stderr(&"error", Some(&message), Red, false)
     }
 
     /// Prints a warning message.
-    pub fn print_warning<T: std::fmt::Display>(&mut self, message: T) -> HuakResult<()> {
+    pub fn print_warning<T: std::fmt::Display>(
+        &mut self,
+        message: T,
+    ) -> HuakResult<()> {
         match self.verbosity {
             Verbosity::Quiet => Ok(()),
             _ => self.print(&"warning", Some(&message), Yellow, false),
@@ -128,7 +139,10 @@ impl Terminal {
     }
 
     /// Prints a note message.
-    pub fn print_note<T: std::fmt::Display>(&mut self, message: T) -> HuakResult<()> {
+    pub fn print_note<T: std::fmt::Display>(
+        &mut self,
+        message: T,
+    ) -> HuakResult<()> {
         self.print(&"note", Some(&message), Cyan, false)
     }
 
@@ -231,7 +245,9 @@ impl TerminalOut {
             }
             TerminalOut::Stream { ref mut stderr, .. } => {
                 stderr.reset()?;
-                stderr.set_color(ColorSpec::new().set_bold(true).set_fg(Some(color)))?;
+                stderr.set_color(
+                    ColorSpec::new().set_bold(true).set_fg(Some(color)),
+                )?;
                 if justified {
                     write!(stderr, "{:>12}", status)?;
                 } else {

@@ -19,7 +19,10 @@ path = "./src/huak/lib.rs"
 
 [dependencies]
 clap = { version = "4.1.8", features = ["cargo", "derive"] }
+clap_complete = "4.1.5"
+colored = "2.0.0"
 git2 = "0.16.1"
+human-panic = "1.1.3"
 pep440_rs = { git = "https://github.com/konstin/pep440-rs", rev = "3148c9016cbc01a9e6116ae8080b10e14e985487", version = "0.1.1" }
 pyproject-toml = "0.3.3"
 reqwest = { version = "0.11.14", features = ["blocking", "json"] }

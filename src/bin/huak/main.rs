@@ -1,14 +1,15 @@
 //! The `huak` application.
 //!
 //! Huak implements a cli application with various subcommands.
+mod cli;
 use std::process::ExitCode;
 
 use clap::Parser;
 use human_panic::setup_panic;
 
-use colored::Colorize;
 use cli::Cli;
-mod errors;
+use colored::Colorize;
+mod error;
 
 /// Launch Huak's cli process.
 pub fn main() -> ExitCode {

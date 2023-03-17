@@ -1,21 +1,21 @@
 use std::process::ExitCode;
 
-use huak::errors::HuakError;
-use thiserror::Error;
+use huak::Error;
+use thiserror::Error as ThisError;
 
 pub type CliResult<T> = Result<T, CliError>;
 pub const BASIC_ERROR_CODE: ExitCode = ExitCode::FAILURE;
 
-#[derive(Debug, Error)]
+#[derive(Debug, ThisError)]
 pub struct CliError {
     #[source]
-    pub error: HuakError,
+    pub error: Error,
     pub exit_code: ExitCode,
     pub status_code: Option<i32>,
 }
 
 impl CliError {
-    pub fn new(error: HuakError, exit_code: ExitCode) -> CliError {
+    pub fn new(error: Error, exit_code: ExitCode) -> CliError {
         CliError {
             error,
             exit_code,
@@ -36,30 +36,24 @@ impl std::fmt::Display for CliError {
 
 impl From<clap::Error> for CliError {
     fn from(err: clap::Error) -> CliError {
-        CliError::new(HuakError::ClapError(err), BASIC_ERROR_CODE)
+        CliError::new(Error::ClapError(err), BASIC_ERROR_CODE)
     }
 }
 
 impl From<std::io::Error> for CliError {
     fn from(err: std::io::Error) -> CliError {
-        CliError::new(HuakError::IOError(err), BASIC_ERROR_CODE)
-    }
-}
-
-impl From<reqwest::Error> for CliError {
-    fn from(err: reqwest::Error) -> CliError {
-        CliError::new(HuakError::HTTPError(err), BASIC_ERROR_CODE)
+        CliError::new(Error::IOError(err), BASIC_ERROR_CODE)
     }
 }
 
 impl From<std::str::Utf8Error> for CliError {
     fn from(err: std::str::Utf8Error) -> CliError {
-        CliError::new(HuakError::UTF8Error(err), BASIC_ERROR_CODE)
+        CliError::new(Error::Utf8Error(err), BASIC_ERROR_CODE)
     }
 }
 
 impl From<std::env::VarError> for CliError {
     fn from(err: std::env::VarError) -> CliError {
-        CliError::new(HuakError::EnvVarError(err), BASIC_ERROR_CODE)
+        CliError::new(Error::EnvVarError(err), BASIC_ERROR_CODE)
     }
 }

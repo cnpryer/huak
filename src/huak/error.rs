@@ -1,15 +1,11 @@
 use std::{io, path::PathBuf};
 
-use thiserror::Error;
+use thiserror::Error as ThisError;
 
-trait BinaryError {}
+pub type HuakResult<T> = Result<T, Error>;
 
-impl BinaryError for HuakError {}
-
-pub type HuakResult<T> = Result<T, HuakError>;
-
-#[derive(Error, Debug)]
-pub enum HuakError {
+#[derive(ThisError, Debug)]
+pub enum Error {
     #[error("a problem occurred with resolving build options")]
     BuildOptionsMissingError,
     #[error("a problem with argument parsing occurred: {0}")]
@@ -68,7 +64,9 @@ pub enum HuakError {
     PythonModuleMissingError(String),
     #[error("a python interpreter could not be found")]
     PythonNotFoundError,
-    #[error("a problem occurred parsing the virtual environment's config file: {0}")]
+    #[error(
+        "a problem occurred parsing the virtual environment's config file: {0}"
+    )]
     VenvInvalidConfigFile(String),
     #[error("a venv could not be found")]
     VenvNotFoundError,
@@ -85,7 +83,7 @@ pub enum HuakError {
     #[error("a problem with toml serialization occurred {0}")]
     TOMLEditSerializationError(#[from] toml_edit::ser::Error),
     #[error("a problem with utf-8 parsing occurred: {0}")]
-    UTF8Error(#[from] std::str::Utf8Error),
+    Utf8Error(#[from] std::str::Utf8Error),
     #[error("{0}")]
     CommandError(String),
 }
