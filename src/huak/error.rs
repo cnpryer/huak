@@ -39,7 +39,7 @@ pub enum Error {
     #[error("a problem with building the project occurred")]
     PackageBuildError,
     #[error("a problem occurred initializing a package from a string")]
-    PackageFromStringError,
+    PackageFromStringError(String),
     #[error("a problem with the package index occurred: {0}")]
     PackageIndexError(String),
     #[error("a problem with package installation occurred: {0}")]
@@ -70,6 +70,8 @@ pub enum Error {
     VenvInvalidConfigFile(String),
     #[error("a venv could not be found")]
     VenvNotFoundError,
+    #[error("a regex error occurred: {0}")]
+    RegexError(#[from] regex::Error),
     #[error("a http request failed: {0}")]
     ReqwestError(#[from] reqwest::Error),
     #[error("a problem with the test utility occurred: {0}")]

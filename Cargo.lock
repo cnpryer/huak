@@ -474,6 +474,7 @@ dependencies = [
  "human-panic",
  "pep440_rs",
  "pyproject-toml",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",

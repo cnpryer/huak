@@ -1,6 +1,10 @@
 pub use error::{Error, HuakResult};
-use pep440_rs::{Operator as VersionOperator, Version};
+use pep440_rs::{
+    parse_version_specifiers, Operator as VersionOperator, Version,
+    VersionSpecifier,
+};
 use pyproject_toml::PyProjectToml as ProjectToml;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{hash_map::RandomState, HashMap},
@@ -27,6 +31,7 @@ version = "0.0.1"
 description = ""
 dependencies = []
 "#;
+const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
 
 #[cfg(test)]
 /// The resource directory found in the Huak repo used for testing purposes.
@@ -636,7 +641,15 @@ impl Default for VirtualEnvironmentConfig {
 }
 
 /// The python package compliant with packaging.python.og.
-#[derive(Clone)]
+/// See <https://peps.python.org/pep-0440/>
+/// # Examples
+/// ```
+/// use huak::Package;
+///
+/// let python_pkg = Package::from_str("request>=2.28.1").unwrap();
+/// println!("I've got 99 {} but huak ain't one", python_pkg);
+/// ```
+#[derive(Clone, Default)]
 pub struct Package {
     /// Name designated to the package by the author(s).
     name: String,
@@ -644,13 +657,13 @@ pub struct Package {
     canonical_name: String,
     /// The package's core metadata.
     /// https://packaging.python.org/en/latest/specifications/core-metadata/
-    core_metadata: PackageMetadata,
+    core_metadata: Option<PackageMetadata>,
     /// The PEP 440 version of the package.
-    version: Version,
-    /// The PEP 400 version operator.
-    version_operator: VersionOperator,
+    version: Option<Version>,
+    /// The PEP 440 version specifier.
+    version_specifier: Option<VersionSpecifier>,
     /// Tags used to indicate platform compatibility.
-    platform_tags: Vec<PlatformTag>,
+    platform_tags: Option<Vec<PlatformTag>>,
 }
 
 impl Package {
@@ -659,29 +672,112 @@ impl Package {
         self.name.as_ref()
     }
 
-    /// Get the pacakge's PEP440 version operator.
-    pub fn version_operator(&self) -> &VersionOperator {
-        &self.version_operator
+    /// Get the normalized name of the package.
+    pub fn cononical_name(&self) -> &str {
+        self.canonical_name.as_ref()
     }
 
     /// Get the package's PEP440 version.
-    pub fn version(&self) -> &Version {
-        &self.version
+    pub fn version(&self) -> Option<&Version> {
+        self.version.as_ref()
+    }
+
+    /// Get the pacakge's PEP440 version specifier.
+    pub fn version_specifier(&self) -> Option<&VersionSpecifier> {
+        self.version_specifier.as_ref()
+    }
+
+    /// Get the pacakge's PEP440 version operator.
+    pub fn version_operator(&self) -> Option<&VersionOperator> {
+        if let Some(it) = &self.version_specifier {
+            return Some(it.operator());
+        }
+        None
     }
 
     /// Get the pacakge name with its version specifier as a &str.
     pub fn dependency_string(&self) -> String {
-        format!("{}{}", self.name(), self.version_operator())
+        let specifier = match self.version_specifier() {
+            Some(it) => it,
+            None => {
+                return self.name.clone();
+            }
+        };
+        format!(
+            "{}{}{}",
+            self.name,
+            specifier.operator(),
+            specifier.version()
+        )
     }
 }
 
+/// Instantiate a PythonPackage struct from a String
+/// # Arguments
+///
+/// * 'pkg_string' - A string slice representing PEP-0440 python package
+///
+/// # Examples
+/// ```
+/// use huak::Package;
+/// use std::str::FromStr;
+///
+/// let my_pkg = Package::from_str("requests==2.28.1");
+/// ```
 impl FromStr for Package {
     type Err = Error;
 
-    /// Create a Python package from str.
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        todo!()
+    fn from_str(pkg_string: &str) -> HuakResult<Package> {
+        // TODO: Improve the method used to parse the version portion
+        // Search for the first character that isn't part of the package's name
+        let found = pkg_string
+            .chars()
+            .enumerate()
+            .find(|x| VERSION_OPERATOR_CHARACTERS.contains(&x.1));
+
+        let spec_str = match found {
+            Some(it) => &pkg_string[it.0..],
+            None => {
+                return Ok(Package {
+                    name: pkg_string.to_string(),
+                    canonical_name: to_package_cononical_name(pkg_string)?,
+                    ..Default::default()
+                });
+            }
+        };
+
+        // TODO: More than one specifier
+        match parse_version_specifiers(spec_str) {
+            Ok(vspec) => match vspec.first() {
+                Some(it) => {
+                    let name = match pkg_string.strip_suffix(&spec_str) {
+                        Some(it) => it,
+                        None => pkg_string,
+                    };
+
+                    Ok(Package {
+                        name: name.to_string(),
+                        canonical_name: to_package_cononical_name(name)?,
+                        version_specifier: Some(it.clone()),
+                        ..Default::default()
+                    })
+                }
+                None => Ok(Package {
+                    name: pkg_string.to_string(),
+                    canonical_name: to_package_cononical_name(pkg_string)?,
+                    version_specifier: None,
+                    ..Default::default()
+                }),
+            },
+            Err(e) => Err(Error::PackageFromStringError(e.to_string())),
+        }
     }
+}
+
+fn to_package_cononical_name(name: &str) -> HuakResult<String> {
+    let re = Regex::new("[-_. ]+")?;
+    let res = re.replace_all(name.clone(), "-");
+    Ok(res.into_owned())
 }
 
 impl PartialEq for Package {
@@ -690,7 +786,7 @@ impl PartialEq for Package {
             && self.canonical_name == other.canonical_name
             && self.core_metadata == other.core_metadata
             && self.version == other.version
-            && self.version_operator == other.version_operator
+            && self.version_specifier == other.version_specifier
             && self.platform_tags == other.platform_tags
     }
 }
@@ -1094,29 +1190,20 @@ dev = [
 
     #[test]
     fn package_from_str() {
-        let package = Package::from_str("package==0.0.0").unwrap();
+        let package = Package::from_str("package_name==0.0.0").unwrap();
 
-        assert_eq!(package.dependency_string(), "package==0.0.0");
-        assert_eq!(package.name(), "package");
+        assert_eq!(package.dependency_string(), "package_name==0.0.0");
+        assert_eq!(package.name(), "package_name");
+        assert_eq!(package.cononical_name(), "package-name");
         assert_eq!(
-            package.version_operator().to_string(),
-            pep440_rs::Operator::Equal.to_string()
+            *package.version_operator().unwrap(),
+            pep440_rs::Operator::Equal
         );
-        assert_eq!(package.version().to_string(), "0.0.0");
-    }
-
-    #[test]
-    fn package_dependency_string() {
-        let package = Package::from_str("package==0.0.0").unwrap();
-
-        assert_eq!(package.dependency_string(), "package==0.0.0");
-    }
-
-    #[test]
-    fn package_version_operator() {
-        let package = Package::from_str("package==0.0.0").unwrap();
-
-        assert_eq!(package.version_operator, pep440_rs::Operator::Equal);
+        assert_eq!(
+            package.version_specifier().unwrap().version().to_string(),
+            "0.0.0"
+        );
+        assert_eq!(package.version(), None); // TODO
     }
 
     #[ignore = "currently untestable"]
