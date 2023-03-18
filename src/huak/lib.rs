@@ -17,16 +17,15 @@ mod ops;
 mod sys;
 
 const DEFAULT_VENV_NAME: &str = ".venv";
-const DEFAULT_PYPROJECT_TOML_CONTENTS: &str = r#"[project]
+const DEFAULT_PYPROJECT_TOML_CONTENTS: &str = r#"[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
 name = ""
 version = "0.0.1"
 description = ""
-
-[project.dependencies]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+dependencies = []
 "#;
 
 #[cfg(test)]
@@ -275,9 +274,14 @@ impl PyProjectToml {
         group_name: &str,
     ) {
         self.project.as_mut().map(|project| {
-            if let Some(group) = project.optional_dependencies.as_mut() {
-                if let Some(dependencies) = group.get_mut(group_name) {
+            if let Some(map) = project.optional_dependencies.as_mut() {
+                if let Some(dependencies) = map.get_mut(group_name) {
                     dependencies.push(package_str.to_string());
+                } else {
+                    map.insert(
+                        group_name.to_string(),
+                        vec![package_str.to_string()],
+                    );
                 };
             }
         });
@@ -845,43 +849,57 @@ mod tests {
         let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
-        let ptoml = PyProjectToml::from_path(&path).unwrap();
+        let pyproject_toml = PyProjectToml::from_path(&path).unwrap();
 
-        assert_eq!(ptoml.project_name().unwrap(), "mock_project");
-        assert_eq!(ptoml.project_version().unwrap(), "0.0.1");
-        assert!(ptoml.dependencies().is_some())
+        assert_eq!(pyproject_toml.project_name().unwrap(), "mock_project");
+        assert_eq!(pyproject_toml.project_version().unwrap(), "0.0.1");
+        assert!(pyproject_toml.dependencies().is_some())
     }
 
     #[test]
-    fn toml_to_str() {
-        let default_toml = PyProjectToml::default();
-        let default_toml_str = default_toml.to_string_pretty().unwrap();
+    fn toml_to_string_pretty() {
+        let path = test_resources_dir_path()
+            .join("mock-project")
+            .join("pyproject.toml");
+        let pyproject_toml = PyProjectToml::from_path(&path).unwrap();
 
         assert_eq!(
-            default_toml_str,
-            r#"[project]
-name = ""
-version = "0.0.1"
-description = ""
-
-[project.dependencies]
-
-[build-system]
+            pyproject_toml.to_string_pretty().unwrap(),
+            r#"[build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[project]
+name = "mock_project"
+version = "0.0.1"
+description = ""
+dependencies = ["click==8.1.3"]
+
+[[project.authors]]
+name = "Chris Pryer"
+email = "cnpryer@gmail.com"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6",
+    "black==22.8.0",
+    "isort==5.12.0",
+]
+test = []
 "#
-        )
+        );
     }
 
     #[test]
     fn toml_dependencies() {
         let path = test_resources_dir_path()
-            .join("mock-projet")
+            .join("mock-project")
             .join("pyproject.toml");
-        let ptoml = PyProjectToml::from_path(path).unwrap();
+        dbg!(&path);
+        let pyproject_toml = PyProjectToml::from_path(path).unwrap();
 
         assert_eq!(
-            ptoml.dependencies().unwrap().deref(),
+            pyproject_toml.dependencies().unwrap().deref(),
             vec!["click==8.1.3", "black==22.8.0", "isort==5.12.0"]
         );
     }
@@ -889,12 +907,15 @@ build-backend = "hatchling.build"
     #[test]
     fn toml_optional_dependencies() {
         let path = test_resources_dir_path()
-            .join("mock-projet")
+            .join("mock-project")
             .join("pyproject.toml");
-        let ptoml = PyProjectToml::from_path(path).unwrap();
+        let pyproject_toml = PyProjectToml::from_path(path).unwrap();
 
         assert_eq!(
-            ptoml.optional_dependencey_group("test").unwrap().deref(),
+            pyproject_toml
+                .optional_dependencey_group("test")
+                .unwrap()
+                .deref(),
             vec!["pytest>=6", "mock"]
         );
     }
@@ -902,30 +923,36 @@ build-backend = "hatchling.build"
     #[test]
     fn toml_add_dependency() {
         let path = test_resources_dir_path()
-            .join("mock-projet")
+            .join("mock-project")
             .join("pyproject.toml");
-        let mut ptoml = PyProjectToml::from_path(path).unwrap();
+        let mut pyproject_toml = PyProjectToml::from_path(path).unwrap();
 
-        ptoml.add_dependency("test");
+        pyproject_toml.add_dependency("test");
         assert_eq!(
-            ptoml.to_string_pretty().unwrap(),
-            r#"[project]
+            pyproject_toml.to_string_pretty().unwrap(),
+            r#"[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "mock_project"
 version = "0.0.1"
 description = ""
-dependencies = ["click==8.1.3", "black==22.8.0", "isort==5.12.0", "test"]
-
-[project.optional-dependencies]
-test = ["pytest>=6", "mock"]
+dependencies = [
+    "click==8.1.3",
+    "test",
+]
 
 [[project.authors]]
 name = "Chris Pryer"
 email = "cnpryer@gmail.com"
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[project.optional-dependencies]
+dev = [
+    "pytest>=6",
+    "black==22.8.0",
+    "isort==5.12.0",
+]
 "#
         )
     }
@@ -933,32 +960,36 @@ build-backend = "hatchling.build"
     #[test]
     fn toml_add_optional_dependency() {
         let path = test_resources_dir_path()
-            .join("mock-projet")
+            .join("mock-project")
             .join("pyproject.toml");
-        let mut ptoml = PyProjectToml::from_path(path).unwrap();
+        let mut pyproject_toml = PyProjectToml::from_path(path).unwrap();
 
-        ptoml.add_optional_dependency("test", "test");
-        ptoml.add_optional_dependency("new", "test");
+        pyproject_toml.add_optional_dependency("test1", "dev");
+        pyproject_toml.add_optional_dependency("test2", "new-group");
         assert_eq!(
-            ptoml.to_string_pretty().unwrap(),
-            r#"[project]
+            pyproject_toml.to_string_pretty().unwrap(),
+            r#"[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "mock_project"
 version = "0.0.1"
 description = ""
-dependencies = ["click==8.1.3", "black==22.8.0", "isort==5.12.0"]
-
-[project.optional-dependencies]
-test = ["pytest>=6", "mock", "test"]
-new = ["test"]
+dependencies = ["click==8.1.3"]
 
 [[project.authors]]
 name = "Chris Pryer"
 email = "cnpryer@gmail.com"
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[project.optional-dependencies]
+dev = [
+    "pytest>=6",
+    "black==22.8.0",
+    "isort==5.12.0",
+    "test1",
+]
+new-group = ["test2"]
 "#
         )
     }
@@ -966,30 +997,33 @@ build-backend = "hatchling.build"
     #[test]
     fn toml_remove_dependency() {
         let path = test_resources_dir_path()
-            .join("mock-projet")
+            .join("mock-project")
             .join("pyproject.toml");
-        let mut ptoml = PyProjectToml::from_path(path).unwrap();
+        let mut pyproject_toml = PyProjectToml::from_path(path).unwrap();
 
-        ptoml.remove_dependency("isort");
+        pyproject_toml.remove_dependency("click");
         assert_eq!(
-            ptoml.to_string_pretty().unwrap(),
-            r#"[project]
+            pyproject_toml.to_string_pretty().unwrap(),
+            r#"[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "mock_project"
 version = "0.0.1"
 description = ""
-dependencies = ["click==8.1.3", "black==22.8.0"]
-
-[project.optional-dependencies]
-test = ["pytest>=6", "mock"]
+dependencies = []
 
 [[project.authors]]
 name = "Chris Pryer"
 email = "cnpryer@gmail.com"
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[project.optional-dependencies]
+dev = [
+    "pytest>=6",
+    "black==22.8.0",
+    "isort==5.12.0",
+]
 "#
         )
     }
@@ -997,100 +1031,65 @@ build-backend = "hatchling.build"
     #[test]
     fn toml_remove_optional_dependency() {
         let path = test_resources_dir_path()
-            .join("mock-projet")
+            .join("mock-project")
             .join("pyproject.toml");
-        let mut ptoml = PyProjectToml::from_path(path).unwrap();
+        let mut pyproject_toml = PyProjectToml::from_path(path).unwrap();
 
-        ptoml.remove_optional_dependency("test", "mock");
+        pyproject_toml.remove_optional_dependency("isort", "dev");
         assert_eq!(
-            ptoml.to_string_pretty().unwrap(),
-            r#"[project]
+            pyproject_toml.to_string_pretty().unwrap(),
+            r#"[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "mock_project"
 version = "0.0.1"
 description = ""
-dependencies = ["click==8.1.3", "black==22.8.0"]
-
-[project.optional-dependencies]
-test = ["pytest>=6"]
+dependencies = ["click==8.1.3"]
 
 [[project.authors]]
 name = "Chris Pryer"
 email = "cnpryer@gmail.com"
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[project.optional-dependencies]
+dev = [
+    "pytest>=6",
+    "black==22.8.0",
+]
 "#
         )
     }
 
     #[test]
-    fn python_environment_default() {
-        let python_environment = VirtualEnvironment::default();
-
-        assert_eq!(
-            python_environment
-                .python_path()
-                .parent()
-                .unwrap()
-                .parent()
-                .unwrap()
-                .file_name()
-                .unwrap(),
-            DEFAULT_VENV_NAME
-        );
-    }
-
-    #[test]
     /// NOTE: This test depends on local virtual environment.
-    fn python_environment_executable_dir_name() {
-        let python_environment = VirtualEnvironment::from_path(
+    fn virtual_environment_executable_dir_name() {
+        let venv = VirtualEnvironment::from_path(
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".venv"),
         )
         .unwrap();
 
-        assert!(python_environment.executables_dir_path().exists());
+        assert!(venv.executables_dir_path().exists());
         #[cfg(unix)]
-        assert!(python_environment
-            .executables_dir_path()
-            .join("python")
-            .exists());
+        assert!(venv.executables_dir_path().join("python").exists());
         #[cfg(windows)]
-        assert!(python_environment
-            .executables_dir_path()
-            .join("python.exe")
-            .exists());
+        assert!(venv.executables_dir_path().join("python.exe").exists());
     }
 
     #[test]
     /// NOTE: This test depends on local virtual environment.
-    fn python_environment_python_config() {
-        let python_environment = VirtualEnvironment::from_path(
+    fn virtual_environment_python_environment_config() {
+        let venv = VirtualEnvironment::from_path(
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".venv"),
         )
         .unwrap();
-        let python_path = python_environment.python_path();
+        let python_path = venv.python_path();
         let venv_root = python_path.parent().unwrap().parent().unwrap();
 
         assert_eq!(
-            python_environment.python_environment_config().to_string(),
+            venv.python_environment_config().to_string(),
             std::fs::read_to_string(venv_root.join("pyvenv.cfg")).unwrap()
         );
-    }
-
-    #[test]
-    fn package_display_str() {
-        let package = Package::from_str("package==0.0.0").unwrap();
-
-        assert_eq!(package.dependency_string(), "package==0.0.0");
-    }
-
-    #[test]
-    fn package_version_operator() {
-        let package = Package::from_str("package==0.0.0").unwrap();
-
-        assert_eq!(package.version_operator, pep440_rs::Operator::Equal);
     }
 
     #[test]
@@ -1104,6 +1103,20 @@ build-backend = "hatchling.build"
             pep440_rs::Operator::Equal.to_string()
         );
         assert_eq!(package.version().to_string(), "0.0.0");
+    }
+
+    #[test]
+    fn package_dependency_string() {
+        let package = Package::from_str("package==0.0.0").unwrap();
+
+        assert_eq!(package.dependency_string(), "package==0.0.0");
+    }
+
+    #[test]
+    fn package_version_operator() {
+        let package = Package::from_str("package==0.0.0").unwrap();
+
+        assert_eq!(package.version_operator, pep440_rs::Operator::Equal);
     }
 
     #[ignore = "currently untestable"]
