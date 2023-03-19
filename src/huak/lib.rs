@@ -1,4 +1,5 @@
 pub use error::{Error, HuakResult};
+use indexmap::IndexMap;
 use pep440_rs::{
     parse_version_specifiers, Operator as VersionOperator, Version,
     VersionSpecifier,
@@ -327,7 +328,7 @@ impl PyProjectToml {
     }
 
     /// Get the scripts listed in the toml.
-    pub fn scripts(&self) -> Option<&HashMap<String, String, RandomState>> {
+    pub fn scripts(&self) -> Option<&IndexMap<String, String, RandomState>> {
         if let Some(project) = self.project.as_ref() {
             return project.scripts.as_ref();
         }
@@ -981,7 +982,6 @@ dev = [
     "black==22.8.0",
     "isort==5.12.0",
 ]
-test = []
 "#
         );
     }
@@ -996,7 +996,7 @@ test = []
 
         assert_eq!(
             pyproject_toml.dependencies().unwrap().deref(),
-            vec!["click==8.1.3", "black==22.8.0", "isort==5.12.0"]
+            vec!["click==8.1.3"]
         );
     }
 
@@ -1009,10 +1009,10 @@ test = []
 
         assert_eq!(
             pyproject_toml
-                .optional_dependencey_group("test")
+                .optional_dependencey_group("dev")
                 .unwrap()
                 .deref(),
-            vec!["pytest>=6", "mock"]
+            vec!["pytest>=6", "black==22.8.0", "isort==5.12.0",]
         );
     }
 

@@ -472,6 +472,7 @@ dependencies = [
  "colored",
  "git2",
  "human-panic",
+ "indexmap",
  "pep440_rs",
  "pyproject-toml",
  "regex",
@@ -556,6 +557,7 @@ checksum = "1885e79c1fc4b10f0e172c475f458b7f7b93061064d98c3293e98c5ba0c8b399"
 dependencies = [
  "autocfg",
  "hashbrown",
+ "serde",
 ]
 
 [[package]]
@@ -895,10 +897,11 @@ dependencies = [
 
 [[package]]
 name = "pyproject-toml"
-version = "0.3.3"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee8476266c07b589d6ed54c761181466f4e4092107869be49ae26b3c0cdde8db"
+checksum = "4f42b59c8c31880743982eefb884d364e825ea4349a937ed138f23919dd414e6"
 dependencies = [
+ "indexmap",
  "serde",
  "toml",
 ]
