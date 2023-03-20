@@ -3,7 +3,7 @@
 use crate::{
     error::{Error, HuakResult},
     sys::{self, Terminal, Verbosity},
-    Package, Project, ProjectType, PyProjectToml,
+    Package, Project, ProjectType, PyProjectToml, VirtualEnvironment,
 };
 use std::{
     path::{Path, PathBuf},
@@ -125,7 +125,7 @@ pub struct TerminalOptions {
 
 /// Activate a Python virtual environment.
 pub fn activate_venv(config: &OperationConfig) -> HuakResult<()> {
-    let venv = crate::find_venv()?;
+    let venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
     let mut terminal = Terminal::new();
     venv.activate_with_terminal(&mut terminal)
 }
@@ -135,7 +135,7 @@ pub fn add_project_dependencies(
     config: &OperationConfig,
     dependencies: &[Package],
 ) -> HuakResult<()> {
-    let mut venv = crate::find_venv()?;
+    let mut venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
     let mut packages = venv.installed_packages()?;
     packages.extend_from_slice(dependencies);
     // TODO: Propagate installer configuration (potentially per-package)
@@ -154,7 +154,7 @@ pub fn add_project_optional_dependencies(
     dependencies: &[Package],
     group: &str,
 ) -> HuakResult<()> {
-    let mut venv = crate::find_venv()?;
+    let mut venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
     let mut packages = venv.installed_packages()?;
     packages.extend_from_slice(dependencies);
     // TODO: Propagate installer configuration (potentially per-package)
@@ -169,7 +169,7 @@ pub fn add_project_optional_dependencies(
 
 /// Build the Python project as installable package.
 pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
-    let venv = crate::find_venv()?;
+    let venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
     let mut terminal = Terminal::new();
     let mut paths = sys::env_path_values();
     paths.insert(0, venv.root().to_path_buf());
@@ -192,7 +192,7 @@ pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
 
 /// Format the Python project's source code.
 pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
-    let venv = crate::find_venv()?;
+    let venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
     let mut terminal = Terminal::new();
     let mut paths = sys::env_path_values();
     paths.insert(0, venv.root().to_path_buf());
@@ -220,7 +220,7 @@ pub fn init_project(config: &OperationConfig) -> HuakResult<()> {
 pub fn install_project_dependencies(
     config: &OperationConfig,
 ) -> HuakResult<()> {
-    let mut venv = crate::find_venv()?;
+    let mut venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
     let project = Project::from_manifest(config.root().join("pyproject.toml"))?;
     let packages = project.dependencies()?;
     // TODO: Propagate installer configuration (potentially per-package)
@@ -232,7 +232,7 @@ pub fn install_project_optional_dependencies(
     config: &OperationConfig,
     group: &str,
 ) -> HuakResult<()> {
-    let mut venv = crate::find_venv()?;
+    let mut venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
     let project = Project::from_manifest(config.root().join("pyproject.toml"))?;
     let packages = project.optional_dependencey_group(group)?;
     // TODO: Propagate installer configuration (potentially per-package)
@@ -241,7 +241,7 @@ pub fn install_project_optional_dependencies(
 
 /// Lint a Python project's source code.
 pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
-    let venv = crate::find_venv()?;
+    let venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
     let mut terminal = Terminal::new();
     let mut paths = sys::env_path_values();
     paths.insert(0, venv.root().to_path_buf());
@@ -278,7 +278,7 @@ pub fn create_new_app_project(config: &OperationConfig) -> HuakResult<()> {
 
 /// Publish the Python project as to a registry.
 pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
-    let venv = crate::find_venv()?;
+    let mut venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
     let mut terminal = Terminal::new();
     let mut paths = sys::env_path_values();
     paths.insert(0, venv.root().to_path_buf());
@@ -301,7 +301,7 @@ pub fn remove_project_dependencies(
     config: &OperationConfig,
     dependency_names: &[&str],
 ) -> HuakResult<()> {
-    let mut venv = crate::find_venv()?;
+    let mut venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
     let mut project =
         Project::from_manifest(config.root().join("pyproject.toml"))?;
     for dependency in dependency_names {
@@ -316,7 +316,7 @@ pub fn remove_project_optional_dependencies(
     dependency_names: &[&str],
     group: &str,
 ) -> HuakResult<()> {
-    let mut venv = crate::find_venv()?;
+    let mut venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
     let mut project =
         Project::from_manifest(config.root().join("pyproject.toml"))?;
     for dependency in dependency_names {
@@ -330,7 +330,7 @@ pub fn run_command_str_with_context(
     config: &OperationConfig,
     command: &str,
 ) -> HuakResult<()> {
-    let venv = crate::find_venv()?;
+    let venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
     let mut terminal = Terminal::new();
     let mut paths = sys::env_path_values();
     paths.insert(0, venv.root().to_path_buf());
@@ -349,7 +349,7 @@ pub fn run_command_str_with_context(
 
 /// Run a Python project's tests.
 pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
-    let venv = crate::find_venv()?;
+    let venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
     let mut terminal = Terminal::new();
     let mut paths = sys::env_path_values();
     paths.insert(0, venv.root().to_path_buf());

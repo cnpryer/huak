@@ -402,7 +402,7 @@ impl VirtualEnvironment {
     pub fn from_path(path: impl AsRef<Path>) -> HuakResult<VirtualEnvironment> {
         Ok(VirtualEnvironment {
             root: path.as_ref().to_path_buf(),
-            ..Default::default()
+            installer: Installer::new(),
         })
     }
 
@@ -562,21 +562,29 @@ impl VirtualEnvironment {
         &self.installer
     }
 
-    /// Set the installer of the virtual environment.
-    pub fn with_installer_config(
-        &mut self,
-        config: &InstallerConfig,
-    ) -> &mut VirtualEnvironment {
-        self.installer.set_config(*config);
-        self
+    /// Set the environment's installer.
+    pub fn set_installer(&mut self, installer: Installer) {
+        self.installer = installer;
     }
 }
 
 /// Search for a Python virtual environment.
-/// 1. Check PATHS. If VIRTUAL_ENV exists then a venv is active; use it.
+/// 1. If VIRTUAL_ENV exists then a venv is active; use it.
 /// 2. Walk from CWD up searching for dir containing pyvenv.cfg.
-pub fn find_venv() -> HuakResult<VirtualEnvironment> {
-    todo!()
+pub fn find_venv_root() -> HuakResult<PathBuf> {
+    if let Ok(path) = std::env::var("VIRTUAL_ENV") {
+        return Ok(PathBuf::from(path));
+    }
+    let cwd = std::env::current_dir()?;
+    if let Some(path) = fs::find_file_bottom_up("pyvenv.cfg", cwd, 10)? {
+        return Ok(path
+            .parent()
+            .ok_or(Error::InternalError(
+                "failed to establish a parent directory".to_string(),
+            ))?
+            .to_path_buf());
+    }
+    Err(Error::VenvNotFoundError)
 }
 
 /// A struct for managing installing packages.

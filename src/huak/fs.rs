@@ -1,4 +1,4 @@
-use crate::error::HuakResult;
+use crate::error::{Error, HuakResult};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -55,6 +55,48 @@ pub fn flatten_directories(
         .map(|e| e.path())
 }
 
+/// Search for the path to a target file from a given directory's path and the file_name.
+/// The search is executed with the following steps:
+///   1. Get all sub-directories.
+///   2. Search all sub-directories one level for `file_name`.
+///   3. If `file_name` is found, return its path.
+///   4. Else step one level up from its parent's path and decrement the
+///      recursion limit.
+pub fn find_file_bottom_up(
+    file_name: &str,
+    from: impl AsRef<Path>,
+    recursion_limit: usize,
+) -> HuakResult<Option<PathBuf>> {
+    let from = from.as_ref();
+    if !from.exists() || recursion_limit == 0 {
+        return Ok(None);
+    }
+    if from.join(file_name).exists() {
+        return Ok(Some(from.join(file_name)));
+    }
+
+    // Search all sub-directory roots for target_file
+    if let Some(path) = fs::read_dir(from)?
+        .into_iter()
+        .filter(|item| item.is_ok())
+        .map(|item| item.expect("failed to map dir entry").path()) // TODO: Is there better than .expect?
+        .filter(|item| item.is_dir())
+        .find(|item| item.join(file_name).exists())
+    {
+        return Ok(Some(path));
+    };
+
+    // If nothing is found from searching the subdirectories then perform the same search from
+    // the parent directory.
+    return find_file_bottom_up(
+        file_name,
+        from.parent().ok_or(Error::InternalError(
+            "failed to establish a parent directory".to_string(),
+        ))?,
+        recursion_limit - 1,
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use tempfile::tempdir;
@@ -70,5 +112,16 @@ mod tests {
 
         assert!(to.join("mock-project").exists());
         assert!(to.join("mock-project").join("pyproject.toml").exists());
+    }
+
+    #[test]
+    fn test_find_file_bottom_up() {
+        let tmp = tempdir().unwrap().into_path();
+        let from = crate::test_resources_dir_path().join("mock-project");
+        copy_dir(&from, &tmp.join("mock-project")).unwrap();
+        let res =
+            find_file_bottom_up("pyproject.toml", &tmp.join("mock-project"), 5);
+
+        assert!(res.unwrap().unwrap().exists());
     }
 }
