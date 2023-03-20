@@ -356,7 +356,11 @@ pub fn remove_project_dependencies(
     for dependency in dependency_names {
         project.remove_dependency(dependency);
     }
-    venv.uninstall_packages(dependency_names)
+    let mut terminal = terminal_from_options(config.terminal_options());
+    venv.uninstall_packages(dependency_names, &mut terminal)?;
+    project
+        .pyproject_toml()
+        .write_file(config.root().join("pyproject.toml"))
 }
 
 /// Remove a dependency from a Python project.
@@ -371,7 +375,11 @@ pub fn remove_project_optional_dependencies(
     for dependency in dependency_names {
         project.remove_optional_dependency(dependency, group);
     }
-    venv.uninstall_packages(dependency_names)
+    let mut terminal = terminal_from_options(config.terminal_options());
+    venv.uninstall_packages(dependency_names, &mut terminal)?;
+    project
+        .pyproject_toml()
+        .write_file(config.root().join("pyproject.toml"))
 }
 
 /// Run a command from within a Python project's context.
@@ -435,6 +443,17 @@ fn command_with_venv_context<'a>(
         )
         .env("VIRTUAL_ENV", venv.root().clone());
     Ok(cmd)
+}
+
+/// Creates a Terminal from OpertionConfig TerminalOptions.
+fn terminal_from_options(options: Option<&TerminalOptions>) -> Terminal {
+    let mut terminal = Terminal::new();
+    if let Some(it) = options {
+        terminal.set_verbosity(it.verbosity);
+    } else {
+        terminal.set_verbosity(Verbosity::Normal);
+    }
+    terminal
 }
 
 /// NOTE: Operations are meant to be executed on projects and environments.
@@ -632,7 +651,9 @@ def fn( ):
             ..Default::default()
         };
         let mut venv = VirtualEnvironment::from_path(".venv").unwrap();
-        venv.uninstall_packages(&["black"]).unwrap();
+        let mut terminal = Terminal::new();
+        terminal.set_verbosity(Verbosity::Quiet);
+        venv.uninstall_packages(&["black"], &mut terminal).unwrap();
         let had_black = venv.find_site_packages_package("black").is_some();
 
         install_project_dependencies(&config).unwrap();
@@ -654,7 +675,9 @@ def fn( ):
             ..Default::default()
         };
         let mut venv = VirtualEnvironment::from_path(".venv").unwrap();
-        venv.uninstall_packages(&["pytest"]).unwrap();
+        let mut terminal = Terminal::new();
+        terminal.set_verbosity(Verbosity::Quiet);
+        venv.uninstall_packages(&["pytest"], &mut terminal).unwrap();
         let had_pytest = venv.find_site_packages_package("pytest").is_some();
 
         install_project_optional_dependencies(&config, "test").unwrap();
@@ -831,37 +854,37 @@ main()
         let project =
             Project::from_manifest(config.root().join("pyproject.toml"))
                 .unwrap();
-        let venv =
+        let mut venv =
             VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
-        let black_package = venv.find_site_packages_package("black");
-        let venv_had_black = black_package.is_some();
-        let black_package = black_package.unwrap();
-        let toml_had_black = project
+        let package = Package::from_str("click==8.1.3").unwrap();
+        let mut terminal = Terminal::new();
+        terminal.set_verbosity(Verbosity::Quiet);
+        let packages = [package.clone()];
+        venv.install_packages(&packages, &mut terminal).unwrap();
+        let venv_had_package = venv.has_package(&package).unwrap();
+        let toml_had_package = project
             .pyproject_toml()
             .dependencies()
             .unwrap()
-            .contains(&black_package.dependency_string());
+            .contains(&package.dependency_string());
 
-        remove_project_dependencies(&config, &[black_package.name()]).unwrap();
+        remove_project_dependencies(&config, &["click"]).unwrap();
 
         let project =
             Project::from_manifest(config.root().join("pyproject.toml"))
                 .unwrap();
-        let mut venv =
-            VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
-        let venv_has_black = venv.find_site_packages_package("black").is_some();
-        let toml_has_black = project
+        let venv_has_package = venv.has_package(&package).unwrap();
+        let toml_has_package = project
             .pyproject_toml()
             .dependencies()
             .unwrap()
-            .contains(&black_package.dependency_string());
-        venv.install_packages(&[black_package], &mut Terminal::new())
-            .unwrap();
+            .contains(&package.dependency_string());
+        venv.install_packages(&[package], &mut terminal).unwrap();
 
-        assert!(venv_had_black);
-        assert!(toml_had_black);
-        assert!(!venv_has_black);
-        assert!(!toml_has_black);
+        assert!(venv_had_package);
+        assert!(toml_had_package);
+        assert!(!venv_has_package);
+        assert!(!toml_has_package);
     }
 
     #[test]
@@ -879,43 +902,38 @@ main()
         let project =
             Project::from_manifest(config.root().join("pyproject.toml"))
                 .unwrap();
-        let venv =
+        let mut venv =
             VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
-        let pytest_package = venv.find_site_packages_package("pytest");
-        let venv_had_pytest = pytest_package.is_some();
-        let pytest_package = pytest_package.unwrap();
-        let toml_had_pytest = project
+        let package = Package::from_str("black==22.8.0").unwrap();
+        let mut terminal = Terminal::new();
+        terminal.set_verbosity(Verbosity::Quiet);
+        let packages = [package.clone()];
+        venv.install_packages(&packages, &mut terminal).unwrap();
+        let venv_had_package = venv.has_module(package.name()).unwrap();
+        let toml_had_package = project
             .pyproject_toml()
-            .dependencies()
+            .optional_dependencey_group("dev")
             .unwrap()
-            .contains(&pytest_package.dependency_string());
+            .contains(&package.dependency_string());
 
-        remove_project_optional_dependencies(
-            &config,
-            &[pytest_package.name()],
-            "test",
-        )
-        .unwrap();
+        remove_project_optional_dependencies(&config, &["black"], "dev")
+            .unwrap();
 
         let project =
             Project::from_manifest(config.root().join("pyproject.toml"))
                 .unwrap();
-        let mut venv =
-            VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
-        let venv_has_pytest =
-            venv.find_site_packages_package("pytest").is_some();
-        let toml_has_pytest = project
+        let venv_has_package = venv.has_module(package.name()).unwrap();
+        let toml_has_package = project
             .pyproject_toml()
             .dependencies()
             .unwrap()
-            .contains(&pytest_package.dependency_string());
-        venv.install_packages(&[pytest_package], &mut Terminal::new())
-            .unwrap();
+            .contains(&package.dependency_string());
+        venv.install_packages(&[package], &mut terminal).unwrap();
 
-        assert!(venv_had_pytest);
-        assert!(toml_had_pytest);
-        assert!(!venv_has_pytest);
-        assert!(!toml_has_pytest);
+        assert!(venv_had_package);
+        assert!(toml_had_package);
+        assert!(!venv_has_package);
+        assert!(!toml_has_package);
     }
 
     #[test]
@@ -939,7 +957,9 @@ main()
         let mut venv =
             VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
         let venv_has_xlcsv = venv.find_site_packages_package("xlcsv").is_some();
-        venv.uninstall_packages(&["xlcsv"]).unwrap();
+        let mut terminal = Terminal::new();
+        terminal.set_verbosity(Verbosity::Quiet);
+        venv.uninstall_packages(&["xlcsv"], &mut terminal).unwrap();
 
         assert!(!venv_had_xlcsv);
         assert!(venv_has_xlcsv);

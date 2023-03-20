@@ -474,8 +474,12 @@ impl VirtualEnvironment {
     pub fn uninstall_packages(
         &mut self,
         package_names: &[&str],
+        terminal: &mut Terminal,
     ) -> HuakResult<()> {
-        todo!()
+        for package_name in package_names {
+            self.installer.uninstall(package_name, terminal)?;
+        }
+        Ok(())
     }
 
     /// Get a package from the site-packages directory if it is already installed.
@@ -576,6 +580,11 @@ impl VirtualEnvironment {
         }
     }
 
+    /// Check if the environment has a package already installed.
+    pub fn has_package(&self, package: &Package) -> HuakResult<bool> {
+        todo!()
+    }
+
     /// Get the environment's installer.
     pub fn installer(&self) -> &Installer {
         &self.installer
@@ -643,6 +652,16 @@ impl Installer {
     ) -> HuakResult<()> {
         let mut cmd = Command::new(self.config.path.clone());
         let mut cmd = cmd.arg("install").arg(package.dependency_string());
+        terminal.run_command(&mut cmd)
+    }
+
+    pub fn uninstall(
+        &self,
+        package_name: &str,
+        terminal: &mut Terminal,
+    ) -> HuakResult<()> {
+        let mut cmd = Command::new(self.config.path.clone());
+        let mut cmd = cmd.arg("uninstall").arg(package_name).arg("-y");
         terminal.run_command(&mut cmd)
     }
 }
