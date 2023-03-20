@@ -83,7 +83,7 @@ pub fn find_file_bottom_up(
         .filter(|item| item.is_dir())
         .find(|item| item.join(file_name).exists())
     {
-        return Ok(Some(path));
+        return Ok(Some(path.join(file_name)));
     };
 
     // If nothing is found from searching the subdirectories then perform the same search from

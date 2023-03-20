@@ -1,6 +1,8 @@
 use crate::error::HuakResult;
+use crate::Error;
 use pep440_rs::Version;
 use std::io::Write;
+use std::path::Path;
 use std::process::Command;
 use std::{collections::HashMap, ffi::OsString, path::PathBuf};
 use termcolor::{self, Color, ColorSpec, StandardStream, WriteColor};
@@ -206,7 +208,22 @@ impl Terminal {
 
     /// Run a command from the terminal's context.
     pub fn run_command(&mut self, cmd: &mut Command) -> HuakResult<()> {
-        todo!()
+        match self.verbosity {
+            Verbosity::Quiet => {
+                let _ = cmd.output()?;
+            }
+            _ => {
+                let mut child = cmd.spawn()?;
+                let status = match child.try_wait() {
+                    Ok(Some(s)) => s,
+                    Ok(None) => child.wait()?,
+                    Err(e) => {
+                        return Err(Error::from(e));
+                    }
+                };
+            }
+        }
+        Ok(())
     }
 }
 
@@ -288,6 +305,54 @@ impl TerminalOut {
             TerminalOut::Stream { ref mut stderr, .. } => stderr,
         }
     }
+}
+
+/// Gets the name of the current shell.
+///
+/// Returns an error if it fails to get correct env vars.
+pub fn get_shell_name() -> HuakResult<String> {
+    let shell_path = get_shell_path()?;
+    let shell_name = Path::new(&shell_path)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .map(|name| name.to_owned())
+        .ok_or_else(|| {
+            Error::InternalError("Shell path is invalid.".to_owned())
+        });
+
+    shell_name
+}
+
+/// Gets the path of the current shell from env var
+///
+/// Returns an error if it fails to get correct env vars.
+#[cfg(unix)]
+pub fn get_shell_path() -> HuakResult<String> {
+    std::env::var("SHELL").or(Ok("sh".to_string()))
+}
+
+/// Gets the path of the current shell from env var
+///
+/// Returns an error if it fails to get correct env vars.
+#[cfg(windows)]
+pub fn get_shell_path() -> HuakResult<String> {
+    Ok(std::env::var("COMSPEC")?)
+}
+
+/// Gets the `source` command for the current shell.
+///
+/// Returns an error if it fails to get correct env vars.
+pub fn get_shell_source_command() -> HuakResult<String> {
+    let shell_name = get_shell_name()?;
+
+    let command =
+        if matches!(shell_name.as_str(), "fish" | "csh" | "tcsh" | "nu") {
+            "source"
+        } else {
+            "."
+        };
+
+    Ok(command.to_owned())
 }
 
 #[cfg(test)]

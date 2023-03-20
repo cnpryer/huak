@@ -1,13 +1,16 @@
 ///! This module implements various operations to interact with valid workspaces
 ///! existing on a system.
 use crate::{
-    error::{Error, HuakResult},
-    sys::{self, Terminal, Verbosity},
-    Package, Project, ProjectType, PyProjectToml, VirtualEnvironment,
+    error::HuakResult,
+    find_venv_root,
+    sys::{self, get_shell_name, Terminal, Verbosity},
+    Error, Installer, Package, Project, ProjectType, PyProjectToml,
+    VirtualEnvironment,
 };
 use std::{
     path::{Path, PathBuf},
     process::Command,
+    str::FromStr,
 };
 
 #[derive(Default)]
@@ -31,14 +34,6 @@ impl OperationConfig {
 
     pub fn root(&self) -> &PathBuf {
         &self.root
-    }
-
-    pub fn with_root(
-        &mut self,
-        path: impl AsRef<Path>,
-    ) -> &mut OperationConfig {
-        self.root = path.as_ref().to_path_buf();
-        self
     }
 
     pub fn build_options(&self) -> Option<&BuildOptions> {
@@ -125,7 +120,7 @@ pub struct TerminalOptions {
 
 /// Activate a Python virtual environment.
 pub fn activate_venv(config: &OperationConfig) -> HuakResult<()> {
-    let venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
+    let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut terminal = Terminal::new();
     venv.activate_with_terminal(&mut terminal)
 }
@@ -133,16 +128,25 @@ pub fn activate_venv(config: &OperationConfig) -> HuakResult<()> {
 /// Add Python packages as a dependencies to a Python project.
 pub fn add_project_dependencies(
     config: &OperationConfig,
-    dependencies: &[Package],
+    dependencies: &[&str],
 ) -> HuakResult<()> {
-    let mut venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
-    let mut packages = venv.installed_packages()?;
-    packages.extend_from_slice(dependencies);
+    let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
+    let mut terminal = Terminal::new();
     // TODO: Propagate installer configuration (potentially per-package)
-    venv.install_packages(&packages)?;
+    let mut installer = Installer::new();
+    installer.set_config(crate::InstallerConfig {
+        path: venv.executables_dir_path().join("pip"),
+    });
+    venv.set_installer(installer);
+    let packages: HuakResult<Vec<Package>> = dependencies
+        .iter()
+        .map(|item| Package::from_str(item))
+        .collect();
+    let packages = venv.resolve_packages(&packages?)?;
+    venv.install_packages(&packages, &mut terminal)?;
     let manifest_path = config.root().join("pyproject.toml");
     let mut project = Project::from_manifest(&manifest_path)?;
-    for package in &packages {
+    for package in packages {
         project.add_dependency(&package.dependency_string());
     }
     project.pyproject_toml().write_file(&manifest_path)
@@ -151,17 +155,26 @@ pub fn add_project_dependencies(
 /// Add Python packages as optional dependencies to a Python project.
 pub fn add_project_optional_dependencies(
     config: &OperationConfig,
-    dependencies: &[Package],
+    dependencies: &[&str],
     group: &str,
 ) -> HuakResult<()> {
-    let mut venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
-    let mut packages = venv.installed_packages()?;
-    packages.extend_from_slice(dependencies);
+    let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
+    let mut terminal = Terminal::new();
     // TODO: Propagate installer configuration (potentially per-package)
-    venv.install_packages(&packages)?;
+    let mut installer = Installer::new();
+    installer.set_config(crate::InstallerConfig {
+        path: venv.executables_dir_path().join("pip"),
+    });
+    venv.set_installer(installer);
+    let packages: HuakResult<Vec<Package>> = dependencies
+        .iter()
+        .map(|item| Package::from_str(item))
+        .collect();
+    let packages = venv.resolve_packages(&packages?)?;
+    venv.install_packages(&packages, &mut terminal)?;
     let manifest_path = config.root().join("pyproject.toml");
     let mut project = Project::from_manifest(&manifest_path)?;
-    for package in &packages {
+    for package in packages {
         project.add_optional_dependency(&package.dependency_string(), group);
     }
     project.pyproject_toml().write_file(&manifest_path)
@@ -169,19 +182,26 @@ pub fn add_project_optional_dependencies(
 
 /// Build the Python project as installable package.
 pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
-    let venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
+    let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut terminal = Terminal::new();
+    terminal.set_verbosity(Verbosity::Quiet);
+    venv.install_packages(&[Package::from_str("build")?], &mut terminal)?;
+    let mut cmd = Command::new(get_shell_name()?);
     let mut paths = sys::env_path_values();
-    paths.insert(0, venv.root().to_path_buf());
-    let mut cmd = Command::new("build");
-    let mut cmd = cmd
+    paths.insert(0, venv.executables_dir_path().to_path_buf());
+    let cmd = cmd
         .env(
             "PATH",
             std::env::join_paths(paths)
                 .map_err(|e| Error::InternalError(e.to_string()))?,
         )
-        .current_dir(config.root());
+        .env("VIRTUAL_ENV", venv.root().clone());
+    #[cfg(unix)]
+    let cmd = cmd.arg("-c");
+    #[cfg(windows)]
+    let cmd = cmd.arg("/C");
     // TODO: Propagate CLI config
+    let cmd = cmd.arg("python -m build").current_dir(config.root());
     terminal.run_command(cmd)
 }
 
@@ -192,20 +212,26 @@ pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
 
 /// Format the Python project's source code.
 pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
-    let venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
+    let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut terminal = Terminal::new();
+    terminal.set_verbosity(Verbosity::Quiet);
+    venv.install_packages(&[Package::from_str("black")?], &mut terminal)?;
+    let mut cmd = Command::new(get_shell_name()?);
     let mut paths = sys::env_path_values();
-    paths.insert(0, venv.root().to_path_buf());
-    let mut cmd = Command::new("black");
-    let mut cmd = cmd
+    paths.insert(0, venv.executables_dir_path().to_path_buf());
+    let cmd = cmd
         .env(
             "PATH",
             std::env::join_paths(paths)
                 .map_err(|e| Error::InternalError(e.to_string()))?,
         )
-        .current_dir(config.root())
-        .arg(".");
+        .env("VIRTUAL_ENV", venv.root().clone());
+    #[cfg(unix)]
+    let cmd = cmd.arg("-c");
+    #[cfg(windows)]
+    let cmd = cmd.arg("/C");
     // TODO: Propagate CLI config
+    let cmd = cmd.arg("python -m black .").current_dir(config.root());
     terminal.run_command(cmd)
 }
 
@@ -220,11 +246,23 @@ pub fn init_project(config: &OperationConfig) -> HuakResult<()> {
 pub fn install_project_dependencies(
     config: &OperationConfig,
 ) -> HuakResult<()> {
-    let mut venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
+    let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let project = Project::from_manifest(config.root().join("pyproject.toml"))?;
-    let packages = project.dependencies()?;
+    let mut terminal = Terminal::new();
     // TODO: Propagate installer configuration (potentially per-package)
-    venv.install_packages(&packages)
+    let mut installer = Installer::new();
+    installer.set_config(crate::InstallerConfig {
+        path: venv.executables_dir_path().join("pip"),
+    });
+    venv.set_installer(installer);
+    let packages: HuakResult<Vec<Package>> = project
+        .dependencies()
+        .unwrap_or(&Vec::new())
+        .iter()
+        .map(|item| Package::from_str(item))
+        .collect();
+    let packages = venv.resolve_packages(&packages?)?;
+    venv.install_packages(&packages, &mut terminal)
 }
 
 /// Install groups of a Python project's optional dependencies to an environment.
@@ -232,29 +270,47 @@ pub fn install_project_optional_dependencies(
     config: &OperationConfig,
     group: &str,
 ) -> HuakResult<()> {
-    let mut venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
+    let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let project = Project::from_manifest(config.root().join("pyproject.toml"))?;
-    let packages = project.optional_dependencey_group(group)?;
+    let mut terminal = Terminal::new();
     // TODO: Propagate installer configuration (potentially per-package)
-    venv.install_packages(&packages)
+    let mut installer = Installer::new();
+    installer.set_config(crate::InstallerConfig {
+        path: venv.executables_dir_path().join("pip"),
+    });
+    venv.set_installer(installer);
+    let packages: HuakResult<Vec<Package>> = project
+        .optional_dependencey_group(group)
+        .unwrap_or(&Vec::new())
+        .iter()
+        .map(|item| Package::from_str(item))
+        .collect();
+    let packages = venv.resolve_packages(&packages?)?;
+    venv.install_packages(&packages, &mut terminal)
 }
 
 /// Lint a Python project's source code.
 pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
-    let venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
+    let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut terminal = Terminal::new();
+    terminal.set_verbosity(Verbosity::Quiet);
+    venv.install_packages(&[Package::from_str("ruff")?], &mut terminal)?;
+    let mut cmd = Command::new(get_shell_name()?);
     let mut paths = sys::env_path_values();
-    paths.insert(0, venv.root().to_path_buf());
-    let mut cmd = Command::new("ruff");
-    let mut cmd = cmd
+    paths.insert(0, venv.executables_dir_path().to_path_buf());
+    let cmd = cmd
         .env(
             "PATH",
             std::env::join_paths(paths)
                 .map_err(|e| Error::InternalError(e.to_string()))?,
         )
-        .current_dir(config.root())
-        .arg(".");
+        .env("VIRTUAL_ENV", venv.root().clone());
+    #[cfg(unix)]
+    let cmd = cmd.arg("-c");
+    #[cfg(windows)]
+    let cmd = cmd.arg("/C");
     // TODO: Propagate CLI config (including --fix)
+    let cmd = cmd.arg("python -m ruff .").current_dir(config.root());
     terminal.run_command(cmd)
 }
 
@@ -278,21 +334,28 @@ pub fn create_new_app_project(config: &OperationConfig) -> HuakResult<()> {
 
 /// Publish the Python project as to a registry.
 pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
-    let mut venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
+    let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut terminal = Terminal::new();
+    terminal.set_verbosity(Verbosity::Quiet);
+    venv.install_packages(&[Package::from_str("twine")?], &mut terminal)?;
+    let mut cmd = Command::new(get_shell_name()?);
     let mut paths = sys::env_path_values();
-    paths.insert(0, venv.root().to_path_buf());
-    let mut cmd = Command::new("twine");
-    let mut cmd = cmd
+    paths.insert(0, venv.executables_dir_path().to_path_buf());
+    let cmd = cmd
         .env(
             "PATH",
             std::env::join_paths(paths)
                 .map_err(|e| Error::InternalError(e.to_string()))?,
         )
-        .current_dir(config.root())
-        .arg("upload")
-        .arg("dist/*");
+        .env("VIRTUAL_ENV", venv.root().clone());
+    #[cfg(unix)]
+    let cmd = cmd.arg("-c");
+    #[cfg(windows)]
+    let cmd = cmd.arg("/C");
     // TODO: Propagate CLI config
+    let cmd = cmd
+        .arg("python -m twine upload dist/*")
+        .current_dir(config.root());
     terminal.run_command(cmd)
 }
 
@@ -301,7 +364,7 @@ pub fn remove_project_dependencies(
     config: &OperationConfig,
     dependency_names: &[&str],
 ) -> HuakResult<()> {
-    let mut venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
+    let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut project =
         Project::from_manifest(config.root().join("pyproject.toml"))?;
     for dependency in dependency_names {
@@ -316,7 +379,7 @@ pub fn remove_project_optional_dependencies(
     dependency_names: &[&str],
     group: &str,
 ) -> HuakResult<()> {
-    let mut venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
+    let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut project =
         Project::from_manifest(config.root().join("pyproject.toml"))?;
     for dependency in dependency_names {
@@ -326,42 +389,52 @@ pub fn remove_project_optional_dependencies(
 }
 
 /// Run a command from within a Python project's context.
-pub fn run_command_str_with_context(
+pub fn run_command_str(
     config: &OperationConfig,
     command: &str,
 ) -> HuakResult<()> {
-    let venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
+    let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut terminal = Terminal::new();
+    let mut cmd = Command::new(get_shell_name()?);
     let mut paths = sys::env_path_values();
-    paths.insert(0, venv.root().to_path_buf());
-    let mut cmd = Command::new("twine");
+    paths.insert(0, venv.executables_dir_path().to_path_buf());
     let cmd = cmd
         .env(
             "PATH",
             std::env::join_paths(paths)
                 .map_err(|e| Error::InternalError(e.to_string()))?,
         )
-        .current_dir(config.root())
-        .arg(command);
-    // TODO: Propagate CLI config
+        .env("VIRTUAL_ENV", venv.root().clone());
+    #[cfg(unix)]
+    let cmd = cmd.arg("-c");
+    #[cfg(windows)]
+    let cmd = cmd.arg("/C");
+    let cmd = cmd.arg(command).current_dir(config.root());
     terminal.run_command(cmd)
 }
 
 /// Run a Python project's tests.
 pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
-    let venv = VirtualEnvironment::from_path(crate::find_venv_root()?)?;
+    let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut terminal = Terminal::new();
+    terminal.set_verbosity(Verbosity::Quiet);
+    venv.install_packages(&[Package::from_str("pytest")?], &mut terminal)?;
+    let mut cmd = Command::new(get_shell_name()?);
     let mut paths = sys::env_path_values();
-    paths.insert(0, venv.root().to_path_buf());
-    let mut cmd = Command::new("pytest");
+    paths.insert(0, venv.executables_dir_path().to_path_buf());
     let cmd = cmd
         .env(
             "PATH",
             std::env::join_paths(paths)
                 .map_err(|e| Error::InternalError(e.to_string()))?,
         )
-        .current_dir(config.root());
+        .env("VIRTUAL_ENV", venv.root().clone());
+    #[cfg(unix)]
+    let cmd = cmd.arg("-c");
+    #[cfg(windows)]
+    let cmd = cmd.arg("/C");
     // TODO: Propagate CLI config
+    let cmd = cmd.arg("python -m pytest");
     terminal.run_command(cmd)
 }
 
@@ -386,7 +459,9 @@ mod tests {
 
     use tempfile::tempdir;
 
-    use crate::{test_resources_dir_path, PyProjectToml, VirtualEnvironment};
+    use crate::{
+        fs, test_resources_dir_path, PyProjectToml, VirtualEnvironment,
+    };
 
     use super::*;
 
@@ -399,14 +474,16 @@ mod tests {
     #[test]
     fn test_add_project_dependencies() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(
+        fs::copy_dir(
             &test_resources_dir_path().join("mock-project"),
-            &dir,
+            &dir.join("mock-project"),
         )
         .unwrap();
-        let deps = [Package::from_str("ruff").unwrap()];
-        let mut config = OperationConfig::new();
-        let config = config.with_root(dir.join("mock-project"));
+        let deps = ["ruff"];
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            ..Default::default()
+        };
 
         add_project_dependencies(&config, &deps).unwrap();
 
@@ -421,32 +498,35 @@ mod tests {
         .unwrap();
 
         assert!(venv.find_site_packages_package("ruff").is_some());
-        assert!(deps
-            .iter()
-            .all(|item| project.dependencies().unwrap().contains(item)));
+        assert!(deps.iter().all(|item| project
+            .dependencies()
+            .unwrap()
+            .contains(&item.to_string())));
         assert!(deps.iter().map(|item| item).all(|item| ser_toml
             .dependencies()
             .unwrap()
-            .contains(&item.dependency_string())));
+            .contains(&item.to_string())));
         assert!(deps.iter().map(|item| item).all(|item| project
             .pyproject_toml()
             .dependencies()
             .unwrap()
-            .contains(&item.dependency_string())));
+            .contains(&item.to_string())));
     }
 
     #[test]
     fn test_add_optional_project_dependencies() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(
+        fs::copy_dir(
             &test_resources_dir_path().join("mock-project"),
-            &dir,
+            &dir.join("mock-project"),
         )
         .unwrap();
-        let deps = [Package::from_str("ruff").unwrap()];
+        let deps = ["ruff"];
         let group = "test";
-        let mut config = OperationConfig::new();
-        let config = config.with_root(dir.join("mock-project"));
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            ..Default::default()
+        };
 
         add_project_optional_dependencies(&config, &deps, group).unwrap();
 
@@ -464,28 +544,30 @@ mod tests {
         assert!(deps.iter().all(|item| project
             .optional_dependencey_group("test")
             .unwrap()
-            .contains(item)));
+            .contains(&item.to_string())));
         assert!(deps.iter().map(|item| item).all(|item| ser_toml
             .optional_dependencey_group("test")
             .unwrap()
-            .contains(&item.dependency_string())));
+            .contains(&item.to_string())));
         assert!(deps.iter().map(|item| item).all(|item| project
             .pyproject_toml()
             .optional_dependencey_group("test")
             .unwrap()
-            .contains(&item.dependency_string())));
+            .contains(&item.to_string())));
     }
 
     #[test]
     fn test_build_project() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(
+        fs::copy_dir(
             &test_resources_dir_path().join("mock-project"),
-            &dir,
+            &dir.join("mock-project"),
         )
         .unwrap();
-        let mut config = OperationConfig::new();
-        let config = config.with_root(dir.join("mock-project"));
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            ..Default::default()
+        };
 
         build_project(&config).unwrap();
     }
@@ -496,15 +578,17 @@ mod tests {
     }
 
     #[test]
-    fn test_fmt_project() {
+    fn test_format_project() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(
+        fs::copy_dir(
             &test_resources_dir_path().join("mock-project"),
-            &dir,
+            &dir.join("mock-project"),
         )
         .unwrap();
-        let mut config = OperationConfig::new();
-        let config = config.with_root(dir.join("mock-project"));
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            ..Default::default()
+        };
         let project =
             Project::from_manifest(config.root().join("pyproject.toml"))
                 .unwrap();
@@ -513,7 +597,7 @@ mod tests {
             .join("src")
             .join("mock_project")
             .join("fmt_me.py");
-        let pre_fmt_str = r#"""
+        let pre_fmt_str = r#"
 def fn( ):
     pass"#;
         std::fs::write(&fmt_filepath, pre_fmt_str).unwrap();
@@ -524,17 +608,19 @@ def fn( ):
 
         assert_eq!(
             post_fmt_str,
-            r#"""
-        def fn( ):
-            pass"#
+            r#"def fn():
+    pass
+"#
         );
     }
 
     #[test]
     fn test_init_project() {
         let dir = tempdir().unwrap().into_path();
-        let mut config = OperationConfig::new();
-        let config = config.with_root(dir.join("mock-project"));
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            ..Default::default()
+        };
 
         init_project(&config).unwrap();
 
@@ -553,13 +639,15 @@ def fn( ):
     #[test]
     fn test_install_project_dependencies() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(
+        fs::copy_dir(
             &test_resources_dir_path().join("mock-project"),
-            &dir,
+            &dir.join("mock-project"),
         )
         .unwrap();
-        let mut config = OperationConfig::new();
-        let config = config.with_root(dir.join("mock-project"));
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            ..Default::default()
+        };
         let mut venv = VirtualEnvironment::from_path(".venv").unwrap();
         venv.uninstall_packages(&["black"]).unwrap();
         let had_black = venv.find_site_packages_package("black").is_some();
@@ -573,13 +661,15 @@ def fn( ):
     #[test]
     fn test_install_project_optional_dependencies() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(
+        fs::copy_dir(
             &test_resources_dir_path().join("mock-project"),
-            &dir,
+            &dir.join("mock-project"),
         )
         .unwrap();
-        let mut config = OperationConfig::new();
-        let config = config.with_root(dir.join("mock-project"));
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            ..Default::default()
+        };
         let mut venv = VirtualEnvironment::from_path(".venv").unwrap();
         venv.uninstall_packages(&["pytest"]).unwrap();
         let had_pytest = venv.find_site_packages_package("pytest").is_some();
@@ -592,19 +682,32 @@ def fn( ):
 
     #[test]
     fn test_lint_project() {
-        todo!()
+        let dir = tempdir().unwrap().into_path();
+        fs::copy_dir(
+            &test_resources_dir_path().join("mock-project"),
+            &dir.join("mock-project"),
+        )
+        .unwrap();
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            ..Default::default()
+        };
+
+        lint_project(&config).unwrap(); // TODO: also with --fix
     }
 
     #[test]
     fn test_fix_project_lints() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(
+        fs::copy_dir(
             &test_resources_dir_path().join("mock-project"),
-            &dir,
+            &dir.join("mock-project"),
         )
         .unwrap();
-        let mut config = OperationConfig::new();
-        let config = config.with_root(dir.join("mock-project"));
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            ..Default::default()
+        };
         let project =
             Project::from_manifest(config.root().join("pyproject.toml"))
                 .unwrap();
@@ -640,8 +743,10 @@ def fn():
     fn test_new_default_project() {
         let dir = tempdir().unwrap().into_path();
         let had_toml = dir.join("mock-project").join("pyproject.toml").exists();
-        let mut config = OperationConfig::new();
-        let config = config.with_root(dir.join("mock-project"));
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            ..Default::default()
+        };
 
         create_new_default_project(&config).unwrap();
 
@@ -652,8 +757,10 @@ def fn():
     #[test]
     fn test_new_lib_project() {
         let dir = tempdir().unwrap().into_path();
-        let mut config = OperationConfig::new();
-        let config = config.with_root(dir.join("mock-project"));
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            ..Default::default()
+        };
 
         create_new_lib_project(&config).unwrap();
 
@@ -696,8 +803,10 @@ def test_version():
     #[test]
     fn test_new_app_project() {
         let dir = tempdir().unwrap().into_path();
-        let mut config = OperationConfig::new();
-        let config = config.with_root(dir.join("mock-project"));
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            ..Default::default()
+        };
 
         create_new_app_project(&config).unwrap();
 
@@ -742,13 +851,15 @@ main()
     #[test]
     fn test_remove_project_dependencies() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(
+        fs::copy_dir(
             &test_resources_dir_path().join("mock-project"),
-            &dir,
+            &dir.join("mock-project"),
         )
         .unwrap();
-        let mut config = OperationConfig::new();
-        let config = config.with_root(dir.join("mock-project"));
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            ..Default::default()
+        };
         let project =
             Project::from_manifest(config.root().join("pyproject.toml"))
                 .unwrap();
@@ -776,7 +887,8 @@ main()
             .dependencies()
             .unwrap()
             .contains(&black_package.dependency_string());
-        venv.install_packages(&[black_package]).unwrap();
+        venv.install_packages(&[black_package], &mut Terminal::new())
+            .unwrap();
 
         assert!(venv_had_black);
         assert!(toml_had_black);
@@ -787,13 +899,15 @@ main()
     #[test]
     fn test_remove_project_optional_dependencies() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(
+        fs::copy_dir(
             &test_resources_dir_path().join("mock-project"),
-            &dir,
+            &dir.join("mock-project"),
         )
         .unwrap();
-        let mut config = OperationConfig::new();
-        let config = config.with_root(dir.join("mock-project"));
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            ..Default::default()
+        };
         let project =
             Project::from_manifest(config.root().join("pyproject.toml"))
                 .unwrap();
@@ -827,7 +941,8 @@ main()
             .dependencies()
             .unwrap()
             .contains(&pytest_package.dependency_string());
-        venv.install_packages(&[pytest_package]).unwrap();
+        venv.install_packages(&[pytest_package], &mut Terminal::new())
+            .unwrap();
 
         assert!(venv_had_pytest);
         assert!(toml_had_pytest);
@@ -838,18 +953,20 @@ main()
     #[test]
     fn test_run_command_with_context() {
         let dir = tempdir().unwrap().into_path();
-        crate::fs::copy_dir(
+        fs::copy_dir(
             &test_resources_dir_path().join("mock-project"),
-            &dir,
+            &dir.join("mock-project"),
         )
         .unwrap();
-        let mut config = OperationConfig::new();
-        let config = config.with_root(dir.join("mock-project"));
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            ..Default::default()
+        };
         let venv =
             VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
         let venv_had_xlcsv = venv.find_site_packages_package("xlcsv").is_some();
 
-        run_command_str_with_context(&config, "pip install xlcsv").unwrap();
+        run_command_str(&config, "pip install xlcsv").unwrap();
 
         let mut venv =
             VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
@@ -862,7 +979,18 @@ main()
 
     #[test]
     fn test_test_project() {
-        todo!()
+        let dir = tempdir().unwrap().into_path();
+        fs::copy_dir(
+            &test_resources_dir_path().join("mock-project"),
+            &dir.join("mock-project"),
+        )
+        .unwrap();
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            ..Default::default()
+        };
+
+        test_project(&config).unwrap();
     }
 
     #[test]

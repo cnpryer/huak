@@ -12,6 +12,7 @@ use std::{
     fs::File,
     ops::Not,
     path::{Path, PathBuf},
+    process::Command,
     str::FromStr,
 };
 use sys::Terminal;
@@ -96,30 +97,16 @@ impl Project {
     }
 
     /// Get the Python project's main dependencies listed in the project file.
-    pub fn dependencies(&self) -> HuakResult<Vec<Package>> {
-        if let Some(dependencies) = self.pyproject_toml.dependencies() {
-            return dependencies
-                .iter()
-                .map(|dep| Package::from_str(dep))
-                .collect();
-        }
-        Ok(Vec::new())
+    pub fn dependencies(&self) -> Option<&Vec<String>> {
+        self.pyproject_toml.dependencies()
     }
 
     /// Get a group of optional dependencies from the Python project's project file.
     pub fn optional_dependencey_group(
         &self,
         group_name: &str,
-    ) -> HuakResult<Vec<Package>> {
-        if let Some(dependencies) =
-            self.pyproject_toml.optional_dependencey_group(group_name)
-        {
-            return dependencies
-                .iter()
-                .map(|dep| Package::from_str(dep))
-                .collect();
-        }
-        Ok(Vec::new())
+    ) -> Option<&Vec<String>> {
+        self.pyproject_toml.optional_dependencey_group(group_name)
     }
 
     /// Add a Python package as a dependency to the project's project file.
@@ -401,10 +388,15 @@ impl VirtualEnvironment {
 
     /// Create a virtual environment from its root path.
     pub fn from_path(path: impl AsRef<Path>) -> HuakResult<VirtualEnvironment> {
-        Ok(VirtualEnvironment {
-            root: path.as_ref().to_path_buf(),
-            installer: Installer::new(),
-        })
+        let path = path.as_ref();
+        let mut venv = VirtualEnvironment::new();
+        venv.root = path.to_path_buf();
+        let mut installer = Installer::new();
+        installer.set_config(InstallerConfig {
+            path: venv.executables_dir_path().join("pip").to_path_buf(),
+        });
+        venv.installer = installer;
+        Ok(venv)
     }
 
     /// Get the python environment config.
@@ -466,9 +458,16 @@ impl VirtualEnvironment {
         todo!()
     }
 
-    /// Install many Python packages to the environment.
-    pub fn install_packages(&mut self, packages: &[Package]) -> HuakResult<()> {
-        todo!()
+    /// Install Python packages to the environment.
+    pub fn install_packages(
+        &mut self,
+        packages: &[Package],
+        terminal: &mut Terminal,
+    ) -> HuakResult<()> {
+        for package in packages {
+            self.installer.install(package, terminal)?;
+        }
+        Ok(())
     }
 
     /// Uninstall many Python packages from the environment.
@@ -480,27 +479,24 @@ impl VirtualEnvironment {
     }
 
     /// Get a package from the site-packages directory if it is already installed.
-    pub fn find_site_packages_package(&self, name: &str) -> Option<Package> {
+    fn find_site_packages_package(&self, name: &str) -> Option<Package> {
         todo!()
     }
 
     /// Get a package's dist info from the site-packages directory if it is there.
-    pub fn find_site_packages_dist_info(&self, name: &str) -> Option<DistInfo> {
+    fn find_site_packages_dist_info(&self, name: &str) -> Option<DistInfo> {
         todo!()
     }
 
     /// Get a package from the system's site-packages directory if it is already
     /// installed.
-    pub fn find_base_site_packages_package(
-        &self,
-        name: &str,
-    ) -> Option<Package> {
+    fn find_base_site_packages_package(&self, name: &str) -> Option<Package> {
         todo!()
     }
 
     /// Get a package's dist info from the system's site-packages directory if it is
     /// there.
-    pub fn find_base_site_packages_dist_info(
+    fn find_base_site_packages_dist_info(
         &self,
         name: &str,
     ) -> Option<DistInfo> {
@@ -563,9 +559,21 @@ impl VirtualEnvironment {
         todo!()
     }
 
-    /// Get all of the packages installed to the environment.
-    pub fn installed_packages(&self) -> HuakResult<Vec<Package>> {
-        todo!()
+    /// Check if the environment has a module installed to the executables directory.
+    pub fn has_module(&self, module_name: &str) -> HuakResult<bool> {
+        let dir = self.executables_dir_path();
+        #[cfg(unix)]
+        return Ok(dir.join(module_name).exists());
+        #[cfg(windows)]
+        {
+            let mut path = dir.join(module_name);
+            match path.set_extension("exe") {
+                true => return Ok(path.exists()),
+                false => Err(Error::InternalError(format!(
+                    "failed to create path for {module_name}"
+                ))),
+            }
+        }
     }
 
     /// Get the environment's installer.
@@ -576,6 +584,14 @@ impl VirtualEnvironment {
     /// Set the environment's installer.
     pub fn set_installer(&mut self, installer: Installer) {
         self.installer = installer;
+    }
+
+    /// Resolve packages againts the environment.
+    pub fn resolve_packages(
+        &self,
+        packages: &[Package],
+    ) -> HuakResult<Vec<Package>> {
+        todo!()
     }
 }
 
@@ -619,14 +635,28 @@ impl Installer {
     pub fn set_config(&mut self, config: InstallerConfig) {
         self.config = config;
     }
+
+    pub fn install(
+        &self,
+        package: &Package,
+        terminal: &mut Terminal,
+    ) -> HuakResult<()> {
+        let mut cmd = Command::new(self.config.path.clone());
+        let mut cmd = cmd.arg("install").arg(package.dependency_string());
+        terminal.run_command(&mut cmd)
+    }
 }
 
-#[derive(Default, Copy, Clone)]
-pub struct InstallerConfig;
+#[derive(Default, Clone)]
+pub struct InstallerConfig {
+    path: PathBuf,
+}
 
 impl InstallerConfig {
     pub fn new() -> InstallerConfig {
-        InstallerConfig
+        InstallerConfig {
+            path: PathBuf::from("pip"),
+        }
     }
 }
 
@@ -1010,7 +1040,6 @@ dev = [
         let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
-        dbg!(&path);
         let pyproject_toml = PyProjectToml::from_path(path).unwrap();
 
         assert_eq!(
