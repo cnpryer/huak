@@ -2,20 +2,17 @@
 ///! existing on a system.
 use crate::{
     error::HuakResult,
-    find_venv_root,
+    find_venv_root, git,
     sys::{self, get_shell_name, Terminal, Verbosity},
     Error, Installer, Package, Project, ProjectType, PyProjectToml,
     VirtualEnvironment,
 };
-use std::{
-    path::{Path, PathBuf},
-    process::Command,
-    str::FromStr,
-};
+use std::{path::PathBuf, process::Command, str::FromStr};
 
 #[derive(Default)]
 pub struct OperationConfig {
     root: PathBuf,
+    project_options: Option<ProjectOptions>,
     build_options: Option<BuildOptions>,
     format_options: Option<FormatOptions>,
     lint_options: Option<LintOptions>,
@@ -34,6 +31,18 @@ impl OperationConfig {
 
     pub fn root(&self) -> &PathBuf {
         &self.root
+    }
+
+    pub fn project_options(&self) -> Option<&ProjectOptions> {
+        self.project_options.as_ref()
+    }
+
+    pub fn with_project_options(
+        &mut self,
+        options: ProjectOptions,
+    ) -> &mut OperationConfig {
+        self.project_options = Some(options);
+        self
     }
 
     pub fn build_options(&self) -> Option<&BuildOptions> {
@@ -109,6 +118,9 @@ impl OperationConfig {
     }
 }
 
+pub struct ProjectOptions {
+    pub uses_git: bool,
+}
 pub struct BuildOptions;
 pub struct FormatOptions;
 pub struct LintOptions;
@@ -187,15 +199,7 @@ pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
     terminal.set_verbosity(Verbosity::Quiet);
     venv.install_packages(&[Package::from_str("build")?], &mut terminal)?;
     let mut cmd = Command::new(get_shell_name()?);
-    let mut paths = sys::env_path_values();
-    paths.insert(0, venv.executables_dir_path().to_path_buf());
-    let cmd = cmd
-        .env(
-            "PATH",
-            std::env::join_paths(paths)
-                .map_err(|e| Error::InternalError(e.to_string()))?,
-        )
-        .env("VIRTUAL_ENV", venv.root().clone());
+    let mut cmd = command_with_venv_context(&mut cmd, &venv)?;
     #[cfg(unix)]
     let cmd = cmd.arg("-c");
     #[cfg(windows)]
@@ -217,15 +221,7 @@ pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
     terminal.set_verbosity(Verbosity::Quiet);
     venv.install_packages(&[Package::from_str("black")?], &mut terminal)?;
     let mut cmd = Command::new(get_shell_name()?);
-    let mut paths = sys::env_path_values();
-    paths.insert(0, venv.executables_dir_path().to_path_buf());
-    let cmd = cmd
-        .env(
-            "PATH",
-            std::env::join_paths(paths)
-                .map_err(|e| Error::InternalError(e.to_string()))?,
-        )
-        .env("VIRTUAL_ENV", venv.root().clone());
+    let mut cmd = command_with_venv_context(&mut cmd, &venv)?;
     #[cfg(unix)]
     let cmd = cmd.arg("-c");
     #[cfg(windows)]
@@ -296,15 +292,7 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
     terminal.set_verbosity(Verbosity::Quiet);
     venv.install_packages(&[Package::from_str("ruff")?], &mut terminal)?;
     let mut cmd = Command::new(get_shell_name()?);
-    let mut paths = sys::env_path_values();
-    paths.insert(0, venv.executables_dir_path().to_path_buf());
-    let cmd = cmd
-        .env(
-            "PATH",
-            std::env::join_paths(paths)
-                .map_err(|e| Error::InternalError(e.to_string()))?,
-        )
-        .env("VIRTUAL_ENV", venv.root().clone());
+    let mut cmd = command_with_venv_context(&mut cmd, &venv)?;
     #[cfg(unix)]
     let cmd = cmd.arg("-c");
     #[cfg(windows)]
@@ -314,22 +302,28 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
     terminal.run_command(cmd)
 }
 
-/// Create a new Python project with all defaults on the system.
-pub fn create_new_default_project(config: &OperationConfig) -> HuakResult<()> {
-    let project = Project::default();
-    project.write_project(config.root())
-}
-
 /// Create a new library-like Python project on the system.
 pub fn create_new_lib_project(config: &OperationConfig) -> HuakResult<()> {
-    let project = Project::from(ProjectType::Application);
-    project.write_project(config.root())
+    let project = Project::from(ProjectType::Library);
+    project.write_project(config.root())?;
+    if let Some(options) = config.project_options() {
+        if options.uses_git {
+            git::init(config.root())?;
+        }
+    }
+    Ok(())
 }
 
 /// Create a new application-like Python project on the system.
 pub fn create_new_app_project(config: &OperationConfig) -> HuakResult<()> {
-    let project = Project::from(ProjectType::Library);
-    project.write_project(config.root())
+    let project = Project::from(ProjectType::Application);
+    project.write_project(config.root())?;
+    if let Some(options) = config.project_options() {
+        if options.uses_git {
+            git::init(config.root())?;
+        }
+    }
+    Ok(())
 }
 
 /// Publish the Python project as to a registry.
@@ -339,15 +333,7 @@ pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
     terminal.set_verbosity(Verbosity::Quiet);
     venv.install_packages(&[Package::from_str("twine")?], &mut terminal)?;
     let mut cmd = Command::new(get_shell_name()?);
-    let mut paths = sys::env_path_values();
-    paths.insert(0, venv.executables_dir_path().to_path_buf());
-    let cmd = cmd
-        .env(
-            "PATH",
-            std::env::join_paths(paths)
-                .map_err(|e| Error::InternalError(e.to_string()))?,
-        )
-        .env("VIRTUAL_ENV", venv.root().clone());
+    let cmd = command_with_venv_context(&mut cmd, &venv)?;
     #[cfg(unix)]
     let cmd = cmd.arg("-c");
     #[cfg(windows)]
@@ -396,15 +382,7 @@ pub fn run_command_str(
     let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut terminal = Terminal::new();
     let mut cmd = Command::new(get_shell_name()?);
-    let mut paths = sys::env_path_values();
-    paths.insert(0, venv.executables_dir_path().to_path_buf());
-    let cmd = cmd
-        .env(
-            "PATH",
-            std::env::join_paths(paths)
-                .map_err(|e| Error::InternalError(e.to_string()))?,
-        )
-        .env("VIRTUAL_ENV", venv.root().clone());
+    let mut cmd = command_with_venv_context(&mut cmd, &venv)?;
     #[cfg(unix)]
     let cmd = cmd.arg("-c");
     #[cfg(windows)]
@@ -420,15 +398,7 @@ pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
     terminal.set_verbosity(Verbosity::Quiet);
     venv.install_packages(&[Package::from_str("pytest")?], &mut terminal)?;
     let mut cmd = Command::new(get_shell_name()?);
-    let mut paths = sys::env_path_values();
-    paths.insert(0, venv.executables_dir_path().to_path_buf());
-    let cmd = cmd
-        .env(
-            "PATH",
-            std::env::join_paths(paths)
-                .map_err(|e| Error::InternalError(e.to_string()))?,
-        )
-        .env("VIRTUAL_ENV", venv.root().clone());
+    let mut cmd = command_with_venv_context(&mut cmd, &venv)?;
     #[cfg(unix)]
     let cmd = cmd.arg("-c");
     #[cfg(windows)]
@@ -450,20 +420,33 @@ pub fn display_project_version(config: &OperationConfig) -> HuakResult<()> {
     todo!()
 }
 
+/// Modify a process::Command to use a virtual environment's context.
+fn command_with_venv_context<'a>(
+    cmd: &'a mut Command,
+    venv: &VirtualEnvironment,
+) -> HuakResult<&'a mut Command> {
+    let mut paths = sys::env_path_values();
+    paths.insert(0, venv.executables_dir_path().to_path_buf());
+    let cmd = cmd
+        .env(
+            "PATH",
+            std::env::join_paths(paths)
+                .map_err(|e| Error::InternalError(e.to_string()))?,
+        )
+        .env("VIRTUAL_ENV", venv.root().clone());
+    Ok(cmd)
+}
+
 /// NOTE: Operations are meant to be executed on projects and environments.
 ///       See https://github.com/cnpryer/huak/issues/123
 ///       To run some of these tests a .venv must be available at the project's root.
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
-    use tempfile::tempdir;
-
+    use super::*;
     use crate::{
         fs, test_resources_dir_path, PyProjectToml, VirtualEnvironment,
     };
-
-    use super::*;
+    use tempfile::tempdir;
 
     #[ignore = "currently untestable"]
     #[test]
@@ -693,11 +676,11 @@ def fn( ):
             ..Default::default()
         };
 
-        lint_project(&config).unwrap(); // TODO: also with --fix
+        lint_project(&config).unwrap();
     }
 
     #[test]
-    fn test_fix_project_lints() {
+    fn test_fix_project() {
         let dir = tempdir().unwrap().into_path();
         fs::copy_dir(
             &test_resources_dir_path().join("mock-project"),
@@ -737,21 +720,6 @@ def fn():
         let post_fix_str = std::fs::read_to_string(&lint_fix_filepath).unwrap();
 
         assert_eq!(post_fix_str, expected);
-    }
-
-    #[test]
-    fn test_new_default_project() {
-        let dir = tempdir().unwrap().into_path();
-        let had_toml = dir.join("mock-project").join("pyproject.toml").exists();
-        let config = OperationConfig {
-            root: dir.join("mock-project"),
-            ..Default::default()
-        };
-
-        create_new_default_project(&config).unwrap();
-
-        assert!(!had_toml);
-        assert!(dir.join("mock-project").join("pyproject.toml").exists());
     }
 
     #[test]
