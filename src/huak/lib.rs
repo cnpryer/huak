@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::{hash_map::RandomState, HashMap},
     fs::File,
+    ops::Not,
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -540,8 +541,18 @@ impl VirtualEnvironment {
 
     /// Check if the Python environment is isolated from any system site-packages
     /// directory.
-    pub fn is_isolated(&self) -> &bool {
-        todo!()
+    pub fn is_isolated(&self) -> bool {
+        self.python_environment_config()
+            .include_system_site_packages
+            .not()
+    }
+
+    /// Check if the environment is already activated.
+    pub fn is_activated(&self) -> bool {
+        if let Some(path) = sys::active_virtual_env_path() {
+            return self.root == path;
+        }
+        false
     }
 
     /// Activate the Python environment with a given terminal.

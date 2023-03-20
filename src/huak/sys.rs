@@ -58,6 +58,14 @@ pub fn env_path_string() -> OsString {
     }
 }
 
+/// Get the VIRTUAL_ENV environment path if it exists.
+pub fn active_virtual_env_path() -> Option<PathBuf> {
+    if let Ok(path) = std::env::var("VIRTUAL_ENV") {
+        return Some(PathBuf::from(path));
+    }
+    None
+}
+
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub enum Verbosity {
     #[default]
