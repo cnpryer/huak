@@ -22,6 +22,10 @@ pub enum Error {
     FormatOptionsMissingError,
     #[error("a problem with git occurred: {0}")]
     GitError(#[from] git2::Error),
+    #[error("a problem occurred with the glob package: {0}")]
+    GlobError(#[from] glob::GlobError),
+    #[error("a problem occurred with a glob pattern: {0}")]
+    GlobPatternError(#[from] glob::PatternError),
     #[error("a problem with huak configuration occurred: {0}")]
     HuakConfigurationError(String),
     #[error("a problem with huak's internals occurred: {0}")]

@@ -19,6 +19,7 @@ pub struct OperationConfig {
     pub publish_options: Option<PublishOptions>,
     pub installer_options: Option<InstallerOptions>,
     pub terminal_options: Option<TerminalOptions>,
+    pub clean_options: Option<CleanOptions>,
 }
 
 pub struct ProjectOptions {
@@ -31,6 +32,10 @@ pub struct PublishOptions;
 pub struct InstallerOptions;
 pub struct TerminalOptions {
     pub verbosity: Verbosity,
+}
+pub struct CleanOptions {
+    include_pycache: bool,
+    include_compiled_bytecode: bool,
 }
 
 /// Activate a Python virtual environment.
@@ -114,7 +119,48 @@ pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
 
 /// Clean the dist directory.
 pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
-    todo!()
+    let paths: Result<Vec<PathBuf>, std::io::Error> =
+        std::fs::read_dir(config.root.join("dist"))?
+            .into_iter()
+            .map(|x| x.map(|item| item.path().to_path_buf()))
+            .collect();
+    let mut paths = paths?;
+    if let Some(options) = config.clean_options.as_ref() {
+        if options.include_compiled_bytecode {
+            let pattern =
+                format!("{}", config.root.join("**").join("*.pyc").display());
+            glob::glob(&pattern)?
+                .into_iter()
+                .for_each(|item| match item {
+                    Ok(it) => paths.push(it),
+                    Err(_) => return (),
+                })
+        }
+        if options.include_pycache {
+            let pattern = format!(
+                "{}",
+                config.root.join("**").join("__pycache__").display()
+            );
+            glob::glob(&pattern)?
+                .into_iter()
+                .for_each(|item| match item {
+                    Ok(it) => paths.push(it),
+                    Err(_) => return (),
+                })
+        }
+    }
+    for path in &paths {
+        if !path.exists() {
+            continue;
+        }
+        if path.is_file() {
+            std::fs::remove_file(path)?;
+        }
+        if path.is_dir() {
+            std::fs::remove_dir(path)?;
+        }
+    }
+    Ok(())
 }
 
 /// Format the Python project's source code.
@@ -483,7 +529,51 @@ mod tests {
 
     #[test]
     fn test_clean_project() {
-        todo!()
+        let dir = tempdir().unwrap().into_path();
+        fs::copy_dir(
+            test_resources_dir_path().join("mock-project"),
+            dir.join("mock-project"),
+        )
+        .unwrap();
+        let config = OperationConfig {
+            root: dir.join("mock-project"),
+            clean_options: Some(CleanOptions {
+                include_pycache: true,
+                include_compiled_bytecode: true,
+            }),
+            ..Default::default()
+        };
+
+        clean_project(&config).unwrap();
+
+        let dist: Vec<PathBuf> = glob::glob(&format!(
+            "{}",
+            config.root.join("dist").join("*").display()
+        ))
+        .unwrap()
+        .into_iter()
+        .map(|item| item.unwrap())
+        .collect();
+        let pycaches: Vec<PathBuf> = glob::glob(&format!(
+            "{}",
+            config.root.join("**").join("__pycache__").display()
+        ))
+        .unwrap()
+        .into_iter()
+        .map(|item| item.unwrap())
+        .collect();
+        let bytecode: Vec<PathBuf> = glob::glob(&format!(
+            "{}",
+            config.root.join("**").join("*.pyc").display()
+        ))
+        .unwrap()
+        .into_iter()
+        .map(|item| item.unwrap())
+        .collect();
+
+        assert!(dist.is_empty());
+        assert!(pycaches.is_empty());
+        assert!(bytecode.is_empty());
     }
 
     #[test]
