@@ -11,7 +11,7 @@ use std::{path::PathBuf, process::Command, str::FromStr};
 
 #[derive(Default)]
 pub struct OperationConfig {
-    pub root: PathBuf,
+    pub workspace_root: PathBuf,
     pub project_options: Option<ProjectOptions>,
     pub build_options: Option<BuildOptions>,
     pub format_options: Option<FormatOptions>,
@@ -64,7 +64,7 @@ pub fn add_project_dependencies(
         .collect();
     let packages = venv.resolve_packages(&packages?)?;
     venv.install_packages(&packages, &mut terminal)?;
-    let manifest_path = config.root.join("pyproject.toml");
+    let manifest_path = config.workspace_root.join("pyproject.toml");
     let mut project = Project::from_manifest(&manifest_path)?;
     for package in packages {
         project.add_dependency(&package.dependency_string());
@@ -92,7 +92,7 @@ pub fn add_project_optional_dependencies(
         .collect();
     let packages = venv.resolve_packages(&packages?)?;
     venv.install_packages(&packages, &mut terminal)?;
-    let manifest_path = config.root.join("pyproject.toml");
+    let manifest_path = config.workspace_root.join("pyproject.toml");
     let mut project = Project::from_manifest(&manifest_path)?;
     for package in packages {
         project.add_optional_dependency(&package.dependency_string(), group);
@@ -113,22 +113,26 @@ pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
     #[cfg(windows)]
     let cmd = cmd.arg("/C");
     // TODO: Propagate CLI config
-    let cmd = cmd.arg("python -m build").current_dir(&config.root);
+    let cmd = cmd
+        .arg("python -m build")
+        .current_dir(&config.workspace_root);
     terminal.run_command(cmd)
 }
 
 /// Clean the dist directory.
 pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
     let paths: Result<Vec<PathBuf>, std::io::Error> =
-        std::fs::read_dir(config.root.join("dist"))?
+        std::fs::read_dir(config.workspace_root.join("dist"))?
             .into_iter()
             .map(|x| x.map(|item| item.path().to_path_buf()))
             .collect();
     let mut paths = paths?;
     if let Some(options) = config.clean_options.as_ref() {
         if options.include_compiled_bytecode {
-            let pattern =
-                format!("{}", config.root.join("**").join("*.pyc").display());
+            let pattern = format!(
+                "{}",
+                config.workspace_root.join("**").join("*.pyc").display()
+            );
             glob::glob(&pattern)?
                 .into_iter()
                 .for_each(|item| match item {
@@ -139,7 +143,11 @@ pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
         if options.include_pycache {
             let pattern = format!(
                 "{}",
-                config.root.join("**").join("__pycache__").display()
+                config
+                    .workspace_root
+                    .join("**")
+                    .join("__pycache__")
+                    .display()
             );
             glob::glob(&pattern)?
                 .into_iter()
@@ -176,13 +184,15 @@ pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
     #[cfg(windows)]
     let cmd = cmd.arg("/C");
     // TODO: Propagate CLI config
-    let cmd = cmd.arg("python -m black .").current_dir(&config.root);
+    let cmd = cmd
+        .arg("python -m black .")
+        .current_dir(&config.workspace_root);
     terminal.run_command(cmd)
 }
 
 /// Initilize an existing Python project.
 pub fn init_project(config: &OperationConfig) -> HuakResult<()> {
-    let manifest_path = config.root.join("pyproject.toml");
+    let manifest_path = config.workspace_root.join("pyproject.toml");
     let pyproject_toml = PyProjectToml::default();
     pyproject_toml.write_file(manifest_path)
 }
@@ -192,7 +202,8 @@ pub fn install_project_dependencies(
     config: &OperationConfig,
 ) -> HuakResult<()> {
     let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
-    let project = Project::from_manifest(config.root.join("pyproject.toml"))?;
+    let project =
+        Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
     let mut terminal = Terminal::new();
     // TODO: Propagate installer configuration (potentially per-package)
     let mut installer = Installer::new();
@@ -216,7 +227,8 @@ pub fn install_project_optional_dependencies(
     config: &OperationConfig,
 ) -> HuakResult<()> {
     let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
-    let project = Project::from_manifest(config.root.join("pyproject.toml"))?;
+    let project =
+        Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
     let mut terminal = Terminal::new();
     // TODO: Propagate installer configuration (potentially per-package)
     let mut installer = Installer::new();
@@ -247,17 +259,19 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
     #[cfg(windows)]
     let cmd = cmd.arg("/C");
     // TODO: Propagate CLI config (including --fix)
-    let cmd = cmd.arg("python -m ruff .").current_dir(&config.root);
+    let cmd = cmd
+        .arg("python -m ruff .")
+        .current_dir(&config.workspace_root);
     terminal.run_command(cmd)
 }
 
 /// Create a new library-like Python project on the system.
 pub fn create_new_lib_project(config: &OperationConfig) -> HuakResult<()> {
     let project = Project::from(ProjectType::Library);
-    project.write_project(&config.root)?;
+    project.write_project(&config.workspace_root)?;
     if let Some(options) = config.project_options.as_ref() {
         if options.uses_git {
-            git::init(&config.root)?;
+            git::init(&config.workspace_root)?;
         }
     }
     Ok(())
@@ -266,10 +280,10 @@ pub fn create_new_lib_project(config: &OperationConfig) -> HuakResult<()> {
 /// Create a new application-like Python project on the system.
 pub fn create_new_app_project(config: &OperationConfig) -> HuakResult<()> {
     let project = Project::from(ProjectType::Application);
-    project.write_project(&config.root)?;
+    project.write_project(&config.workspace_root)?;
     if let Some(options) = config.project_options.as_ref() {
         if options.uses_git {
-            git::init(&config.root)?;
+            git::init(&config.workspace_root)?;
         }
     }
     Ok(())
@@ -290,7 +304,7 @@ pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
     // TODO: Propagate CLI config
     let cmd = cmd
         .arg("python -m twine upload dist/*")
-        .current_dir(&config.root);
+        .current_dir(&config.workspace_root);
     terminal.run_command(cmd)
 }
 
@@ -301,7 +315,7 @@ pub fn remove_project_dependencies(
 ) -> HuakResult<()> {
     let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut project =
-        Project::from_manifest(config.root.join("pyproject.toml"))?;
+        Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
     for dependency in dependency_names {
         project.remove_dependency(dependency);
     }
@@ -309,7 +323,7 @@ pub fn remove_project_dependencies(
     venv.uninstall_packages(dependency_names, &mut terminal)?;
     project
         .pyproject_toml()
-        .write_file(config.root.join("pyproject.toml"))
+        .write_file(config.workspace_root.join("pyproject.toml"))
 }
 
 /// Remove a dependency from a Python project.
@@ -320,7 +334,7 @@ pub fn remove_project_optional_dependencies(
 ) -> HuakResult<()> {
     let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut project =
-        Project::from_manifest(config.root.join("pyproject.toml"))?;
+        Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
     for dependency in dependency_names {
         project.remove_optional_dependency(dependency, group);
     }
@@ -328,7 +342,7 @@ pub fn remove_project_optional_dependencies(
     venv.uninstall_packages(dependency_names, &mut terminal)?;
     project
         .pyproject_toml()
-        .write_file(config.root.join("pyproject.toml"))
+        .write_file(config.workspace_root.join("pyproject.toml"))
 }
 
 /// Run a command from within a Python project's context.
@@ -338,13 +352,16 @@ pub fn run_command_str(
 ) -> HuakResult<()> {
     let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut terminal = Terminal::new();
+    if let Some(options) = config.terminal_options.as_ref() {
+        terminal.set_verbosity(options.verbosity);
+    }
     let mut cmd = Command::new(get_shell_name()?);
     let mut cmd = command_with_venv_context(&mut cmd, &venv)?;
     #[cfg(unix)]
     let cmd = cmd.arg("-c");
     #[cfg(windows)]
     let cmd = cmd.arg("/C");
-    let cmd = cmd.arg(command).current_dir(&config.root);
+    let cmd = cmd.arg(command).current_dir(&config.workspace_root);
     terminal.run_command(cmd)
 }
 
@@ -367,7 +384,8 @@ pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
 
 /// Display the version of the Python project.
 pub fn display_project_version(config: &OperationConfig) -> HuakResult<()> {
-    let project = Project::from_manifest(config.root.join("pyproject.toml"))?;
+    let project =
+        Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
     let mut terminal = Terminal::new();
     let verbosity = match config.terminal_options.as_ref() {
         Some(it) => it.verbosity,
@@ -438,14 +456,16 @@ mod tests {
         .unwrap();
         let deps = ["ruff"];
         let config = OperationConfig {
-            root: dir.join("mock-project"),
+            workspace_root: dir.join("mock-project"),
             ..Default::default()
         };
 
         add_project_dependencies(&deps, &config).unwrap();
 
-        let project =
-            Project::from_manifest(config.root.join("pyproject.toml")).unwrap();
+        let project = Project::from_manifest(
+            config.workspace_root.join("pyproject.toml"),
+        )
+        .unwrap();
         let venv =
             VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
         let ser_toml = PyProjectToml::from_path(
@@ -480,14 +500,16 @@ mod tests {
         let deps = ["ruff"];
         let group = "test";
         let config = OperationConfig {
-            root: dir.join("mock-project"),
+            workspace_root: dir.join("mock-project"),
             ..Default::default()
         };
 
         add_project_optional_dependencies(&deps, group, &config).unwrap();
 
-        let project =
-            Project::from_manifest(config.root.join("pyproject.toml")).unwrap();
+        let project = Project::from_manifest(
+            config.workspace_root.join("pyproject.toml"),
+        )
+        .unwrap();
         let venv =
             VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
         let ser_toml = PyProjectToml::from_path(
@@ -520,7 +542,7 @@ mod tests {
         )
         .unwrap();
         let config = OperationConfig {
-            root: dir.join("mock-project"),
+            workspace_root: dir.join("mock-project"),
             ..Default::default()
         };
 
@@ -536,7 +558,7 @@ mod tests {
         )
         .unwrap();
         let config = OperationConfig {
-            root: dir.join("mock-project"),
+            workspace_root: dir.join("mock-project"),
             clean_options: Some(CleanOptions {
                 include_pycache: true,
                 include_compiled_bytecode: true,
@@ -548,7 +570,7 @@ mod tests {
 
         let dist: Vec<PathBuf> = glob::glob(&format!(
             "{}",
-            config.root.join("dist").join("*").display()
+            config.workspace_root.join("dist").join("*").display()
         ))
         .unwrap()
         .into_iter()
@@ -556,7 +578,11 @@ mod tests {
         .collect();
         let pycaches: Vec<PathBuf> = glob::glob(&format!(
             "{}",
-            config.root.join("**").join("__pycache__").display()
+            config
+                .workspace_root
+                .join("**")
+                .join("__pycache__")
+                .display()
         ))
         .unwrap()
         .into_iter()
@@ -564,7 +590,7 @@ mod tests {
         .collect();
         let bytecode: Vec<PathBuf> = glob::glob(&format!(
             "{}",
-            config.root.join("**").join("*.pyc").display()
+            config.workspace_root.join("**").join("*.pyc").display()
         ))
         .unwrap()
         .into_iter()
@@ -585,11 +611,13 @@ mod tests {
         )
         .unwrap();
         let config = OperationConfig {
-            root: dir.join("mock-project"),
+            workspace_root: dir.join("mock-project"),
             ..Default::default()
         };
-        let project =
-            Project::from_manifest(config.root.join("pyproject.toml")).unwrap();
+        let project = Project::from_manifest(
+            config.workspace_root.join("pyproject.toml"),
+        )
+        .unwrap();
         let fmt_filepath = project
             .root()
             .join("src")
@@ -616,13 +644,13 @@ def fn( ):
     fn test_init_project() {
         let dir = tempdir().unwrap().into_path();
         let config = OperationConfig {
-            root: dir,
+            workspace_root: dir,
             ..Default::default()
         };
 
         init_project(&config).unwrap();
 
-        let toml_path = config.root.join("pyproject.toml");
+        let toml_path = config.workspace_root.join("pyproject.toml");
         let ser_toml = PyProjectToml::from_path(toml_path).unwrap();
 
         assert_eq!(
@@ -640,7 +668,7 @@ def fn( ):
         )
         .unwrap();
         let config = OperationConfig {
-            root: dir.join("mock-project"),
+            workspace_root: dir.join("mock-project"),
             ..Default::default()
         };
         let mut venv = VirtualEnvironment::from_path(".venv").unwrap();
@@ -664,7 +692,7 @@ def fn( ):
         )
         .unwrap();
         let config = OperationConfig {
-            root: dir.join("mock-project"),
+            workspace_root: dir.join("mock-project"),
             ..Default::default()
         };
         let mut venv = VirtualEnvironment::from_path(".venv").unwrap();
@@ -688,7 +716,7 @@ def fn( ):
         )
         .unwrap();
         let config = OperationConfig {
-            root: dir.join("mock-project"),
+            workspace_root: dir.join("mock-project"),
             ..Default::default()
         };
 
@@ -704,11 +732,13 @@ def fn( ):
         )
         .unwrap();
         let config = OperationConfig {
-            root: dir.join("mock-project"),
+            workspace_root: dir.join("mock-project"),
             ..Default::default()
         };
-        let project =
-            Project::from_manifest(config.root.join("pyproject.toml")).unwrap();
+        let project = Project::from_manifest(
+            config.workspace_root.join("pyproject.toml"),
+        )
+        .unwrap();
         let lint_fix_filepath = project
             .root()
             .join("src")
@@ -741,14 +771,16 @@ def fn():
     fn test_new_lib_project() {
         let dir = tempdir().unwrap().into_path();
         let config = OperationConfig {
-            root: dir.join("mock-project"),
+            workspace_root: dir.join("mock-project"),
             ..Default::default()
         };
 
         create_new_lib_project(&config).unwrap();
 
-        let project =
-            Project::from_manifest(config.root.join("pyproject.toml")).unwrap();
+        let project = Project::from_manifest(
+            config.workspace_root.join("pyproject.toml"),
+        )
+        .unwrap();
         let test_file_filepath =
             project.root().join("tests").join("test_version.py");
         let test_file = std::fs::read_to_string(&test_file_filepath).unwrap();
@@ -786,14 +818,16 @@ def test_version():
     fn test_new_app_project() {
         let dir = tempdir().unwrap().into_path();
         let config = OperationConfig {
-            root: dir.join("mock-project"),
+            workspace_root: dir.join("mock-project"),
             ..Default::default()
         };
 
         create_new_app_project(&config).unwrap();
 
-        let project =
-            Project::from_manifest(config.root.join("pyproject.toml")).unwrap();
+        let project = Project::from_manifest(
+            config.workspace_root.join("pyproject.toml"),
+        )
+        .unwrap();
         let ser_toml = project.pyproject_toml();
         let main_file_filepath =
             project.root().join("src").join("project").join("main.py");
@@ -829,6 +863,8 @@ main()
         todo!()
     }
 
+    // TODO: Need to implement venv.has_package
+    #[ignore = "incomplete test"]
     #[test]
     fn test_remove_project_dependencies() {
         let dir = tempdir().unwrap().into_path();
@@ -838,11 +874,16 @@ main()
         )
         .unwrap();
         let config = OperationConfig {
-            root: dir.join("mock-project"),
+            workspace_root: dir.join("mock-project"),
+            terminal_options: Some(TerminalOptions {
+                verbosity: Verbosity::Quiet,
+            }),
             ..Default::default()
         };
-        let project =
-            Project::from_manifest(config.root.join("pyproject.toml")).unwrap();
+        let project = Project::from_manifest(
+            config.workspace_root.join("pyproject.toml"),
+        )
+        .unwrap();
         let mut venv =
             VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
         let package = Package::from_str("click==8.1.3").unwrap();
@@ -859,8 +900,10 @@ main()
 
         remove_project_dependencies(&["click"], &config).unwrap();
 
-        let project =
-            Project::from_manifest(config.root.join("pyproject.toml")).unwrap();
+        let project = Project::from_manifest(
+            config.workspace_root.join("pyproject.toml"),
+        )
+        .unwrap();
         let venv_has_package = venv.has_package(&package).unwrap();
         let toml_has_package = project
             .pyproject_toml()
@@ -884,17 +927,24 @@ main()
         )
         .unwrap();
         let config = OperationConfig {
-            root: dir.join("mock-project"),
+            workspace_root: dir.join("mock-project"),
+            terminal_options: Some(TerminalOptions {
+                verbosity: Verbosity::Quiet,
+            }),
             ..Default::default()
         };
-        let project =
-            Project::from_manifest(config.root.join("pyproject.toml")).unwrap();
+        let project = Project::from_manifest(
+            config.workspace_root.join("pyproject.toml"),
+        )
+        .unwrap();
         let mut venv =
             VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
         let package = Package::from_str("black==22.8.0").unwrap();
         let mut terminal = Terminal::new();
         terminal.set_verbosity(Verbosity::Quiet);
         let packages = [package.clone()];
+        venv.uninstall_packages(&[package.name()], &mut terminal)
+            .unwrap();
         venv.install_packages(&packages, &mut terminal).unwrap();
         let venv_had_package = venv.has_module(package.name()).unwrap();
         let toml_had_package = project
@@ -906,15 +956,18 @@ main()
         remove_project_optional_dependencies(&["black"], "dev", &config)
             .unwrap();
 
-        let project =
-            Project::from_manifest(config.root.join("pyproject.toml")).unwrap();
+        let project = Project::from_manifest(
+            config.workspace_root.join("pyproject.toml"),
+        )
+        .unwrap();
         let venv_has_package = venv.has_module(package.name()).unwrap();
         let toml_has_package = project
             .pyproject_toml()
             .dependencies()
             .unwrap()
             .contains(&package.dependency_string());
-        venv.install_packages(&[package], &mut terminal).unwrap();
+        venv.uninstall_packages(&[package.name()], &mut terminal)
+            .unwrap();
 
         assert!(venv_had_package);
         assert!(toml_had_package);
@@ -931,24 +984,26 @@ main()
         )
         .unwrap();
         let config = OperationConfig {
-            root: dir.join("mock-project"),
+            workspace_root: dir.join("mock-project"),
+            terminal_options: Some(TerminalOptions {
+                verbosity: Verbosity::Quiet,
+            }),
             ..Default::default()
         };
-        let venv =
-            VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
-        let venv_had_xlcsv = venv.find_site_packages_package("xlcsv").is_some();
-
-        run_command_str("pip install xlcsv", &config).unwrap();
-
         let mut venv =
             VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
-        let venv_has_xlcsv = venv.find_site_packages_package("xlcsv").is_some();
         let mut terminal = Terminal::new();
         terminal.set_verbosity(Verbosity::Quiet);
-        venv.uninstall_packages(&["xlcsv"], &mut terminal).unwrap();
+        venv.uninstall_packages(&["black"], &mut terminal).unwrap();
+        let venv_had_package = venv.has_module("black").unwrap();
 
-        assert!(!venv_had_xlcsv);
-        assert!(venv_has_xlcsv);
+        run_command_str("pip install black", &config).unwrap();
+
+        let venv_has_package = venv.has_module("black").unwrap();
+        venv.uninstall_packages(&["black"], &mut terminal).unwrap();
+
+        assert!(!venv_had_package);
+        assert!(venv_has_package);
     }
 
     #[test]
@@ -960,7 +1015,7 @@ main()
         )
         .unwrap();
         let config = OperationConfig {
-            root: dir.join("mock-project"),
+            workspace_root: dir.join("mock-project"),
             ..Default::default()
         };
 
