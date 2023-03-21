@@ -354,15 +354,3 @@ pub fn get_shell_source_command() -> HuakResult<String> {
 
     Ok(command.to_owned())
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn platform_terminal_command() {
-        let platform = Platform::new();
-
-        todo!()
-    }
-}

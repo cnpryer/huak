@@ -998,16 +998,9 @@ fn valid_python_interpreter_file_name(file_name: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use std::ops::Deref;
-
-    use tempfile::tempdir;
-
     use super::*;
-
-    #[test]
-    fn project_bootstrap() {
-        todo!()
-    }
+    use std::ops::Deref;
+    use tempfile::tempdir;
 
     #[test]
     fn toml_from_path() {
@@ -1271,27 +1264,6 @@ dev = [
             "0.0.0"
         );
         assert_eq!(package.version(), None); // TODO
-    }
-
-    #[ignore = "currently untestable"]
-    #[test]
-    fn package_with_multiple_version_specifiers() {
-        todo!()
-    }
-
-    #[test]
-    fn package_platform_tags() {
-        todo!()
-    }
-
-    #[test]
-    fn package_core_metadata() {
-        todo!()
-    }
-
-    #[test]
-    fn package_dist_info() {
-        todo!();
     }
 
     #[test]
