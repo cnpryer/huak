@@ -3,7 +3,7 @@
 use crate::{
     error::HuakResult,
     find_venv_root, git,
-    sys::{self, get_shell_name, Terminal, Verbosity},
+    sys::{self, Terminal, Verbosity},
     Error, Installer, Package, Project, ProjectType, PyProjectToml,
     VirtualEnvironment,
 };
@@ -12,6 +12,7 @@ use std::{path::PathBuf, process::Command, str::FromStr};
 #[derive(Default)]
 pub struct OperationConfig {
     pub workspace_root: PathBuf,
+    pub trailing_command_parts: Option<Vec<String>>,
     pub project_options: Option<ProjectOptions>,
     pub build_options: Option<BuildOptions>,
     pub format_options: Option<FormatOptions>,
@@ -34,8 +35,8 @@ pub struct TerminalOptions {
     pub verbosity: Verbosity,
 }
 pub struct CleanOptions {
-    include_pycache: bool,
-    include_compiled_bytecode: bool,
+    pub include_pycache: bool,
+    pub include_compiled_bytecode: bool,
 }
 
 /// Activate a Python virtual environment.
@@ -106,15 +107,17 @@ pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = Terminal::new();
     terminal.set_verbosity(Verbosity::Quiet);
     venv.install_packages(&[Package::from_str("build")?], &mut terminal)?;
-    let mut cmd = Command::new(get_shell_name()?);
-    let cmd = command_with_venv_context(&mut cmd, &venv)?;
-    #[cfg(unix)]
-    let cmd = cmd.arg("-c");
-    #[cfg(windows)]
-    let cmd = cmd.arg("/C");
-    // TODO: Propagate CLI config
+    let mut cmd = Command::new(venv.python_path());
+    let cmd = command_with_venv_env(&mut cmd, &venv)?;
     let cmd = cmd
-        .arg("python -m build")
+        .arg("-m")
+        .arg("build")
+        .args(
+            config
+                .trailing_command_parts
+                .as_ref()
+                .unwrap_or(&Vec::new()),
+        )
         .current_dir(&config.workspace_root);
     terminal.run_command(cmd)
 }
@@ -177,15 +180,18 @@ pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = Terminal::new();
     terminal.set_verbosity(Verbosity::Quiet);
     venv.install_packages(&[Package::from_str("black")?], &mut terminal)?;
-    let mut cmd = Command::new(get_shell_name()?);
-    let cmd = command_with_venv_context(&mut cmd, &venv)?;
-    #[cfg(unix)]
-    let cmd = cmd.arg("-c");
-    #[cfg(windows)]
-    let cmd = cmd.arg("/C");
-    // TODO: Propagate CLI config
+    let mut cmd = Command::new(venv.python_path());
+    let cmd = command_with_venv_env(&mut cmd, &venv)?;
     let cmd = cmd
-        .arg("python -m black .")
+        .arg("-m")
+        .arg("black")
+        .arg(".")
+        .args(
+            config
+                .trailing_command_parts
+                .as_ref()
+                .unwrap_or(&Vec::new()),
+        )
         .current_dir(&config.workspace_root);
     terminal.run_command(cmd)
 }
@@ -252,15 +258,18 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = Terminal::new();
     terminal.set_verbosity(Verbosity::Quiet);
     venv.install_packages(&[Package::from_str("ruff")?], &mut terminal)?;
-    let mut cmd = Command::new(get_shell_name()?);
-    let cmd = command_with_venv_context(&mut cmd, &venv)?;
-    #[cfg(unix)]
-    let cmd = cmd.arg("-c");
-    #[cfg(windows)]
-    let cmd = cmd.arg("/C");
-    // TODO: Propagate CLI config (including --fix)
+    let mut cmd = Command::new(venv.python_path());
+    let cmd = command_with_venv_env(&mut cmd, &venv)?;
     let cmd = cmd
-        .arg("python -m ruff .")
+        .arg("-m")
+        .arg("ruff")
+        .arg(".")
+        .args(
+            config
+                .trailing_command_parts
+                .as_ref()
+                .unwrap_or(&Vec::new()),
+        )
         .current_dir(&config.workspace_root);
     terminal.run_command(cmd)
 }
@@ -295,15 +304,19 @@ pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = Terminal::new();
     terminal.set_verbosity(Verbosity::Quiet);
     venv.install_packages(&[Package::from_str("twine")?], &mut terminal)?;
-    let mut cmd = Command::new(get_shell_name()?);
-    let cmd = command_with_venv_context(&mut cmd, &venv)?;
-    #[cfg(unix)]
-    let cmd = cmd.arg("-c");
-    #[cfg(windows)]
-    let cmd = cmd.arg("/C");
-    // TODO: Propagate CLI config
+    let mut cmd = Command::new(venv.python_path());
+    let cmd = command_with_venv_env(&mut cmd, &venv)?;
     let cmd = cmd
-        .arg("python -m twine upload dist/*")
+        .arg("-m")
+        .arg("twine")
+        .arg("upload")
+        .arg("dist/*")
+        .args(
+            config
+                .trailing_command_parts
+                .as_ref()
+                .unwrap_or(&Vec::new()),
+        )
         .current_dir(&config.workspace_root);
     terminal.run_command(cmd)
 }
@@ -355,8 +368,8 @@ pub fn run_command_str(
     if let Some(options) = config.terminal_options.as_ref() {
         terminal.set_verbosity(options.verbosity);
     }
-    let mut cmd = Command::new(get_shell_name()?);
-    let mut cmd = command_with_venv_context(&mut cmd, &venv)?;
+    let mut cmd = Command::new(venv.python_path());
+    let mut cmd = command_with_venv_env(&mut cmd, &venv)?;
     #[cfg(unix)]
     let cmd = cmd.arg("-c");
     #[cfg(windows)]
@@ -371,14 +384,14 @@ pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = Terminal::new();
     terminal.set_verbosity(Verbosity::Quiet);
     venv.install_packages(&[Package::from_str("pytest")?], &mut terminal)?;
-    let mut cmd = Command::new(get_shell_name()?);
-    let mut cmd = command_with_venv_context(&mut cmd, &venv)?;
-    #[cfg(unix)]
-    let cmd = cmd.arg("-c");
-    #[cfg(windows)]
-    let cmd = cmd.arg("/C");
-    // TODO: Propagate CLI config
-    let cmd = cmd.arg("python -m pytest");
+    let mut cmd = Command::new(venv.python_path());
+    let mut cmd = command_with_venv_env(&mut cmd, &venv)?;
+    let cmd = cmd.arg("-m").arg("pytest").args(
+        config
+            .trailing_command_parts
+            .as_ref()
+            .unwrap_or(&Vec::new()),
+    );
     terminal.run_command(cmd)
 }
 
@@ -402,7 +415,7 @@ pub fn display_project_version(config: &OperationConfig) -> HuakResult<()> {
 }
 
 /// Modify a process::Command to use a virtual environment's context.
-fn command_with_venv_context<'a>(
+fn command_with_venv_env<'a>(
     cmd: &'a mut Command,
     venv: &VirtualEnvironment,
 ) -> HuakResult<&'a mut Command> {
@@ -733,6 +746,7 @@ def fn( ):
         .unwrap();
         let config = OperationConfig {
             workspace_root: dir.join("mock-project"),
+            trailing_command_parts: Some(vec!["--fix".to_string()]),
             ..Default::default()
         };
         let project = Project::from_manifest(
@@ -759,7 +773,6 @@ def fn():
 "#;
         std::fs::write(&lint_fix_filepath, pre_fix_str).unwrap();
 
-        // TODO: Add --fix to LintOptions
         lint_project(&config).unwrap();
 
         let post_fix_str = std::fs::read_to_string(&lint_fix_filepath).unwrap();
