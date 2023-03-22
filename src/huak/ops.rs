@@ -3,7 +3,7 @@
 use crate::{
     error::HuakResult,
     find_venv_root, git,
-    sys::{self, Terminal, Verbosity},
+    sys::{self, get_shell_name, Terminal, Verbosity},
     Error, Installer, Package, Project, ProjectType, PyProjectToml,
     VirtualEnvironment,
 };
@@ -368,8 +368,8 @@ pub fn run_command_str(
     if let Some(options) = config.terminal_options.as_ref() {
         terminal.set_verbosity(options.verbosity);
     }
-    let mut cmd = Command::new(venv.python_path());
-    let mut cmd = command_with_venv_env(&mut cmd, &venv)?;
+    let mut cmd = Command::new(get_shell_name()?);
+    let cmd = command_with_venv_env(&mut cmd, &venv)?;
     #[cfg(unix)]
     let cmd = cmd.arg("-c");
     #[cfg(windows)]
