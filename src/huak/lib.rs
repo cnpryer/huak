@@ -8,7 +8,7 @@ use pyproject_toml::PyProjectToml as ProjectToml;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{hash_map::RandomState},
+    collections::hash_map::RandomState,
     fs::File,
     path::{Path, PathBuf},
     process::Command,
@@ -535,7 +535,7 @@ impl VirtualEnvironment {
 
     /// Install Python packages to the environment.
     pub fn install_packages(
-        &mut self,
+        &self,
         packages: &[Package],
         terminal: &mut Terminal,
     ) -> HuakResult<()> {
@@ -547,7 +547,7 @@ impl VirtualEnvironment {
 
     /// Uninstall many Python packages from the environment.
     pub fn uninstall_packages(
-        &mut self,
+        &self,
         package_names: &[&str],
         terminal: &mut Terminal,
     ) -> HuakResult<()> {
@@ -789,9 +789,10 @@ impl Default for VirtualEnvironmentConfig {
 /// # Examples
 /// ```
 /// use huak::Package;
+/// use std::str::FromStr;
 ///
 /// let python_pkg = Package::from_str("request>=2.28.1").unwrap();
-/// println!("I've got 99 {} but huak ain't one", python_pkg);
+/// println!("I've got 99 {} but huak ain't one", python_pkg.name());
 /// ```
 #[derive(Clone, Default, Debug)]
 pub struct Package {

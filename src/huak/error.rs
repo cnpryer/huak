@@ -68,6 +68,8 @@ pub enum Error {
     PythonModuleMissingError(String),
     #[error("a python interpreter could not be found")]
     PythonNotFoundError,
+    #[error("a feature is unimplemented: {0}")]
+    UnimplementedError(String),
     #[error(
         "a problem occurred parsing the virtual environment's config file: {0}"
     )]
