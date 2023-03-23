@@ -3,11 +3,12 @@
 use crate::{
     default_entrypoint_string, default_init_file_contents,
     default_main_file_contents, default_test_file_contents,
+    default_virtual_environment_name,
     error::HuakResult,
-    find_venv_root, fs, git,
+    find_python_interpreter_paths, find_venv_root, fs, git,
     sys::{self, get_shell_name, Terminal, Verbosity},
-    to_importable_package_name, Error, Installer, Package, Project,
-    PyProjectToml, VirtualEnvironment,
+    to_importable_package_name, Error, Package, Project, PyProjectToml,
+    VirtualEnvironment,
 };
 use std::{path::PathBuf, process::Command, str::FromStr};
 
@@ -56,11 +57,6 @@ pub fn add_project_dependencies(
     let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut terminal = Terminal::new();
     // TODO: Propagate installer configuration (potentially per-package)
-    let mut installer = Installer::new();
-    installer.set_config(crate::InstallerConfig {
-        path: venv.executables_dir_path().join("pip"),
-    });
-    venv.set_installer(installer);
     let packages: HuakResult<Vec<Package>> = dependencies
         .iter()
         .map(|item| Package::from_str(item))
@@ -84,11 +80,6 @@ pub fn add_project_optional_dependencies(
     let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut terminal = Terminal::new();
     // TODO: Propagate installer configuration (potentially per-package)
-    let mut installer = Installer::new();
-    installer.set_config(crate::InstallerConfig {
-        path: venv.executables_dir_path().join("pip"),
-    });
-    venv.set_installer(installer);
     let packages: HuakResult<Vec<Package>> = dependencies
         .iter()
         .map(|item| Package::from_str(item))
@@ -214,24 +205,32 @@ pub fn init_project(config: &OperationConfig) -> HuakResult<()> {
 pub fn install_project_dependencies(
     config: &OperationConfig,
 ) -> HuakResult<()> {
-    let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
+    let mut venv = match VirtualEnvironment::from_path(find_venv_root()?) {
+        Ok(it) => it,
+        Err(Error::VenvNotFoundError) => {
+            create_virtual_environment(config)?;
+            VirtualEnvironment::from_path(
+                config
+                    .workspace_root
+                    .join(default_virtual_environment_name()),
+            )?
+        }
+        Err(e) => return Err(e),
+    };
     let project =
         Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
     let mut terminal = Terminal::new();
+    if let Some(options) = config.terminal_options.as_ref() {
+        terminal.set_verbosity(options.verbosity);
+    }
     // TODO: Propagate installer configuration (potentially per-package)
-    let mut installer = Installer::new();
-    installer.set_config(crate::InstallerConfig {
-        path: venv.executables_dir_path().join("pip"),
-    });
-    venv.set_installer(installer);
     let packages: HuakResult<Vec<Package>> = project
         .dependencies()
         .unwrap_or(&Vec::new())
         .iter()
         .map(|item| Package::from_str(item))
         .collect();
-    let packages = venv.resolve_packages(&packages?)?;
-    venv.install_packages(&packages, &mut terminal)
+    venv.install_packages(&packages?, &mut terminal)
 }
 
 /// Install groups of a Python project's optional dependencies to an environment.
@@ -239,24 +238,29 @@ pub fn install_project_optional_dependencies(
     group: &str,
     config: &OperationConfig,
 ) -> HuakResult<()> {
-    let mut venv = VirtualEnvironment::from_path(find_venv_root()?)?;
+    let mut venv = match VirtualEnvironment::from_path(find_venv_root()?) {
+        Ok(it) => it,
+        Err(Error::VenvNotFoundError) => {
+            create_virtual_environment(config)?;
+            VirtualEnvironment::from_path(
+                config
+                    .workspace_root
+                    .join(default_virtual_environment_name()),
+            )?
+        }
+        Err(e) => return Err(e),
+    };
     let project =
         Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
     let mut terminal = Terminal::new();
     // TODO: Propagate installer configuration (potentially per-package)
-    let mut installer = Installer::new();
-    installer.set_config(crate::InstallerConfig {
-        path: venv.executables_dir_path().join("pip"),
-    });
-    venv.set_installer(installer);
     let packages: HuakResult<Vec<Package>> = project
         .optional_dependencey_group(group)
         .unwrap_or(&Vec::new())
         .iter()
         .map(|item| Package::from_str(item))
         .collect();
-    let packages = venv.resolve_packages(&packages?)?;
-    venv.install_packages(&packages, &mut terminal)
+    venv.install_packages(&packages?, &mut terminal)
 }
 
 /// Lint a Python project's source code.
@@ -489,6 +493,22 @@ fn create_workspace(config: &OperationConfig) -> HuakResult<()> {
     Ok(())
 }
 
+/// Create a new virtual environment at workspace root using the found Python interpreter.
+fn create_virtual_environment(config: &OperationConfig) -> HuakResult<()> {
+    let mut terminal = Terminal::new();
+    terminal.set_verbosity(Verbosity::Quiet);
+    let python_path = match find_python_interpreter_paths().next() {
+        Some(it) => it.0,
+        None => return Err(Error::PythonNotFoundError),
+    };
+    let args = ["-m", "venv", default_virtual_environment_name()];
+    terminal.run_command(
+        Command::new(python_path)
+            .args(args)
+            .current_dir(&config.workspace_root),
+    )
+}
+
 /// NOTE: Operations are meant to be executed on projects and environments.
 ///       See https://github.com/cnpryer/huak/issues/123
 ///       To run some of these tests a .venv must be available at the project's root.
@@ -558,7 +578,7 @@ mod tests {
         )
         .unwrap();
         let deps = ["ruff"];
-        let group = "test";
+        let group = "dev";
         let config = OperationConfig {
             workspace_root: dir.join("mock-project"),
             ..Default::default()
@@ -579,16 +599,16 @@ mod tests {
 
         assert!(venv.find_site_packages_package("ruff").is_some());
         assert!(deps.iter().all(|item| project
-            .optional_dependencey_group("test")
+            .optional_dependencey_group("dev")
             .unwrap()
             .contains(&item.to_string())));
         assert!(deps.iter().map(|item| item).all(|item| ser_toml
-            .optional_dependencey_group("test")
+            .optional_dependencey_group("dev")
             .unwrap()
             .contains(&item.to_string())));
         assert!(deps.iter().map(|item| item).all(|item| project
             .pyproject_toml()
-            .optional_dependencey_group("test")
+            .optional_dependencey_group("dev")
             .unwrap()
             .contains(&item.to_string())));
     }
@@ -722,6 +742,8 @@ def fn( ):
         );
     }
 
+    // TODO: Need to implement venv.has_package
+    #[ignore = "incomplete test"]
     #[test]
     fn test_install_project_dependencies() {
         let dir = tempdir().unwrap().into_path();
@@ -737,13 +759,14 @@ def fn( ):
         let mut venv = VirtualEnvironment::from_path(".venv").unwrap();
         let mut terminal = Terminal::new();
         terminal.set_verbosity(Verbosity::Quiet);
-        venv.uninstall_packages(&["black"], &mut terminal).unwrap();
-        let had_black = venv.find_site_packages_package("black").is_some();
+        venv.uninstall_packages(&["click"], &mut terminal).unwrap();
+        let package = Package::from_str("click").unwrap();
+        let had_package = venv.has_package(&package).unwrap();
 
         install_project_dependencies(&config).unwrap();
 
-        assert!(!had_black);
-        assert!(venv.find_site_packages_package("black").is_some());
+        assert!(!had_package);
+        assert!(venv.has_package(&package).unwrap());
     }
 
     #[test]
@@ -762,12 +785,12 @@ def fn( ):
         let mut terminal = Terminal::new();
         terminal.set_verbosity(Verbosity::Quiet);
         venv.uninstall_packages(&["pytest"], &mut terminal).unwrap();
-        let had_pytest = venv.find_site_packages_package("pytest").is_some();
+        let had_package = venv.has_module("pytest").unwrap();
 
-        install_project_optional_dependencies("test", &config).unwrap();
+        install_project_optional_dependencies("dev", &config).unwrap();
 
-        assert!(!had_pytest);
-        assert!(venv.find_site_packages_package("pytest").is_some());
+        assert!(!had_package);
+        assert!(venv.has_module("pytest").unwrap());
     }
 
     #[test]

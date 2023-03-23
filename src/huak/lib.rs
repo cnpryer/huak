@@ -8,7 +8,7 @@ use pyproject_toml::PyProjectToml as ProjectToml;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{hash_map::RandomState, HashMap},
+    collections::{hash_map::RandomState},
     fs::File,
     path::{Path, PathBuf},
     process::Command,
@@ -371,6 +371,10 @@ impl Default for PyProjectToml {
                 .expect("could not initilize default pyproject.toml"),
         }
     }
+}
+
+fn default_virtual_environment_name() -> &'static str {
+    DEFAULT_VENV_NAME
 }
 
 fn default_pyproject_toml_contents(project_name: &str) -> String {
@@ -789,7 +793,7 @@ impl Default for VirtualEnvironmentConfig {
 /// let python_pkg = Package::from_str("request>=2.28.1").unwrap();
 /// println!("I've got 99 {} but huak ain't one", python_pkg);
 /// ```
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct Package {
     /// Name designated to the package by the author(s).
     name: String,
@@ -940,12 +944,12 @@ impl Eq for Package {}
 
 /// Core package metadata.
 /// https://packaging.python.org/en/latest/specifications/core-metadata/
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct PackageMetadata;
 
 /// Tags used to indicate platform compatibility.
 /// https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum PlatformTag {}
 
 /// Package distribtion info stored in the site-packages directory adjacent to the
@@ -1031,10 +1035,10 @@ pub struct PackageInfo {
     pub yanked_reason: serde_json::value::Value,
 }
 
-/// Get a hashmap of Python interpreters. Each entry is stored with the interpreter's
-/// version as its key and the absolute path the the interpreter as the value.
-/// NOTE: This search implementation is inspired by brettcannon/python-launcher
-pub fn find_python_interpreter_paths() -> HashMap<Version, PathBuf> {
+/// Get an iterator over available Python interpreter paths parsed from PATH.
+/// Inspired by brettcannon/python-launcher
+pub fn find_python_interpreter_paths(
+) -> impl Iterator<Item = (PathBuf, Version)> {
     let paths = fs::flatten_directories(sys::env_path_values());
     let interpreters = all_python_interpreters_in_paths(paths);
     interpreters
@@ -1042,15 +1046,13 @@ pub fn find_python_interpreter_paths() -> HashMap<Version, PathBuf> {
 
 fn all_python_interpreters_in_paths(
     paths: impl IntoIterator<Item = PathBuf>,
-) -> HashMap<Version, PathBuf> {
-    let mut interpreters = HashMap::new();
-    paths.into_iter().for_each(|path| {
-        python_version_from_path(&path).map_or((), |version| {
-            interpreters.entry(version).or_insert(path);
+) -> impl Iterator<Item = (PathBuf, Version)> {
+    paths
+        .into_iter()
+        .map(|item| {
+            (item.to_path_buf(), python_version_from_path(item.as_path()))
         })
-    });
-
-    interpreters
+        .filter_map(|(path, version)| version.map(|v| (path, v)))
 }
 
 /// Parse a Python interpreter's version from its path if one exists.
@@ -1349,14 +1351,8 @@ dev = [
         std::fs::write(dir.join("python3.11"), "").unwrap();
         let path_vals = vec![dir.to_str().unwrap().to_string()];
         std::env::set_var("PATH", path_vals.join(":"));
-        let interpreter_paths = find_python_interpreter_paths();
+        let mut interpreter_paths = find_python_interpreter_paths();
 
-        assert_eq!(
-            interpreter_paths
-                .get(&Version::from_str("3.11").unwrap())
-                .unwrap()
-                .deref(),
-            dir.join("python3.11")
-        );
+        assert_eq!(interpreter_paths.next().unwrap().0, dir.join("python3.11"));
     }
 }
