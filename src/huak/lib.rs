@@ -10,7 +10,6 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::{hash_map::RandomState, HashMap},
     fs::File,
-    ops::Not,
     path::{Path, PathBuf},
     process::Command,
     str::FromStr,
@@ -24,16 +23,6 @@ mod ops;
 mod sys;
 
 const DEFAULT_VENV_NAME: &str = ".venv";
-const DEFAULT_PYPROJECT_TOML_CONTENTS: &str = r#"[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[project]
-name = ""
-version = "0.0.1"
-description = ""
-dependencies = []
-"#;
 const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
 
 #[cfg(test)]
@@ -47,7 +36,7 @@ pub(crate) fn test_resources_dir_path() -> PathBuf {
 /// project-marking `pyproject.toml` file. PEPs provide Python’s ecosystem with
 /// standardization and Huak leverages them to do many things such as identify your
 /// project. See PEP 621.
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Project {
     /// A value to indicate the type of the project (app, library, etc.).
     project_type: ProjectType,
@@ -89,6 +78,27 @@ impl Project {
     /// Get the absolute path to the root directory of the project.
     pub fn root(&self) -> &PathBuf {
         &self.project_layout.root
+    }
+
+    /// Get the name of the project.
+    pub fn name(&self) -> HuakResult<&str> {
+        self.pyproject_toml
+            .project_name()
+            .ok_or(Error::InternalError("project name not found".to_string()))
+    }
+
+    /// Get the version of the project.
+    pub fn version(&self) -> HuakResult<&str> {
+        self.pyproject_toml
+            .project_version()
+            .ok_or(Error::InternalError(
+                "project version not found".to_string(),
+            ))
+    }
+
+    /// Get the project type.
+    pub fn project_type(&self) -> &ProjectType {
+        &self.project_type
     }
 
     /// Get the Python project's pyproject.toml file.
@@ -138,11 +148,6 @@ impl Project {
         self.pyproject_toml
             .remove_optional_dependency(package_str, group_name);
     }
-
-    /// Write the current project to some directory path.
-    pub fn write_project(&self, dir_path: impl AsRef<Path>) -> HuakResult<()> {
-        todo!()
-    }
 }
 
 impl From<ProjectType> for Project {
@@ -168,7 +173,7 @@ pub enum ProjectType {
 
 /// Data about the project's layout. The project layout includes the location of
 /// important files and directories.
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct ProjectLayout {
     /// The absolute path to the root directory of the project.
     root: PathBuf,
@@ -323,6 +328,25 @@ impl PyProjectToml {
         None
     }
 
+    /// Add a new console script to the toml.
+    pub fn add_script(
+        &mut self,
+        name: &str,
+        entrypoint: &str,
+    ) -> HuakResult<()> {
+        if let Some(project) = self.project.as_mut() {
+            if let Some(scripts) = project.scripts.as_mut() {
+                scripts.insert_full(name.to_string(), entrypoint.to_string());
+            } else {
+                project.scripts = Some(IndexMap::from([(
+                    name.to_string(),
+                    entrypoint.to_string(),
+                )]));
+            }
+        }
+        Ok(())
+    }
+
     /// Save the toml contents to a filepath.
     pub fn write_file(&self, path: impl AsRef<Path>) -> HuakResult<()> {
         let string = self.to_string_pretty()?;
@@ -343,14 +367,61 @@ impl PyProjectToml {
 impl Default for PyProjectToml {
     fn default() -> Self {
         Self {
-            inner: ProjectToml::new(default_pyproject_toml_contents())
+            inner: ProjectToml::new(&default_pyproject_toml_contents(""))
                 .expect("could not initilize default pyproject.toml"),
         }
     }
 }
 
-pub fn default_pyproject_toml_contents() -> &'static str {
-    DEFAULT_PYPROJECT_TOML_CONTENTS
+fn default_pyproject_toml_contents(project_name: &str) -> String {
+    format!(
+        r#"[build-system]
+    requires = ["hatchling"]
+    build-backend = "hatchling.build"
+    
+    [project]
+    name = "{}"
+    version = "0.0.1"
+    description = ""
+    dependencies = []
+    "#,
+        project_name
+    )
+}
+
+fn default_init_file_contents(version: &str) -> String {
+    format!(
+        r#"__version__ = "{}"
+"#,
+        version
+    )
+}
+
+fn default_entrypoint_string(importable_name: &str) -> String {
+    format!("{}.main:main", importable_name)
+}
+
+fn default_test_file_contents(importable_name: &str) -> String {
+    format!(
+        r#"from {} import __version__
+
+
+def test_version():
+    __version__
+"#,
+        importable_name
+    )
+}
+
+fn default_main_file_contents() -> String {
+    r#"def main():
+    print("Hello, World!")
+
+
+if __name__ == "__main__":
+    main()
+"#
+    .to_string()
 }
 
 /// A PEP-compliant Python environment API.
@@ -542,9 +613,9 @@ impl VirtualEnvironment {
     /// Check if the Python environment is isolated from any system site-packages
     /// directory.
     pub fn is_isolated(&self) -> bool {
-        self.python_environment_config()
+        !self
+            .python_environment_config()
             .include_system_site_packages
-            .not()
     }
 
     /// Check if the environment is already activated.
@@ -847,6 +918,11 @@ fn to_package_cononical_name(name: &str) -> HuakResult<String> {
     let re = Regex::new("[-_. ]+")?;
     let res = re.replace_all(name.clone(), "-");
     Ok(res.into_owned())
+}
+
+fn to_importable_package_name(name: &str) -> HuakResult<String> {
+    let cononical_name = to_package_cononical_name(name)?;
+    Ok(cononical_name.replace("-", "_"))
 }
 
 impl PartialEq for Package {
@@ -1232,6 +1308,7 @@ dev = [
         assert!(venv.executables_dir_path().join("python.exe").exists());
     }
 
+    #[ignore = "incomplete test"]
     #[test]
     /// NOTE: This test depends on local virtual environment.
     fn virtual_environment_python_environment_config() {

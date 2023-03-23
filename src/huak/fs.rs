@@ -97,6 +97,28 @@ pub fn find_file_bottom_up(
     );
 }
 
+pub fn last_path_component(path: impl AsRef<Path>) -> HuakResult<String> {
+    let path = path.as_ref();
+    match path
+        .components()
+        .last()
+        .ok_or(Error::InternalError(format!(
+            "failed to parse project name from {}",
+            path.display()
+        )))?
+        .as_os_str()
+        .to_str()
+    {
+        Some(it) => Ok(it.to_string()),
+        None => {
+            return Err(Error::InternalError(format!(
+                "failed to parse project name from {}",
+                path.display()
+            )))
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use tempfile::tempdir;

@@ -1,11 +1,13 @@
 ///! This module implements various operations to interact with valid workspaces
 ///! existing on a system.
 use crate::{
+    default_entrypoint_string, default_init_file_contents,
+    default_main_file_contents, default_test_file_contents,
     error::HuakResult,
-    find_venv_root, git,
+    find_venv_root, fs, git,
     sys::{self, get_shell_name, Terminal, Verbosity},
-    Error, Installer, Package, Project, ProjectType, PyProjectToml,
-    VirtualEnvironment,
+    to_importable_package_name, Error, Installer, Package, Project,
+    PyProjectToml, VirtualEnvironment,
 };
 use std::{path::PathBuf, process::Command, str::FromStr};
 
@@ -13,7 +15,7 @@ use std::{path::PathBuf, process::Command, str::FromStr};
 pub struct OperationConfig {
     pub workspace_root: PathBuf,
     pub trailing_command_parts: Option<Vec<String>>,
-    pub project_options: Option<ProjectOptions>,
+    pub workspace_options: Option<WorkspaceOptions>,
     pub build_options: Option<BuildOptions>,
     pub format_options: Option<FormatOptions>,
     pub lint_options: Option<LintOptions>,
@@ -23,7 +25,7 @@ pub struct OperationConfig {
     pub clean_options: Option<CleanOptions>,
 }
 
-pub struct ProjectOptions {
+pub struct WorkspaceOptions {
     pub uses_git: bool,
 }
 pub struct BuildOptions;
@@ -198,9 +200,14 @@ pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
 
 /// Initilize an existing Python project.
 pub fn init_project(config: &OperationConfig) -> HuakResult<()> {
-    let manifest_path = config.workspace_root.join("pyproject.toml");
-    let pyproject_toml = PyProjectToml::default();
-    pyproject_toml.write_file(manifest_path)
+    if config.workspace_root.join("pyproject.toml").exists() {
+        return Err(Error::ProjectTomlExistsError);
+    }
+    let mut pyproject_toml = PyProjectToml::new();
+    // TODO: Cononical, importable, as-is?
+    let name = fs::last_path_component(config.workspace_root.as_path())?;
+    pyproject_toml.set_project_name(&name);
+    pyproject_toml.write_file(config.workspace_root.join("pyproject.toml"))
 }
 
 /// Install a Python project's dependencies to an environment.
@@ -274,28 +281,50 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
     terminal.run_command(cmd)
 }
 
-/// Create a new library-like Python project on the system.
-pub fn create_new_lib_project(config: &OperationConfig) -> HuakResult<()> {
-    let project = Project::from(ProjectType::Library);
-    project.write_project(&config.workspace_root)?;
-    if let Some(options) = config.project_options.as_ref() {
-        if options.uses_git {
-            git::init(&config.workspace_root)?;
-        }
-    }
-    Ok(())
+/// Create a new application-like Python project on the system.
+pub fn new_app_project(config: &OperationConfig) -> HuakResult<()> {
+    new_lib_project(config)?;
+    let name = to_importable_package_name(
+        fs::last_path_component(config.workspace_root.as_path())?.as_str(),
+    )?;
+    let mut pyproject_toml =
+        PyProjectToml::from_path(config.workspace_root.join("pyproject.toml"))?;
+    let src_path = config.workspace_root.join("src");
+    std::fs::write(
+        src_path.join(&name).join("main.py"),
+        default_main_file_contents(),
+    )?;
+    pyproject_toml
+        .add_script(name.as_str(), default_entrypoint_string(&name).as_str())?;
+    pyproject_toml.write_file(config.workspace_root.join("pyproject.toml"))
 }
 
-/// Create a new application-like Python project on the system.
-pub fn create_new_app_project(config: &OperationConfig) -> HuakResult<()> {
-    let project = Project::from(ProjectType::Application);
-    project.write_project(&config.workspace_root)?;
-    if let Some(options) = config.project_options.as_ref() {
-        if options.uses_git {
-            git::init(&config.workspace_root)?;
-        }
+/// Create a new library-like Python project on the system.
+pub fn new_lib_project(config: &OperationConfig) -> HuakResult<()> {
+    create_workspace(config)?;
+    let last_path_component =
+        fs::last_path_component(config.workspace_root.as_path())?;
+    let processed_name = to_importable_package_name(&last_path_component)?;
+    if config.workspace_root.join("pyproject.toml").exists() {
+        return Err(Error::ProjectTomlExistsError);
     }
-    Ok(())
+    let mut pyproject_toml = PyProjectToml::new();
+    pyproject_toml.set_project_name(&last_path_component);
+    pyproject_toml.write_file(config.workspace_root.join("pyproject.toml"))?;
+    let src_path = config.workspace_root.join("src");
+    std::fs::create_dir_all(src_path.join(&processed_name))?;
+    std::fs::create_dir_all(config.workspace_root.join("tests"))?;
+    std::fs::write(
+        src_path.join(&processed_name).join("__init__.py"),
+        default_init_file_contents(pyproject_toml.project_version().ok_or(
+            Error::InternalError("failed to read project version".to_string()),
+        )?),
+    )?;
+    std::fs::write(
+        config.workspace_root.join("tests").join("test_version.py"),
+        default_test_file_contents(&processed_name),
+    )
+    .map_err(|e| Error::IOError(e))
 }
 
 /// Publish the Python project as to a registry.
@@ -385,7 +414,7 @@ pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
     terminal.set_verbosity(Verbosity::Quiet);
     venv.install_packages(&[Package::from_str("pytest")?], &mut terminal)?;
     let mut cmd = Command::new(venv.python_path());
-    let mut cmd = command_with_venv_env(&mut cmd, &venv)?;
+    let cmd = command_with_venv_env(&mut cmd, &venv)?;
     let cmd = cmd.arg("-m").arg("pytest").args(
         config
             .trailing_command_parts
@@ -440,6 +469,24 @@ fn terminal_from_options(options: Option<&TerminalOptions>) -> Terminal {
         terminal.set_verbosity(Verbosity::Normal);
     }
     terminal
+}
+
+/// Create a workspace directory.
+fn create_workspace(config: &OperationConfig) -> HuakResult<()> {
+    let path = config.workspace_root.as_path();
+    let cwd = std::env::current_dir()?;
+    if (path.exists() && path != cwd)
+        || (path == cwd && path.read_dir()?.count() > 0)
+    {
+        return Err(Error::DirectoryExists(path.to_path_buf()));
+    }
+    std::fs::create_dir(path)?;
+    if let Some(options) = config.workspace_options.as_ref() {
+        if options.uses_git {
+            git::init(&config.workspace_root)?;
+        }
+    }
+    Ok(())
 }
 
 /// NOTE: Operations are meant to be executed on projects and environments.
@@ -656,8 +703,9 @@ def fn( ):
     #[test]
     fn test_init_project() {
         let dir = tempdir().unwrap().into_path();
+        std::fs::create_dir(dir.join("mock-project")).unwrap();
         let config = OperationConfig {
-            workspace_root: dir,
+            workspace_root: dir.join("mock-project"),
             ..Default::default()
         };
 
@@ -665,10 +713,12 @@ def fn( ):
 
         let toml_path = config.workspace_root.join("pyproject.toml");
         let ser_toml = PyProjectToml::from_path(toml_path).unwrap();
+        let mut pyproject_toml = PyProjectToml::new();
+        pyproject_toml.set_project_name("mock-project");
 
         assert_eq!(
             ser_toml.to_string_pretty().unwrap(),
-            crate::default_pyproject_toml_contents()
+            pyproject_toml.to_string_pretty().unwrap()
         );
     }
 
@@ -788,7 +838,7 @@ def fn():
             ..Default::default()
         };
 
-        create_new_lib_project(&config).unwrap();
+        new_lib_project(&config).unwrap();
 
         let project = Project::from_manifest(
             config.workspace_root.join("pyproject.toml"),
@@ -804,12 +854,12 @@ def fn():
 def test_version():
     __version__
 "#,
-            project.pyproject_toml().project_name().unwrap()
+            "mock_project"
         );
         let init_file_filepath = project
             .root()
             .join("src")
-            .join("project")
+            .join("mock_project")
             .join("__init__.py");
         let init_file = std::fs::read_to_string(&init_file_filepath).unwrap();
         let expected_init_file = "__version__ = \"0.0.1\"
@@ -835,24 +885,26 @@ def test_version():
             ..Default::default()
         };
 
-        create_new_app_project(&config).unwrap();
+        new_app_project(&config).unwrap();
 
         let project = Project::from_manifest(
             config.workspace_root.join("pyproject.toml"),
         )
         .unwrap();
         let ser_toml = project.pyproject_toml();
-        let main_file_filepath =
-            project.root().join("src").join("project").join("main.py");
+        let main_file_filepath = project
+            .root()
+            .join("src")
+            .join("mock_project")
+            .join("main.py");
         let main_file = std::fs::read_to_string(&main_file_filepath).unwrap();
-        let expected_main_file = "\
-def main():
-print(\"Hello, World!\")
+        let expected_main_file = r#"def main():
+    print("Hello, World!")
 
 
-if __name__ == \"__main__\":
-main()
-";
+if __name__ == "__main__":
+    main()
+"#;
 
         assert_eq!(
             ser_toml
@@ -862,8 +914,8 @@ main()
                 .unwrap()
                 .scripts
                 .as_ref()
-                .unwrap()[ser_toml.project_name().unwrap()],
-            format!("{}.main:main", ser_toml.project_name().unwrap())
+                .unwrap()["mock_project"],
+            format!("{}.main:main", "mock_project")
         );
         assert_eq!(main_file, expected_main_file);
 
