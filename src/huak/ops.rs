@@ -1,3 +1,5 @@
+use termcolor::Color;
+
 ///! This module implements various operations to interact with valid workspaces
 ///! existing on a system.
 use crate::{
@@ -5,13 +7,16 @@ use crate::{
     default_main_file_contents, default_test_file_contents,
     default_virtual_environment_name,
     error::HuakResult,
-    find_python_interpreter_paths, find_venv_root, fs, git,
+    find_python_interpreter_paths, find_venv_root,
+    fs::{self, find_file_bottom_up},
+    git,
     sys::{self, get_shell_name, Terminal, Verbosity},
-    to_importable_package_name, Error, Package, PackageIndexData, Project,
-    PyProjectToml, VirtualEnvironment,
+    to_importable_package_name, to_package_cononical_name, Error, Package,
+    Project, PyProjectToml, VirtualEnvironment,
 };
 use std::{
-    collections::HashSet, path::PathBuf, process::Command, str::FromStr,
+    collections::HashSet, env::consts::OS, path::PathBuf, process::Command,
+    str::FromStr,
 };
 
 #[derive(Default)]
@@ -47,7 +52,7 @@ pub struct CleanOptions {
 /// Activate a Python virtual environment.
 pub fn activate_venv(config: &OperationConfig) -> HuakResult<()> {
     let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
-    let mut terminal = Terminal::new();
+    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     venv.activate_with_terminal(&mut terminal)
 }
 
@@ -56,10 +61,7 @@ pub fn add_project_dependencies(
     dependencies: &[&str],
     config: &OperationConfig,
 ) -> HuakResult<()> {
-    let mut terminal = Terminal::new();
-    if let Some(options) = config.terminal_options.as_ref() {
-        terminal.set_verbosity(options.verbosity);
-    }
+    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     // TODO: Propagate installer configuration (potentially per-package)
     let new_packages: HuakResult<Vec<Package>> = dependencies
@@ -88,10 +90,7 @@ pub fn add_project_optional_dependencies(
     group: &str,
     config: &OperationConfig,
 ) -> HuakResult<()> {
-    let mut terminal = Terminal::new();
-    if let Some(options) = config.terminal_options.as_ref() {
-        terminal.set_verbosity(options.verbosity);
-    }
+    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     let new_packages: HuakResult<Vec<Package>> = dependencies
         .iter()
@@ -117,24 +116,21 @@ pub fn add_project_optional_dependencies(
 
 /// Build the Python project as installable package.
 pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
+    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
-    let mut terminal = Terminal::new();
-    if let Some(options) = config.terminal_options.as_ref() {
-        terminal.set_verbosity(options.verbosity);
+    if !venv.has_module("build")? {
+        venv.install_packages(&[Package::from_str("build")?], &mut terminal)?;
     }
-    venv.install_packages(&[Package::from_str("build")?], &mut terminal)?;
     let mut cmd = Command::new(venv.python_path());
     let cmd = command_with_venv_env(&mut cmd, &venv)?;
-    let cmd = cmd
-        .arg("-m")
-        .arg("build")
-        .args(
-            config
-                .trailing_command_parts
-                .as_ref()
-                .unwrap_or(&Vec::new()),
-        )
-        .current_dir(&config.workspace_root);
+    let mut args: Vec<String> = vec!["-m", "build"]
+        .iter_mut()
+        .map(|item| item.to_string())
+        .collect();
+    if let Some(it) = config.trailing_command_parts.as_ref() {
+        args.extend(it.clone());
+    }
+    let cmd = cmd.args(args).current_dir(&config.workspace_root);
     terminal.run_command(cmd)
 }
 
@@ -193,29 +189,45 @@ pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
 /// Format the Python project's source code.
 pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
     let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
-    let mut terminal = Terminal::new();
-    if let Some(options) = config.terminal_options.as_ref() {
-        terminal.set_verbosity(options.verbosity);
+    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
+    if !venv.has_module("black")? {
+        venv.install_packages(&[Package::from_str("black")?], &mut terminal)?;
     }
-    venv.install_packages(&[Package::from_str("black")?], &mut terminal)?;
     let mut cmd = Command::new(venv.python_path());
     let cmd = command_with_venv_env(&mut cmd, &venv)?;
-    let cmd = cmd
-        .arg("-m")
-        .arg("black")
-        .arg(".")
-        .args(
-            config
-                .trailing_command_parts
-                .as_ref()
-                .unwrap_or(&Vec::new()),
-        )
-        .current_dir(&config.workspace_root);
+    let mut args: Vec<String> = vec!["-m", "black", "."]
+        .iter_mut()
+        .map(|item| item.to_string())
+        .collect();
+    if let Some(it) = config.trailing_command_parts.as_ref() {
+        args.extend(it.clone());
+    }
+    let cmd = cmd.args(args).current_dir(&config.workspace_root);
     terminal.run_command(cmd)
 }
 
-/// Initilize an existing Python project.
-pub fn init_project(config: &OperationConfig) -> HuakResult<()> {
+/// Initilize an existing Python project as library-like.
+pub fn init_app_project(config: &OperationConfig) -> HuakResult<()> {
+    init_lib_project(config)?;
+    let mut pyproject_toml =
+        PyProjectToml::from_path(config.workspace_root.join("pyproject.toml"))?;
+    let name = match pyproject_toml.project_name() {
+        Some(it) => it,
+        None => {
+            return Err(Error::InternalError(
+                "failed to read project name from toml".to_string(),
+            ))
+        }
+    };
+    pyproject_toml.add_script(
+        &to_package_cononical_name(name)?,
+        default_entrypoint_string(&to_importable_package_name(name)?).as_str(),
+    )?;
+    pyproject_toml.write_file(config.workspace_root.join("pyproject.toml"))
+}
+
+/// Initilize an existing Python project as library-like.
+pub fn init_lib_project(config: &OperationConfig) -> HuakResult<()> {
     if config.workspace_root.join("pyproject.toml").exists() {
         return Err(Error::ProjectTomlExistsError);
     }
@@ -230,10 +242,7 @@ pub fn init_project(config: &OperationConfig) -> HuakResult<()> {
 pub fn install_project_dependencies(
     config: &OperationConfig,
 ) -> HuakResult<()> {
-    let mut terminal = Terminal::new();
-    if let Some(options) = config.terminal_options.as_ref() {
-        terminal.set_verbosity(options.verbosity);
-    }
+    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     let project =
         Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
@@ -252,10 +261,7 @@ pub fn install_project_optional_dependencies(
     group: &str,
     config: &OperationConfig,
 ) -> HuakResult<()> {
-    let mut terminal = Terminal::new();
-    if let Some(options) = config.terminal_options.as_ref() {
-        terminal.set_verbosity(options.verbosity);
-    }
+    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     let project =
         Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
@@ -271,25 +277,21 @@ pub fn install_project_optional_dependencies(
 
 /// Lint a Python project's source code.
 pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
+    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
-    let mut terminal = Terminal::new();
-    if let Some(options) = config.terminal_options.as_ref() {
-        terminal.set_verbosity(options.verbosity);
+    if !venv.has_module("ruff")? {
+        venv.install_packages(&[Package::from_str("ruff")?], &mut terminal)?;
     }
-    venv.install_packages(&[Package::from_str("ruff")?], &mut terminal)?;
     let mut cmd = Command::new(venv.python_path());
     let cmd = command_with_venv_env(&mut cmd, &venv)?;
-    let cmd = cmd
-        .arg("-m")
-        .arg("ruff")
-        .arg(".")
-        .args(
-            config
-                .trailing_command_parts
-                .as_ref()
-                .unwrap_or(&Vec::new()),
-        )
-        .current_dir(&config.workspace_root);
+    let mut args: Vec<String> = vec!["-m", "ruff", "."]
+        .iter_mut()
+        .map(|item| item.to_string())
+        .collect();
+    if let Some(it) = config.trailing_command_parts.as_ref() {
+        args.extend(it.clone());
+    }
+    let cmd = cmd.args(args).current_dir(&config.workspace_root);
     terminal.run_command(cmd)
 }
 
@@ -306,8 +308,10 @@ pub fn new_app_project(config: &OperationConfig) -> HuakResult<()> {
         src_path.join(&name).join("main.py"),
         default_main_file_contents(),
     )?;
-    pyproject_toml
-        .add_script(name.as_str(), default_entrypoint_string(&name).as_str())?;
+    pyproject_toml.add_script(
+        &to_package_cononical_name(name.as_str())?,
+        default_entrypoint_string(&to_importable_package_name(&name)?).as_str(),
+    )?;
     pyproject_toml.write_file(config.workspace_root.join("pyproject.toml"))
 }
 
@@ -341,26 +345,21 @@ pub fn new_lib_project(config: &OperationConfig) -> HuakResult<()> {
 
 /// Publish the Python project as to a registry.
 pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
+    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
-    let mut terminal = Terminal::new();
-    if let Some(options) = config.terminal_options.as_ref() {
-        terminal.set_verbosity(options.verbosity);
+    if !venv.has_module("twine")? {
+        venv.install_packages(&[Package::from_str("twine")?], &mut terminal)?;
     }
-    venv.install_packages(&[Package::from_str("twine")?], &mut terminal)?;
     let mut cmd = Command::new(venv.python_path());
     let cmd = command_with_venv_env(&mut cmd, &venv)?;
-    let cmd = cmd
-        .arg("-m")
-        .arg("twine")
-        .arg("upload")
-        .arg("dist/*")
-        .args(
-            config
-                .trailing_command_parts
-                .as_ref()
-                .unwrap_or(&Vec::new()),
-        )
-        .current_dir(&config.workspace_root);
+    let mut args: Vec<String> = vec!["-m", "twine", "upload", "dist/*"]
+        .iter_mut()
+        .map(|item| item.to_string())
+        .collect();
+    if let Some(it) = config.trailing_command_parts.as_ref() {
+        args.extend(it.clone());
+    }
+    let cmd = cmd.args(args).current_dir(&config.workspace_root);
     terminal.run_command(cmd)
 }
 
@@ -388,13 +387,13 @@ pub fn remove_project_optional_dependencies(
     group: &str,
     config: &OperationConfig,
 ) -> HuakResult<()> {
+    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut project =
         Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
     for dependency in dependency_names {
         project.remove_optional_dependency(dependency, group);
     }
-    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     venv.uninstall_packages(dependency_names, &mut terminal)?;
     project
         .pyproject_toml()
@@ -406,32 +405,30 @@ pub fn run_command_str(
     command: &str,
     config: &OperationConfig,
 ) -> HuakResult<()> {
+    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
-    let mut terminal = Terminal::new();
-    if let Some(options) = config.terminal_options.as_ref() {
-        terminal.set_verbosity(options.verbosity);
-    }
     let mut cmd = Command::new(get_shell_name()?);
     let cmd = command_with_venv_env(&mut cmd, &venv)?;
-    #[cfg(unix)]
-    let cmd = cmd.arg("-c");
-    #[cfg(windows)]
-    let cmd = cmd.arg("/C");
-    let cmd = cmd.arg(command).current_dir(&config.workspace_root);
+    let flag = match OS {
+        "windows" => "/C",
+        _ => "-c",
+    };
+    let cmd = cmd
+        .args([flag, command])
+        .current_dir(&config.workspace_root);
     terminal.run_command(cmd)
 }
 
 /// Run a Python project's tests.
 pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
+    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
-    let mut terminal = Terminal::new();
-    if let Some(options) = config.terminal_options.as_ref() {
-        terminal.set_verbosity(options.verbosity);
+    if !venv.has_module("pytest")? {
+        venv.install_packages(&[Package::from_str("pytest")?], &mut terminal)?;
     }
-    venv.install_packages(&[Package::from_str("pytest")?], &mut terminal)?;
     let mut cmd = Command::new(venv.python_path());
     let cmd = command_with_venv_env(&mut cmd, &venv)?;
-    let cmd = cmd.arg("-m").arg("pytest").args(
+    let cmd = cmd.args(["-m", "pytest"]).args(
         config
             .trailing_command_parts
             .as_ref()
@@ -442,20 +439,17 @@ pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
 
 /// Display the version of the Python project.
 pub fn display_project_version(config: &OperationConfig) -> HuakResult<()> {
+    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     let project =
         Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
-    let mut terminal = Terminal::new();
-    let verbosity = match config.terminal_options.as_ref() {
-        Some(it) => it.verbosity,
-        None => Verbosity::default(),
-    };
-    terminal.set_verbosity(verbosity);
-    terminal.status(
-        "",
+    terminal.print_custom(
+        "version",
         project
             .pyproject_toml()
             .project_version()
             .unwrap_or("no version found"),
+        Color::Green,
+        false,
     )
 }
 
@@ -485,6 +479,23 @@ fn terminal_from_options(options: Option<&TerminalOptions>) -> Terminal {
         terminal.set_verbosity(Verbosity::Normal);
     }
     terminal
+}
+
+/// Find the workspace root by searching for a pyproject.toml file.
+pub fn find_workspace() -> HuakResult<PathBuf> {
+    let cwd = std::env::current_dir()?;
+    let pyproject_toml = match find_file_bottom_up("pyproject.toml", cwd, 10) {
+        Ok(it) => it,
+        Err(_) => return Err(Error::ProjectFileNotFound),
+    };
+    let pyproject_toml = match pyproject_toml {
+        Some(it) => it,
+        None => return Err(Error::ProjectFileNotFound),
+    };
+    match pyproject_toml.parent() {
+        Some(it) => Ok(it.to_path_buf()),
+        None => Err(Error::ProjectFileNotFound),
+    }
 }
 
 /// Create a workspace directory.
@@ -794,7 +805,7 @@ def fn( ):
     }
 
     #[test]
-    fn test_init_project() {
+    fn test_init_lib_project() {
         let dir = tempdir().unwrap().into_path();
         std::fs::create_dir(dir.join("mock-project")).unwrap();
         let config = OperationConfig {
@@ -805,7 +816,7 @@ def fn( ):
             ..Default::default()
         };
 
-        init_project(&config).unwrap();
+        init_lib_project(&config).unwrap();
 
         let toml_path = config.workspace_root.join("pyproject.toml");
         let ser_toml = PyProjectToml::from_path(toml_path).unwrap();
@@ -815,6 +826,43 @@ def fn( ):
         assert_eq!(
             ser_toml.to_string_pretty().unwrap(),
             pyproject_toml.to_string_pretty().unwrap()
+        );
+    }
+
+    #[test]
+    fn test_init_app_project() {
+        let dir = tempdir().unwrap().into_path();
+        std::fs::create_dir(dir.join("mock-project")).unwrap();
+        let config = OperationConfig {
+            workspace_root: dir.join("mock-project"),
+            terminal_options: Some(TerminalOptions {
+                verbosity: Verbosity::Quiet,
+            }),
+            ..Default::default()
+        };
+
+        init_app_project(&config).unwrap();
+
+        let toml_path = config.workspace_root.join("pyproject.toml");
+        let ser_toml = PyProjectToml::from_path(toml_path).unwrap();
+        let mut pyproject_toml = PyProjectToml::new();
+        pyproject_toml.set_project_name("mock-project");
+
+        assert_eq!(
+            ser_toml.to_string_pretty().unwrap(),
+            r#"[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mock-project"
+version = "0.0.1"
+description = ""
+dependencies = []
+
+[project.scripts]
+mock-project = "mock_project.main:main"
+"#
         );
     }
 
@@ -1035,7 +1083,7 @@ if __name__ == "__main__":
                 .unwrap()
                 .scripts
                 .as_ref()
-                .unwrap()["mock_project"],
+                .unwrap()["mock-project"],
             format!("{}.main:main", "mock_project")
         );
         assert_eq!(main_file, expected_main_file);

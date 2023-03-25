@@ -1,5 +1,14 @@
 pub use error::{Error, HuakResult};
 use indexmap::IndexMap;
+pub use ops::{
+    add_project_dependencies, add_project_optional_dependencies, build_project,
+    clean_project, display_project_version, find_workspace, format_project,
+    init_app_project, init_lib_project, install_project_dependencies,
+    install_project_optional_dependencies, lint_project, new_app_project,
+    new_lib_project, publish_project, remove_project_dependencies,
+    remove_project_optional_dependencies, run_command_str, test_project,
+    CleanOptions, OperationConfig, TerminalOptions, WorkspaceOptions,
+};
 use pep440_rs::{
     parse_version_specifiers, Operator as VersionOperator, Version,
     VersionSpecifier,
@@ -9,12 +18,12 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::hash_map::RandomState,
-    fs::File,
     path::{Path, PathBuf},
     process::Command,
     str::FromStr,
 };
 use sys::Terminal;
+pub use sys::Verbosity;
 
 mod error;
 mod fs;
@@ -94,6 +103,11 @@ impl Project {
             .ok_or(Error::InternalError(
                 "project version not found".to_string(),
             ))
+    }
+
+    /// Get the path to the manifest file.
+    pub fn manifest_path(&self) -> &PathBuf {
+        &self.project_layout.pyproject_toml_path
     }
 
     /// Get the project type.
@@ -557,63 +571,6 @@ impl VirtualEnvironment {
         Ok(())
     }
 
-    /// Get a package from the site-packages directory if it is already installed.
-    fn find_site_packages_package(&self, name: &str) -> Option<Package> {
-        todo!()
-    }
-
-    /// Get a package's dist info from the site-packages directory if it is there.
-    fn find_site_packages_dist_info(&self, name: &str) -> Option<DistInfo> {
-        todo!()
-    }
-
-    /// Get a package from the system's site-packages directory if it is already
-    /// installed.
-    fn find_base_site_packages_package(&self, name: &str) -> Option<Package> {
-        todo!()
-    }
-
-    /// Get a package's dist info from the system's site-packages directory if it is
-    /// there.
-    fn find_base_site_packages_dist_info(
-        &self,
-        name: &str,
-    ) -> Option<DistInfo> {
-        todo!()
-    }
-
-    /// Add a package to the site-packages directory.
-    fn add_package_to_site_packages(
-        &mut self,
-        package: &Package,
-    ) -> HuakResult<()> {
-        todo!()
-    }
-
-    /// Add a package to the system's site-packages directory.
-    fn add_package_to_base_site_packages(
-        &mut self,
-        package: &Package,
-    ) -> HuakResult<()> {
-        todo!()
-    }
-
-    /// Remove a package from the site-packages directory.
-    fn remove_package_from_site_packages(
-        &mut self,
-        package: &Package,
-    ) -> HuakResult<()> {
-        todo!()
-    }
-
-    /// Remove a package from the system's site-packages directory.
-    fn remove_package_from_base_site_packages(
-        &mut self,
-        package: &Package,
-    ) -> HuakResult<()> {
-        todo!()
-    }
-
     /// Check if the Python environment is isolated from any system site-packages
     /// directory.
     pub fn is_isolated(&self) -> bool {
@@ -668,14 +625,6 @@ impl VirtualEnvironment {
     /// Set the environment's installer.
     pub fn set_installer(&mut self, installer: Installer) {
         self.installer = installer;
-    }
-
-    /// Resolve packages againts the environment.
-    pub fn resolve_packages(
-        &self,
-        packages: &[Package],
-    ) -> HuakResult<Vec<Package>> {
-        todo!()
     }
 }
 
@@ -800,15 +749,10 @@ pub struct Package {
     name: String,
     /// Normalized name of the Python package.
     canonical_name: String,
-    /// The package's core metadata.
-    /// https://packaging.python.org/en/latest/specifications/core-metadata/
-    core_metadata: Option<PackageMetadata>,
     /// The PEP 440 version of the package.
     version: Option<Version>,
     /// The PEP 440 version specifier.
     version_specifier: Option<VersionSpecifier>,
-    /// Tags used to indicate platform compatibility.
-    platform_tags: Option<Vec<PlatformTag>>,
 }
 
 impl Package {
@@ -934,49 +878,12 @@ impl PartialEq for Package {
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name
             && self.canonical_name == other.canonical_name
-            && self.core_metadata == other.core_metadata
             && self.version == other.version
             && self.version_specifier == other.version_specifier
-            && self.platform_tags == other.platform_tags
     }
 }
 
 impl Eq for Package {}
-
-/// Core package metadata.
-/// https://packaging.python.org/en/latest/specifications/core-metadata/
-#[derive(PartialEq, Eq, Clone, Debug)]
-pub struct PackageMetadata;
-
-/// Tags used to indicate platform compatibility.
-/// https://packaging.python.org/en/latest/specifications/platform-compatibility-tags/
-#[derive(PartialEq, Eq, Clone, Debug)]
-pub enum PlatformTag {}
-
-/// Package distribtion info stored in the site-packages directory adjacent to the
-/// installed package artifact.
-/// https://peps.python.org/pep-0376/#one-dist-info-directory-per-installed-distribution
-pub struct DistInfo {
-    /// File containing the name of the tool used to install the package.
-    installer_file: File,
-    /// File containing the package's license information.
-    license_file: Option<File>,
-    /// File containing metadata about the package.
-    /// See
-    ///   https://peps.python.org/pep-0345/
-    ///   https://peps.python.org/pep-0314/
-    ///   https://peps.python.org/pep-0241/
-    metadata_file: File,
-    /// File containing each file isntalled as part of the package's installation.
-    /// See https://peps.python.org/pep-0376/#record
-    record_file: File,
-    /// File added to the .dist-info directory of the installed distribution if the
-    /// package was explicitly requested.
-    /// See https://peps.python.org/pep-0376/#requested
-    requested_file: Option<File>,
-    /// File containing metadata about the archive.
-    wheel_file: Option<File>,
-}
 
 /// A client used to interact with a package index.
 pub struct PackageIndexClient;

@@ -1,22 +1,20 @@
 use std::process::ExitCode;
-
-use huak::Error;
 use thiserror::Error as ThisError;
 
-pub type CliResult<T> = Result<T, CliError>;
+pub type CliResult<T> = Result<T, Error>;
 pub const BASIC_ERROR_CODE: ExitCode = ExitCode::FAILURE;
 
 #[derive(Debug, ThisError)]
-pub struct CliError {
+pub struct Error {
     #[source]
-    pub error: Error,
+    pub error: huak::Error,
     pub exit_code: ExitCode,
     pub status_code: Option<i32>,
 }
 
-impl CliError {
-    pub fn new(error: Error, exit_code: ExitCode) -> CliError {
-        CliError {
+impl Error {
+    pub fn new(error: huak::Error, exit_code: ExitCode) -> Error {
+        Error {
             error,
             exit_code,
             status_code: None,
@@ -24,7 +22,7 @@ impl CliError {
     }
 }
 
-impl std::fmt::Display for CliError {
+impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -34,26 +32,32 @@ impl std::fmt::Display for CliError {
     }
 }
 
-impl From<clap::Error> for CliError {
-    fn from(err: clap::Error) -> CliError {
-        CliError::new(Error::ClapError(err), BASIC_ERROR_CODE)
+impl From<clap::Error> for Error {
+    fn from(e: clap::Error) -> Error {
+        Error::new(huak::Error::ClapError(e), BASIC_ERROR_CODE)
     }
 }
 
-impl From<std::io::Error> for CliError {
-    fn from(err: std::io::Error) -> CliError {
-        CliError::new(Error::IOError(err), BASIC_ERROR_CODE)
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Error {
+        Error::new(huak::Error::IOError(e), BASIC_ERROR_CODE)
     }
 }
 
-impl From<std::str::Utf8Error> for CliError {
-    fn from(err: std::str::Utf8Error) -> CliError {
-        CliError::new(Error::Utf8Error(err), BASIC_ERROR_CODE)
+impl From<std::io::ErrorKind> for Error {
+    fn from(e: std::io::ErrorKind) -> Error {
+        Error::new(huak::Error::InternalError(e.to_string()), BASIC_ERROR_CODE)
     }
 }
 
-impl From<std::env::VarError> for CliError {
-    fn from(err: std::env::VarError) -> CliError {
-        CliError::new(Error::EnvVarError(err), BASIC_ERROR_CODE)
+impl From<std::str::Utf8Error> for Error {
+    fn from(e: std::str::Utf8Error) -> Error {
+        Error::new(huak::Error::Utf8Error(e), BASIC_ERROR_CODE)
+    }
+}
+
+impl From<std::env::VarError> for Error {
+    fn from(e: std::env::VarError) -> Error {
+        Error::new(huak::Error::EnvVarError(e), BASIC_ERROR_CODE)
     }
 }

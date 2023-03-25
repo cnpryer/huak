@@ -1,6 +1,5 @@
-use git2::Repository;
-
 use crate::{error::HuakResult, Error};
+use git2::Repository;
 use std::path::Path;
 
 /// Initialize a directory on a local system as a git repository.

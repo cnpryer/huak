@@ -1,10 +1,24 @@
-use std::{fs::File, io::Write, path::Path, process::ExitCode};
+use std::{
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+    process::ExitCode,
+};
 
-use crate::error::{CliError, CliResult};
+use crate::error::{CliResult, Error};
 
 use clap::{Command, CommandFactory, Parser, Subcommand};
 use clap_complete::{generate, Shell};
-use huak::Error;
+use huak::{
+    add_project_dependencies, add_project_optional_dependencies, build_project,
+    clean_project, display_project_version, find_workspace, format_project,
+    init_app_project, init_lib_project, install_project_dependencies,
+    install_project_optional_dependencies, lint_project, new_app_project,
+    new_lib_project, publish_project, remove_project_dependencies,
+    remove_project_optional_dependencies, run_command_str, test_project,
+    CleanOptions, Error as HuakError, OperationConfig, TerminalOptions,
+    Verbosity, WorkspaceOptions,
+};
 
 /// A Python package manager written in Rust inspired by Cargo.
 #[derive(Parser)]
@@ -12,6 +26,8 @@ use huak::Error;
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
+    #[arg(short, long, global = true)]
+    pub quiet: bool,
 }
 
 // List of commands.
@@ -25,17 +41,17 @@ pub enum Commands {
         /// Adds an optional dependency group.
         #[arg(long)]
         group: Option<String>,
-        /// Pass a trailing command to the executed operation.
+        /// Pass trailing arguments with `--`.
         #[arg(trailing_var_arg = true)]
-        command: Option<String>,
+        trailing: Option<Vec<String>>,
     },
     /// Check for vulnerable dependencies and license compatibility*.
     Audit,
     /// Build tarball and wheel for the project.
     Build {
-        /// Pass a trailing command to the executed operation.
+        /// Pass trailing arguments with `--`.
         #[arg(trailing_var_arg = true)]
-        command: Option<String>,
+        trailing: Option<Vec<String>>,
     },
     /// Interact with the configuration of huak.
     Config {
@@ -45,8 +61,11 @@ pub enum Commands {
     /// Remove tarball and wheel from the built project.
     Clean {
         #[arg(long, required = false)]
-        /// Remove all .pyc files and __pycache__ directories.
-        pycache: bool,
+        /// Remove all .pyc files.
+        include_compiled_bytecode: bool,
+        #[arg(long, required = false)]
+        /// Remove all __pycache__ directories.
+        include_pycache: bool,
     },
     /// Generates documentation for the project*.
     Doc {
@@ -55,18 +74,18 @@ pub enum Commands {
     },
     /// Auto-fix fixable lint conflicts
     Fix {
-        /// Pass a trailing command to the executed operation.
+        /// Pass trailing arguments with `--`.
         #[arg(trailing_var_arg = true)]
-        command: Option<String>,
+        trailing: Option<Vec<String>>,
     },
     /// Format the project's Python code.
     Fmt {
         /// Check if Python code is formatted.
         #[arg(long)]
         check: bool,
-        /// Pass a trailing command to the executed operation.
+        /// Pass trailing arguments with `--`.
         #[arg(trailing_var_arg = true)]
-        command: Option<String>,
+        trailing: Option<Vec<String>>,
     },
     /// Initialize the existing project.
     Init {
@@ -82,17 +101,18 @@ pub enum Commands {
         /// Install optional dependency groups
         #[arg(long, num_args = 1..)]
         groups: Option<Vec<String>>,
-        /// Pass a trailing command to the executed operation.
+        /// Pass trailing arguments with `--`.
         #[arg(trailing_var_arg = true)]
-        command: Option<String>,
+        trailing: Option<Vec<String>>,
     },
     /// Lint the project's Python code.
     Lint {
+        /// Address any fixable lints.
         #[arg(long, required = false)]
         fix: bool,
-        /// Pass a trailing command to the executed operation.
+        /// Pass trailing arguments with `--`.
         #[arg(trailing_var_arg = true)]
-        command: Option<String>,
+        trailing: Option<Vec<String>>,
     },
     /// Create a new project at <path>.
     New {
@@ -110,9 +130,9 @@ pub enum Commands {
     },
     /// Builds and uploads current project to a registry.
     Publish {
-        /// Pass a trailing command to the executed operation.
+        /// Pass trailing arguments with `--`.
         #[arg(trailing_var_arg = true)]
-        command: Option<String>,
+        trailing: Option<Vec<String>>,
     },
     /// Remove a dependency from the project.
     Remove {
@@ -124,13 +144,13 @@ pub enum Commands {
     /// Run a command within the project's environment context.
     Run {
         #[arg(trailing_var_arg = true)]
-        command: String,
+        command: Vec<String>,
     },
     /// Test the project's Python code.
     Test {
-        /// Pass a trailing command to the executed operation.
+        /// Pass trailing arguments with `--`.
         #[arg(trailing_var_arg = true)]
-        command: Option<String>,
+        trailing: Option<Vec<String>>,
     },
     /// Update dependencies added to the project*.
     Update {
@@ -145,70 +165,92 @@ pub enum Commands {
 impl Cli {
     pub fn run(self) -> CliResult<()> {
         match self.command {
-            Commands::Config { command } => config(command),
-            Commands::Activate => activate(),
+            Commands::Config { command } => config(command, self.quiet),
+            Commands::Activate => activate(self.quiet),
             Commands::Add {
                 dependency,
                 group,
-                command,
-            } => add(dependency, group, command),
-            Commands::Audit => audit(),
-            Commands::Build { command } => build(command),
-            Commands::Clean { pycache } => clean(pycache),
-            Commands::Doc { check } => doc(check),
-            Commands::Fix { command } => fix(command),
-            Commands::Fmt { check, command } => fmt(check, command),
-            // --lib is the default, so it's unnecessary to handle. If --app is not passed, assume --lib.
-            #[allow(unused_variables)]
-            Commands::Init { app, lib } => init(app),
-            Commands::Install { groups, command } => install(groups, command),
-            Commands::Lint { fix, command } => lint(fix, command),
-            // --lib is the default, so it's unnecessary to handle. If --app is not passed, assume --lib.
-            #[allow(unused_variables)]
+                trailing,
+            } => add(dependency, group, trailing, self.quiet),
+            Commands::Audit => audit(self.quiet),
+            Commands::Build { trailing } => build(trailing, self.quiet),
+            Commands::Clean {
+                include_compiled_bytecode,
+                include_pycache,
+            } => clean(include_compiled_bytecode, include_pycache, self.quiet),
+            Commands::Doc { check } => doc(check, self.quiet),
+            Commands::Fix { trailing } => fix(trailing, self.quiet),
+            Commands::Fmt { check, trailing } => {
+                fmt(check, trailing, self.quiet)
+            }
+            Commands::Init { app, lib } => init(app, lib, self.quiet),
+            Commands::Install { groups, trailing } => {
+                install(groups, trailing, self.quiet)
+            }
+            Commands::Lint { fix, trailing } => lint(fix, trailing, self.quiet),
             Commands::New {
                 path,
                 app,
                 lib,
                 no_vcs,
-            } => new(path, app, no_vcs),
-            Commands::Publish { command } => publish(command),
-            Commands::Remove { dependency, group } => remove(dependency, group),
-            Commands::Run { command } => run(command),
-            Commands::Test { command } => test(command),
-            Commands::Update { dependency } => update(dependency),
-            Commands::Version => version(),
+            } => new(path, app, lib, no_vcs, self.quiet),
+            Commands::Publish { trailing } => publish(trailing, self.quiet),
+            Commands::Remove { dependency, group } => {
+                remove(dependency, group, self.quiet)
+            }
+            Commands::Run { command } => run(command, self.quiet),
+            Commands::Test { trailing } => test(trailing, self.quiet),
+            Commands::Update { dependency } => update(dependency, self.quiet),
+            Commands::Version => version(self.quiet),
         }
     }
 }
 
-fn activate() -> CliResult<()> {
+fn activate(_quiet: bool) -> CliResult<()> {
     todo!()
 }
 
 fn add(
     dependency: String,
     group: Option<String>,
-    command: Option<String>,
+    trailing: Option<Vec<String>>,
+    quiet: bool,
 ) -> CliResult<()> {
+    let config = init_config(trailing, quiet)?;
+    let deps = [dependency.as_str()];
+    match group.as_ref() {
+        Some(it) => add_project_optional_dependencies(&deps, it, &config),
+        None => add_project_dependencies(&deps, &config),
+    }
+    .map_err(|e| Error::new(e, ExitCode::FAILURE))
+}
+
+fn audit(_quiet: bool) -> CliResult<()> {
     todo!()
 }
 
-fn audit() -> CliResult<()> {
-    todo!()
+fn build(trailing: Option<Vec<String>>, quiet: bool) -> CliResult<()> {
+    let config = init_config(trailing, quiet)?;
+    build_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
-fn build(command: Option<String>) -> CliResult<()> {
-    todo!()
-}
-
-fn clean(pycache: bool) -> CliResult<()> {
-    todo!()
+fn clean(
+    include_compiled_bytecode: bool,
+    include_pycache: bool,
+    quiet: bool,
+) -> CliResult<()> {
+    let mut config = init_config(None, quiet)?;
+    config.clean_options = Some(CleanOptions {
+        include_compiled_bytecode,
+        include_pycache,
+    });
+    clean_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
 /// Prints the script to stdout and a way to add the script to the shell init file to stderr. This
 /// way if the user runs completion <shell> > completion.sh only the stdout will be redirected into
 /// completion.sh.
-fn config(command: Config) -> CliResult<()> {
+fn config(command: Config, _quiet: bool) -> CliResult<()> {
     match command {
         Config::Completion {
             shell,
@@ -216,9 +258,9 @@ fn config(command: Config) -> CliResult<()> {
             uninstall,
         } => {
             if (install || uninstall) && shell.is_none() {
-                return Err(CliError::new(
-                    Error::HuakConfigurationError(
-                        "No shell provided".to_string(),
+                return Err(Error::new(
+                    HuakError::HuakConfigurationError(
+                        "no shell provided".to_string(),
                     ),
                     ExitCode::FAILURE,
                 ));
@@ -236,59 +278,139 @@ fn config(command: Config) -> CliResult<()> {
     Ok(())
 }
 
-fn doc(check: bool) -> CliResult<()> {
+fn doc(_check: bool, _quiet: bool) -> CliResult<()> {
     todo!()
 }
 
-fn fix(command: Option<String>) -> CliResult<()> {
-    todo!()
+fn fix(trailing: Option<Vec<String>>, quiet: bool) -> CliResult<()> {
+    let mut config = init_config(trailing, quiet)?;
+    if let Some(it) = config.trailing_command_parts.as_mut() {
+        it.push("--fix".to_string());
+    }
+    lint_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
-fn fmt(check: bool, command: Option<String>) -> CliResult<()> {
-    todo!()
+fn fmt(
+    check: bool,
+    trailing: Option<Vec<String>>,
+    quiet: bool,
+) -> CliResult<()> {
+    let mut config = init_config(trailing, quiet)?;
+    if let Some(it) = config.trailing_command_parts.as_mut() {
+        if check {
+            it.push("--check".to_string());
+        }
+    }
+    format_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
-fn init(app: bool) -> CliResult<()> {
-    todo!()
+fn init(app: bool, _lib: bool, quiet: bool) -> CliResult<()> {
+    let config = init_config(None, quiet)?;
+    let res = if app {
+        init_app_project(&config)
+    } else {
+        init_lib_project(&config)
+    };
+    res.map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
 fn install(
     groups: Option<Vec<String>>,
-    command: Option<String>,
+    trailing: Option<Vec<String>>,
+    quiet: bool,
 ) -> CliResult<()> {
+    let config = init_config(trailing, quiet)?;
+    if let Some(it) = groups {
+        for group in &it {
+            match install_project_optional_dependencies(group, &config) {
+                Ok(_) => (),
+                Err(e) => return Err(Error::new(e, ExitCode::FAILURE)),
+            }
+        }
+        Ok(())
+    } else {
+        install_project_dependencies(&config)
+            .map_err(|e| Error::new(e, ExitCode::FAILURE))
+    }
+}
+
+fn lint(
+    fix: bool,
+    trailing: Option<Vec<String>>,
+    quiet: bool,
+) -> CliResult<()> {
+    let mut config = init_config(trailing, quiet)?;
+    if fix {
+        if let Some(it) = config.trailing_command_parts.as_mut() {
+            it.push("--fix".to_string());
+        }
+    }
+    lint_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
+}
+
+fn new(
+    path: String,
+    app: bool,
+    _lib: bool,
+    no_vcs: bool,
+    quiet: bool,
+) -> CliResult<()> {
+    let mut config = init_config(None, quiet)?;
+    if let Some(it) = PathBuf::from(path).parent() {
+        config.workspace_root = it.to_path_buf();
+    } else {
+        return Err(Error::new(
+            HuakError::ProjectRootMissingError,
+            ExitCode::FAILURE,
+        ));
+    }
+    config.workspace_options = Some(WorkspaceOptions { uses_git: !no_vcs });
+    let res = if app {
+        new_lib_project(&config)
+    } else {
+        new_app_project(&config)
+    };
+    res.map_err(|e| Error::new(e, ExitCode::FAILURE))
+}
+
+fn publish(trailing: Option<Vec<String>>, quiet: bool) -> CliResult<()> {
+    let config = init_config(trailing, quiet)?;
+    publish_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
+}
+
+fn remove(
+    dependency: String,
+    group: Option<String>,
+    quiet: bool,
+) -> CliResult<()> {
+    let config = init_config(None, quiet)?;
+    let deps = [dependency.as_str()];
+    match group.as_ref() {
+        Some(it) => remove_project_optional_dependencies(&deps, it, &config),
+        None => remove_project_dependencies(&deps, &config),
+    }
+    .map_err(|e| Error::new(e, ExitCode::FAILURE))
+}
+
+fn run(command: Vec<String>, quiet: bool) -> CliResult<()> {
+    let config = init_config(None, quiet)?;
+    run_command_str(&command.join(" "), &config)
+        .map_err(|e| Error::new(e, ExitCode::FAILURE))
+}
+
+fn test(trailing: Option<Vec<String>>, quiet: bool) -> CliResult<()> {
+    let config = init_config(trailing, quiet)?;
+    test_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
+}
+
+fn update(_dependency: String, _quiet: bool) -> CliResult<()> {
     todo!()
 }
 
-fn lint(fix: bool, command: Option<String>) -> CliResult<()> {
-    todo!()
-}
-
-fn new(path: String, app: bool, no_vcs: bool) -> CliResult<()> {
-    todo!()
-}
-
-fn publish(command: Option<String>) -> CliResult<()> {
-    todo!()
-}
-
-fn remove(dependency: String, group: Option<String>) -> CliResult<()> {
-    todo!()
-}
-
-fn run(command: String) -> CliResult<()> {
-    todo!()
-}
-
-fn test(command: Option<String>) -> CliResult<()> {
-    todo!()
-}
-
-fn update(dependency: String) -> CliResult<()> {
-    todo!()
-}
-
-fn version() -> CliResult<()> {
-    todo!()
+fn version(quiet: bool) -> CliResult<()> {
+    let config = init_config(None, quiet)?;
+    display_project_version(&config)
+        .map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
 #[derive(Subcommand)]
@@ -313,7 +435,6 @@ pub enum Config {
 
 fn generate_shell_completion_script() {
     let mut cmd = Cli::command();
-
     generate(Shell::Bash, &mut cmd, "huak", &mut std::io::stdout())
 }
 
@@ -321,8 +442,10 @@ fn run_with_install(shell: Option<Shell>) -> CliResult<()> {
     let sh = match shell {
         Some(it) => it,
         None => {
-            return Err(CliError::new(
-                Error::HuakConfigurationError("No shell provided".to_string()),
+            return Err(Error::new(
+                HuakError::HuakConfigurationError(
+                    "no shell provided".to_string(),
+                ),
                 ExitCode::FAILURE,
             ))
         }
@@ -335,8 +458,8 @@ fn run_with_install(shell: Option<Shell>) -> CliResult<()> {
         Shell::PowerShell => add_completion_powershell(),
         Shell::Zsh => add_completion_zsh(&mut cmd),
         _ => {
-            return Err(CliError::new(
-                Error::HuakConfigurationError("Invalid shell".to_string()),
+            return Err(Error::new(
+                HuakError::HuakConfigurationError("invalid shell".to_string()),
                 ExitCode::FAILURE,
             ));
         }
@@ -349,8 +472,10 @@ fn run_with_uninstall(shell: Option<Shell>) -> CliResult<()> {
     let sh = match shell {
         Some(it) => it,
         None => {
-            return Err(CliError::new(
-                Error::HuakConfigurationError("No shell provided".to_string()),
+            return Err(Error::new(
+                HuakError::HuakConfigurationError(
+                    "no shell provided".to_string(),
+                ),
                 ExitCode::FAILURE,
             ))
         }
@@ -362,14 +487,12 @@ fn run_with_uninstall(shell: Option<Shell>) -> CliResult<()> {
         Shell::PowerShell => remove_completion_powershell(),
         Shell::Zsh => remove_completion_zsh(),
         _ => {
-            return Err(CliError::new(
-                Error::HuakConfigurationError("Invalid shell".to_string()),
+            return Err(Error::new(
+                HuakError::HuakConfigurationError("invalid shell".to_string()),
                 ExitCode::FAILURE,
             ));
         }
-    }?;
-
-    Ok(())
+    }
 }
 
 /// Bash has a couple of files that can contain the actual completion script.
@@ -382,21 +505,17 @@ fn run_with_uninstall(shell: Option<Shell>) -> CliResult<()> {
 pub fn add_completion_bash() -> CliResult<()> {
     let home = match std::env::var("HOME") {
         Ok(dir) => dir,
-        Err(e) => return Err(CliError::from(e)),
+        Err(e) => return Err(Error::from(e)),
     };
-
     let file_path = format!("{home}/.bashrc");
-
-    // opening file in append mode
+    // Opening file in append mode
     let mut file = File::options().append(true).open(file_path)?;
-
     // This needs to be a string since there will be a \n prepended if it is
     file.write_all(
         format!(r##"{}eval "$(huak config completion)"{}"##, '\n', '\n')
             .as_bytes(),
-    )?;
-
-    Ok(())
+    )
+    .map_err(|e| Error::from(e))
 }
 
 // TODO
@@ -410,13 +529,10 @@ pub fn add_completion_elvish() -> CliResult<()> {
 pub fn add_completion_fish(cli: &mut Command) -> CliResult<()> {
     let home = match std::env::var("HOME") {
         Ok(dir) => dir,
-        Err(e) => return Err(CliError::from(e)),
+        Err(e) => return Err(Error::from(e)),
     };
-
     let target_file = format!("{home}/.config/fish/completions/huak.fish");
-
-    generate_target_file(target_file, cli)?;
-    Ok(())
+    generate_target_file(target_file, cli)
 }
 
 // TODO
@@ -428,9 +544,7 @@ pub fn add_completion_powershell() -> CliResult<()> {
 /// scripts.
 pub fn add_completion_zsh(cli: &mut Command) -> CliResult<()> {
     let target_file = "/usr/local/share/zsh/site-functions/_huak".to_string();
-
-    generate_target_file(target_file, cli)?;
-    Ok(())
+    generate_target_file(target_file, cli)
 }
 
 /// Reads the entire file and removes lines that match exactly with:
@@ -438,38 +552,29 @@ pub fn add_completion_zsh(cli: &mut Command) -> CliResult<()> {
 pub fn remove_completion_bash() -> CliResult<()> {
     let home = match std::env::var("HOME") {
         Ok(dir) => dir,
-        Err(e) => return Err(CliError::from(e)),
+        Err(e) => return Err(Error::from(e)),
     };
-
     let file_path = format!("{home}/.bashrc");
-
     let file_content = std::fs::read_to_string(&file_path)?;
     let new_content = file_content.replace(
         &format!(r##"{}eval "$(huak config completion)"{}"##, '\n', '\n'),
         "",
     );
-
-    std::fs::write(&file_path, new_content)?;
-
-    Ok(())
+    std::fs::write(&file_path, new_content).map_err(|e| Error::from(e))
 }
 
 // TODO
 pub fn remove_completion_elvish() -> CliResult<()> {
-    unimplemented!()
+    todo!()
 }
 
 pub fn remove_completion_fish() -> CliResult<()> {
     let home = match std::env::var("HOME") {
         Ok(dir) => dir,
-        Err(e) => return Err(CliError::from(e)),
+        Err(e) => return Err(Error::from(e)),
     };
-
     let target_file = format!("{home}/.config/fish/completions/huak.fish");
-
-    std::fs::remove_file(target_file)?;
-
-    Ok(())
+    std::fs::remove_file(target_file).map_err(|e| Error::from(e))
 }
 
 // TODO
@@ -479,10 +584,7 @@ pub fn remove_completion_powershell() -> CliResult<()> {
 
 pub fn remove_completion_zsh() -> CliResult<()> {
     let target_file = "/usr/local/share/zsh/site-functions/_huak".to_string();
-
-    std::fs::remove_file(target_file)?;
-
-    Ok(())
+    std::fs::remove_file(target_file).map_err(|e| Error::from(e))
 }
 
 fn generate_target_file<P>(target_file: P, cmd: &mut Command) -> CliResult<()>
@@ -490,10 +592,28 @@ where
     P: AsRef<Path>,
 {
     let mut file = File::create(&target_file)?;
-
     generate(Shell::Fish, cmd, "huak", &mut file);
-
     Ok(())
+}
+
+fn init_config(
+    trailing: Option<Vec<String>>,
+    quiet: bool,
+) -> CliResult<OperationConfig> {
+    let config = OperationConfig {
+        workspace_root: find_workspace()
+            .map_err(|e| Error::new(e, ExitCode::FAILURE))?,
+        trailing_command_parts: trailing,
+        terminal_options: Some(TerminalOptions {
+            verbosity: if quiet {
+                Verbosity::Quiet
+            } else {
+                Verbosity::Normal
+            },
+        }),
+        ..Default::default()
+    };
+    Ok(config)
 }
 
 // TODO:
@@ -504,9 +624,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
-
     use clap::{Command, Parser};
+    use std::fs;
 
     #[derive(Parser)]
     struct Cli {}

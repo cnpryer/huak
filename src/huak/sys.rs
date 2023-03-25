@@ -1,52 +1,14 @@
 use crate::error::HuakResult;
 use crate::Error;
-use pep440_rs::Version;
 use std::io::Write;
 use std::path::Path;
 use std::process::Command;
-use std::{collections::HashMap, ffi::OsString, path::PathBuf};
+use std::{ffi::OsString, path::PathBuf};
 use termcolor::{self, Color, ColorSpec, StandardStream, WriteColor};
 use termcolor::{
     Color::{Cyan, Green, Red, Yellow},
     ColorChoice,
 };
-
-/// A struct to contain useful platform data and objects.
-pub struct Platform {
-    /// The name of the platform.
-    name: String,
-    /// Absolute paths to each Python interpreter installed.
-    python_paths: HashMap<Version, PathBuf>,
-    /// An abstraction for the terminal.
-    terminal: Terminal,
-}
-
-impl Platform {
-    /// Create a new platform.
-    pub fn new() -> Platform {
-        todo!()
-    }
-
-    /// Install a Python interpreter.
-    pub fn install_python(&mut self, version_str: &str) -> HuakResult<()> {
-        todo!()
-    }
-
-    /// Get the absolute path to a specific Python interpreter with a version &str.
-    pub fn python_path(&self, version_str: &str) -> Option<&PathBuf> {
-        todo!()
-    }
-
-    /// Get the absolute path to the latest version Python interpreter installed.
-    pub fn python_path_latest(&self) -> Option<&PathBuf> {
-        todo!()
-    }
-
-    /// Get a reference to the platform's terminal.
-    pub fn terminal(&self) -> &Terminal {
-        &self.terminal
-    }
-}
 
 /// Get a vector of paths from the system PATH environment variable.
 pub fn env_path_values() -> Vec<PathBuf> {
@@ -156,6 +118,21 @@ impl Terminal {
         self.print(&"note", Some(&message), Cyan, false)
     }
 
+    /// Prints a custom message.
+    pub fn print_custom<T, U>(
+        &mut self,
+        title: U,
+        message: T,
+        color: Color,
+        justified: bool,
+    ) -> HuakResult<()>
+    where
+        T: std::fmt::Display,
+        U: std::fmt::Display,
+    {
+        self.print(&title, Some(&message), color, justified)
+    }
+
     /// Prints a message, where the status will have `color` color, and can be justified.
     /// The messages follows without color.
     /// NOTE: Messages are printed to stderr. This is behavior cargo implements as well to
@@ -202,7 +179,6 @@ impl Terminal {
     pub fn color_choice(&self) -> ColorChoice {
         match self.output {
             TerminalOut::Stream { color_choice, .. } => color_choice,
-            TerminalOut::Write(_) => ColorChoice::Never,
         }
     }
 
@@ -214,7 +190,7 @@ impl Terminal {
             }
             _ => {
                 let mut child = cmd.spawn()?;
-                let status = match child.try_wait() {
+                let _ = match child.try_wait() {
                     Ok(Some(s)) => s,
                     Ok(None) => child.wait()?,
                     Err(e) => {
@@ -235,8 +211,6 @@ impl Default for Terminal {
 
 /// Objects for writing terminal output to.
 enum TerminalOut {
-    /// A basic write object without support for color
-    Write(Box<dyn Write>),
     /// Color-enabled stdio with information on whether color should be used
     Stream {
         stdout: StandardStream,
@@ -257,17 +231,6 @@ impl TerminalOut {
         justified: bool,
     ) -> HuakResult<()> {
         match *self {
-            TerminalOut::Write(ref mut w) => {
-                if justified {
-                    write!(w, "{:>12}", status)?;
-                } else {
-                    write!(w, "{}:", status)?;
-                }
-                match message {
-                    Some(message) => writeln!(w, " {}", message)?,
-                    None => write!(w, " ")?,
-                }
-            }
             TerminalOut::Stream { ref mut stderr, .. } => {
                 stderr.reset()?;
                 stderr.set_color(
@@ -293,7 +256,6 @@ impl TerminalOut {
     /// Get a mutable reference to the stdout writer.
     pub fn stdout(&mut self) -> &mut dyn Write {
         match *self {
-            TerminalOut::Write(ref mut w) => w,
             TerminalOut::Stream { ref mut stdout, .. } => stdout,
         }
     }
@@ -301,7 +263,6 @@ impl TerminalOut {
     /// Get a mutable reference to the stderr writer.
     pub fn stderr(&mut self) -> &mut dyn Write {
         match *self {
-            TerminalOut::Write(ref mut w) => w,
             TerminalOut::Stream { ref mut stderr, .. } => stderr,
         }
     }
@@ -337,20 +298,4 @@ pub fn get_shell_path() -> HuakResult<String> {
 #[cfg(windows)]
 pub fn get_shell_path() -> HuakResult<String> {
     Ok(std::env::var("COMSPEC")?)
-}
-
-/// Gets the `source` command for the current shell.
-///
-/// Returns an error if it fails to get correct env vars.
-pub fn get_shell_source_command() -> HuakResult<String> {
-    let shell_name = get_shell_name()?;
-
-    let command =
-        if matches!(shell_name.as_str(), "fish" | "csh" | "tcsh" | "nu") {
-            "source"
-        } else {
-            "."
-        };
-
-    Ok(command.to_owned())
 }
