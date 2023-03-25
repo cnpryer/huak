@@ -31,11 +31,12 @@ jobs:
         with:
           toolchain: stable
       - uses: Swatinem/rust-cache@v1
+      - name: Python Virtual Environment
+        run: python -m venv .venv
       - name: Test
         env:
           HUAK_MUTE_COMMAND: 1
-        run: |
-          cargo test --all-features -- --test-threads=1
+        run: cargo test --all-features -- --test-threads=1
       - name: Build
         run: cargo build --release
 

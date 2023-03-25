@@ -2,7 +2,6 @@ use std::process::ExitCode;
 use thiserror::Error as ThisError;
 
 pub type CliResult<T> = Result<T, Error>;
-pub const BASIC_ERROR_CODE: ExitCode = ExitCode::FAILURE;
 
 #[derive(Debug, ThisError)]
 pub struct Error {
@@ -34,30 +33,30 @@ impl std::fmt::Display for Error {
 
 impl From<clap::Error> for Error {
     fn from(e: clap::Error) -> Error {
-        Error::new(huak::Error::ClapError(e), BASIC_ERROR_CODE)
+        Error::new(huak::Error::ClapError(e), ExitCode::FAILURE)
     }
 }
 
 impl From<std::io::Error> for Error {
     fn from(e: std::io::Error) -> Error {
-        Error::new(huak::Error::IOError(e), BASIC_ERROR_CODE)
+        Error::new(huak::Error::IOError(e), ExitCode::FAILURE)
     }
 }
 
 impl From<std::io::ErrorKind> for Error {
     fn from(e: std::io::ErrorKind) -> Error {
-        Error::new(huak::Error::InternalError(e.to_string()), BASIC_ERROR_CODE)
+        Error::new(huak::Error::InternalError(e.to_string()), ExitCode::FAILURE)
     }
 }
 
 impl From<std::str::Utf8Error> for Error {
     fn from(e: std::str::Utf8Error) -> Error {
-        Error::new(huak::Error::Utf8Error(e), BASIC_ERROR_CODE)
+        Error::new(huak::Error::Utf8Error(e), ExitCode::FAILURE)
     }
 }
 
 impl From<std::env::VarError> for Error {
     fn from(e: std::env::VarError) -> Error {
-        Error::new(huak::Error::EnvVarError(e), BASIC_ERROR_CODE)
+        Error::new(huak::Error::EnvVarError(e), ExitCode::FAILURE)
     }
 }

@@ -1,12 +1,4 @@
-use std::{
-    fs::File,
-    io::Write,
-    path::{Path, PathBuf},
-    process::ExitCode,
-};
-
 use crate::error::{CliResult, Error};
-
 use clap::{Command, CommandFactory, Parser, Subcommand};
 use clap_complete::{self, Shell};
 use huak::{
@@ -14,6 +6,12 @@ use huak::{
         self, CleanOptions, OperationConfig, TerminalOptions, WorkspaceOptions,
     },
     Error as HuakError, Verbosity,
+};
+use std::{
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+    process::ExitCode,
 };
 
 /// A Python package manager written in Rust inspired by Cargo.
@@ -162,7 +160,7 @@ impl Cli {
     pub fn run(self) -> CliResult<()> {
         match self.command {
             Commands::Config { command } => config(command, self.quiet),
-            Commands::Activate => _activate(self.quiet),
+            Commands::Activate => activate(self.quiet),
             Commands::Add {
                 dependency,
                 group,
@@ -202,7 +200,7 @@ impl Cli {
     }
 }
 
-fn _activate(_quiet: bool) -> CliResult<()> {
+fn activate(_quiet: bool) -> CliResult<()> {
     todo!()
 }
 

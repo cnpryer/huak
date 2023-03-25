@@ -55,11 +55,6 @@ pub fn add_project_dependencies(
 ) -> HuakResult<()> {
     let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
-    // TODO: Propagate installer configuration (potentially per-package)
-    let new_packages: HuakResult<Vec<Package>> = dependencies
-        .iter()
-        .map(|item| Package::from_str(item))
-        .collect();
     let manifest_path = config.workspace_root.join("pyproject.toml");
     let mut pyproject_toml = PyProjectToml::from_path(&manifest_path)?;
     let curr_packages: HuakResult<Vec<Package>> = pyproject_toml
@@ -68,11 +63,15 @@ pub fn add_project_dependencies(
         .iter()
         .map(|item| Package::from_str(item))
         .collect();
+    let new_packages: HuakResult<Vec<Package>> = dependencies
+        .iter()
+        .map(|item| Package::from_str(item))
+        .collect();
     let new_packages = packages_to_add(&new_packages?, &curr_packages?)?;
     venv.install_packages(&new_packages, &mut terminal)?;
-    for package in &new_packages {
-        pyproject_toml.add_dependency(&package.dependency_string());
-    }
+    new_packages.iter().for_each(|item| {
+        pyproject_toml.add_dependency(&item.dependency_string());
+    });
     pyproject_toml.write_file(&manifest_path)
 }
 
@@ -84,10 +83,6 @@ pub fn add_project_optional_dependencies(
 ) -> HuakResult<()> {
     let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
-    let new_packages: HuakResult<Vec<Package>> = dependencies
-        .iter()
-        .map(|item| Package::from_str(item))
-        .collect();
     let manifest_path = config.workspace_root.join("pyproject.toml");
     let mut pyproject_toml = PyProjectToml::from_path(&manifest_path)?;
     let curr_packages: HuakResult<Vec<Package>> = pyproject_toml
@@ -96,13 +91,16 @@ pub fn add_project_optional_dependencies(
         .iter()
         .map(|item| Package::from_str(item))
         .collect();
+    let new_packages: HuakResult<Vec<Package>> = dependencies
+        .iter()
+        .map(|item| Package::from_str(item))
+        .collect();
     let new_packages = packages_to_add(&new_packages?, &curr_packages?)?;
-    // TODO: Propagate installer configuration (potentially per-package)
     venv.install_packages(&new_packages, &mut terminal)?;
-    for package in &new_packages {
+    new_packages.iter().for_each(|item| {
         pyproject_toml
-            .add_optional_dependency(&package.dependency_string(), group);
-    }
+            .add_optional_dependency(&item.dependency_string(), group);
+    });
     pyproject_toml.write_file(&manifest_path)
 }
 
@@ -114,12 +112,9 @@ pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
         venv.install_packages(&[Package::from_str("build")?], &mut terminal)?;
     }
     let mut cmd = Command::new(venv.python_path());
-    let mut args: Vec<String> = vec!["-m", "build"]
-        .iter_mut()
-        .map(|item| item.to_string())
-        .collect();
+    let mut args = vec!["-m", "build"];
     if let Some(it) = config.trailing_command_parts.as_ref() {
-        args.extend(it.clone());
+        args.extend(it.iter().map(|item| item.as_str()));
     }
     make_venv_command(&mut cmd, &venv)?;
     cmd.args(args).current_dir(&config.workspace_root);
@@ -184,12 +179,9 @@ pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
         venv.install_packages(&[Package::from_str("black")?], &mut terminal)?;
     }
     let mut cmd = Command::new(venv.python_path());
-    let mut args: Vec<String> = vec!["-m", "black", "."]
-        .iter_mut()
-        .map(|item| item.to_string())
-        .collect();
+    let mut args = vec!["-m", "black", "."];
     if let Some(it) = config.trailing_command_parts.as_ref() {
-        args.extend(it.clone());
+        args.extend(it.iter().map(|item| item.as_str()));
     }
     make_venv_command(&mut cmd, &venv)?;
     cmd.args(args).current_dir(&config.workspace_root);
@@ -222,7 +214,6 @@ pub fn init_lib_project(config: &OperationConfig) -> HuakResult<()> {
         return Err(Error::ProjectTomlExistsError);
     }
     let mut pyproject_toml = PyProjectToml::new();
-    // TODO: Cononical, importable, as-is?
     let name = fs::last_path_component(config.workspace_root.as_path())?;
     pyproject_toml.set_project_name(&name);
     pyproject_toml.write_file(config.workspace_root.join("pyproject.toml"))
@@ -236,7 +227,6 @@ pub fn install_project_dependencies(
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     let project =
         Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
-    // TODO: Propagate installer configuration (potentially per-package)
     let packages: HuakResult<Vec<Package>> = project
         .dependencies()
         .unwrap_or(&Vec::new())
@@ -255,7 +245,6 @@ pub fn install_project_optional_dependencies(
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     let project =
         Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
-    // TODO: Propagate installer configuration (potentially per-package)
     let packages: HuakResult<Vec<Package>> = project
         .optional_dependencey_group(group)
         .unwrap_or(&Vec::new())
@@ -273,12 +262,9 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
         venv.install_packages(&[Package::from_str("ruff")?], &mut terminal)?;
     }
     let mut cmd = Command::new(venv.python_path());
-    let mut args: Vec<String> = vec!["-m", "ruff", "."]
-        .iter_mut()
-        .map(|item| item.to_string())
-        .collect();
+    let mut args = vec!["-m", "ruff", "."];
     if let Some(it) = config.trailing_command_parts.as_ref() {
-        args.extend(it.clone());
+        args.extend(it.iter().map(|item| item.as_str()));
     }
     make_venv_command(&mut cmd, &venv)?;
     cmd.args(args).current_dir(&config.workspace_root);
@@ -333,7 +319,7 @@ pub fn new_lib_project(config: &OperationConfig) -> HuakResult<()> {
     .map_err(Error::IOError)
 }
 
-/// Publish the Python project as to a registry.
+/// Publish the Python project to a registry.
 pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
@@ -341,12 +327,9 @@ pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
         venv.install_packages(&[Package::from_str("twine")?], &mut terminal)?;
     }
     let mut cmd = Command::new(venv.python_path());
-    let mut args: Vec<String> = vec!["-m", "twine", "upload", "dist/*"]
-        .iter_mut()
-        .map(|item| item.to_string())
-        .collect();
+    let mut args = vec!["-m", "twine", "upload", "dist/*"];
     if let Some(it) = config.trailing_command_parts.as_ref() {
-        args.extend(it.clone());
+        args.extend(it.iter().map(|item| item.as_str()));
     }
     make_venv_command(&mut cmd, &venv)?;
     cmd.args(args).current_dir(&config.workspace_root);
@@ -358,13 +341,13 @@ pub fn remove_project_dependencies(
     dependency_names: &[&str],
     config: &OperationConfig,
 ) -> HuakResult<()> {
+    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut project =
         Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
-    for dependency in dependency_names {
-        project.remove_dependency(dependency);
-    }
-    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
+    dependency_names.iter().for_each(|item| {
+        project.remove_dependency(item);
+    });
     venv.uninstall_packages(dependency_names, &mut terminal)?;
     project
         .pyproject_toml()
@@ -381,9 +364,9 @@ pub fn remove_project_optional_dependencies(
     let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut project =
         Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
-    for dependency in dependency_names {
-        project.remove_optional_dependency(dependency, group);
-    }
+    dependency_names.iter().for_each(|item| {
+        project.remove_optional_dependency(item, group);
+    });
     venv.uninstall_packages(dependency_names, &mut terminal)?;
     project
         .pyproject_toml()
@@ -846,8 +829,6 @@ mock-project = "mock_project.main:main"
         );
     }
 
-    // TODO: Need to implement venv.has_package
-    #[ignore = "incomplete test"]
     #[test]
     fn test_install_project_dependencies() {
         let dir = tempdir().unwrap().into_path();
@@ -1068,8 +1049,6 @@ if __name__ == "__main__":
         assert!(ser_toml.inner.project.as_ref().unwrap().scripts.is_some());
     }
 
-    // TODO: Need to implement venv.has_package
-    #[ignore = "incomplete test"]
     #[test]
     fn test_remove_project_dependencies() {
         let dir = tempdir().unwrap().into_path();

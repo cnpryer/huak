@@ -9,6 +9,9 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::hash_map::RandomState,
+    env::consts::OS,
+    fs::File,
+    io::{BufRead, BufReader},
     path::{Path, PathBuf},
     process::Command,
     str::FromStr,
@@ -22,7 +25,8 @@ mod git;
 pub mod ops;
 mod sys;
 
-const DEFAULT_VENV_NAME: &str = ".venv";
+const DEFAULT_VIRTUAL_ENVIRONMENT_NAME: &str = ".venv";
+const VIRTUAL_ENVIRONMENT_CONFIG_FILE_NAME: &str = "pyvenv.cfg";
 const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
 
 #[cfg(test)]
@@ -379,7 +383,7 @@ impl Default for PyProjectToml {
 }
 
 fn default_virtual_environment_name() -> &'static str {
-    DEFAULT_VENV_NAME
+    DEFAULT_VIRTUAL_ENVIRONMENT_NAME
 }
 
 fn default_pyproject_toml_contents(project_name: &str) -> String {
@@ -447,6 +451,8 @@ pub struct VirtualEnvironment {
     root: PathBuf,
     /// The installer the virtual environment uses to install python packages.
     installer: Installer,
+    /// The pyvenv.cfg data.
+    config: VirtualEnvironmentConfig,
 }
 
 impl VirtualEnvironment {
@@ -455,6 +461,7 @@ impl VirtualEnvironment {
         VirtualEnvironment {
             root: PathBuf::new(),
             installer: Installer::new(),
+            config: VirtualEnvironmentConfig::new(),
         }
     }
 
@@ -466,8 +473,13 @@ impl VirtualEnvironment {
     /// Create a virtual environment from its root path.
     pub fn from_path(path: impl AsRef<Path>) -> HuakResult<VirtualEnvironment> {
         let path = path.as_ref();
-        let mut venv = VirtualEnvironment::new();
-        venv.root = path.to_path_buf();
+        let mut venv = VirtualEnvironment {
+            root: path.to_path_buf(),
+            installer: Installer::new(),
+            config: VirtualEnvironmentConfig::from_path(
+                path.join(VIRTUAL_ENVIRONMENT_CONFIG_FILE_NAME),
+            )?,
+        };
         let mut installer = Installer::new();
         installer.set_config(InstallerConfig {
             path: venv.executables_dir_path().join("pip"),
@@ -485,6 +497,11 @@ impl VirtualEnvironment {
         self.executables_dir_path().join(file_name)
     }
 
+    /// Get the version of the Python environment's Python interpreter.
+    pub fn python_version(&self) -> Option<&Version> {
+        self.config.version.as_ref()
+    }
+
     /// The absolute path to the Python environment's executables directory.
     pub fn executables_dir_path(&self) -> PathBuf {
         #[cfg(windows)]
@@ -495,8 +512,34 @@ impl VirtualEnvironment {
     }
 
     /// The absolute path to the Python environment's site-packages directory.
-    pub fn site_packages_dir_path(&self) -> &PathBuf {
-        todo!()
+    pub fn site_packages_dir_path(&self) -> HuakResult<PathBuf> {
+        let path = match OS {
+            "windows" => self.root.join("Lib").join("site-packages"),
+            _ => {
+                let version = match self.python_version() {
+                    Some(it) => it,
+                    None => {
+                        return Err(Error::VenvInvalidConfigFile(
+                            "missing version".to_string(),
+                        ))
+                    }
+                };
+                self.root
+                    .join("lib")
+                    .join(format!(
+                        "python{}",
+                        version
+                            .release
+                            .iter()
+                            .take(2)
+                            .map(|&x| x.to_string())
+                            .collect::<Vec<String>>()
+                            .join(".")
+                    ))
+                    .join("site-packages")
+            }
+        };
+        Ok(path)
     }
 
     /// Install Python packages to the environment.
@@ -553,7 +596,10 @@ impl VirtualEnvironment {
 
     /// Check if the environment has a package already installed.
     pub fn has_package(&self, package: &Package) -> HuakResult<bool> {
-        todo!()
+        Ok(self
+            .site_packages_dir_path()?
+            .join(to_importable_package_name(package.name())?)
+            .exists())
     }
 }
 
@@ -565,7 +611,9 @@ pub fn find_venv_root() -> HuakResult<PathBuf> {
         return Ok(PathBuf::from(path));
     }
     let cwd = std::env::current_dir()?;
-    if let Some(path) = fs::find_file_bottom_up("pyvenv.cfg", cwd, 10)? {
+    if let Some(path) =
+        fs::find_file_bottom_up(VIRTUAL_ENVIRONMENT_CONFIG_FILE_NAME, cwd, 10)?
+    {
         return Ok(path
             .parent()
             .ok_or(Error::InternalError(
@@ -574,6 +622,39 @@ pub fn find_venv_root() -> HuakResult<PathBuf> {
             .to_path_buf());
     }
     Err(Error::VenvNotFoundError)
+}
+
+#[derive(Default)]
+/// Data about some environment's Python configuration. This abstraction is modeled after
+/// the pyenv.cfg file used for Python virtual environments.
+struct VirtualEnvironmentConfig {
+    // The version of the environment's Python interpreter.
+    version: Option<Version>,
+}
+
+impl VirtualEnvironmentConfig {
+    pub fn new() -> VirtualEnvironmentConfig {
+        VirtualEnvironmentConfig { version: None }
+    }
+
+    pub fn from_path(
+        path: impl AsRef<Path>,
+    ) -> HuakResult<VirtualEnvironmentConfig> {
+        let file = File::open(path)?;
+        let buff_reader = BufReader::new(file);
+        let lines: Vec<String> = buff_reader.lines().flatten().collect();
+        let mut version = None;
+        lines.iter().for_each(|item| {
+            let mut vals = item.splitn(2, " = ");
+            let name = vals.next().unwrap_or_default();
+            let value = vals.next().unwrap_or_default();
+            if name == "version" {
+                version = Version::from_str(value).ok()
+            }
+        });
+
+        Ok(VirtualEnvironmentConfig { version })
+    }
 }
 
 /// A struct for managing installing packages.
