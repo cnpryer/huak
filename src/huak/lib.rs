@@ -1,14 +1,5 @@
 pub use error::{Error, HuakResult};
 use indexmap::IndexMap;
-pub use ops::{
-    add_project_dependencies, add_project_optional_dependencies, build_project,
-    clean_project, display_project_version, find_workspace, format_project,
-    init_app_project, init_lib_project, install_project_dependencies,
-    install_project_optional_dependencies, lint_project, new_app_project,
-    new_lib_project, publish_project, remove_project_dependencies,
-    remove_project_optional_dependencies, run_command_str, test_project,
-    CleanOptions, OperationConfig, TerminalOptions, WorkspaceOptions,
-};
 use pep440_rs::{
     parse_version_specifiers, Operator as VersionOperator, Version,
     VersionSpecifier,
@@ -28,7 +19,7 @@ pub use sys::Verbosity;
 mod error;
 mod fs;
 mod git;
-mod ops;
+pub mod ops;
 mod sys;
 
 const DEFAULT_VENV_NAME: &str = ".venv";
@@ -245,7 +236,7 @@ impl PyProjectToml {
     /// Get the project version.
     pub fn project_version(&self) -> Option<&str> {
         if let Some(project) = self.project.as_ref() {
-            return project.version.as_ref().map(|version| version.as_str());
+            return project.version.as_deref();
         }
         None
     }
@@ -273,11 +264,11 @@ impl PyProjectToml {
 
     /// Add a Python package as a dependency to the project.
     pub fn add_dependency(&mut self, package_str: &str) {
-        self.project.as_mut().map(|project| {
+        if let Some(project) = self.project.as_mut() {
             if let Some(dependencies) = project.dependencies.as_mut() {
                 dependencies.push(package_str.to_string());
             }
-        });
+        };
     }
 
     /// Add a Python package as a dependency to the project.
@@ -286,7 +277,7 @@ impl PyProjectToml {
         package_str: &str,
         group_name: &str,
     ) {
-        self.project.as_mut().map(|project| {
+        if let Some(project) = self.project.as_mut() {
             if let Some(map) = project.optional_dependencies.as_mut() {
                 if let Some(dependencies) = map.get_mut(group_name) {
                     dependencies.push(package_str.to_string());
@@ -297,12 +288,12 @@ impl PyProjectToml {
                     );
                 };
             }
-        });
+        };
     }
 
     /// Remove a dependency from the project.
     pub fn remove_dependency(&mut self, package_str: &str) {
-        self.project.as_mut().map(|project| {
+        if let Some(project) = self.project.as_mut() {
             if let Some(dependencies) = project.dependencies.as_mut() {
                 if let Some(i) = dependencies
                     .iter()
@@ -311,7 +302,7 @@ impl PyProjectToml {
                     dependencies.remove(i);
                 };
             }
-        });
+        };
     }
 
     /// Remove an optional dependency from the project.
@@ -320,7 +311,7 @@ impl PyProjectToml {
         package_str: &str,
         group_name: &str,
     ) {
-        self.project.as_mut().map(|project| {
+        if let Some(project) = self.project.as_mut() {
             if let Some(group) = project.optional_dependencies.as_mut() {
                 if let Some(dependencies) = group.get_mut(group_name) {
                     if let Some(i) = dependencies
@@ -331,7 +322,7 @@ impl PyProjectToml {
                     };
                 };
             }
-        });
+        };
     }
 
     /// Get the scripts listed in the toml.
@@ -394,40 +385,37 @@ fn default_virtual_environment_name() -> &'static str {
 fn default_pyproject_toml_contents(project_name: &str) -> String {
     format!(
         r#"[build-system]
-    requires = ["hatchling"]
-    build-backend = "hatchling.build"
-    
-    [project]
-    name = "{}"
-    version = "0.0.1"
-    description = ""
-    dependencies = []
-    "#,
-        project_name
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "{project_name}"
+version = "0.0.1"
+description = ""
+dependencies = []
+    "#
     )
 }
 
 fn default_init_file_contents(version: &str) -> String {
     format!(
-        r#"__version__ = "{}"
-"#,
-        version
+        r#"__version__ = "{version}"
+"#
     )
 }
 
 fn default_entrypoint_string(importable_name: &str) -> String {
-    format!("{}.main:main", importable_name)
+    format!("{importable_name}.main:main")
 }
 
 fn default_test_file_contents(importable_name: &str) -> String {
     format!(
-        r#"from {} import __version__
+        r#"from {importable_name} import __version__
 
 
 def test_version():
     __version__
-"#,
-        importable_name
+"#
     )
 }
 
@@ -482,20 +470,10 @@ impl VirtualEnvironment {
         venv.root = path.to_path_buf();
         let mut installer = Installer::new();
         installer.set_config(InstallerConfig {
-            path: venv.executables_dir_path().join("pip").to_path_buf(),
+            path: venv.executables_dir_path().join("pip"),
         });
         venv.installer = installer;
         Ok(venv)
-    }
-
-    /// Get the python environment config.
-    fn python_environment_config(&self) -> VirtualEnvironmentConfig {
-        todo!()
-    }
-
-    /// Create a Python virtual environment on the system.
-    pub fn write_venv(&self) -> HuakResult<()> {
-        todo!()
     }
 
     /// The absolute path to the Python environment's python interpreter binary.
@@ -507,22 +485,6 @@ impl VirtualEnvironment {
         self.executables_dir_path().join(file_name)
     }
 
-    /// The version of the Python environment's Python interpreter.
-    pub fn python_version(&self) -> Option<Version> {
-        self.python_environment_config().version
-    }
-
-    /// The absolute path to the Python interpreter used to create the Python
-    /// environment.
-    pub fn base_python_path(&self) -> PathBuf {
-        todo!()
-    }
-
-    /// The version of the Python interpreter used to create the Python environment.
-    pub fn base_python_version(&self) -> &Version {
-        todo!()
-    }
-
     /// The absolute path to the Python environment's executables directory.
     pub fn executables_dir_path(&self) -> PathBuf {
         #[cfg(windows)]
@@ -532,18 +494,8 @@ impl VirtualEnvironment {
         self.root.join(dir_name)
     }
 
-    /// The absolute path to the system's executables directory.
-    pub fn base_executables_dir_path(&self) -> &PathBuf {
-        todo!()
-    }
-
     /// The absolute path to the Python environment's site-packages directory.
     pub fn site_packages_dir_path(&self) -> &PathBuf {
-        todo!()
-    }
-
-    /// The absolute path to the system's site-packages directory.
-    pub fn base_site_packages_dir_path(&self) -> &PathBuf {
         todo!()
     }
 
@@ -571,28 +523,15 @@ impl VirtualEnvironment {
         Ok(())
     }
 
-    /// Check if the Python environment is isolated from any system site-packages
-    /// directory.
-    pub fn is_isolated(&self) -> bool {
-        !self
-            .python_environment_config()
-            .include_system_site_packages
-    }
-
     /// Check if the environment is already activated.
-    pub fn is_activated(&self) -> bool {
+    pub fn is_active(&self) -> bool {
         if let Some(path) = sys::active_virtual_env_path() {
             return self.root == path;
         }
+        if let Some(path) = sys::active_conda_env_path() {
+            return self.root == path;
+        }
         false
-    }
-
-    /// Activate the Python environment with a given terminal.
-    pub fn activate_with_terminal(
-        &self,
-        terminal: &mut Terminal,
-    ) -> HuakResult<()> {
-        todo!()
     }
 
     /// Check if the environment has a module installed to the executables directory.
@@ -615,16 +554,6 @@ impl VirtualEnvironment {
     /// Check if the environment has a package already installed.
     pub fn has_package(&self, package: &Package) -> HuakResult<bool> {
         todo!()
-    }
-
-    /// Get the environment's installer.
-    pub fn installer(&self) -> &Installer {
-        &self.installer
-    }
-
-    /// Set the environment's installer.
-    pub fn set_installer(&mut self, installer: Installer) {
-        self.installer = installer;
     }
 }
 
@@ -675,7 +604,7 @@ impl Installer {
         terminal: &mut Terminal,
     ) -> HuakResult<()> {
         let mut cmd = Command::new(self.config.path.clone());
-        let mut cmd = cmd.arg("install").arg(package.dependency_string());
+        cmd.arg("install").arg(package.dependency_string());
         terminal.run_command(&mut cmd)
     }
 
@@ -685,7 +614,7 @@ impl Installer {
         terminal: &mut Terminal,
     ) -> HuakResult<()> {
         let mut cmd = Command::new(self.config.path.clone());
-        let mut cmd = cmd.arg("uninstall").arg(package_name).arg("-y");
+        cmd.arg("uninstall").arg(package_name).arg("-y");
         terminal.run_command(&mut cmd)
     }
 }
@@ -699,36 +628,6 @@ impl InstallerConfig {
     pub fn new() -> InstallerConfig {
         InstallerConfig {
             path: PathBuf::from("pip"),
-        }
-    }
-}
-
-/// Data about some environment's Python configuration. This abstraction is modeled after
-/// the pyenv.cfg file used for Python virtual environments.
-pub struct VirtualEnvironmentConfig {
-    /// Path to directory containing the Python installation used to create the
-    /// environment.
-    home: PathBuf,
-    /// Boolean value to indicate if the Python environment is isolated from the global
-    /// site.
-    include_system_site_packages: bool,
-    // The version of the environment's Python interpreter.
-    version: Option<Version>,
-}
-
-impl ToString for VirtualEnvironmentConfig {
-    /// Convert the `VirtualEnvironmentConfig` to str.
-    fn to_string(&self) -> String {
-        todo!()
-    }
-}
-
-impl Default for VirtualEnvironmentConfig {
-    fn default() -> Self {
-        Self {
-            home: Default::default(),
-            include_system_site_packages: Default::default(),
-            version: None,
         }
     }
 }
@@ -865,13 +764,13 @@ impl FromStr for Package {
 
 fn to_package_cononical_name(name: &str) -> HuakResult<String> {
     let re = Regex::new("[-_. ]+")?;
-    let res = re.replace_all(name.clone(), "-");
+    let res = re.replace_all(name, "-");
     Ok(res.into_owned())
 }
 
 fn to_importable_package_name(name: &str) -> HuakResult<String> {
     let cononical_name = to_package_cononical_name(name)?;
-    Ok(cononical_name.replace("-", "_"))
+    Ok(cononical_name.replace('-', "_"))
 }
 
 impl PartialEq for Package {
@@ -886,6 +785,7 @@ impl PartialEq for Package {
 impl Eq for Package {}
 
 /// A client used to interact with a package index.
+#[derive(Default)]
 pub struct PackageIndexClient;
 
 impl PackageIndexClient {
@@ -897,7 +797,7 @@ impl PackageIndexClient {
         let url = format!("https://pypi.org/pypi/{}/json", package.name());
         reqwest::blocking::get(url)?
             .json()
-            .map_err(|e| Error::ReqwestError(e))
+            .map_err(Error::ReqwestError)
     }
 }
 
@@ -948,8 +848,7 @@ pub struct PackageInfo {
 pub fn find_python_interpreter_paths(
 ) -> impl Iterator<Item = (PathBuf, Version)> {
     let paths = fs::flatten_directories(sys::env_path_values());
-    let interpreters = all_python_interpreters_in_paths(paths);
-    interpreters
+    all_python_interpreters_in_paths(paths)
 }
 
 fn all_python_interpreters_in_paths(
@@ -957,9 +856,7 @@ fn all_python_interpreters_in_paths(
 ) -> impl Iterator<Item = (PathBuf, Version)> {
     paths
         .into_iter()
-        .map(|item| {
-            (item.to_path_buf(), python_version_from_path(item.as_path()))
-        })
+        .map(|item| (item.clone(), python_version_from_path(item.as_path())))
         .filter_map(|(path, version)| version.map(|v| (path, v)))
 }
 
@@ -1216,23 +1113,6 @@ dev = [
         assert!(venv.executables_dir_path().join("python").exists());
         #[cfg(windows)]
         assert!(venv.executables_dir_path().join("python.exe").exists());
-    }
-
-    #[ignore = "incomplete test"]
-    #[test]
-    /// NOTE: This test depends on local virtual environment.
-    fn virtual_environment_python_environment_config() {
-        let venv = VirtualEnvironment::from_path(
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".venv"),
-        )
-        .unwrap();
-        let python_path = venv.python_path();
-        let venv_root = python_path.parent().unwrap().parent().unwrap();
-
-        assert_eq!(
-            venv.python_environment_config().to_string(),
-            std::fs::read_to_string(venv_root.join("pyvenv.cfg")).unwrap()
-        );
     }
 
     #[test]

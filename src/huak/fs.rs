@@ -4,6 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[allow(dead_code)]
 /// Copy contents from one directory into a new directory at a provided `to` full path.
 /// If the `to` directory doesn't exist this function creates it.
 pub fn copy_dir<T: AsRef<Path>>(from: T, to: T) -> HuakResult<()> {

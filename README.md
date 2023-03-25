@@ -60,7 +60,7 @@ A Python package manager written in Rust inspired by Cargo.
 Usage: huak <COMMAND>
 
 Commands:
-  activate  Activate the project's virtual environment
+  activate  Activate the project's virtual environment*
   add       Add a dependency to the existing project
   audit     Check for vulnerable dependencies and license compatibility*
   build     Build tarball and wheel for the project
@@ -86,8 +86,6 @@ Options:
   -V, --version  Print version
 ```
 _"*" indicates first-pass of implementation is incomplete._
-
-> ⚠️ Note that `huak activate` is currently only partially supported on Windows. See [#302](https://github.com/cnpryer/huak/issues/302).
 
 ## Documentation
 

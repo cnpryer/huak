@@ -8,16 +8,12 @@ use std::{
 use crate::error::{CliResult, Error};
 
 use clap::{Command, CommandFactory, Parser, Subcommand};
-use clap_complete::{generate, Shell};
+use clap_complete::{self, Shell};
 use huak::{
-    add_project_dependencies, add_project_optional_dependencies, build_project,
-    clean_project, display_project_version, find_workspace, format_project,
-    init_app_project, init_lib_project, install_project_dependencies,
-    install_project_optional_dependencies, lint_project, new_app_project,
-    new_lib_project, publish_project, remove_project_dependencies,
-    remove_project_optional_dependencies, run_command_str, test_project,
-    CleanOptions, Error as HuakError, OperationConfig, TerminalOptions,
-    Verbosity, WorkspaceOptions,
+    ops::{
+        self, CleanOptions, OperationConfig, TerminalOptions, WorkspaceOptions,
+    },
+    Error as HuakError, Verbosity,
 };
 
 /// A Python package manager written in Rust inspired by Cargo.
@@ -166,7 +162,7 @@ impl Cli {
     pub fn run(self) -> CliResult<()> {
         match self.command {
             Commands::Config { command } => config(command, self.quiet),
-            Commands::Activate => activate(self.quiet),
+            Commands::Activate => _activate(self.quiet),
             Commands::Add {
                 dependency,
                 group,
@@ -206,7 +202,7 @@ impl Cli {
     }
 }
 
-fn activate(_quiet: bool) -> CliResult<()> {
+fn _activate(_quiet: bool) -> CliResult<()> {
     todo!()
 }
 
@@ -219,8 +215,8 @@ fn add(
     let config = init_config(trailing, quiet)?;
     let deps = [dependency.as_str()];
     match group.as_ref() {
-        Some(it) => add_project_optional_dependencies(&deps, it, &config),
-        None => add_project_dependencies(&deps, &config),
+        Some(it) => ops::add_project_optional_dependencies(&deps, it, &config),
+        None => ops::add_project_dependencies(&deps, &config),
     }
     .map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
@@ -231,7 +227,7 @@ fn audit(_quiet: bool) -> CliResult<()> {
 
 fn build(trailing: Option<Vec<String>>, quiet: bool) -> CliResult<()> {
     let config = init_config(trailing, quiet)?;
-    build_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
+    ops::build_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
 fn clean(
@@ -244,7 +240,7 @@ fn clean(
         include_compiled_bytecode,
         include_pycache,
     });
-    clean_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
+    ops::clean_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
 /// Prints the script to stdout and a way to add the script to the shell init file to stderr. This
@@ -287,7 +283,7 @@ fn fix(trailing: Option<Vec<String>>, quiet: bool) -> CliResult<()> {
     if let Some(it) = config.trailing_command_parts.as_mut() {
         it.push("--fix".to_string());
     }
-    lint_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
+    ops::lint_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
 fn fmt(
@@ -301,15 +297,15 @@ fn fmt(
             it.push("--check".to_string());
         }
     }
-    format_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
+    ops::format_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
 fn init(app: bool, _lib: bool, quiet: bool) -> CliResult<()> {
     let config = init_config(None, quiet)?;
     let res = if app {
-        init_app_project(&config)
+        ops::init_app_project(&config)
     } else {
-        init_lib_project(&config)
+        ops::init_lib_project(&config)
     };
     res.map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
@@ -322,14 +318,14 @@ fn install(
     let config = init_config(trailing, quiet)?;
     if let Some(it) = groups {
         for group in &it {
-            match install_project_optional_dependencies(group, &config) {
+            match ops::install_project_optional_dependencies(group, &config) {
                 Ok(_) => (),
                 Err(e) => return Err(Error::new(e, ExitCode::FAILURE)),
             }
         }
         Ok(())
     } else {
-        install_project_dependencies(&config)
+        ops::install_project_dependencies(&config)
             .map_err(|e| Error::new(e, ExitCode::FAILURE))
     }
 }
@@ -345,7 +341,7 @@ fn lint(
             it.push("--fix".to_string());
         }
     }
-    lint_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
+    ops::lint_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
 fn new(
@@ -366,16 +362,16 @@ fn new(
     }
     config.workspace_options = Some(WorkspaceOptions { uses_git: !no_vcs });
     let res = if app {
-        new_lib_project(&config)
+        ops::new_lib_project(&config)
     } else {
-        new_app_project(&config)
+        ops::new_app_project(&config)
     };
     res.map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
 fn publish(trailing: Option<Vec<String>>, quiet: bool) -> CliResult<()> {
     let config = init_config(trailing, quiet)?;
-    publish_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
+    ops::publish_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
 fn remove(
@@ -386,21 +382,23 @@ fn remove(
     let config = init_config(None, quiet)?;
     let deps = [dependency.as_str()];
     match group.as_ref() {
-        Some(it) => remove_project_optional_dependencies(&deps, it, &config),
-        None => remove_project_dependencies(&deps, &config),
+        Some(it) => {
+            ops::remove_project_optional_dependencies(&deps, it, &config)
+        }
+        None => ops::remove_project_dependencies(&deps, &config),
     }
     .map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
 fn run(command: Vec<String>, quiet: bool) -> CliResult<()> {
     let config = init_config(None, quiet)?;
-    run_command_str(&command.join(" "), &config)
+    ops::run_command_str(&command.join(" "), &config)
         .map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
 fn test(trailing: Option<Vec<String>>, quiet: bool) -> CliResult<()> {
     let config = init_config(trailing, quiet)?;
-    test_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
+    ops::test_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
 fn update(_dependency: String, _quiet: bool) -> CliResult<()> {
@@ -409,7 +407,7 @@ fn update(_dependency: String, _quiet: bool) -> CliResult<()> {
 
 fn version(quiet: bool) -> CliResult<()> {
     let config = init_config(None, quiet)?;
-    display_project_version(&config)
+    ops::display_project_version(&config)
         .map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
@@ -435,7 +433,12 @@ pub enum Config {
 
 fn generate_shell_completion_script() {
     let mut cmd = Cli::command();
-    generate(Shell::Bash, &mut cmd, "huak", &mut std::io::stdout())
+    clap_complete::generate(
+        Shell::Bash,
+        &mut cmd,
+        "huak",
+        &mut std::io::stdout(),
+    )
 }
 
 fn run_with_install(shell: Option<Shell>) -> CliResult<()> {
@@ -457,15 +460,11 @@ fn run_with_install(shell: Option<Shell>) -> CliResult<()> {
         Shell::Fish => add_completion_fish(&mut cmd),
         Shell::PowerShell => add_completion_powershell(),
         Shell::Zsh => add_completion_zsh(&mut cmd),
-        _ => {
-            return Err(Error::new(
-                HuakError::HuakConfigurationError("invalid shell".to_string()),
-                ExitCode::FAILURE,
-            ));
-        }
-    }?;
-
-    Ok(())
+        _ => Err(Error::new(
+            HuakError::HuakConfigurationError("invalid shell".to_string()),
+            ExitCode::FAILURE,
+        )),
+    }
 }
 
 fn run_with_uninstall(shell: Option<Shell>) -> CliResult<()> {
@@ -486,12 +485,10 @@ fn run_with_uninstall(shell: Option<Shell>) -> CliResult<()> {
         Shell::Fish => remove_completion_fish(),
         Shell::PowerShell => remove_completion_powershell(),
         Shell::Zsh => remove_completion_zsh(),
-        _ => {
-            return Err(Error::new(
-                HuakError::HuakConfigurationError("invalid shell".to_string()),
-                ExitCode::FAILURE,
-            ));
-        }
+        _ => Err(Error::new(
+            HuakError::HuakConfigurationError("invalid shell".to_string()),
+            ExitCode::FAILURE,
+        )),
     }
 }
 
@@ -515,10 +512,9 @@ pub fn add_completion_bash() -> CliResult<()> {
         format!(r##"{}eval "$(huak config completion)"{}"##, '\n', '\n')
             .as_bytes(),
     )
-    .map_err(|e| Error::from(e))
+    .map_err(Error::from)
 }
 
-// TODO
 pub fn add_completion_elvish() -> CliResult<()> {
     todo!()
 }
@@ -535,7 +531,6 @@ pub fn add_completion_fish(cli: &mut Command) -> CliResult<()> {
     generate_target_file(target_file, cli)
 }
 
-// TODO
 pub fn add_completion_powershell() -> CliResult<()> {
     todo!()
 }
@@ -560,10 +555,9 @@ pub fn remove_completion_bash() -> CliResult<()> {
         &format!(r##"{}eval "$(huak config completion)"{}"##, '\n', '\n'),
         "",
     );
-    std::fs::write(&file_path, new_content).map_err(|e| Error::from(e))
+    std::fs::write(&file_path, new_content).map_err(Error::from)
 }
 
-// TODO
 pub fn remove_completion_elvish() -> CliResult<()> {
     todo!()
 }
@@ -574,17 +568,16 @@ pub fn remove_completion_fish() -> CliResult<()> {
         Err(e) => return Err(Error::from(e)),
     };
     let target_file = format!("{home}/.config/fish/completions/huak.fish");
-    std::fs::remove_file(target_file).map_err(|e| Error::from(e))
+    std::fs::remove_file(target_file).map_err(Error::from)
 }
 
-// TODO
 pub fn remove_completion_powershell() -> CliResult<()> {
     unimplemented!()
 }
 
 pub fn remove_completion_zsh() -> CliResult<()> {
     let target_file = "/usr/local/share/zsh/site-functions/_huak".to_string();
-    std::fs::remove_file(target_file).map_err(|e| Error::from(e))
+    std::fs::remove_file(target_file).map_err(Error::from)
 }
 
 fn generate_target_file<P>(target_file: P, cmd: &mut Command) -> CliResult<()>
@@ -592,7 +585,7 @@ where
     P: AsRef<Path>,
 {
     let mut file = File::create(&target_file)?;
-    generate(Shell::Fish, cmd, "huak", &mut file);
+    clap_complete::generate(Shell::Fish, cmd, "huak", &mut file);
     Ok(())
 }
 
@@ -601,7 +594,7 @@ fn init_config(
     quiet: bool,
 ) -> CliResult<OperationConfig> {
     let config = OperationConfig {
-        workspace_root: find_workspace()
+        workspace_root: ops::find_workspace()
             .map_err(|e| Error::new(e, ExitCode::FAILURE))?,
         trailing_command_parts: trailing,
         terminal_options: Some(TerminalOptions {
@@ -616,10 +609,6 @@ fn init_config(
     Ok(config)
 }
 
-// TODO:
-//   - Use tempdir and mocking for testing these features.
-//   - Requires refactors of functions and their signatures.
-//   - Windows tests
 #[cfg(target_family = "unix")]
 #[cfg(test)]
 mod tests {

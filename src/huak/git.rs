@@ -4,7 +4,7 @@ use std::path::Path;
 
 /// Initialize a directory on a local system as a git repository.
 pub fn init(dir_path: impl AsRef<Path>) -> HuakResult<()> {
-    Repository::init(dir_path).map_err(|e| Error::GitError(e))?;
+    Repository::init(dir_path).map_err(Error::GitError)?;
     Ok(())
 }
 

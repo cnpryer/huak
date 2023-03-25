@@ -1,5 +1,3 @@
-use termcolor::Color;
-
 ///! This module implements various operations to interact with valid workspaces
 ///! existing on a system.
 use crate::{
@@ -10,7 +8,7 @@ use crate::{
     find_python_interpreter_paths, find_venv_root,
     fs::{self, find_file_bottom_up},
     git,
-    sys::{self, get_shell_name, Terminal, Verbosity},
+    sys::{self, shell_name, Terminal, Verbosity},
     to_importable_package_name, to_package_cononical_name, Error, Package,
     Project, PyProjectToml, VirtualEnvironment,
 };
@@ -18,6 +16,7 @@ use std::{
     collections::HashSet, env::consts::OS, path::PathBuf, process::Command,
     str::FromStr,
 };
+use termcolor::Color;
 
 #[derive(Default)]
 pub struct OperationConfig {
@@ -47,13 +46,6 @@ pub struct TerminalOptions {
 pub struct CleanOptions {
     pub include_pycache: bool,
     pub include_compiled_bytecode: bool,
-}
-
-/// Activate a Python virtual environment.
-pub fn activate_venv(config: &OperationConfig) -> HuakResult<()> {
-    let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
-    let mut terminal = terminal_from_options(config.terminal_options.as_ref());
-    venv.activate_with_terminal(&mut terminal)
 }
 
 /// Add Python packages as a dependencies to a Python project.
@@ -122,7 +114,6 @@ pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
         venv.install_packages(&[Package::from_str("build")?], &mut terminal)?;
     }
     let mut cmd = Command::new(venv.python_path());
-    let cmd = command_with_venv_env(&mut cmd, &venv)?;
     let mut args: Vec<String> = vec!["-m", "build"]
         .iter_mut()
         .map(|item| item.to_string())
@@ -130,8 +121,9 @@ pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
     if let Some(it) = config.trailing_command_parts.as_ref() {
         args.extend(it.clone());
     }
-    let cmd = cmd.args(args).current_dir(&config.workspace_root);
-    terminal.run_command(cmd)
+    make_venv_command(&mut cmd, &venv)?;
+    cmd.args(args).current_dir(&config.workspace_root);
+    terminal.run_command(&mut cmd)
 }
 
 /// Clean the dist directory.
@@ -139,7 +131,7 @@ pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
     let paths: Result<Vec<PathBuf>, std::io::Error> =
         std::fs::read_dir(config.workspace_root.join("dist"))?
             .into_iter()
-            .map(|x| x.map(|item| item.path().to_path_buf()))
+            .map(|x| x.map(|item| item.path()))
             .collect();
     let mut paths = paths?;
     if let Some(options) = config.clean_options.as_ref() {
@@ -148,12 +140,11 @@ pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
                 "{}",
                 config.workspace_root.join("**").join("*.pyc").display()
             );
-            glob::glob(&pattern)?
-                .into_iter()
-                .for_each(|item| match item {
-                    Ok(it) => paths.push(it),
-                    Err(_) => return (),
-                })
+            glob::glob(&pattern)?.into_iter().for_each(|item| {
+                if let Ok(it) = item {
+                    paths.push(it)
+                }
+            })
         }
         if options.include_pycache {
             let pattern = format!(
@@ -164,12 +155,11 @@ pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
                     .join("__pycache__")
                     .display()
             );
-            glob::glob(&pattern)?
-                .into_iter()
-                .for_each(|item| match item {
-                    Ok(it) => paths.push(it),
-                    Err(_) => return (),
-                })
+            glob::glob(&pattern)?.into_iter().for_each(|item| {
+                if let Ok(it) = item {
+                    paths.push(it)
+                }
+            })
         }
     }
     for path in &paths {
@@ -194,7 +184,6 @@ pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
         venv.install_packages(&[Package::from_str("black")?], &mut terminal)?;
     }
     let mut cmd = Command::new(venv.python_path());
-    let cmd = command_with_venv_env(&mut cmd, &venv)?;
     let mut args: Vec<String> = vec!["-m", "black", "."]
         .iter_mut()
         .map(|item| item.to_string())
@@ -202,8 +191,9 @@ pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
     if let Some(it) = config.trailing_command_parts.as_ref() {
         args.extend(it.clone());
     }
-    let cmd = cmd.args(args).current_dir(&config.workspace_root);
-    terminal.run_command(cmd)
+    make_venv_command(&mut cmd, &venv)?;
+    cmd.args(args).current_dir(&config.workspace_root);
+    terminal.run_command(&mut cmd)
 }
 
 /// Initilize an existing Python project as library-like.
@@ -283,7 +273,6 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
         venv.install_packages(&[Package::from_str("ruff")?], &mut terminal)?;
     }
     let mut cmd = Command::new(venv.python_path());
-    let cmd = command_with_venv_env(&mut cmd, &venv)?;
     let mut args: Vec<String> = vec!["-m", "ruff", "."]
         .iter_mut()
         .map(|item| item.to_string())
@@ -291,8 +280,9 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
     if let Some(it) = config.trailing_command_parts.as_ref() {
         args.extend(it.clone());
     }
-    let cmd = cmd.args(args).current_dir(&config.workspace_root);
-    terminal.run_command(cmd)
+    make_venv_command(&mut cmd, &venv)?;
+    cmd.args(args).current_dir(&config.workspace_root);
+    terminal.run_command(&mut cmd)
 }
 
 /// Create a new application-like Python project on the system.
@@ -340,7 +330,7 @@ pub fn new_lib_project(config: &OperationConfig) -> HuakResult<()> {
         config.workspace_root.join("tests").join("test_version.py"),
         default_test_file_contents(&processed_name),
     )
-    .map_err(|e| Error::IOError(e))
+    .map_err(Error::IOError)
 }
 
 /// Publish the Python project as to a registry.
@@ -351,7 +341,6 @@ pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
         venv.install_packages(&[Package::from_str("twine")?], &mut terminal)?;
     }
     let mut cmd = Command::new(venv.python_path());
-    let cmd = command_with_venv_env(&mut cmd, &venv)?;
     let mut args: Vec<String> = vec!["-m", "twine", "upload", "dist/*"]
         .iter_mut()
         .map(|item| item.to_string())
@@ -359,8 +348,9 @@ pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
     if let Some(it) = config.trailing_command_parts.as_ref() {
         args.extend(it.clone());
     }
-    let cmd = cmd.args(args).current_dir(&config.workspace_root);
-    terminal.run_command(cmd)
+    make_venv_command(&mut cmd, &venv)?;
+    cmd.args(args).current_dir(&config.workspace_root);
+    terminal.run_command(&mut cmd)
 }
 
 /// Remove a dependency from a Python project.
@@ -407,16 +397,15 @@ pub fn run_command_str(
 ) -> HuakResult<()> {
     let mut terminal = terminal_from_options(config.terminal_options.as_ref());
     let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
-    let mut cmd = Command::new(get_shell_name()?);
-    let cmd = command_with_venv_env(&mut cmd, &venv)?;
+    let mut cmd = Command::new(shell_name()?);
     let flag = match OS {
         "windows" => "/C",
         _ => "-c",
     };
-    let cmd = cmd
-        .args([flag, command])
+    make_venv_command(&mut cmd, &venv)?;
+    cmd.args([flag, command])
         .current_dir(&config.workspace_root);
-    terminal.run_command(cmd)
+    terminal.run_command(&mut cmd)
 }
 
 /// Run a Python project's tests.
@@ -427,14 +416,14 @@ pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
         venv.install_packages(&[Package::from_str("pytest")?], &mut terminal)?;
     }
     let mut cmd = Command::new(venv.python_path());
-    let cmd = command_with_venv_env(&mut cmd, &venv)?;
-    let cmd = cmd.args(["-m", "pytest"]).args(
+    make_venv_command(&mut cmd, &venv)?;
+    cmd.args(["-m", "pytest"]).args(
         config
             .trailing_command_parts
             .as_ref()
             .unwrap_or(&Vec::new()),
     );
-    terminal.run_command(cmd)
+    terminal.run_command(&mut cmd)
 }
 
 /// Display the version of the Python project.
@@ -454,20 +443,19 @@ pub fn display_project_version(config: &OperationConfig) -> HuakResult<()> {
 }
 
 /// Modify a process::Command to use a virtual environment's context.
-fn command_with_venv_env<'a>(
-    cmd: &'a mut Command,
+fn make_venv_command(
+    cmd: &mut Command,
     venv: &VirtualEnvironment,
-) -> HuakResult<&'a mut Command> {
+) -> HuakResult<()> {
     let mut paths = sys::env_path_values();
-    paths.insert(0, venv.executables_dir_path().to_path_buf());
-    let cmd = cmd
-        .env(
-            "PATH",
-            std::env::join_paths(paths)
-                .map_err(|e| Error::InternalError(e.to_string()))?,
-        )
-        .env("VIRTUAL_ENV", venv.root().clone());
-    Ok(cmd)
+    paths.insert(0, venv.executables_dir_path());
+    cmd.env(
+        "PATH",
+        std::env::join_paths(paths)
+            .map_err(|e| Error::InternalError(e.to_string()))?,
+    )
+    .env("VIRTUAL_ENV", venv.root());
+    Ok(())
 }
 
 /// Creates a Terminal from OpertionConfig TerminalOptions.
@@ -546,11 +534,9 @@ fn create_virtual_environment(
         None => return Err(Error::PythonNotFoundError),
     };
     let args = ["-m", "venv", default_virtual_environment_name()];
-    terminal.run_command(
-        Command::new(python_path)
-            .args(args)
-            .current_dir(&config.workspace_root),
-    )
+    let mut cmd = Command::new(python_path);
+    cmd.args(args).current_dir(&config.workspace_root);
+    terminal.run_command(&mut cmd)
 }
 
 /// Determine which packages to add to the project. If the package is already a
@@ -585,12 +571,6 @@ mod tests {
         fs, test_resources_dir_path, PyProjectToml, VirtualEnvironment,
     };
     use tempfile::tempdir;
-
-    #[ignore = "currently untestable"]
-    #[test]
-    fn test_activate_venv() {
-        todo!()
-    }
 
     #[test]
     fn test_add_project_dependencies() {
@@ -1013,15 +993,12 @@ def fn():
         let test_file_filepath =
             project.root().join("tests").join("test_version.py");
         let test_file = std::fs::read_to_string(&test_file_filepath).unwrap();
-        let expected_test_file = format!(
-            r#"from {} import __version__
+        let expected_test_file = r#"from mock_project import __version__
 
 
 def test_version():
     __version__
-"#,
-            "mock_project"
-        );
+"#;
         let init_file_filepath = project
             .root()
             .join("src")
@@ -1089,12 +1066,6 @@ if __name__ == "__main__":
         assert_eq!(main_file, expected_main_file);
 
         assert!(ser_toml.inner.project.as_ref().unwrap().scripts.is_some());
-    }
-
-    #[ignore = "currently untestable"]
-    #[test]
-    fn test_publish_project() {
-        todo!()
     }
 
     // TODO: Need to implement venv.has_package

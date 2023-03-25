@@ -147,26 +147,6 @@ my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0
 /Users/chrispryer/github/my-project/.venv/bin/python
 ```
 
-### Activate your project's virtual environment
-
-Use the `activate` command to launch a shell with your project's virtual environment activated.
-
-> ⚠️ Note that `huak activate` is currently only partially supported on Windows. See [#302](https://github.com/cnpryer/huak/issues/302).
-
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
-❯ huak activate
-```
-
-This feature is currently limited and at times buggy. It's recommended to use `huak run` until `activate` stabilizes.
-
-To deactivate the virtual environment run `deactivate`.
-
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 (.venv) 
-❯ deactivate
-```
-
 ## Distribute your project
 
 ### Publish to PyPI

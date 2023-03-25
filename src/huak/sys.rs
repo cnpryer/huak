@@ -30,6 +30,14 @@ pub fn active_virtual_env_path() -> Option<PathBuf> {
     None
 }
 
+/// Get the CONDA_PREFIX environment path if it exists.
+pub fn active_conda_env_path() -> Option<PathBuf> {
+    if let Ok(path) = std::env::var("CONDA_PREFIX") {
+        return Some(PathBuf::from(path));
+    }
+    None
+}
+
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub enum Verbosity {
     #[default]
@@ -237,15 +245,15 @@ impl TerminalOut {
                     ColorSpec::new().set_bold(true).set_fg(Some(color)),
                 )?;
                 if justified {
-                    write!(stderr, "{:>12}", status)?;
+                    write!(stderr, "{status:>12}")?;
                 } else {
-                    write!(stderr, "{}", status)?;
+                    write!(stderr, "{status}")?;
                     stderr.set_color(ColorSpec::new().set_bold(true))?;
                     write!(stderr, ":")?;
                 }
                 stderr.reset()?;
                 match message {
-                    Some(message) => writeln!(stderr, " {}", message)?,
+                    Some(message) => writeln!(stderr, " {message}")?,
                     None => write!(stderr, " ")?,
                 }
             }
@@ -271,14 +279,14 @@ impl TerminalOut {
 /// Gets the name of the current shell.
 ///
 /// Returns an error if it fails to get correct env vars.
-pub fn get_shell_name() -> HuakResult<String> {
-    let shell_path = get_shell_path()?;
+pub fn shell_name() -> HuakResult<String> {
+    let shell_path = shell_path()?;
     let shell_name = Path::new(&shell_path)
         .file_name()
         .and_then(|name| name.to_str())
         .map(|name| name.to_owned())
         .ok_or_else(|| {
-            Error::InternalError("Shell path is invalid.".to_owned())
+            Error::InternalError("shell path is invalid".to_owned())
         });
 
     shell_name
@@ -288,7 +296,7 @@ pub fn get_shell_name() -> HuakResult<String> {
 ///
 /// Returns an error if it fails to get correct env vars.
 #[cfg(unix)]
-pub fn get_shell_path() -> HuakResult<String> {
+pub fn shell_path() -> HuakResult<String> {
     std::env::var("SHELL").or(Ok("sh".to_string()))
 }
 
@@ -296,6 +304,6 @@ pub fn get_shell_path() -> HuakResult<String> {
 ///
 /// Returns an error if it fails to get correct env vars.
 #[cfg(windows)]
-pub fn get_shell_path() -> HuakResult<String> {
+pub fn shell_path() -> HuakResult<String> {
     Ok(std::env::var("COMSPEC")?)
 }
