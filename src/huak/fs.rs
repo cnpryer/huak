@@ -72,7 +72,6 @@ pub fn find_file_bottom_up(
     }
     // Search all sub-directory roots for target_file
     if let Some(path) = fs::read_dir(from)?
-        .into_iter()
         .filter(|item| item.is_ok())
         .map(|item| item.expect("failed to map dir entry").path()) // TODO: Is there better than .expect?
         .filter(|item| item.is_dir())
@@ -82,13 +81,13 @@ pub fn find_file_bottom_up(
     };
     // If nothing is found from searching the subdirectories then perform the same search from
     // the parent directory.
-    return find_file_bottom_up(
+    find_file_bottom_up(
         file_name,
         from.parent().ok_or(Error::InternalError(
             "failed to establish a parent directory".to_string(),
         ))?,
         recursion_limit - 1,
-    );
+    )
 }
 
 pub fn last_path_component(path: impl AsRef<Path>) -> HuakResult<String> {
@@ -104,12 +103,10 @@ pub fn last_path_component(path: impl AsRef<Path>) -> HuakResult<String> {
         .to_str()
     {
         Some(it) => Ok(it.to_string()),
-        None => {
-            return Err(Error::InternalError(format!(
-                "failed to parse project name from {}",
-                path.display()
-            )))
-        }
+        None => Err(Error::InternalError(format!(
+            "failed to parse project name from {}",
+            path.display()
+        ))),
     }
 }
 

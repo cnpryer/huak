@@ -125,7 +125,6 @@ pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
 pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
     let paths: Result<Vec<PathBuf>, std::io::Error> =
         std::fs::read_dir(config.workspace_root.join("dist"))?
-            .into_iter()
             .map(|x| x.map(|item| item.path()))
             .collect();
     let mut paths = paths?;
@@ -135,7 +134,7 @@ pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
                 "{}",
                 config.workspace_root.join("**").join("*.pyc").display()
             );
-            glob::glob(&pattern)?.into_iter().for_each(|item| {
+            glob::glob(&pattern)?.for_each(|item| {
                 if let Ok(it) = item {
                     paths.push(it)
                 }
@@ -150,7 +149,7 @@ pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
                     .join("__pycache__")
                     .display()
             );
-            glob::glob(&pattern)?.into_iter().for_each(|item| {
+            glob::glob(&pattern)?.for_each(|item| {
                 if let Ok(it) = item {
                     paths.push(it)
                 }
