@@ -32,7 +32,7 @@ const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
 #[cfg(test)]
 /// The resource directory found in the Huak repo used for testing purposes.
 pub(crate) fn test_resources_dir_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("dev-resources")
 }
 
 /// A Python project can be anything from a script to automate some process to a
