@@ -264,7 +264,7 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
         venv.install_packages(&[Package::from_str("ruff")?], &mut terminal)?;
     }
     let mut cmd = Command::new(venv.python_path());
-    let mut args = vec!["-m", "ruff", "."];
+    let mut args = vec!["-m", "ruff", "check", "."];
     if let Some(it) = config.trailing_command_parts.as_ref() {
         args.extend(it.iter().map(|item| item.as_str()));
     }
