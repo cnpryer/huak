@@ -498,11 +498,9 @@ fn find_or_create_virtual_environment(
         Ok(it) => it,
         Err(Error::VenvNotFoundError) => {
             create_virtual_environment(config, terminal)?;
-            PathBuf::from(
-                config
-                    .workspace_root
-                    .join(default_virtual_environment_name()),
-            )
+            config
+                .workspace_root
+                .join(default_virtual_environment_name())
         }
         Err(e) => return Err(e),
     };

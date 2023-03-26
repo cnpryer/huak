@@ -220,8 +220,7 @@ impl Terminal {
                         return Err(Error::from(e));
                     }
                 };
-                let code = status.code().unwrap_or_default();
-                code
+                status.code().unwrap_or_default()
             }
         };
         if code > 0 {
