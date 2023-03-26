@@ -125,13 +125,6 @@ Some wrapped tools' features may not be accessible using this method. See [#467]
 
 Use the `test` command to test your project.
 
-> ⚠️ Currently your Python project won't be recognized by the interpreter without installing it to the environment. See [#459](https://github.com/cnpryer/huak/issues/459).
-
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0
-❯ huak run pip install -e .
-```
-
 ```
 my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0
 ❯ huak test
