@@ -31,10 +31,10 @@ jobs:
         with:
           toolchain: stable
       - uses: Swatinem/rust-cache@v1
+      - uses: actions/setup-python@v1
       - name: Test
-        env:
-          HUAK_MUTE_COMMAND: 1
         run: |
+          python -m venv .venv
           cargo test --all-features -- --test-threads=1
       - name: Build
         run: cargo build --release

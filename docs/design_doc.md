@@ -51,17 +51,17 @@ Currently, the project is structured using the following components:
 
 ```bash
 src
-├── bin           # CLI binary `huak`
-│   ├── commands  # Application subcommand layer
-│   │   └── ...
-│   └── main      # Main application
-└── huak          # Huak's library
-    ├── config    # Configuration formats
-    ├── env       # Environment contexts
-    ├── ops       # Huak operation implementation layer
-    ├── package   # Packaging logic
-    ├── project   # The `Project` struct
-    └── utils     # Library utilities
+├── src/bin/huak    # CLI binary `huak`
+│   ├── cli         # CLI implementations
+│   ├── error       # CLI errors
+│   └── main        # CLI entry
+└── src/huak        # Library
+    ├── error       # Library errors
+    ├── fs          # Library filesystem implementations
+    ├── git         # Library git implementations
+    ├── lib         # Library core implementations
+    ├── ops         # Library operation logic
+    └── sys         # Library system implementations
 ```
 
 ## Contributing
