@@ -108,7 +108,7 @@ pub fn add_project_optional_dependencies(
 /// Build the Python project as installable package.
 pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = terminal_from_options(&config.terminal_options);
-    let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
+    let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     if !venv.has_module("build")? {
         venv.install_packages(&[Package::from_str("build")?], &mut terminal)?;
     }
@@ -176,8 +176,8 @@ pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
 
 /// Format the Python project's source code.
 pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
-    let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
     let mut terminal = terminal_from_options(&config.terminal_options);
+    let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     if !venv.has_module("black")? {
         venv.install_packages(&[Package::from_str("black")?], &mut terminal)?;
     }
@@ -260,7 +260,7 @@ pub fn install_project_optional_dependencies(
 /// Lint a Python project's source code.
 pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = terminal_from_options(&config.terminal_options);
-    let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
+    let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     if !venv.has_module("ruff")? {
         venv.install_packages(&[Package::from_str("ruff")?], &mut terminal)?;
     }
@@ -325,7 +325,7 @@ pub fn new_lib_project(config: &OperationConfig) -> HuakResult<()> {
 /// Publish the Python project to a registry.
 pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = terminal_from_options(&config.terminal_options);
-    let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
+    let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     if !venv.has_module("twine")? {
         venv.install_packages(&[Package::from_str("twine")?], &mut terminal)?;
     }
@@ -382,7 +382,7 @@ pub fn run_command_str(
     config: &OperationConfig,
 ) -> HuakResult<()> {
     let mut terminal = terminal_from_options(&config.terminal_options);
-    let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
+    let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     let mut cmd = Command::new(shell_name()?);
     let flag = match OS {
         "windows" => "/C",
@@ -397,7 +397,7 @@ pub fn run_command_str(
 /// Run a Python project's tests.
 pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = terminal_from_options(&config.terminal_options);
-    let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
+    let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     if !venv.has_module("pytest")? {
         venv.install_packages(&[Package::from_str("pytest")?], &mut terminal)?;
     }
