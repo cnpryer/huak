@@ -3,9 +3,10 @@ use clap::{Command, CommandFactory, Parser, Subcommand};
 use clap_complete::{self, Shell};
 use huak::{
     ops::{
-        self, CleanOptions, OperationConfig, TerminalOptions, WorkspaceOptions,
+        self, find_workspace, CleanOptions, OperationConfig, TerminalOptions,
+        WorkspaceOptions,
     },
-    Error as HuakError, Verbosity,
+    Error as HuakError, HuakResult, Verbosity,
 };
 use std::{
     fs::File,
@@ -158,93 +159,147 @@ pub enum Commands {
 // Command gating for Huak.
 impl Cli {
     pub fn run(self) -> CliResult<()> {
+        let workspace_root = find_workspace().unwrap_or(PathBuf::from("."));
+        let verbosity = match self.quiet {
+            true => Verbosity::Quiet,
+            false => Verbosity::Normal,
+        };
+        let mut operation_config = OperationConfig {
+            workspace_root,
+            terminal_options: TerminalOptions { verbosity },
+            ..Default::default()
+        };
         match self.command {
-            Commands::Config { command } => config(command, self.quiet),
-            Commands::Activate => activate(self.quiet),
+            Commands::Config { command } => config(command),
+            Commands::Activate => {
+                Err(HuakError::UnimplementedError("activate".to_string()))
+            }
             Commands::Add {
                 dependency,
                 group,
                 trailing,
-            } => add(dependency, group, trailing, self.quiet),
-            Commands::Audit => audit(self.quiet),
-            Commands::Build { trailing } => build(trailing, self.quiet),
+            } => {
+                operation_config.trailing_command_parts = trailing;
+                add(dependency, group, operation_config)
+            }
+            Commands::Audit => {
+                Err(HuakError::UnimplementedError("audit".to_string()))
+            }
+            Commands::Build { trailing } => {
+                operation_config.trailing_command_parts = trailing;
+                build(operation_config)
+            }
             Commands::Clean {
                 include_pyc,
                 include_pycache,
-            } => clean(include_pyc, include_pycache, self.quiet),
-            Commands::Doc { check } => doc(check, self.quiet),
-            Commands::Fix { trailing } => fix(trailing, self.quiet),
+            } => {
+                let options = CleanOptions {
+                    include_pycache,
+                    include_compiled_bytecode: include_pyc,
+                };
+                operation_config.clean_options = Some(options);
+                clean(operation_config)
+            }
+            Commands::Doc { check: _ } => {
+                Err(HuakError::UnimplementedError("doc".to_string()))
+            }
+            Commands::Fix { trailing } => {
+                operation_config.trailing_command_parts = trailing;
+                if let Some(it) =
+                    operation_config.trailing_command_parts.as_mut()
+                {
+                    it.push("--fix".to_string());
+                }
+                fix(operation_config)
+            }
             Commands::Fmt { check, trailing } => {
-                fmt(check, trailing, self.quiet)
+                operation_config.trailing_command_parts = trailing;
+                if check {
+                    if let Some(it) =
+                        operation_config.trailing_command_parts.as_mut()
+                    {
+                        it.push("--check".to_string());
+                    }
+                }
+                fmt(operation_config)
             }
-            Commands::Init { app, lib } => init(app, lib, self.quiet),
+            Commands::Init { app, lib } => {
+                operation_config.workspace_root = PathBuf::from(".");
+                init(app, lib, operation_config)
+            }
             Commands::Install { groups, trailing } => {
-                install(groups, trailing, self.quiet)
+                operation_config.trailing_command_parts = trailing;
+                install(groups, operation_config)
             }
-            Commands::Lint { fix, trailing } => lint(fix, trailing, self.quiet),
+            Commands::Lint { fix, trailing } => {
+                operation_config.trailing_command_parts = trailing;
+                if fix {
+                    if let Some(it) =
+                        operation_config.trailing_command_parts.as_mut()
+                    {
+                        it.push("--fix".to_string());
+                    }
+                }
+                lint(operation_config)
+            }
             Commands::New {
                 path,
                 app,
                 lib,
                 no_vcs,
-            } => new(path, app, lib, no_vcs, self.quiet),
-            Commands::Publish { trailing } => publish(trailing, self.quiet),
-            Commands::Remove { dependency, group } => {
-                remove(dependency, group, self.quiet)
+            } => {
+                operation_config.workspace_root = PathBuf::from(path);
+                operation_config.workspace_options =
+                    Some(WorkspaceOptions { uses_git: !no_vcs });
+                new(app, lib, operation_config)
             }
-            Commands::Run { command } => run(command, self.quiet),
-            Commands::Test { trailing } => test(trailing, self.quiet),
-            Commands::Update { dependency } => update(dependency, self.quiet),
-            Commands::Version => version(self.quiet),
+            Commands::Publish { trailing } => {
+                operation_config.trailing_command_parts = trailing;
+                publish(operation_config)
+            }
+            Commands::Remove { dependency, group } => {
+                remove(dependency, group, operation_config)
+            }
+            Commands::Run { command } => run(command, operation_config),
+            Commands::Test { trailing } => {
+                operation_config.trailing_command_parts = trailing;
+                test(operation_config)
+            }
+            Commands::Update { dependency: _ } => {
+                Err(HuakError::UnimplementedError("update".to_string()))
+            }
+            Commands::Version => version(operation_config),
         }
+        .map_err(|e| Error::new(e, ExitCode::FAILURE))
     }
-}
-
-fn activate(_quiet: bool) -> CliResult<()> {
-    todo!()
 }
 
 fn add(
     dependency: String,
     group: Option<String>,
-    trailing: Option<Vec<String>>,
-    quiet: bool,
-) -> CliResult<()> {
-    let config = init_config(trailing, quiet)?;
+    operation_config: OperationConfig,
+) -> HuakResult<()> {
     let deps = [dependency.as_str()];
     match group.as_ref() {
-        Some(it) => ops::add_project_optional_dependencies(&deps, it, &config),
-        None => ops::add_project_dependencies(&deps, &config),
+        Some(it) => {
+            ops::add_project_optional_dependencies(&deps, it, &operation_config)
+        }
+        None => ops::add_project_dependencies(&deps, &operation_config),
     }
-    .map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
-fn audit(_quiet: bool) -> CliResult<()> {
-    todo!()
+fn build(operation_config: OperationConfig) -> HuakResult<()> {
+    ops::build_project(&operation_config)
 }
 
-fn build(trailing: Option<Vec<String>>, quiet: bool) -> CliResult<()> {
-    let config = init_config(trailing, quiet)?;
-    ops::build_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
-}
-
-fn clean(
-    include_compiled_bytecode: bool,
-    include_pycache: bool,
-    quiet: bool,
-) -> CliResult<()> {
-    let mut config = init_config(None, quiet)?;
-    config.clean_options = Some(CleanOptions {
-        include_compiled_bytecode,
-        include_pycache,
-    });
-    ops::clean_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
+fn clean(operation_config: OperationConfig) -> HuakResult<()> {
+    ops::clean_project(&operation_config)
 }
 
 /// Prints the script to stdout and a way to add the script to the shell init file to stderr. This
 /// way if the user runs completion <shell> > completion.sh only the stdout will be redirected into
 /// completion.sh.
-fn config(command: Config, _quiet: bool) -> CliResult<()> {
+fn config(command: Config) -> HuakResult<()> {
     match command {
         Config::Completion {
             shell,
@@ -252,155 +307,108 @@ fn config(command: Config, _quiet: bool) -> CliResult<()> {
             uninstall,
         } => {
             if (install || uninstall) && shell.is_none() {
-                return Err(Error::new(
-                    HuakError::HuakConfigurationError(
-                        "no shell provided".to_string(),
-                    ),
-                    ExitCode::FAILURE,
+                return Err(HuakError::HuakConfigurationError(
+                    "no shell provided".to_string(),
                 ));
             }
             if install {
-                run_with_install(shell)?;
+                run_with_install(shell)
             } else if uninstall {
-                run_with_uninstall(shell)?;
+                run_with_uninstall(shell)
             } else {
-                generate_shell_completion_script()
+                generate_shell_completion_script();
+                Ok(())
             }
         }
-    };
-
-    Ok(())
-}
-
-fn doc(_check: bool, _quiet: bool) -> CliResult<()> {
-    todo!()
-}
-
-fn fix(trailing: Option<Vec<String>>, quiet: bool) -> CliResult<()> {
-    let mut config = init_config(trailing, quiet)?;
-    if let Some(it) = config.trailing_command_parts.as_mut() {
-        it.push("--fix".to_string());
     }
-    ops::lint_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
-fn fmt(
-    check: bool,
-    trailing: Option<Vec<String>>,
-    quiet: bool,
-) -> CliResult<()> {
-    let mut config = init_config(trailing, quiet)?;
-    if let Some(it) = config.trailing_command_parts.as_mut() {
-        if check {
-            it.push("--check".to_string());
-        }
-    }
-    ops::format_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
+fn fix(operation_config: OperationConfig) -> HuakResult<()> {
+    ops::lint_project(&operation_config)
 }
 
-fn init(app: bool, _lib: bool, quiet: bool) -> CliResult<()> {
-    let mut config = init_config(None, quiet)?;
-    config.workspace_root = std::env::current_dir()?;
-    let res = if app {
-        ops::init_app_project(&config)
+fn fmt(operation_config: OperationConfig) -> HuakResult<()> {
+    ops::format_project(&operation_config)
+}
+
+fn init(
+    app: bool,
+    _lib: bool,
+    operation_config: OperationConfig,
+) -> HuakResult<()> {
+    if app {
+        ops::init_app_project(&operation_config)
     } else {
-        ops::init_lib_project(&config)
-    };
-    res.map_err(|e| Error::new(e, ExitCode::FAILURE))
+        ops::init_lib_project(&operation_config)
+    }
 }
 
 fn install(
     groups: Option<Vec<String>>,
-    trailing: Option<Vec<String>>,
-    quiet: bool,
-) -> CliResult<()> {
-    let config = init_config(trailing, quiet)?;
+    operation_config: OperationConfig,
+) -> HuakResult<()> {
     if let Some(it) = groups {
         for group in &it {
-            match ops::install_project_optional_dependencies(group, &config) {
-                Ok(_) => (),
-                Err(e) => return Err(Error::new(e, ExitCode::FAILURE)),
-            }
+            ops::install_project_optional_dependencies(
+                group,
+                &operation_config,
+            )?;
         }
         Ok(())
     } else {
-        ops::install_project_dependencies(&config)
-            .map_err(|e| Error::new(e, ExitCode::FAILURE))
+        ops::install_project_dependencies(&operation_config)
     }
 }
 
-fn lint(
-    fix: bool,
-    trailing: Option<Vec<String>>,
-    quiet: bool,
-) -> CliResult<()> {
-    let mut config = init_config(trailing, quiet)?;
-    if fix {
-        if let Some(it) = config.trailing_command_parts.as_mut() {
-            it.push("--fix".to_string());
-        }
-    }
-    ops::lint_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
+fn lint(operation_config: OperationConfig) -> HuakResult<()> {
+    ops::lint_project(&operation_config)
 }
 
 fn new(
-    path: String,
     app: bool,
     _lib: bool,
-    no_vcs: bool,
-    quiet: bool,
-) -> CliResult<()> {
-    let mut config = init_config(None, quiet)?;
-    config.workspace_root = PathBuf::from(path);
-    config.workspace_options = Some(WorkspaceOptions { uses_git: !no_vcs });
-    let res = if app {
-        ops::new_app_project(&config)
+    operation_config: OperationConfig,
+) -> HuakResult<()> {
+    if app {
+        ops::new_app_project(&operation_config)
     } else {
-        ops::new_lib_project(&config)
-    };
-    res.map_err(|e| Error::new(e, ExitCode::FAILURE))
+        ops::new_lib_project(&operation_config)
+    }
 }
 
-fn publish(trailing: Option<Vec<String>>, quiet: bool) -> CliResult<()> {
-    let config = init_config(trailing, quiet)?;
-    ops::publish_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
+fn publish(operation_config: OperationConfig) -> HuakResult<()> {
+    ops::publish_project(&operation_config)
 }
 
 fn remove(
     dependency: String,
     group: Option<String>,
-    quiet: bool,
-) -> CliResult<()> {
-    let config = init_config(None, quiet)?;
+    operation_config: OperationConfig,
+) -> HuakResult<()> {
     let deps = [dependency.as_str()];
     match group.as_ref() {
-        Some(it) => {
-            ops::remove_project_optional_dependencies(&deps, it, &config)
-        }
-        None => ops::remove_project_dependencies(&deps, &config),
+        Some(it) => ops::remove_project_optional_dependencies(
+            &deps,
+            it,
+            &operation_config,
+        ),
+        None => ops::remove_project_dependencies(&deps, &operation_config),
     }
-    .map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
 
-fn run(command: Vec<String>, quiet: bool) -> CliResult<()> {
-    let config = init_config(None, quiet)?;
-    ops::run_command_str(&command.join(" "), &config)
-        .map_err(|e| Error::new(e, ExitCode::FAILURE))
+fn run(
+    command: Vec<String>,
+    operation_config: OperationConfig,
+) -> HuakResult<()> {
+    ops::run_command_str(&command.join(" "), &operation_config)
 }
 
-fn test(trailing: Option<Vec<String>>, quiet: bool) -> CliResult<()> {
-    let config = init_config(trailing, quiet)?;
-    ops::test_project(&config).map_err(|e| Error::new(e, ExitCode::FAILURE))
+fn test(operation_config: OperationConfig) -> HuakResult<()> {
+    ops::test_project(&operation_config)
 }
 
-fn update(_dependency: String, _quiet: bool) -> CliResult<()> {
-    todo!()
-}
-
-fn version(quiet: bool) -> CliResult<()> {
-    let config = init_config(None, quiet)?;
-    ops::display_project_version(&config)
-        .map_err(|e| Error::new(e, ExitCode::FAILURE))
+fn version(operation_config: OperationConfig) -> HuakResult<()> {
+    ops::display_project_version(&operation_config)
 }
 
 #[derive(Subcommand)]
@@ -410,12 +418,10 @@ pub enum Config {
     Completion {
         #[arg(short, long, value_name = "shell")]
         shell: Option<Shell>,
-
         #[arg(short, long)]
         /// Installs the completion script in your shell init file.
         /// If this flag is passed the --shell is required
         install: bool,
-
         #[arg(short, long)]
         /// Uninstalls the completion script from your shell init file.
         /// If this flag is passed the --shell is required
@@ -433,53 +439,53 @@ fn generate_shell_completion_script() {
     )
 }
 
-fn run_with_install(shell: Option<Shell>) -> CliResult<()> {
+fn run_with_install(shell: Option<Shell>) -> HuakResult<()> {
     let sh = match shell {
         Some(it) => it,
         None => {
-            return Err(Error::new(
-                HuakError::HuakConfigurationError(
-                    "no shell provided".to_string(),
-                ),
-                ExitCode::FAILURE,
+            return Err(HuakError::HuakConfigurationError(
+                "no shell provided".to_string(),
             ))
         }
     };
     let mut cmd = Cli::command();
     match sh {
         Shell::Bash => add_completion_bash(),
-        Shell::Elvish => add_completion_elvish(),
+        Shell::Elvish => Err(HuakError::UnimplementedError(
+            "elvish completion".to_string(),
+        )),
         Shell::Fish => add_completion_fish(&mut cmd),
-        Shell::PowerShell => add_completion_powershell(),
+        Shell::PowerShell => Err(HuakError::UnimplementedError(
+            "powershell completion".to_string(),
+        )),
         Shell::Zsh => add_completion_zsh(&mut cmd),
-        _ => Err(Error::new(
-            HuakError::HuakConfigurationError("invalid shell".to_string()),
-            ExitCode::FAILURE,
+        _ => Err(HuakError::HuakConfigurationError(
+            "invalid shell".to_string(),
         )),
     }
 }
 
-fn run_with_uninstall(shell: Option<Shell>) -> CliResult<()> {
+fn run_with_uninstall(shell: Option<Shell>) -> HuakResult<()> {
     let sh = match shell {
         Some(it) => it,
         None => {
-            return Err(Error::new(
-                HuakError::HuakConfigurationError(
-                    "no shell provided".to_string(),
-                ),
-                ExitCode::FAILURE,
+            return Err(HuakError::HuakConfigurationError(
+                "no shell provided".to_string(),
             ))
         }
     };
     match sh {
         Shell::Bash => remove_completion_bash(),
-        Shell::Elvish => remove_completion_elvish(),
+        Shell::Elvish => Err(HuakError::UnimplementedError(
+            "elvish completion".to_string(),
+        )),
         Shell::Fish => remove_completion_fish(),
-        Shell::PowerShell => remove_completion_powershell(),
+        Shell::PowerShell => Err(HuakError::UnimplementedError(
+            "Powershell completion".to_string(),
+        )),
         Shell::Zsh => remove_completion_zsh(),
-        _ => Err(Error::new(
-            HuakError::HuakConfigurationError("invalid shell".to_string()),
-            ExitCode::FAILURE,
+        _ => Err(HuakError::HuakConfigurationError(
+            "invalid shell".to_string(),
         )),
     }
 }
@@ -491,11 +497,8 @@ fn run_with_uninstall(shell: Option<Shell>) -> CliResult<()> {
 /// ~/.bash_login
 /// ~/.profile
 /// ~/.bashrc
-pub fn add_completion_bash() -> CliResult<()> {
-    let home = match std::env::var("HOME") {
-        Ok(dir) => dir,
-        Err(e) => return Err(Error::from(e)),
-    };
+pub fn add_completion_bash() -> HuakResult<()> {
+    let home = std::env::var("HOME")?;
     let file_path = format!("{home}/.bashrc");
     // Opening file in append mode
     let mut file = File::options().append(true).open(file_path)?;
@@ -504,99 +507,54 @@ pub fn add_completion_bash() -> CliResult<()> {
         format!(r##"{}eval "$(huak config completion)"{}"##, '\n', '\n')
             .as_bytes(),
     )
-    .map_err(Error::from)
-}
-
-pub fn add_completion_elvish() -> CliResult<()> {
-    todo!()
+    .map_err(HuakError::IOError)
 }
 
 /// huak config completion fish > ~/.config/fish/completions/huak.fish
 /// Fish has a completions directory in which all files are loaded on init.
 /// The naming convention is $HOME/.config/fish/completions/huak.fish
-pub fn add_completion_fish(cli: &mut Command) -> CliResult<()> {
-    let home = match std::env::var("HOME") {
-        Ok(dir) => dir,
-        Err(e) => return Err(Error::from(e)),
-    };
+pub fn add_completion_fish(cli: &mut Command) -> HuakResult<()> {
+    let home = std::env::var("HOME")?;
     let target_file = format!("{home}/.config/fish/completions/huak.fish");
     generate_target_file(target_file, cli)
 }
 
-pub fn add_completion_powershell() -> CliResult<()> {
-    todo!()
-}
-
 /// Zsh and fish are the same in the sense that the use an entire directory to collect shell init
 /// scripts.
-pub fn add_completion_zsh(cli: &mut Command) -> CliResult<()> {
+pub fn add_completion_zsh(cli: &mut Command) -> HuakResult<()> {
     let target_file = "/usr/local/share/zsh/site-functions/_huak".to_string();
     generate_target_file(target_file, cli)
 }
 
 /// Reads the entire file and removes lines that match exactly with:
 /// \neval "$(huak config completion)
-pub fn remove_completion_bash() -> CliResult<()> {
-    let home = match std::env::var("HOME") {
-        Ok(dir) => dir,
-        Err(e) => return Err(Error::from(e)),
-    };
+pub fn remove_completion_bash() -> HuakResult<()> {
+    let home = std::env::var("HOME")?;
     let file_path = format!("{home}/.bashrc");
     let file_content = std::fs::read_to_string(&file_path)?;
     let new_content = file_content.replace(
         &format!(r##"{}eval "$(huak config completion)"{}"##, '\n', '\n'),
         "",
     );
-    std::fs::write(&file_path, new_content).map_err(Error::from)
+    std::fs::write(&file_path, new_content).map_err(HuakError::IOError)
 }
 
-pub fn remove_completion_elvish() -> CliResult<()> {
-    todo!()
-}
-
-pub fn remove_completion_fish() -> CliResult<()> {
-    let home = match std::env::var("HOME") {
-        Ok(dir) => dir,
-        Err(e) => return Err(Error::from(e)),
-    };
+pub fn remove_completion_fish() -> HuakResult<()> {
+    let home = std::env::var("HOME")?;
     let target_file = format!("{home}/.config/fish/completions/huak.fish");
-    std::fs::remove_file(target_file).map_err(Error::from)
+    std::fs::remove_file(target_file).map_err(HuakError::IOError)
 }
 
-pub fn remove_completion_powershell() -> CliResult<()> {
-    unimplemented!()
-}
-
-pub fn remove_completion_zsh() -> CliResult<()> {
+pub fn remove_completion_zsh() -> HuakResult<()> {
     let target_file = "/usr/local/share/zsh/site-functions/_huak".to_string();
-    std::fs::remove_file(target_file).map_err(Error::from)
+    std::fs::remove_file(target_file).map_err(HuakError::IOError)
 }
 
-fn generate_target_file<P>(target_file: P, cmd: &mut Command) -> CliResult<()>
+fn generate_target_file<P>(target_file: P, cmd: &mut Command) -> HuakResult<()>
 where
     P: AsRef<Path>,
 {
     let mut file = File::create(&target_file)?;
     clap_complete::generate(Shell::Fish, cmd, "huak", &mut file);
     Ok(())
-}
-
-fn init_config(
-    trailing: Option<Vec<String>>,
-    quiet: bool,
-) -> CliResult<OperationConfig> {
-    let config = OperationConfig {
-        workspace_root: ops::find_workspace()
-            .map_err(|e| Error::new(e, ExitCode::FAILURE))?,
-        trailing_command_parts: trailing,
-        terminal_options: Some(TerminalOptions {
-            verbosity: if quiet {
-                Verbosity::Quiet
-            } else {
-                Verbosity::Normal
-            },
-        }),
-        ..Default::default()
-    };
-    Ok(config)
 }
