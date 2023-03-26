@@ -403,12 +403,19 @@ pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
     }
     let mut cmd = Command::new(venv.python_path());
     make_venv_command(&mut cmd, &venv)?;
-    cmd.args(["-m", "pytest"]).args(
-        config
-            .trailing_command_parts
-            .as_ref()
-            .unwrap_or(&Vec::new()),
-    );
+    let python_path = if config.workspace_root.join("src").exists() {
+        config.workspace_root.join("src")
+    } else {
+        config.workspace_root.clone()
+    };
+    cmd.args(["-m", "pytest"])
+        .args(
+            config
+                .trailing_command_parts
+                .as_ref()
+                .unwrap_or(&Vec::new()),
+        )
+        .env("PYTHONPATH", python_path);
     terminal.run_command(&mut cmd)
 }
 
