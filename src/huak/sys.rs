@@ -192,20 +192,40 @@ impl Terminal {
 
     /// Run a command from the terminal's context.
     pub fn run_command(&mut self, cmd: &mut Command) -> HuakResult<()> {
-        match self.verbosity {
+        let code = match self.verbosity {
             Verbosity::Quiet => {
-                let _ = cmd.output()?;
+                let output = cmd.output()?;
+                let status = output.status;
+                let stdout =
+                    trim_error_prefix(std::str::from_utf8(&output.stdout)?);
+                let stderr =
+                    trim_error_prefix(std::str::from_utf8(&output.stderr)?);
+                let code = status.code().unwrap_or_default();
+                if code > 0 {
+                    if !stdout.is_empty() {
+                        self.print_error(stdout)?;
+                    }
+                    if !stderr.is_empty() {
+                        self.print_error(stderr)?;
+                    }
+                }
+                code
             }
             _ => {
                 let mut child = cmd.spawn()?;
-                let _ = match child.try_wait() {
+                let status = match child.try_wait() {
                     Ok(Some(s)) => s,
                     Ok(None) => child.wait()?,
                     Err(e) => {
                         return Err(Error::from(e));
                     }
                 };
+                let code = status.code().unwrap_or_default();
+                code
             }
+        };
+        if code > 0 {
+            std::process::exit(code)
         }
         Ok(())
     }
@@ -215,6 +235,12 @@ impl Default for Terminal {
     fn default() -> Self {
         Self::new()
     }
+}
+
+fn trim_error_prefix(msg: &str) -> &str {
+    msg.trim_start_matches("error:")
+        .trim_start_matches("ERROR:")
+        .trim_start()
 }
 
 /// Objects for writing terminal output to.

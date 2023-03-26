@@ -612,7 +612,7 @@ pub fn find_venv_root() -> HuakResult<PathBuf> {
     }
     let cwd = std::env::current_dir()?;
     if let Some(path) =
-        fs::find_file_bottom_up(VIRTUAL_ENVIRONMENT_CONFIG_FILE_NAME, cwd, 10)?
+        fs::find_file_bottom_up(VIRTUAL_ENVIRONMENT_CONFIG_FILE_NAME, cwd, 5)?
     {
         return Ok(path
             .parent()

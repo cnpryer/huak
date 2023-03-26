@@ -123,11 +123,14 @@ pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
 
 /// Clean the dist directory.
 pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
-    let paths: Result<Vec<PathBuf>, std::io::Error> =
-        std::fs::read_dir(config.workspace_root.join("dist"))?
-            .map(|x| x.map(|item| item.path()))
-            .collect();
-    let mut paths = paths?;
+    let mut paths = Vec::new();
+    if config.workspace_root.join("dist").exists() {
+        let dist_paths: Result<Vec<PathBuf>, std::io::Error> =
+            std::fs::read_dir(config.workspace_root.join("dist"))?
+                .map(|x| x.map(|item| item.path()))
+                .collect();
+        paths = dist_paths?;
+    }
     if let Some(options) = config.clean_options.as_ref() {
         if options.include_compiled_bytecode {
             let pattern = format!(
@@ -164,7 +167,7 @@ pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
             std::fs::remove_file(path)?;
         }
         if path.is_dir() {
-            std::fs::remove_dir(path)?;
+            std::fs::remove_dir_all(path)?;
         }
     }
     Ok(())
@@ -454,7 +457,7 @@ fn terminal_from_options(options: Option<&TerminalOptions>) -> Terminal {
 /// Find the workspace root by searching for a pyproject.toml file.
 pub fn find_workspace() -> HuakResult<PathBuf> {
     let cwd = std::env::current_dir()?;
-    let pyproject_toml = match find_file_bottom_up("pyproject.toml", cwd, 10) {
+    let pyproject_toml = match find_file_bottom_up("pyproject.toml", cwd, 5) {
         Ok(it) => it,
         Err(_) => return Err(Error::ProjectFileNotFound),
     };
@@ -491,18 +494,19 @@ fn find_or_create_virtual_environment(
     config: &OperationConfig,
     terminal: &mut Terminal,
 ) -> HuakResult<VirtualEnvironment> {
-    let venv = match VirtualEnvironment::from_path(find_venv_root()?) {
+    let root = match find_venv_root() {
         Ok(it) => it,
         Err(Error::VenvNotFoundError) => {
             create_virtual_environment(config, terminal)?;
-            VirtualEnvironment::from_path(
+            PathBuf::from(
                 config
                     .workspace_root
                     .join(default_virtual_environment_name()),
-            )?
+            )
         }
         Err(e) => return Err(e),
     };
+    let venv = VirtualEnvironment::from_path(root)?;
     Ok(venv)
 }
 
@@ -533,10 +537,10 @@ fn packages_to_add(
     let mut new_packages = Vec::new();
     for package in new {
         if curr_names.contains(package.name()) {
-            return Err(Error::UnimplementedError(
-                "use the remove command to update the version of a package"
-                    .to_string(),
-            ));
+            return Err(Error::PackageInstallationError(format!(
+                "{} is already a dependency",
+                package.name()
+            )));
         }
         new_packages.push(package.clone());
     }

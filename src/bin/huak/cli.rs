@@ -56,7 +56,7 @@ pub enum Commands {
     Clean {
         #[arg(long, required = false)]
         /// Remove all .pyc files.
-        include_compiled_bytecode: bool,
+        include_pyc: bool,
         #[arg(long, required = false)]
         /// Remove all __pycache__ directories.
         include_pycache: bool,
@@ -169,9 +169,9 @@ impl Cli {
             Commands::Audit => audit(self.quiet),
             Commands::Build { trailing } => build(trailing, self.quiet),
             Commands::Clean {
-                include_compiled_bytecode,
+                include_pyc,
                 include_pycache,
-            } => clean(include_compiled_bytecode, include_pycache, self.quiet),
+            } => clean(include_pyc, include_pycache, self.quiet),
             Commands::Doc { check } => doc(check, self.quiet),
             Commands::Fix { trailing } => fix(trailing, self.quiet),
             Commands::Fmt { check, trailing } => {
@@ -299,7 +299,8 @@ fn fmt(
 }
 
 fn init(app: bool, _lib: bool, quiet: bool) -> CliResult<()> {
-    let config = init_config(None, quiet)?;
+    let mut config = init_config(None, quiet)?;
+    config.workspace_root = std::env::current_dir()?;
     let res = if app {
         ops::init_app_project(&config)
     } else {
@@ -350,19 +351,12 @@ fn new(
     quiet: bool,
 ) -> CliResult<()> {
     let mut config = init_config(None, quiet)?;
-    if let Some(it) = PathBuf::from(path).parent() {
-        config.workspace_root = it.to_path_buf();
-    } else {
-        return Err(Error::new(
-            HuakError::ProjectRootMissingError,
-            ExitCode::FAILURE,
-        ));
-    }
+    config.workspace_root = PathBuf::from(path);
     config.workspace_options = Some(WorkspaceOptions { uses_git: !no_vcs });
     let res = if app {
-        ops::new_lib_project(&config)
-    } else {
         ops::new_app_project(&config)
+    } else {
+        ops::new_lib_project(&config)
     };
     res.map_err(|e| Error::new(e, ExitCode::FAILURE))
 }
