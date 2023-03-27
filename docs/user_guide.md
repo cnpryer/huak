@@ -97,7 +97,7 @@ my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0
 
 If you already have an optional dependency group named "all" then `--groups` will operate as normal and only install the groups provided.
 
-`--groups` only installs optional dependencies from the groups passed. This could be useful for adding dependencies for specific use-cases (like development), or if you're not using PEP 508 strings and would like to persist installer configuration.
+`--groups` can be useful for adding dependencies for specific use-cases (like development), or if you're not using PEP 508 strings and would like to persist installer configuration.
 
 `huak install` would trigger a standard `pip install` on your group's packages. So without PEP 508 you won't install the pytorch.org packages as demonstrated with `huak add` earlier. To do this you could pass the same options given to `huak add`. Use a group to isolate these options to those specific dependencies.
 
