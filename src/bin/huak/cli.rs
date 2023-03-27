@@ -2,11 +2,10 @@ use crate::error::{CliResult, Error};
 use clap::{Command, CommandFactory, Parser, Subcommand};
 use clap_complete::{self, Shell};
 use huak::{
-    ops::{
-        self, find_workspace, CleanOptions, OperationConfig, TerminalOptions,
-        WorkspaceOptions,
-    },
-    Error as HuakError, HuakResult, Verbosity,
+    ops::{self, find_workspace, OperationConfig},
+    BuildOptions, CleanOptions, Error as HuakError, FormatOptions, HuakResult,
+    InstallerOptions, LintOptions, PublishOptions, TerminalOptions,
+    TestOptions, Verbosity, WorkspaceOptions,
 };
 use std::{
     fs::File,
@@ -182,14 +181,16 @@ impl Cli {
                 group,
                 trailing,
             } => {
-                operation_config.trailing_command_parts = trailing;
+                operation_config.installer_options =
+                    Some(InstallerOptions { args: trailing });
                 add(dependencies, group, operation_config)
             }
             Commands::Audit => {
                 Err(HuakError::UnimplementedError("audit".to_string()))
             }
             Commands::Build { trailing } => {
-                operation_config.trailing_command_parts = trailing;
+                operation_config.build_options =
+                    Some(BuildOptions { args: trailing });
                 build(operation_config)
             }
             Commands::Clean {
@@ -207,21 +208,23 @@ impl Cli {
                 Err(HuakError::UnimplementedError("doc".to_string()))
             }
             Commands::Fix { trailing } => {
-                operation_config.trailing_command_parts = trailing;
-                if let Some(it) =
-                    operation_config.trailing_command_parts.as_mut()
-                {
-                    it.push("--fix".to_string());
+                operation_config.lint_options =
+                    Some(LintOptions { args: trailing });
+                if let Some(it) = operation_config.lint_options.as_mut() {
+                    if let Some(a) = it.args.as_mut() {
+                        a.push("--fix".to_string());
+                    }
                 }
                 fix(operation_config)
             }
             Commands::Fmt { check, trailing } => {
-                operation_config.trailing_command_parts = trailing;
+                operation_config.format_options =
+                    Some(FormatOptions { args: trailing });
                 if check {
-                    if let Some(it) =
-                        operation_config.trailing_command_parts.as_mut()
-                    {
-                        it.push("--check".to_string());
+                    if let Some(it) = operation_config.format_options.as_mut() {
+                        if let Some(a) = it.args.as_mut() {
+                            a.push("--check".to_string());
+                        }
                     }
                 }
                 fmt(operation_config)
@@ -231,16 +234,18 @@ impl Cli {
                 init(app, lib, operation_config)
             }
             Commands::Install { groups, trailing } => {
-                operation_config.trailing_command_parts = trailing;
+                operation_config.installer_options =
+                    Some(InstallerOptions { args: trailing });
                 install(groups, operation_config)
             }
             Commands::Lint { fix, trailing } => {
-                operation_config.trailing_command_parts = trailing;
+                operation_config.lint_options =
+                    Some(LintOptions { args: trailing });
                 if fix {
-                    if let Some(it) =
-                        operation_config.trailing_command_parts.as_mut()
-                    {
-                        it.push("--fix".to_string());
+                    if let Some(it) = operation_config.lint_options.as_mut() {
+                        if let Some(a) = it.args.as_mut() {
+                            a.push("--fix".to_string());
+                        }
                     }
                 }
                 lint(operation_config)
@@ -257,7 +262,8 @@ impl Cli {
                 new(app, lib, operation_config)
             }
             Commands::Publish { trailing } => {
-                operation_config.trailing_command_parts = trailing;
+                operation_config.publish_options =
+                    Some(PublishOptions { args: trailing });
                 publish(operation_config)
             }
             Commands::Remove {
@@ -266,7 +272,8 @@ impl Cli {
             } => remove(dependencies, group, operation_config),
             Commands::Run { command } => run(command, operation_config),
             Commands::Test { trailing } => {
-                operation_config.trailing_command_parts = trailing;
+                operation_config.test_options =
+                    Some(TestOptions { args: trailing });
                 test(operation_config)
             }
             Commands::Update { dependency: _ } => {

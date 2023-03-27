@@ -17,7 +17,7 @@ use std::{
     str::FromStr,
 };
 use sys::Terminal;
-pub use sys::Verbosity;
+pub use sys::{TerminalOptions, Verbosity};
 
 mod error;
 mod fs;
@@ -546,10 +546,11 @@ impl VirtualEnvironment {
     pub fn install_packages(
         &self,
         packages: &[Package],
+        install_options: Option<&InstallerOptions>,
         terminal: &mut Terminal,
     ) -> HuakResult<()> {
         for package in packages {
-            self.installer.install(package, terminal)?;
+            self.installer.install(package, install_options, terminal)?;
         }
         Ok(())
     }
@@ -682,10 +683,16 @@ impl Installer {
     pub fn install(
         &self,
         package: &Package,
+        options: Option<&InstallerOptions>,
         terminal: &mut Terminal,
     ) -> HuakResult<()> {
         let mut cmd = Command::new(self.config.path.clone());
         cmd.arg("install").arg(package.dependency_string());
+        if let Some(it) = options {
+            if let Some(args) = it.args.as_ref() {
+                cmd.args(args.iter().map(|item| item.as_str()));
+            }
+        }
         terminal.run_command(&mut cmd)
     }
 
@@ -711,6 +718,10 @@ impl InstallerConfig {
             path: PathBuf::from("pip"),
         }
     }
+}
+
+pub struct InstallerOptions {
+    pub args: Option<Vec<String>>,
 }
 
 /// The python package compliant with packaging.python.og.
@@ -922,6 +933,29 @@ pub struct PackageInfo {
     pub version: String,
     pub yanked: bool,
     pub yanked_reason: serde_json::value::Value,
+}
+
+pub struct WorkspaceOptions {
+    pub uses_git: bool,
+}
+pub struct BuildOptions {
+    pub args: Option<Vec<String>>,
+}
+pub struct FormatOptions {
+    pub args: Option<Vec<String>>,
+}
+pub struct LintOptions {
+    pub args: Option<Vec<String>>,
+}
+pub struct PublishOptions {
+    pub args: Option<Vec<String>>,
+}
+pub struct TestOptions {
+    pub args: Option<Vec<String>>,
+}
+pub struct CleanOptions {
+    pub include_pycache: bool,
+    pub include_compiled_bytecode: bool,
 }
 
 /// Get an iterator over available Python interpreter paths parsed from PATH.

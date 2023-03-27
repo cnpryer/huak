@@ -8,9 +8,11 @@ use crate::{
     find_python_interpreter_paths, find_venv_root,
     fs::{self, find_file_bottom_up},
     git,
-    sys::{self, shell_name, Terminal, Verbosity},
-    to_importable_package_name, to_package_cononical_name, Error, Package,
-    Project, PyProjectToml, VirtualEnvironment,
+    sys::{self, shell_name, Terminal, TerminalOptions},
+    to_importable_package_name, to_package_cononical_name, BuildOptions,
+    CleanOptions, Error, FormatOptions, InstallerOptions, LintOptions, Package,
+    Project, PublishOptions, PyProjectToml, TestOptions, VirtualEnvironment,
+    WorkspaceOptions,
 };
 use std::{
     collections::HashSet, env::consts::OS, path::PathBuf, process::Command,
@@ -22,31 +24,14 @@ use termcolor::Color;
 pub struct OperationConfig {
     pub workspace_root: PathBuf,
     pub terminal_options: TerminalOptions,
-    pub trailing_command_parts: Option<Vec<String>>,
     pub workspace_options: Option<WorkspaceOptions>,
     pub build_options: Option<BuildOptions>,
     pub format_options: Option<FormatOptions>,
     pub lint_options: Option<LintOptions>,
     pub publish_options: Option<PublishOptions>,
+    pub test_options: Option<TestOptions>,
     pub installer_options: Option<InstallerOptions>,
     pub clean_options: Option<CleanOptions>,
-}
-
-pub struct WorkspaceOptions {
-    pub uses_git: bool,
-}
-pub struct BuildOptions;
-pub struct FormatOptions;
-pub struct LintOptions;
-pub struct PublishOptions;
-pub struct InstallerOptions;
-#[derive(Default)]
-pub struct TerminalOptions {
-    pub verbosity: Verbosity,
-}
-pub struct CleanOptions {
-    pub include_pycache: bool,
-    pub include_compiled_bytecode: bool,
 }
 
 /// Add Python packages as a dependencies to a Python project.
@@ -69,7 +54,11 @@ pub fn add_project_dependencies(
         .map(|item| Package::from_str(item))
         .collect();
     let new_packages = packages_to_add(&new_packages?, &curr_packages?)?;
-    venv.install_packages(&new_packages, &mut terminal)?;
+    venv.install_packages(
+        &new_packages,
+        config.installer_options.as_ref(),
+        &mut terminal,
+    )?;
     new_packages.iter().for_each(|item| {
         pyproject_toml.add_dependency(&item.dependency_string());
     });
@@ -97,7 +86,11 @@ pub fn add_project_optional_dependencies(
         .map(|item| Package::from_str(item))
         .collect();
     let new_packages = packages_to_add(&new_packages?, &curr_packages?)?;
-    venv.install_packages(&new_packages, &mut terminal)?;
+    venv.install_packages(
+        &new_packages,
+        config.installer_options.as_ref(),
+        &mut terminal,
+    )?;
     new_packages.iter().for_each(|item| {
         pyproject_toml
             .add_optional_dependency(&item.dependency_string(), group);
@@ -110,12 +103,18 @@ pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = terminal_from_options(&config.terminal_options);
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     if !venv.has_module("build")? {
-        venv.install_packages(&[Package::from_str("build")?], &mut terminal)?;
+        venv.install_packages(
+            &[Package::from_str("build")?],
+            config.installer_options.as_ref(),
+            &mut terminal,
+        )?;
     }
     let mut cmd = Command::new(venv.python_path());
     let mut args = vec!["-m", "build"];
-    if let Some(it) = config.trailing_command_parts.as_ref() {
-        args.extend(it.iter().map(|item| item.as_str()));
+    if let Some(it) = config.build_options.as_ref() {
+        if let Some(a) = it.args.as_ref() {
+            args.extend(a.iter().map(|item| item.as_str()));
+        }
     }
     make_venv_command(&mut cmd, &venv)?;
     cmd.args(args).current_dir(&config.workspace_root);
@@ -179,12 +178,18 @@ pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = terminal_from_options(&config.terminal_options);
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     if !venv.has_module("black")? {
-        venv.install_packages(&[Package::from_str("black")?], &mut terminal)?;
+        venv.install_packages(
+            &[Package::from_str("black")?],
+            config.installer_options.as_ref(),
+            &mut terminal,
+        )?;
     }
     let mut cmd = Command::new(venv.python_path());
     let mut args = vec!["-m", "black", "."];
-    if let Some(it) = config.trailing_command_parts.as_ref() {
-        args.extend(it.iter().map(|item| item.as_str()));
+    if let Some(it) = config.format_options.as_ref() {
+        if let Some(a) = it.args.as_ref() {
+            args.extend(a.iter().map(|item| item.as_str()));
+        }
     }
     make_venv_command(&mut cmd, &venv)?;
     cmd.args(args).current_dir(&config.workspace_root);
@@ -236,7 +241,11 @@ pub fn install_project_dependencies(
         .iter()
         .map(|item| Package::from_str(item))
         .collect();
-    venv.install_packages(&packages?, &mut terminal)
+    venv.install_packages(
+        &packages?,
+        config.installer_options.as_ref(),
+        &mut terminal,
+    )
 }
 
 /// Install groups of a Python project's optional dependencies to an environment.
@@ -254,7 +263,11 @@ pub fn install_project_optional_dependencies(
         .iter()
         .map(|item| Package::from_str(item))
         .collect();
-    venv.install_packages(&packages?, &mut terminal)
+    venv.install_packages(
+        &packages?,
+        config.installer_options.as_ref(),
+        &mut terminal,
+    )
 }
 
 /// Lint a Python project's source code.
@@ -262,12 +275,18 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = terminal_from_options(&config.terminal_options);
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     if !venv.has_module("ruff")? {
-        venv.install_packages(&[Package::from_str("ruff")?], &mut terminal)?;
+        venv.install_packages(
+            &[Package::from_str("ruff")?],
+            config.installer_options.as_ref(),
+            &mut terminal,
+        )?;
     }
     let mut cmd = Command::new(venv.python_path());
     let mut args = vec!["-m", "ruff", "check", "."];
-    if let Some(it) = config.trailing_command_parts.as_ref() {
-        args.extend(it.iter().map(|item| item.as_str()));
+    if let Some(it) = config.lint_options.as_ref() {
+        if let Some(a) = it.args.as_ref() {
+            args.extend(a.iter().map(|item| item.as_str()));
+        }
     }
     make_venv_command(&mut cmd, &venv)?;
     cmd.args(args).current_dir(&config.workspace_root);
@@ -327,12 +346,18 @@ pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = terminal_from_options(&config.terminal_options);
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     if !venv.has_module("twine")? {
-        venv.install_packages(&[Package::from_str("twine")?], &mut terminal)?;
+        venv.install_packages(
+            &[Package::from_str("twine")?],
+            config.installer_options.as_ref(),
+            &mut terminal,
+        )?;
     }
     let mut cmd = Command::new(venv.python_path());
     let mut args = vec!["-m", "twine", "upload", "dist/*"];
-    if let Some(it) = config.trailing_command_parts.as_ref() {
-        args.extend(it.iter().map(|item| item.as_str()));
+    if let Some(it) = config.publish_options.as_ref() {
+        if let Some(a) = it.args.as_ref() {
+            args.extend(a.iter().map(|item| item.as_str()));
+        }
     }
     make_venv_command(&mut cmd, &venv)?;
     cmd.args(args).current_dir(&config.workspace_root);
@@ -399,7 +424,11 @@ pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = terminal_from_options(&config.terminal_options);
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     if !venv.has_module("pytest")? {
-        venv.install_packages(&[Package::from_str("pytest")?], &mut terminal)?;
+        venv.install_packages(
+            &[Package::from_str("pytest")?],
+            config.installer_options.as_ref(),
+            &mut terminal,
+        )?;
     }
     let mut cmd = Command::new(venv.python_path());
     make_venv_command(&mut cmd, &venv)?;
@@ -408,14 +437,13 @@ pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
     } else {
         config.workspace_root.clone()
     };
-    cmd.args(["-m", "pytest"])
-        .args(
-            config
-                .trailing_command_parts
-                .as_ref()
-                .unwrap_or(&Vec::new()),
-        )
-        .env("PYTHONPATH", python_path);
+    let mut args = vec!["-m", "pytest"];
+    if let Some(it) = config.lint_options.as_ref() {
+        if let Some(a) = it.args.as_ref() {
+            args.extend(a.iter().map(|item| item.as_str()));
+        }
+    }
+    cmd.env("PYTHONPATH", python_path);
     terminal.run_command(&mut cmd)
 }
 
@@ -556,7 +584,8 @@ fn packages_to_add(
 mod tests {
     use super::*;
     use crate::{
-        fs, test_resources_dir_path, PyProjectToml, VirtualEnvironment,
+        fs, test_resources_dir_path, PyProjectToml, Verbosity,
+        VirtualEnvironment,
     };
     use tempfile::tempdir;
 
@@ -918,7 +947,9 @@ mock-project = "mock_project.main:main"
         .unwrap();
         let config = OperationConfig {
             workspace_root: dir.join("mock-project"),
-            trailing_command_parts: Some(vec!["--fix".to_string()]),
+            lint_options: Some(LintOptions {
+                args: Some(vec!["--fix".to_string()]),
+            }),
             terminal_options: TerminalOptions {
                 verbosity: Verbosity::Quiet,
             },
@@ -1075,7 +1106,12 @@ if __name__ == "__main__":
         let mut terminal = Terminal::new();
         terminal.set_verbosity(config.terminal_options.verbosity);
         let packages = [package.clone()];
-        venv.install_packages(&packages, &mut terminal).unwrap();
+        venv.install_packages(
+            &packages,
+            config.installer_options.as_ref(),
+            &mut terminal,
+        )
+        .unwrap();
         let venv_had_package = venv.has_package(&package).unwrap();
         let toml_had_package = project
             .pyproject_toml()
@@ -1095,7 +1131,12 @@ if __name__ == "__main__":
             .dependencies()
             .unwrap()
             .contains(&package.dependency_string());
-        venv.install_packages(&[package], &mut terminal).unwrap();
+        venv.install_packages(
+            &[package],
+            config.installer_options.as_ref(),
+            &mut terminal,
+        )
+        .unwrap();
 
         assert!(venv_had_package);
         assert!(toml_had_package);
@@ -1130,7 +1171,12 @@ if __name__ == "__main__":
         let packages = [package.clone()];
         venv.uninstall_packages(&[package.name()], &mut terminal)
             .unwrap();
-        venv.install_packages(&packages, &mut terminal).unwrap();
+        venv.install_packages(
+            &packages,
+            config.installer_options.as_ref(),
+            &mut terminal,
+        )
+        .unwrap();
         let venv_had_package = venv.has_module(package.name()).unwrap();
         let toml_had_package = project
             .pyproject_toml()
