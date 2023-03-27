@@ -27,17 +27,19 @@ pub struct Cli {
 
 // List of commands.
 #[derive(Subcommand)]
+#[clap(rename_all = "kebab-case")]
 pub enum Commands {
     /// Activate the project's virtual environment.
     Activate,
-    /// Add a dependency to the existing project.
+    /// Add dependencies to the project.
     Add {
-        dependency: String,
+        #[arg(num_args = 1.., required = true)]
+        dependencies: Vec<String>,
         /// Adds an optional dependency group.
         #[arg(long)]
         group: Option<String>,
         /// Pass trailing arguments with `--`.
-        #[arg(trailing_var_arg = true)]
+        #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
     /// Check for vulnerable dependencies and license compatibility*.
@@ -45,7 +47,7 @@ pub enum Commands {
     /// Build tarball and wheel for the project.
     Build {
         /// Pass trailing arguments with `--`.
-        #[arg(trailing_var_arg = true)]
+        #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
     /// Interact with the configuration of huak.
@@ -70,7 +72,7 @@ pub enum Commands {
     /// Auto-fix fixable lint conflicts
     Fix {
         /// Pass trailing arguments with `--`.
-        #[arg(trailing_var_arg = true)]
+        #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
     /// Format the project's Python code.
@@ -79,7 +81,7 @@ pub enum Commands {
         #[arg(long)]
         check: bool,
         /// Pass trailing arguments with `--`.
-        #[arg(trailing_var_arg = true)]
+        #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
     /// Initialize the existing project.
@@ -97,7 +99,7 @@ pub enum Commands {
         #[arg(long, num_args = 1..)]
         groups: Option<Vec<String>>,
         /// Pass trailing arguments with `--`.
-        #[arg(trailing_var_arg = true)]
+        #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
     /// Lint the project's Python code.
@@ -106,7 +108,7 @@ pub enum Commands {
         #[arg(long, required = false)]
         fix: bool,
         /// Pass trailing arguments with `--`.
-        #[arg(trailing_var_arg = true)]
+        #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
     /// Create a new project at <path>.
@@ -126,25 +128,26 @@ pub enum Commands {
     /// Builds and uploads current project to a registry.
     Publish {
         /// Pass trailing arguments with `--`.
-        #[arg(trailing_var_arg = true)]
+        #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
     /// Remove a dependency from the project.
     Remove {
-        dependency: String,
+        #[arg(num_args = 1.., required = true)]
+        dependencies: Vec<String>,
         /// Remove from optional dependency group
         #[arg(long, num_args = 1)]
         group: Option<String>,
     },
     /// Run a command within the project's environment context.
     Run {
-        #[arg(trailing_var_arg = true)]
+        #[arg(last = true)]
         command: Vec<String>,
     },
     /// Test the project's Python code.
     Test {
         /// Pass trailing arguments with `--`.
-        #[arg(trailing_var_arg = true)]
+        #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
     /// Update dependencies added to the project*.
@@ -175,12 +178,12 @@ impl Cli {
                 Err(HuakError::UnimplementedError("activate".to_string()))
             }
             Commands::Add {
-                dependency,
+                dependencies,
                 group,
                 trailing,
             } => {
                 operation_config.trailing_command_parts = trailing;
-                add(dependency, group, operation_config)
+                add(dependencies, group, operation_config)
             }
             Commands::Audit => {
                 Err(HuakError::UnimplementedError("audit".to_string()))
@@ -257,9 +260,10 @@ impl Cli {
                 operation_config.trailing_command_parts = trailing;
                 publish(operation_config)
             }
-            Commands::Remove { dependency, group } => {
-                remove(dependency, group, operation_config)
-            }
+            Commands::Remove {
+                dependencies,
+                group,
+            } => remove(dependencies, group, operation_config),
             Commands::Run { command } => run(command, operation_config),
             Commands::Test { trailing } => {
                 operation_config.trailing_command_parts = trailing;
@@ -275,11 +279,12 @@ impl Cli {
 }
 
 fn add(
-    dependency: String,
+    dependencies: Vec<String>,
     group: Option<String>,
     operation_config: OperationConfig,
 ) -> HuakResult<()> {
-    let deps = [dependency.as_str()];
+    let deps: Vec<&str> =
+        dependencies.iter().map(|item| item.as_str()).collect();
     match group.as_ref() {
         Some(it) => {
             ops::add_project_optional_dependencies(&deps, it, &operation_config)
@@ -381,11 +386,12 @@ fn publish(operation_config: OperationConfig) -> HuakResult<()> {
 }
 
 fn remove(
-    dependency: String,
+    dependencies: Vec<String>,
     group: Option<String>,
     operation_config: OperationConfig,
 ) -> HuakResult<()> {
-    let deps = [dependency.as_str()];
+    let deps: Vec<&str> =
+        dependencies.iter().map(|item| item.as_str()).collect();
     match group.as_ref() {
         Some(it) => ops::remove_project_optional_dependencies(
             &deps,
