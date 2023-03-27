@@ -1,4 +1,5 @@
 pub use error::{Error, HuakResult};
+use fs::last_path_component;
 use indexmap::IndexMap;
 use pep440_rs::{
     parse_version_specifiers, Operator as VersionOperator, Version,
@@ -468,6 +469,11 @@ impl VirtualEnvironment {
     /// Get a reference to the absolute path to the virtual environment.
     pub fn root(&self) -> &Path {
         self.root.as_ref()
+    }
+
+    /// Get the name of the virtual environment.
+    pub fn name(&self) -> HuakResult<String> {
+        last_path_component(self.root())
     }
 
     /// Create a virtual environment from its root path.
@@ -946,6 +952,7 @@ pub struct FormatOptions {
 }
 pub struct LintOptions {
     pub args: Option<Vec<String>>,
+    pub include_types: bool,
 }
 pub struct PublishOptions {
     pub args: Option<Vec<String>>,

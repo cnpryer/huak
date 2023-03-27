@@ -144,7 +144,14 @@ The `--fix` flag can be used to address any auto-fixable issues.
 # ...
 ```
 
-Some wrapped tools' features may not be accessible using this method. See [#467](https://github.com/cnpryer/huak/issues/467) for the status on this issue.
+`huak` also uses `mypy` for type-checking. To disable this behavior use `--no-types`.
+
+```
+my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 took 2s 
+❯ huak lint --no-types
+```
+
+Currently, since `ruff` is the default tool used by `huak lint`, passing additional options with `--` is reserved for `ruff`. To configure `mypy` use the `[tool.mypy]` approach. This limitation will be addressed in future versions of `huak` (see [#505](https://github.com/cnpryer/huak/issues/505)).
 
 ### Test your code
 
