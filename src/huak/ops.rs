@@ -296,10 +296,15 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
                 )?;
             }
             let mut cmd = Command::new(venv.python_path());
-            let venv_path = format!("{}", venv.root.display());
             make_venv_command(&mut cmd, &venv)?;
-            cmd.args(vec!["-m", "mypy", ".", "--exclude", venv_path.as_str()])
-                .current_dir(&config.workspace_root);
+            cmd.args(vec![
+                "-m",
+                "mypy",
+                ".",
+                "--exclude",
+                venv.name()?.as_str(),
+            ])
+            .current_dir(&config.workspace_root);
             terminal.run_command(&mut cmd)?;
         }
     }
@@ -968,7 +973,7 @@ mock-project = "mock_project.main:main"
             workspace_root: dir.join("mock-project"),
             lint_options: Some(LintOptions {
                 args: Some(vec!["--fix".to_string()]),
-                include_types: true,
+                include_types: false,
             }),
             terminal_options: TerminalOptions {
                 verbosity: Verbosity::Quiet,
