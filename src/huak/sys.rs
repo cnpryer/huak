@@ -301,6 +301,11 @@ impl TerminalOut {
     }
 }
 
+#[derive(Default)]
+pub struct TerminalOptions {
+    pub verbosity: Verbosity,
+}
+
 /// Gets the name of the current shell.
 ///
 /// Returns an error if it fails to get correct env vars.
