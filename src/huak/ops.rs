@@ -14,6 +14,7 @@ use crate::{
     Project, PublishOptions, PyProjectToml, TestOptions, VirtualEnvironment,
     WorkspaceOptions,
 };
+use indexmap::IndexMap;
 use std::{
     collections::HashSet, env::consts::OS, path::PathBuf, process::Command,
     str::FromStr,
@@ -293,16 +294,41 @@ pub fn install_project_dependencies(
 
 /// Install groups of a Python project's optional dependencies to an environment.
 pub fn install_project_optional_dependencies(
-    group: &str,
+    groups: &[String],
     config: &OperationConfig,
 ) -> HuakResult<()> {
     let mut terminal = terminal_from_options(&config.terminal_options);
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
-    let project =
-        Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
-    let packages: HuakResult<Vec<Package>> = project
-        .optional_dependencey_group(group)
-        .unwrap_or(&Vec::new())
+    let pyproject_toml =
+        PyProjectToml::from_path(config.workspace_root.join("pyproject.toml"))?;
+    let binding = IndexMap::new();
+    let optional_dependencies = match pyproject_toml.optional_dependencies() {
+        Some(it) => it,
+        None => &binding,
+    };
+    let mut packages = HashSet::new();
+    let binding = Vec::new();
+    if pyproject_toml.optional_dependencey_group("all").is_none()
+        && groups.contains(&"all".to_string())
+    {
+        install_project_dependencies(config)?;
+        for (_, vals) in optional_dependencies {
+            vals.iter().for_each(|item| {
+                packages.insert(item);
+            })
+        }
+    } else {
+        groups.iter().for_each(|item| {
+            optional_dependencies
+                .get(item)
+                .unwrap_or(&binding)
+                .iter()
+                .for_each(|v| {
+                    packages.insert(v);
+                });
+        })
+    }
+    let packages: HuakResult<Vec<Package>> = packages
         .iter()
         .map(|item| Package::from_str(item))
         .collect();
@@ -1007,7 +1033,8 @@ mock-project = "mock_project.main:main"
         venv.uninstall_packages(&["pytest"], &mut terminal).unwrap();
         let had_package = venv.has_module("pytest").unwrap();
 
-        install_project_optional_dependencies("dev", &config).unwrap();
+        install_project_optional_dependencies(&["dev".to_string()], &config)
+            .unwrap();
 
         assert!(!had_package);
         assert!(venv.has_module("pytest").unwrap());

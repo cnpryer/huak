@@ -353,13 +353,7 @@ fn install(
     operation_config: OperationConfig,
 ) -> HuakResult<()> {
     if let Some(it) = groups {
-        for group in &it {
-            ops::install_project_optional_dependencies(
-                group,
-                &operation_config,
-            )?;
-        }
-        Ok(())
+        ops::install_project_optional_dependencies(&it, &operation_config)
     } else {
         ops::install_project_dependencies(&operation_config)
     }

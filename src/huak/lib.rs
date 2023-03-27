@@ -300,6 +300,16 @@ impl PyProjectToml {
         None
     }
 
+    /// Get all of the Python project's optional dependencies.
+    pub fn optional_dependencies(
+        &self,
+    ) -> Option<&IndexMap<String, Vec<String>>> {
+        if let Some(project) = self.project.as_ref() {
+            return project.optional_dependencies.as_ref();
+        }
+        None
+    }
+
     /// Get a group of optional dependencies from the Python project.
     pub fn optional_dependencey_group(
         &self,
