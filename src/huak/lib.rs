@@ -160,7 +160,7 @@ impl Project {
     }
 
     /// Check if the project has a dependency listed in its manifest file.
-    pub fn has_dependency(&self, package_str: &str) -> HuakResult<bool> {
+    pub fn contains_dependency(&self, package_str: &str) -> HuakResult<bool> {
         let package = Package::from_str(package_str)?;
         let dependencies = match self.dependencies() {
             Some(it) => it,
@@ -175,17 +175,15 @@ impl Project {
     }
 
     /// Check if the project has an optional dependency listed in its manifest file.
-    pub fn has_optional_dependency(
+    pub fn contains_optional_dependency(
         &self,
         package_str: &str,
     ) -> HuakResult<bool> {
-        let groups: Vec<&String> = match self.pyproject_toml.project.as_ref() {
-            Some(it) => match it.optional_dependencies.as_ref() {
+        let groups: Vec<&String> =
+            match self.pyproject_toml.optional_dependencies() {
                 Some(it) => it.keys().collect(),
-                None => Vec::new(),
-            },
-            None => return Ok(false),
-        };
+                None => return Ok(false),
+            };
         if groups.is_empty() {
             return Ok(false);
         }
@@ -641,7 +639,7 @@ impl VirtualEnvironment {
     }
 
     /// Check if the environment has a module installed to the executables directory.
-    pub fn has_module(&self, module_name: &str) -> HuakResult<bool> {
+    pub fn contains_module(&self, module_name: &str) -> HuakResult<bool> {
         let dir = self.executables_dir_path();
         #[cfg(unix)]
         return Ok(dir.join(module_name).exists());
@@ -658,7 +656,7 @@ impl VirtualEnvironment {
     }
 
     /// Check if the environment has a package already installed.
-    pub fn has_package(&self, package: &Package) -> HuakResult<bool> {
+    pub fn contains_package(&self, package: &Package) -> HuakResult<bool> {
         Ok(self
             .site_packages_dir_path()?
             .join(to_importable_package_name(package.name())?)

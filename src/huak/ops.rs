@@ -105,15 +105,15 @@ pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
     let manifest_path = config.workspace_root.join("pyproject.toml");
     let mut project = Project::from_manifest(&manifest_path)?;
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
-    if !venv.has_module("build")? {
+    if !venv.contains_module("build")? {
         venv.install_packages(
             &[Package::from_str("build")?],
             config.installer_options.as_ref(),
             &mut terminal,
         )?;
     }
-    if !project.has_dependency("build")?
-        && !project.has_optional_dependency("build")?
+    if !project.contains_dependency("build")?
+        && !project.contains_optional_dependency("build")?
     {
         project.add_optional_dependency("build", "dev");
         project.pyproject_toml().write_file(&manifest_path)?;
@@ -190,7 +190,7 @@ pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
     let packages: HuakResult<Vec<Package>> = ["black", "ruff"]
         .iter()
-        .filter(|item| !venv.has_module(item).unwrap_or_default())
+        .filter(|item| !venv.contains_module(item).unwrap_or_default())
         .map(|item| Package::from_str(item))
         .collect();
     let packages = packages?;
@@ -202,8 +202,8 @@ pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
         )?;
     }
     for package in &packages {
-        if !project.has_dependency(package.name())?
-            && !project.has_optional_dependency(package.name())?
+        if !project.contains_dependency(package.name())?
+            && !project.contains_optional_dependency(package.name())?
         {
             project.add_optional_dependency(package.name(), "dev");
             project.pyproject_toml().write_file(&manifest_path)?;
@@ -345,15 +345,15 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
     let manifest_path = config.workspace_root.join("pyproject.toml");
     let mut project = Project::from_manifest(&manifest_path)?;
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
-    if !venv.has_module("ruff")? {
+    if !venv.contains_module("ruff")? {
         venv.install_packages(
             &[Package::from_str("ruff")?],
             config.installer_options.as_ref(),
             &mut terminal,
         )?;
     }
-    if !project.has_dependency("ruff")?
-        && !project.has_optional_dependency("ruff")?
+    if !project.contains_dependency("ruff")?
+        && !project.contains_optional_dependency("ruff")?
     {
         project.add_optional_dependency("ruff", "dev");
         project.pyproject_toml().write_file(&manifest_path)?;
@@ -365,15 +365,15 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
             args.extend(a.iter().map(|item| item.as_str()));
         }
         if it.include_types {
-            if !venv.has_module("mypy")? {
+            if !venv.contains_module("mypy")? {
                 venv.install_packages(
                     &[Package::from_str("mypy")?],
                     config.installer_options.as_ref(),
                     &mut terminal,
                 )?;
             }
-            if !project.has_dependency("mypy")?
-                && !project.has_optional_dependency("mypy")?
+            if !project.contains_dependency("mypy")?
+                && !project.contains_optional_dependency("mypy")?
             {
                 project.add_optional_dependency("mypy", "dev");
                 project.pyproject_toml().write_file(&manifest_path)?;
@@ -451,15 +451,15 @@ pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
     let manifest_path = config.workspace_root.join("pyproject.toml");
     let mut project = Project::from_manifest(&manifest_path)?;
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
-    if !venv.has_module("twine")? {
+    if !venv.contains_module("twine")? {
         venv.install_packages(
             &[Package::from_str("twine")?],
             config.installer_options.as_ref(),
             &mut terminal,
         )?;
     }
-    if !project.has_dependency("twine")?
-        && !project.has_optional_dependency("twine")?
+    if !project.contains_dependency("twine")?
+        && !project.contains_optional_dependency("twine")?
     {
         project.add_optional_dependency("twine", "dev");
         project.pyproject_toml().write_file(&manifest_path)?;
@@ -538,15 +538,15 @@ pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
     let manifest_path = config.workspace_root.join("pyproject.toml");
     let mut project = Project::from_manifest(&manifest_path)?;
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
-    if !venv.has_module("pytest")? {
+    if !venv.contains_module("pytest")? {
         venv.install_packages(
             &[Package::from_str("pytest")?],
             config.installer_options.as_ref(),
             &mut terminal,
         )?;
     }
-    if !project.has_dependency("pytest")?
-        && !project.has_optional_dependency("pytest")?
+    if !project.contains_dependency("pytest")?
+        && !project.contains_optional_dependency("pytest")?
     {
         project.add_optional_dependency("pytest", "dev");
         project.pyproject_toml.write_file(&manifest_path)?;
@@ -743,7 +743,7 @@ mod tests {
         )
         .unwrap();
 
-        assert!(venv.has_module("ruff").unwrap());
+        assert!(venv.contains_module("ruff").unwrap());
         assert!(deps.iter().all(|item| project
             .dependencies()
             .unwrap()
@@ -793,7 +793,7 @@ mod tests {
         )
         .unwrap();
 
-        assert!(venv.has_module("ruff").unwrap());
+        assert!(venv.contains_module("ruff").unwrap());
         assert!(deps.iter().all(|item| project
             .optional_dependencey_group("dev")
             .unwrap()
@@ -1004,12 +1004,12 @@ mock-project = "mock_project.main:main"
         terminal.set_verbosity(config.terminal_options.verbosity);
         venv.uninstall_packages(&["click"], &mut terminal).unwrap();
         let package = Package::from_str("click").unwrap();
-        let had_package = venv.has_package(&package).unwrap();
+        let had_package = venv.contains_package(&package).unwrap();
 
         install_project_dependencies(&config).unwrap();
 
         assert!(!had_package);
-        assert!(venv.has_package(&package).unwrap());
+        assert!(venv.contains_package(&package).unwrap());
     }
 
     #[test]
@@ -1031,13 +1031,13 @@ mock-project = "mock_project.main:main"
         let mut terminal = Terminal::new();
         terminal.set_verbosity(config.terminal_options.verbosity);
         venv.uninstall_packages(&["pytest"], &mut terminal).unwrap();
-        let had_package = venv.has_module("pytest").unwrap();
+        let had_package = venv.contains_module("pytest").unwrap();
 
         install_project_optional_dependencies(&["dev".to_string()], &config)
             .unwrap();
 
         assert!(!had_package);
-        assert!(venv.has_module("pytest").unwrap());
+        assert!(venv.contains_module("pytest").unwrap());
     }
 
     #[test]
@@ -1239,7 +1239,7 @@ if __name__ == "__main__":
             &mut terminal,
         )
         .unwrap();
-        let venv_had_package = venv.has_package(&package).unwrap();
+        let venv_had_package = venv.contains_package(&package).unwrap();
         let toml_had_package = project
             .pyproject_toml()
             .dependencies()
@@ -1252,8 +1252,8 @@ if __name__ == "__main__":
             config.workspace_root.join("pyproject.toml"),
         )
         .unwrap();
-        let venv_has_package = venv.has_package(&package).unwrap();
-        let toml_has_package = project
+        let venv_contains_package = venv.contains_package(&package).unwrap();
+        let toml_contains_package = project
             .pyproject_toml()
             .dependencies()
             .unwrap()
@@ -1267,8 +1267,8 @@ if __name__ == "__main__":
 
         assert!(venv_had_package);
         assert!(toml_had_package);
-        assert!(!venv_has_package);
-        assert!(!toml_has_package);
+        assert!(!venv_contains_package);
+        assert!(!toml_contains_package);
     }
 
     #[test]
@@ -1304,7 +1304,7 @@ if __name__ == "__main__":
             &mut terminal,
         )
         .unwrap();
-        let venv_had_package = venv.has_module(package.name()).unwrap();
+        let venv_had_package = venv.contains_module(package.name()).unwrap();
         let toml_had_package = project
             .pyproject_toml()
             .optional_dependencey_group("dev")
@@ -1318,8 +1318,9 @@ if __name__ == "__main__":
             config.workspace_root.join("pyproject.toml"),
         )
         .unwrap();
-        let venv_has_package = venv.has_module(package.name()).unwrap();
-        let toml_has_package = project
+        let venv_contains_package =
+            venv.contains_module(package.name()).unwrap();
+        let toml_contains_package = project
             .pyproject_toml()
             .dependencies()
             .unwrap()
@@ -1329,8 +1330,8 @@ if __name__ == "__main__":
 
         assert!(venv_had_package);
         assert!(toml_had_package);
-        assert!(!venv_has_package);
-        assert!(!toml_has_package);
+        assert!(!venv_contains_package);
+        assert!(!toml_contains_package);
     }
 
     #[test]
@@ -1353,15 +1354,15 @@ if __name__ == "__main__":
         let mut terminal = Terminal::new();
         terminal.set_verbosity(config.terminal_options.verbosity);
         venv.uninstall_packages(&["black"], &mut terminal).unwrap();
-        let venv_had_package = venv.has_module("black").unwrap();
+        let venv_had_package = venv.contains_module("black").unwrap();
 
         run_command_str("pip install black", &config).unwrap();
 
-        let venv_has_package = venv.has_module("black").unwrap();
+        let venv_contains_package = venv.contains_module("black").unwrap();
         venv.uninstall_packages(&["black"], &mut terminal).unwrap();
 
         assert!(!venv_had_package);
-        assert!(venv_has_package);
+        assert!(venv_contains_package);
     }
 
     #[test]
