@@ -221,6 +221,13 @@ pub fn init_lib_project(config: &OperationConfig) -> HuakResult<()> {
     if config.workspace_root.join("pyproject.toml").exists() {
         return Err(Error::ProjectTomlExistsError);
     }
+    if !config.workspace_root.join(".git").exists() {
+        if let Some(options) = config.workspace_options.as_ref() {
+            if options.uses_git {
+                git::init(&config.workspace_root)?;
+            }
+        }
+    }
     let mut pyproject_toml = PyProjectToml::new();
     let name = fs::last_path_component(config.workspace_root.as_path())?;
     pyproject_toml.set_project_name(&name);

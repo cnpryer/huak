@@ -91,6 +91,9 @@ pub enum Commands {
         /// Use a library template.
         #[arg(long, conflicts_with = "app")]
         lib: bool,
+        /// Don't initialize VCS in the project
+        #[arg(long)]
+        no_vcs: bool,
     },
     /// Install the dependencies of an existing project.
     Install {
@@ -229,8 +232,10 @@ impl Cli {
                 }
                 fmt(operation_config)
             }
-            Commands::Init { app, lib } => {
+            Commands::Init { app, lib, no_vcs } => {
                 operation_config.workspace_root = PathBuf::from(".");
+                operation_config.workspace_options =
+                    Some(WorkspaceOptions { uses_git: !no_vcs });
                 init(app, lib, operation_config)
             }
             Commands::Install { groups, trailing } => {
