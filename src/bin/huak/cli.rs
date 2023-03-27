@@ -210,6 +210,8 @@ impl Cli {
                     if let Some(it) = operation_config.format_options.as_mut() {
                         if let Some(a) = it.args.as_mut() {
                             a.push("--check".to_string());
+                        } else {
+                            it.args = Some(vec!["--check".to_string()]);
                         }
                     }
                 }

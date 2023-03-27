@@ -177,21 +177,39 @@ pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
 pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = terminal_from_options(&config.terminal_options);
     let venv = find_or_create_virtual_environment(config, &mut terminal)?;
-    if !venv.has_module("black")? {
+    let packages: HuakResult<Vec<Package>> = ["black", "ruff"]
+        .iter()
+        .filter(|item| !venv.has_module(item).unwrap_or_default())
+        .map(|item| Package::from_str(item))
+        .collect();
+    let packages = packages?;
+    if !packages.is_empty() {
         venv.install_packages(
-            &[Package::from_str("black")?],
+            &packages,
             config.installer_options.as_ref(),
             &mut terminal,
         )?;
     }
     let mut cmd = Command::new(venv.python_path());
+    let mut ruff_cmd = Command::new(venv.python_path());
+    let mut ruff_args =
+        vec!["-m", "ruff", "check", ".", "--select", "I001", "--fix"];
+    make_venv_command(&mut cmd, &venv)?;
+    make_venv_command(&mut ruff_cmd, &venv)?;
     let mut args = vec!["-m", "black", "."];
     if let Some(it) = config.format_options.as_ref() {
         if let Some(a) = it.args.as_ref() {
             args.extend(a.iter().map(|item| item.as_str()));
+            if a.contains(&"--check".to_string()) {
+                terminal.print_warning(
+                    "this check will exit early if imports aren't sorted (see https://github.com/cnpryer/huak/issues/510)",
+                )?;
+                ruff_args.retain(|item| *item != "--fix")
+            }
         }
     }
-    make_venv_command(&mut cmd, &venv)?;
+    ruff_cmd.args(ruff_args).current_dir(&config.workspace_root);
+    terminal.run_command(&mut ruff_cmd)?;
     cmd.args(args).current_dir(&config.workspace_root);
     terminal.run_command(&mut cmd)
 }
