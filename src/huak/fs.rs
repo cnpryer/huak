@@ -58,20 +58,20 @@ pub fn flatten_directories(
 ///   3. If `file_name` is found, return its path.
 ///   4. Else step one level up from its parent's path and decrement the
 ///      recursion limit.
-pub fn find_file_bottom_up(
+pub fn find_file_bottom_up<T: AsRef<Path>>(
     file_name: &str,
-    from: impl AsRef<Path>,
-    recursion_limit: usize,
+    dir: T,
+    last: T,
 ) -> HuakResult<Option<PathBuf>> {
-    let from = from.as_ref();
-    if !from.exists() || recursion_limit == 0 {
+    let dir = dir.as_ref();
+    if !dir.exists() {
         return Ok(None);
     }
-    if from.join(file_name).exists() {
-        return Ok(Some(from.join(file_name)));
+    if dir.join(file_name).exists() {
+        return Ok(Some(dir.join(file_name)));
     }
     // Search all sub-directory roots for target_file
-    if let Some(path) = fs::read_dir(from)?
+    if let Some(path) = fs::read_dir(dir)?
         .filter(|item| item.is_ok())
         .map(|item| item.expect("failed to map dir entry").path()) // TODO: Is there better than .expect?
         .filter(|item| item.is_dir())
@@ -79,14 +79,17 @@ pub fn find_file_bottom_up(
     {
         return Ok(Some(path.join(file_name)));
     };
+    if dir == last.as_ref() {
+        return Ok(None);
+    }
     // If nothing is found from searching the subdirectories then perform the same search from
     // the parent directory.
     find_file_bottom_up(
         file_name,
-        from.parent().ok_or(Error::InternalError(
+        dir.parent().ok_or(Error::InternalError(
             "failed to establish a parent directory".to_string(),
         ))?,
-        recursion_limit - 1,
+        last.as_ref(),
     )
 }
 
@@ -131,8 +134,11 @@ mod tests {
         let tmp = tempdir().unwrap().into_path();
         let from = crate::test_resources_dir_path().join("mock-project");
         copy_dir(&from, &tmp.join("mock-project")).unwrap();
-        let res =
-            find_file_bottom_up("pyproject.toml", &tmp.join("mock-project"), 5);
+        let res = find_file_bottom_up(
+            "pyproject.toml",
+            tmp.join("mock-project").as_path(),
+            tmp.as_path(),
+        );
 
         assert!(res.unwrap().unwrap().exists());
     }

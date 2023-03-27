@@ -153,7 +153,8 @@ pub enum Commands {
 // Command gating for Huak.
 impl Cli {
     pub fn run(self) -> CliResult<()> {
-        let workspace_root = find_workspace().unwrap_or(PathBuf::from("."));
+        let workspace_root =
+            find_workspace().unwrap_or(std::env::current_dir()?);
         let verbosity = match self.quiet {
             true => Verbosity::Quiet,
             false => Verbosity::Normal,
@@ -215,7 +216,7 @@ impl Cli {
                 fmt(operation_config)
             }
             Commands::Init { app, lib, no_vcs } => {
-                operation_config.workspace_root = PathBuf::from(".");
+                operation_config.workspace_root = std::env::current_dir()?;
                 operation_config.workspace_options =
                     Some(WorkspaceOptions { uses_git: !no_vcs });
                 init(app, lib, operation_config)
