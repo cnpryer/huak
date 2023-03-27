@@ -21,20 +21,7 @@ A Python package manager written in Rust. The [Cargo](https://github.com/rust-la
 
 Huak aims to support a base workflow for developing Python packages and projects. The process is linear and purpose oriented, establishing better familiarization with the steps.
 
-```mermaid
-graph LR
-    A[Workflow Startup] --> B[Project Change]
-    B --> C[Project Test]
-    C --> D[Project Distribution]
-```
-
-See the [design doc](/docs/design_doc.md) for more workflow details.
-
 The goal is to create an opinionated tool to support a reliably inviting onboarding experience for the Python ecosystem, that feels responsive and snappy to use.
-
-### Project Status
-
-See **[the milestone list](https://github.com/cnpryer/huak/milestones)** to check the status of this project at any point in time.
 
 ## README Contents
 
@@ -60,37 +47,33 @@ A Python package manager written in Rust inspired by Cargo.
 Usage: huak [OPTIONS] <COMMAND>
 
 Commands:
-  activate  Activate the project's virtual environment*
-  add       Add dependencies to the project
-  audit     Check for vulnerable dependencies and license compatibility*
-  build     Build tarball and wheel for the project
-  config    Interact with the configuration of huak
-  clean     Remove tarball and wheel from the built project
-  doc       Generates documentation for the project*
-  fix       Auto-fix fixable lint conflicts
-  fmt       Format the project's Python code
-  init      Initialize the existing project
-  install   Install the dependencies of an existing project
-  lint      Lint the project's Python code
-  new       Create a new project at <path>
-  publish   Builds and uploads current project to a registry
-  remove    Remove dependencies from the project
-  run       Run a command within the project's environment context
-  test      Test the project's Python code
-  update    Update dependencies added to the project*
-  version   Display the version of the project
-  help      Print this message or the help of the given subcommand(s)
+  add      Add dependencies to the project
+  build    Build tarball and wheel for the project
+  config   Interact with the configuration of huak
+  clean    Remove tarball and wheel from the built project
+  fix      Auto-fix fixable lint conflicts
+  fmt      Format the project's Python code
+  init     Initialize the existing project
+  install  Install the dependencies of an existing project
+  lint     Lint the project's Python code
+  new      Create a new project at <path>
+  publish  Builds and uploads current project to a registry
+  remove   Remove dependencies from the project
+  run      Run a command within the project's environment context
+  test     Test the project's Python code
+  version  Display the version of the project
+  help     Print this message or the help of the given subcommand(s)
 
 Options:
   -q, --quiet    
   -h, --help     Print help
   -V, --version  Print version
 ```
-$\textcolor{red}{\textsf{* indicates first-pass of implementation is incomplete.}}$ 
 
 ## Documentation
 
-More documentation can be found [here](./docs/user_guide.md).
+- [User Guide](./docs/user_guide.md)
+- [Development](/docs/development.md)
 
 ## Goals
 
@@ -100,7 +83,7 @@ The Rust ecosystem has a fantastic onboarding experience. Cargo plays a large ro
 
 ### 2. Fast ⚡️
 
-There's room for faster tooling in the Python ecosystem. One of the guiding principles will be *"Is this the fastest it can be?"*.
+There's room for faster tooling in the Python ecosystem. One of the guiding principles will be *"Is this the fastest it can be?"*
 
 ### 3. Python 🤝 Rust
 
