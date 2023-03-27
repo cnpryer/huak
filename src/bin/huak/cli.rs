@@ -28,8 +28,6 @@ pub struct Cli {
 #[derive(Subcommand)]
 #[clap(rename_all = "kebab-case")]
 pub enum Commands {
-    /// Activate the project's virtual environment*.
-    Activate,
     /// Add dependencies to the project.
     Add {
         #[arg(num_args = 1.., required = true)]
@@ -41,8 +39,6 @@ pub enum Commands {
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
-    /// Check for vulnerable dependencies and license compatibility*.
-    Audit,
     /// Build tarball and wheel for the project.
     Build {
         /// Pass trailing arguments with `--`.
@@ -62,11 +58,6 @@ pub enum Commands {
         #[arg(long, required = false)]
         /// Remove all __pycache__ directories.
         include_pycache: bool,
-    },
-    /// Generates documentation for the project*.
-    Doc {
-        #[arg(long)]
-        check: bool,
     },
     /// Auto-fix fixable lint conflicts
     Fix {
@@ -155,11 +146,6 @@ pub enum Commands {
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
-    /// Update dependencies added to the project*.
-    Update {
-        #[arg(default_value = "*")]
-        dependency: String,
-    },
     /// Display the version of the project.
     Version,
 }
@@ -179,9 +165,6 @@ impl Cli {
         };
         match self.command {
             Commands::Config { command } => config(command),
-            Commands::Activate => {
-                Err(HuakError::UnimplementedError("activate".to_string()))
-            }
             Commands::Add {
                 dependencies,
                 group,
@@ -190,9 +173,6 @@ impl Cli {
                 operation_config.installer_options =
                     Some(InstallerOptions { args: trailing });
                 add(dependencies, group, operation_config)
-            }
-            Commands::Audit => {
-                Err(HuakError::UnimplementedError("audit".to_string()))
             }
             Commands::Build { trailing } => {
                 operation_config.build_options =
@@ -209,9 +189,6 @@ impl Cli {
                 };
                 operation_config.clean_options = Some(options);
                 clean(operation_config)
-            }
-            Commands::Doc { check: _ } => {
-                Err(HuakError::UnimplementedError("doc".to_string()))
             }
             Commands::Fix { trailing } => {
                 operation_config.lint_options = Some(LintOptions {
@@ -291,9 +268,6 @@ impl Cli {
                 operation_config.test_options =
                     Some(TestOptions { args: trailing });
                 test(operation_config)
-            }
-            Commands::Update { dependency: _ } => {
-                Err(HuakError::UnimplementedError("update".to_string()))
             }
             Commands::Version => version(operation_config),
         }
