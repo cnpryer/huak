@@ -295,17 +295,18 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
                     &mut terminal,
                 )?;
             }
-            let mut cmd = Command::new(venv.python_path());
-            make_venv_command(&mut cmd, &venv)?;
-            cmd.args(vec![
-                "-m",
-                "mypy",
-                ".",
-                "--exclude",
-                venv.name()?.as_str(),
-            ])
-            .current_dir(&config.workspace_root);
-            terminal.run_command(&mut cmd)?;
+            let mut mypy_cmd = Command::new(venv.python_path());
+            make_venv_command(&mut mypy_cmd, &venv)?;
+            mypy_cmd
+                .args(vec![
+                    "-m",
+                    "mypy",
+                    ".",
+                    "--exclude",
+                    venv.name()?.as_str(),
+                ])
+                .current_dir(&config.workspace_root);
+            terminal.run_command(&mut mypy_cmd)?;
         }
     }
     make_venv_command(&mut cmd, &venv)?;
