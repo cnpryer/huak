@@ -137,7 +137,7 @@ pub enum Commands {
     },
     /// Run a command within the project's environment context.
     Run {
-        #[arg(last = true)]
+        #[arg(trailing_var_arg = true)]
         command: Vec<String>,
     },
     /// Test the project's Python code.
