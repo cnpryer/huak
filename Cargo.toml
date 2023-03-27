@@ -31,7 +31,7 @@ pep440_rs = { git = "https://github.com/konstin/pep440-rs", rev = "3148c9016cbc0
 pyproject-toml = "0.4.0"
 regex = "1.7.1"
 reqwest = { version = "0.11.14", features = ["blocking", "json"] }
-serde = { version = "1.0.156", features = ["derive"] }
+serde = { version = "1.0.158", features = ["derive"] }
 serde_json = "1.0.94"
 termcolor = "1.2.0"
 thiserror = "1.0.40"
