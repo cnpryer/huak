@@ -29,7 +29,7 @@ pub struct Cli {
 #[derive(Subcommand)]
 #[clap(rename_all = "kebab-case")]
 pub enum Commands {
-    /// Activate the project's virtual environment.
+    /// Activate the project's virtual environment*.
     Activate,
     /// Add dependencies to the project.
     Add {
@@ -131,7 +131,7 @@ pub enum Commands {
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
-    /// Remove a dependency from the project.
+    /// Remove dependencies from the project.
     Remove {
         #[arg(num_args = 1.., required = true)]
         dependencies: Vec<String>,
