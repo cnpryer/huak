@@ -64,7 +64,18 @@ my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0
 ❯ huak add xlcsv
 ```
 
-You can assign the dependency to a group using `--group`.
+#### Installer Options
+
+Currently `huak` uses `pip` under the hood for package installation. You can pass additional arguments onto `pip`. Any arguments after `--` are handed off to `pip install`.
+
+```
+my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+❯ huak add torch torchvision torchaudio -- --extra-index-url https://download.pytorch.org/whl/cu117
+```
+
+`huak` will add the packages to your pyproject.toml, so passing [PEP 508](https://peps.python.org/pep-0508/) strings would help persist this behavior for future installs.
+
+You can also assign dependencies to a group using `--group`.
 
 ### Install dependencies listed in the pyproject.toml
 
@@ -75,7 +86,21 @@ my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0
 ❯ huak install
 ```
 
-With `--groups` you can install dependencies from specific groups.
+#### Using --groups
+
+With `--groups` you can install dependencies from specific groups. This could be useful for adding dependencies for specific use-cases (like development), or if you're not using PEP 508 strings and would like to persist installer configuration.
+
+`huak install` would trigger a standard `pip install` on your group's packages. So without PEP 508 you won't install the pytorch.org packages as demonstrated with `huak add` earlier. To do this you could pass the same options given to `huak add`. Use a group to isolate these options to those specific dependencies.
+
+```
+my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+❯ huak add torch torchvision torchaudio --group torch -- --extra-index-url https://download.pytorch.org/whl/cu117
+
+my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+❯ huak install --groups torch -- --extra-index-url https://download.pytorch.org/whl/cu117
+```
+
+In the future `huak` will manage translating installer options to PEP 508 strings for you.
 
 ### Remove dependencies
 
