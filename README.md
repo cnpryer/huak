@@ -57,11 +57,11 @@ See **[the milestone list](https://github.com/cnpryer/huak/milestones)** to chec
 
 A Python package manager written in Rust inspired by Cargo.
 
-Usage: huak <COMMAND>
+Usage: huak [OPTIONS] <COMMAND>
 
 Commands:
   activate  Activate the project's virtual environment*
-  add       Add a dependency to the existing project
+  add       Add dependencies to the project
   audit     Check for vulnerable dependencies and license compatibility*
   build     Build tarball and wheel for the project
   config    Interact with the configuration of huak
@@ -74,7 +74,7 @@ Commands:
   lint      Lint the project's Python code
   new       Create a new project at <path>
   publish   Builds and uploads current project to a registry
-  remove    Remove a dependency from the project
+  remove    Remove dependencies from the project
   run       Run a command within the project's environment context
   test      Test the project's Python code
   update    Update dependencies added to the project*
@@ -82,10 +82,11 @@ Commands:
   help      Print this message or the help of the given subcommand(s)
 
 Options:
+  -q, --quiet    
   -h, --help     Print help
   -V, --version  Print version
 ```
-_"*" indicates first-pass of implementation is incomplete._
+$\textcolor{red}{\textsf{* indicates first-pass of implementation is incomplete.}}$ 
 
 ## Documentation
 
