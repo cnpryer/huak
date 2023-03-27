@@ -473,7 +473,7 @@ pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
             args.extend(a.iter().map(|item| item.as_str()));
         }
     }
-    cmd.env("PYTHONPATH", python_path);
+    cmd.args(args).env("PYTHONPATH", python_path);
     terminal.run_command(&mut cmd)
 }
 
