@@ -946,6 +946,7 @@ pub struct FormatOptions {
 }
 pub struct LintOptions {
     pub args: Option<Vec<String>>,
+    pub include_types: bool,
 }
 pub struct PublishOptions {
     pub args: Option<Vec<String>>,

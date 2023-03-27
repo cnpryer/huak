@@ -104,9 +104,12 @@ pub enum Commands {
     /// Lint the project's Python code.
     Lint {
         /// Address any fixable lints.
-        #[arg(long, required = false)]
+        #[arg(long)]
         fix: bool,
-        /// Pass trailing arguments with `--`.
+        /// Perform type-checking.
+        #[arg(long)]
+        no_types: bool,
+        /// Pass trailing arguments with `--` to `ruff`.
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
@@ -208,8 +211,10 @@ impl Cli {
                 Err(HuakError::UnimplementedError("doc".to_string()))
             }
             Commands::Fix { trailing } => {
-                operation_config.lint_options =
-                    Some(LintOptions { args: trailing });
+                operation_config.lint_options = Some(LintOptions {
+                    args: trailing,
+                    include_types: false,
+                });
                 if let Some(it) = operation_config.lint_options.as_mut() {
                     if let Some(a) = it.args.as_mut() {
                         a.push("--fix".to_string());
@@ -238,9 +243,15 @@ impl Cli {
                     Some(InstallerOptions { args: trailing });
                 install(groups, operation_config)
             }
-            Commands::Lint { fix, trailing } => {
-                operation_config.lint_options =
-                    Some(LintOptions { args: trailing });
+            Commands::Lint {
+                fix,
+                no_types,
+                trailing,
+            } => {
+                operation_config.lint_options = Some(LintOptions {
+                    args: trailing,
+                    include_types: !no_types,
+                });
                 if fix {
                     if let Some(it) = operation_config.lint_options.as_mut() {
                         if let Some(a) = it.args.as_mut() {

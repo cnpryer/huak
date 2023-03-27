@@ -287,6 +287,21 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
         if let Some(a) = it.args.as_ref() {
             args.extend(a.iter().map(|item| item.as_str()));
         }
+        if it.include_types {
+            if !venv.has_module("mypy")? {
+                venv.install_packages(
+                    &[Package::from_str("mypy")?],
+                    config.installer_options.as_ref(),
+                    &mut terminal,
+                )?;
+            }
+            let mut cmd = Command::new(venv.python_path());
+            let venv_path = format!("{}", venv.root.display());
+            make_venv_command(&mut cmd, &venv)?;
+            cmd.args(vec!["-m", "mypy", ".", "--exclude", venv_path.as_str()])
+                .current_dir(&config.workspace_root);
+            terminal.run_command(&mut cmd)?;
+        }
     }
     make_venv_command(&mut cmd, &venv)?;
     cmd.args(args).current_dir(&config.workspace_root);
@@ -931,6 +946,10 @@ mock-project = "mock_project.main:main"
             terminal_options: TerminalOptions {
                 verbosity: Verbosity::Quiet,
             },
+            lint_options: Some(LintOptions {
+                args: None,
+                include_types: true,
+            }),
             ..Default::default()
         };
 
@@ -949,6 +968,7 @@ mock-project = "mock_project.main:main"
             workspace_root: dir.join("mock-project"),
             lint_options: Some(LintOptions {
                 args: Some(vec!["--fix".to_string()]),
+                include_types: true,
             }),
             terminal_options: TerminalOptions {
                 verbosity: Verbosity::Quiet,
