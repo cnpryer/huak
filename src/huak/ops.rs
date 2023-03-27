@@ -398,7 +398,8 @@ pub fn remove_project_dependencies(
     config: &OperationConfig,
 ) -> HuakResult<()> {
     let mut terminal = terminal_from_options(&config.terminal_options);
-    let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
+    let venv =
+        VirtualEnvironment::from_path(find_venv_root(&config.workspace_root)?)?;
     let mut project =
         Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
     dependency_names.iter().for_each(|item| {
@@ -417,7 +418,8 @@ pub fn remove_project_optional_dependencies(
     config: &OperationConfig,
 ) -> HuakResult<()> {
     let mut terminal = terminal_from_options(&config.terminal_options);
-    let venv = VirtualEnvironment::from_path(find_venv_root()?)?;
+    let venv =
+        VirtualEnvironment::from_path(find_venv_root(&config.workspace_root)?)?;
     let mut project =
         Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
     dependency_names.iter().for_each(|item| {
@@ -517,18 +519,18 @@ fn terminal_from_options(options: &TerminalOptions) -> Terminal {
 /// Find the workspace root by searching for a pyproject.toml file.
 pub fn find_workspace() -> HuakResult<PathBuf> {
     let cwd = std::env::current_dir()?;
-    let pyproject_toml = match find_file_bottom_up("pyproject.toml", cwd, 5) {
-        Ok(it) => it,
-        Err(_) => return Err(Error::ProjectFileNotFound),
-    };
-    let pyproject_toml = match pyproject_toml {
-        Some(it) => it,
-        None => return Err(Error::ProjectFileNotFound),
-    };
-    match pyproject_toml.parent() {
-        Some(it) => Ok(it.to_path_buf()),
-        None => Err(Error::ProjectFileNotFound),
-    }
+    let path =
+        match find_file_bottom_up("pyproject.toml", cwd, PathBuf::from("/")) {
+            Ok(it) => it
+                .ok_or(Error::ProjectFileNotFound)?
+                .parent()
+                .ok_or(Error::InternalError(
+                    "failed to parse parent directory".to_string(),
+                ))?
+                .to_path_buf(),
+            Err(_) => return Err(Error::ProjectFileNotFound),
+        };
+    Ok(path)
 }
 
 /// Create a workspace directory.
@@ -554,7 +556,7 @@ fn find_or_create_virtual_environment(
     config: &OperationConfig,
     terminal: &mut Terminal,
 ) -> HuakResult<VirtualEnvironment> {
-    let root = match find_venv_root() {
+    let root = match find_venv_root(&config.workspace_root) {
         Ok(it) => it,
         Err(Error::VenvNotFoundError) => {
             create_virtual_environment(config, terminal)?;

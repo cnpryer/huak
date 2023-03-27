@@ -613,22 +613,24 @@ impl VirtualEnvironment {
 /// Search for a Python virtual environment.
 /// 1. If VIRTUAL_ENV exists then a venv is active; use it.
 /// 2. Walk from CWD up searching for dir containing pyvenv.cfg.
-pub fn find_venv_root() -> HuakResult<PathBuf> {
+/// 3. Stop after searching the workspace root.
+pub fn find_venv_root(workspace_root: impl AsRef<Path>) -> HuakResult<PathBuf> {
     if let Ok(path) = std::env::var("VIRTUAL_ENV") {
         return Ok(PathBuf::from(path));
     }
     let cwd = std::env::current_dir()?;
-    if let Some(path) =
-        fs::find_file_bottom_up(VIRTUAL_ENVIRONMENT_CONFIG_FILE_NAME, cwd, 5)?
-    {
-        return Ok(path
-            .parent()
-            .ok_or(Error::InternalError(
-                "failed to establish a parent directory".to_string(),
-            ))?
-            .to_path_buf());
-    }
-    Err(Error::VenvNotFoundError)
+    let file_path = match fs::find_file_bottom_up(
+        VIRTUAL_ENVIRONMENT_CONFIG_FILE_NAME,
+        cwd.as_path(),
+        workspace_root.as_ref(),
+    ) {
+        Ok(it) => it.ok_or(Error::VenvNotFoundError)?,
+        Err(_) => return Err(Error::VenvNotFoundError),
+    };
+    let root = file_path.parent().ok_or(Error::InternalError(
+        "failed to establish parent directory".to_string(),
+    ))?;
+    Ok(root.to_path_buf())
 }
 
 #[derive(Default)]
