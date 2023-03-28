@@ -79,7 +79,7 @@ You can also assign dependencies to a group using `--group`.
 
 ### Install dependencies listed in the pyproject.toml
 
-Use the `install` command to install all of the project's dependencies.
+Use the `install` command to install the project's dependencies.
 
 ```
 my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
@@ -189,18 +189,19 @@ my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0
 
 ### Publish to PyPI
 
-If you're building a Python package you'd like to share, use `huak publish` to build and publish the project to [PyPI](https://pypi.org).
+If you're building a Python package you'd like to share, use `huak build` and `huak publish` to build and publish the project to [PyPI](https://pypi.org).
 
 ```
+my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+❯ huak build
+
 my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ huak publish
 ```
 
-If you just want to build the project use the `build` command.
-
 ### Cleaning up
 
-Use `huak clean` to clean up the dist/ directory.
+Use `huak clean` to clean out the dist/ directory.
 
 ```
 my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 took 26s 
