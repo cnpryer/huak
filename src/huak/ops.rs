@@ -483,8 +483,6 @@ pub fn remove_project_dependencies(
     let mut terminal = terminal_from_options(&config.terminal_options);
     let manifest_path = config.workspace_root.join("pyproject.toml");
     let mut project = Project::from_manifest(&manifest_path)?;
-    let venv =
-        VirtualEnvironment::from_path(find_venv_root(&config.workspace_root)?)?;
     let dependencies: Vec<String> = dependency_names
         .iter()
         .filter(|item| project.contains_dependency(item).unwrap_or_default())
@@ -496,6 +494,8 @@ pub fn remove_project_dependencies(
     dependencies.iter().for_each(|item| {
         project.remove_dependency(item);
     });
+    let venv =
+        VirtualEnvironment::from_path(find_venv_root(&config.workspace_root)?)?;
     venv.uninstall_packages(
         &dependency_names
             .iter()
@@ -513,16 +513,19 @@ pub fn remove_project_optional_dependencies(
     config: &OperationConfig,
 ) -> HuakResult<()> {
     let mut terminal = terminal_from_options(&config.terminal_options);
-    let venv =
-        VirtualEnvironment::from_path(find_venv_root(&config.workspace_root)?)?;
     let mut project =
         Project::from_manifest(config.workspace_root.join("pyproject.toml"))?;
+    if group != "all" && project.optional_dependencey_group(group).is_none() {
+        return Ok(());
+    }
     let dependencies: Vec<String> = dependency_names
         .iter()
         .filter(|item| {
             project
                 .contains_optional_dependency(item)
                 .unwrap_or_default()
+                | (group == "all"
+                    && project.contains_dependency(item).unwrap_or_default())
         })
         .cloned()
         .collect();
@@ -531,7 +534,12 @@ pub fn remove_project_optional_dependencies(
     }
     dependencies.iter().for_each(|item| {
         project.remove_optional_dependency(item, group);
+        if group == "all" {
+            project.remove_dependency(item);
+        }
     });
+    let venv =
+        VirtualEnvironment::from_path(find_venv_root(&config.workspace_root)?)?;
     venv.uninstall_packages(
         &dependency_names
             .iter()
