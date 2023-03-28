@@ -40,6 +40,7 @@ pub fn copy_dir<T: AsRef<Path>>(from: T, to: T) -> HuakResult<()> {
     Ok(())
 }
 
+/// Get an iterator over all paths found in each directory.
 pub fn flatten_directories(
     directories: impl IntoIterator<Item = PathBuf>,
 ) -> impl Iterator<Item = PathBuf> {
@@ -54,11 +55,10 @@ pub fn flatten_directories(
 /// Search for the path to a target file from a given directory's path and the file_name.
 /// The search is executed with the following steps:
 ///   1. Get all sub-directories.
-///   2. Search all sub-directories one level for `file_name`.
-///   3. If `file_name` is found, return its path.
-///   4. Else step one level up from its parent's path and decrement the
-///      recursion limit.
-pub fn find_file_bottom_up<T: AsRef<Path>>(
+///   2. Search all sub-directory roots for file_name.
+///   3. If file_name is found, return its path.
+///   4. Else step one directory up until the `last` directory has been searched.
+pub fn find_root_file_bottom_up<T: AsRef<Path>>(
     file_name: &str,
     dir: T,
     last: T,
@@ -70,10 +70,10 @@ pub fn find_file_bottom_up<T: AsRef<Path>>(
     if dir.join(file_name).exists() {
         return Ok(Some(dir.join(file_name)));
     }
-    // Search all sub-directory roots for target_file
+    // Search all sub-directory roots for target_file.
     if let Some(path) = fs::read_dir(dir)?
         .filter(|item| item.is_ok())
-        .map(|item| item.expect("failed to map dir entry").path()) // TODO: Is there better than .expect?
+        .map(|item| item.expect("failed to map dir entry").path())
         .filter(|item| item.is_dir())
         .find(|item| item.join(file_name).exists())
     {
@@ -84,7 +84,7 @@ pub fn find_file_bottom_up<T: AsRef<Path>>(
     }
     // If nothing is found from searching the subdirectories then perform the same search from
     // the parent directory.
-    find_file_bottom_up(
+    find_root_file_bottom_up(
         file_name,
         dir.parent().ok_or(Error::InternalError(
             "failed to establish a parent directory".to_string(),
@@ -93,24 +93,26 @@ pub fn find_file_bottom_up<T: AsRef<Path>>(
     )
 }
 
+/// Get the last component of a path. For example this function would return
+/// "dir" from the following path:
+/// /some/path/to/some/dir
 pub fn last_path_component(path: impl AsRef<Path>) -> HuakResult<String> {
     let path = path.as_ref();
-    match path
+    let path = path
         .components()
         .last()
         .ok_or(Error::InternalError(format!(
-            "failed to parse project name from {}",
+            "failed to parse path {}",
             path.display()
         )))?
         .as_os_str()
         .to_str()
-    {
-        Some(it) => Ok(it.to_string()),
-        None => Err(Error::InternalError(format!(
-            "failed to parse project name from {}",
+        .ok_or(Error::InternalError(format!(
+            "failed to parse path {}",
             path.display()
-        ))),
-    }
+        )))?
+        .to_string();
+    Ok(path)
 }
 
 #[cfg(test)]
@@ -130,11 +132,11 @@ mod tests {
     }
 
     #[test]
-    fn test_find_file_bottom_up() {
+    fn test_find_root_file_bottom_up() {
         let tmp = tempdir().unwrap().into_path();
         let from = crate::test_resources_dir_path().join("mock-project");
         copy_dir(&from, &tmp.join("mock-project")).unwrap();
-        let res = find_file_bottom_up(
+        let res = find_root_file_bottom_up(
             "pyproject.toml",
             tmp.join("mock-project").as_path(),
             tmp.as_path(),

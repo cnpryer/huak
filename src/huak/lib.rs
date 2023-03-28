@@ -30,12 +30,6 @@ const DEFAULT_VIRTUAL_ENVIRONMENT_NAME: &str = ".venv";
 const VIRTUAL_ENVIRONMENT_CONFIG_FILE_NAME: &str = "pyvenv.cfg";
 const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
 
-#[cfg(test)]
-/// The resource directory found in the Huak repo used for testing purposes.
-pub(crate) fn test_resources_dir_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("dev-resources")
-}
-
 /// A Python project can be anything from a script to automate some process to a
 /// production web application. Projects consist of Python source code and a
 /// project-marking `pyproject.toml` file. PEPs provide Python’s ecosystem with
@@ -172,13 +166,11 @@ impl Project {
     /// Check if the project has a dependency listed in its manifest file.
     pub fn contains_dependency(&self, package_str: &str) -> HuakResult<bool> {
         let package = Package::from_str(package_str)?;
-        let dependencies = match self.dependencies() {
-            Some(it) => it,
-            None => return Ok(false),
-        };
-        for dependency in dependencies {
-            if Package::from_str(dependency)?.name() == package.name() {
-                return Ok(true);
+        if let Some(deps) = self.dependencies() {
+            for dep in deps {
+                if Package::from_str(dep)?.name() == package.name() {
+                    return Ok(true);
+                }
             }
         }
         Ok(false)
@@ -189,23 +181,13 @@ impl Project {
         &self,
         package_str: &str,
     ) -> HuakResult<bool> {
-        let groups: Vec<&String> =
-            match self.pyproject_toml.optional_dependencies() {
-                Some(it) => it.keys().collect(),
-                None => return Ok(false),
-            };
-        if groups.is_empty() {
-            return Ok(false);
-        }
-        let package = Package::from_str(package_str)?;
-
-        for group in groups {
-            let dependencies = match self.optional_dependencey_group(group) {
-                Some(it) => it,
-                None => continue,
-            };
-            for dependency in dependencies {
-                if Package::from_str(dependency)?.name() == package.name() {
+        if let Some(groups) = self.pyproject_toml.optional_dependencies() {
+            if groups.is_empty() {
+                return Ok(false);
+            }
+            let package = Package::from_str(package_str)?;
+            for dep in groups.values().flatten() {
+                if Package::from_str(dep)?.name() == package.name() {
                     return Ok(true);
                 }
             }
@@ -462,7 +444,7 @@ name = "{project_name}"
 version = "0.0.1"
 description = ""
 dependencies = []
-    "#
+"#
     )
 }
 
@@ -683,7 +665,7 @@ pub fn find_venv_root(workspace_root: impl AsRef<Path>) -> HuakResult<PathBuf> {
         return Ok(PathBuf::from(path));
     }
     let cwd = std::env::current_dir()?;
-    let file_path = match fs::find_file_bottom_up(
+    let file_path = match fs::find_root_file_bottom_up(
         VIRTUAL_ENVIRONMENT_CONFIG_FILE_NAME,
         cwd.as_path(),
         workspace_root.as_ref(),
@@ -948,6 +930,17 @@ impl PartialEq for Package {
 
 impl Eq for Package {}
 
+/// Collect and return an iterator over Packages from Strings.
+fn package_iter<I>(strings: I) -> impl Iterator<Item = Package>
+where
+    I: IntoIterator,
+    I::Item: AsRef<str>,
+{
+    strings
+        .into_iter()
+        .filter_map(|item| Package::from_str(item.as_ref()).ok())
+}
+
 /// A client used to interact with a package index.
 #[derive(Default)]
 pub struct PackageIndexClient;
@@ -1035,7 +1028,8 @@ pub struct CleanOptions {
 /// Inspired by brettcannon/python-launcher
 pub fn find_python_interpreter_paths(
 ) -> impl Iterator<Item = (PathBuf, Version)> {
-    let paths = fs::flatten_directories(sys::env_path_values());
+    let paths =
+        fs::flatten_directories(sys::env_path_values().unwrap_or(Vec::new()));
     all_python_interpreters_in_paths(paths)
 }
 
@@ -1065,6 +1059,12 @@ fn python_version_from_path(path: impl AsRef<Path>) -> Option<Version> {
 
 fn valid_python_interpreter_file_name(file_name: &str) -> bool {
     file_name.len() >= "python3.0".len() && file_name.starts_with("python")
+}
+
+#[cfg(test)]
+/// The resource directory found in the Huak repo used for testing purposes.
+pub(crate) fn test_resources_dir_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("dev-resources")
 }
 
 #[cfg(test)]
