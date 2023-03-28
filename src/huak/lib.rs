@@ -198,6 +198,7 @@ impl Project {
             return Ok(false);
         }
         let package = Package::from_str(package_str)?;
+
         for group in groups {
             let dependencies = match self.optional_dependencey_group(group) {
                 Some(it) => it,

@@ -95,21 +95,22 @@ pub fn find_file_bottom_up<T: AsRef<Path>>(
 
 pub fn last_path_component(path: impl AsRef<Path>) -> HuakResult<String> {
     let path = path.as_ref();
-    let path = path
+    match path
         .components()
         .last()
         .ok_or(Error::InternalError(format!(
-            "failed to parse path {}",
+            "failed to parse project name from {}",
             path.display()
         )))?
         .as_os_str()
         .to_str()
-        .ok_or(Error::InternalError(format!(
-            "failed to parse path {}",
+    {
+        Some(it) => Ok(it.to_string()),
+        None => Err(Error::InternalError(format!(
+            "failed to parse project name from {}",
             path.display()
-        )))?
-        .to_string();
-    Ok(path)
+        ))),
+    }
 }
 
 #[cfg(test)]
