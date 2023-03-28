@@ -10,21 +10,25 @@ use termcolor::{
     ColorChoice,
 };
 
+const VIRTUAL_ENV_ENV_VAR: &str = "VIRUTAL_ENV";
+const CONDA_ENV_ENV_VAR: &str = "CONDA_PREFIX";
+
 /// Get a vector of paths from the system PATH environment variable.
-pub fn env_path_values() -> Vec<PathBuf> {
-    std::env::split_paths(&env_path_string()).collect()
+pub fn env_path_values() -> Option<Vec<PathBuf>> {
+    if let Some(val) = env_path_string() {
+        return Some(std::env::split_paths(&val).collect());
+    }
+    None
 }
 
-pub fn env_path_string() -> OsString {
-    match std::env::var_os("PATH") {
-        Some(val) => val,
-        None => OsString::new(),
-    }
+/// Get the OsString value of the enrionment variable PATH.
+pub fn env_path_string() -> Option<OsString> {
+    std::env::var_os("PATH")
 }
 
 /// Get the VIRTUAL_ENV environment path if it exists.
 pub fn active_virtual_env_path() -> Option<PathBuf> {
-    if let Ok(path) = std::env::var("VIRTUAL_ENV") {
+    if let Ok(path) = std::env::var(VIRTUAL_ENV_ENV_VAR) {
         return Some(PathBuf::from(path));
     }
     None
@@ -32,7 +36,7 @@ pub fn active_virtual_env_path() -> Option<PathBuf> {
 
 /// Get the CONDA_PREFIX environment path if it exists.
 pub fn active_conda_env_path() -> Option<PathBuf> {
-    if let Ok(path) = std::env::var("CONDA_PREFIX") {
+    if let Ok(path) = std::env::var(CONDA_ENV_ENV_VAR) {
         return Some(PathBuf::from(path));
     }
     None
@@ -47,7 +51,7 @@ pub enum Verbosity {
 }
 
 /// An abstraction around terminal output that remembers preferences for output
-/// verbosity and color (inspired by cargo's implementation).
+/// verbosity and color (inspired by cargo's Shell implementation).
 pub struct Terminal {
     /// A write object for terminal output.
     output: TerminalOut,
@@ -307,8 +311,6 @@ pub struct TerminalOptions {
 }
 
 /// Gets the name of the current shell.
-///
-/// Returns an error if it fails to get correct env vars.
 pub fn shell_name() -> HuakResult<String> {
     let shell_path = shell_path()?;
     let shell_name = Path::new(&shell_path)
@@ -317,22 +319,17 @@ pub fn shell_name() -> HuakResult<String> {
         .map(|name| name.to_owned())
         .ok_or_else(|| {
             Error::InternalError("shell path is invalid".to_owned())
-        });
-
-    shell_name
+        })?;
+    Ok(shell_name)
 }
 
-/// Gets the path of the current shell from env var
-///
-/// Returns an error if it fails to get correct env vars.
+/// Gets the path of the current shell from env var.
 #[cfg(unix)]
 pub fn shell_path() -> HuakResult<String> {
     std::env::var("SHELL").or(Ok("sh".to_string()))
 }
 
-/// Gets the path of the current shell from env var
-///
-/// Returns an error if it fails to get correct env vars.
+/// Gets the path of the current shell from env var.
 #[cfg(windows)]
 pub fn shell_path() -> HuakResult<String> {
     Ok(std::env::var("COMSPEC")?)

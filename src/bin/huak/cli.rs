@@ -196,9 +196,9 @@ impl Cli {
                     args: trailing,
                     include_types: false,
                 });
-                if let Some(it) = operation_config.lint_options.as_mut() {
-                    if let Some(a) = it.args.as_mut() {
-                        a.push("--fix".to_string());
+                if let Some(options) = operation_config.lint_options.as_mut() {
+                    if let Some(args) = options.args.as_mut() {
+                        args.push("--fix".to_string());
                     }
                 }
                 fix(operation_config)
@@ -207,11 +207,13 @@ impl Cli {
                 operation_config.format_options =
                     Some(FormatOptions { args: trailing });
                 if check {
-                    if let Some(it) = operation_config.format_options.as_mut() {
-                        if let Some(a) = it.args.as_mut() {
-                            a.push("--check".to_string());
+                    if let Some(options) =
+                        operation_config.format_options.as_mut()
+                    {
+                        if let Some(args) = options.args.as_mut() {
+                            args.push("--check".to_string());
                         } else {
-                            it.args = Some(vec!["--check".to_string()]);
+                            options.args = Some(vec!["--check".to_string()]);
                         }
                     }
                 }
@@ -238,9 +240,11 @@ impl Cli {
                     include_types: !no_types,
                 });
                 if fix {
-                    if let Some(it) = operation_config.lint_options.as_mut() {
-                        if let Some(a) = it.args.as_mut() {
-                            a.push("--fix".to_string());
+                    if let Some(options) =
+                        operation_config.lint_options.as_mut()
+                    {
+                        if let Some(args) = options.args.as_mut() {
+                            args.push("--fix".to_string());
                         }
                     }
                 }
