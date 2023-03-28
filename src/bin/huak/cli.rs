@@ -283,13 +283,13 @@ fn add(
     group: Option<String>,
     operation_config: OperationConfig,
 ) -> HuakResult<()> {
-    let deps: Vec<&str> =
-        dependencies.iter().map(|item| item.as_str()).collect();
     match group.as_ref() {
-        Some(it) => {
-            ops::add_project_optional_dependencies(&deps, it, &operation_config)
-        }
-        None => ops::add_project_dependencies(&deps, &operation_config),
+        Some(it) => ops::add_project_optional_dependencies(
+            &dependencies,
+            it,
+            &operation_config,
+        ),
+        None => ops::add_project_dependencies(&dependencies, &operation_config),
     }
 }
 
@@ -384,15 +384,15 @@ fn remove(
     group: Option<String>,
     operation_config: OperationConfig,
 ) -> HuakResult<()> {
-    let deps: Vec<&str> =
-        dependencies.iter().map(|item| item.as_str()).collect();
     match group.as_ref() {
         Some(it) => ops::remove_project_optional_dependencies(
-            &deps,
+            &dependencies,
             it,
             &operation_config,
         ),
-        None => ops::remove_project_dependencies(&deps, &operation_config),
+        None => {
+            ops::remove_project_dependencies(&dependencies, &operation_config)
+        }
     }
 }
 

@@ -130,8 +130,13 @@ impl Project {
     }
 
     /// Add a Python package as a dependency to the project's manifest file.
-    pub fn add_dependency(&mut self, package_str: &str) {
-        self.pyproject_toml.add_dependency(package_str);
+    pub fn add_dependency(&mut self, package_str: &str) -> HuakResult<()> {
+        if !self.contains_dependency(package_str)?
+            && !self.contains_optional_dependency(package_str)?
+        {
+            self.pyproject_toml.add_dependency(package_str);
+        }
+        Ok(())
     }
 
     /// Add a Python package as a dependency to the project' project file.
@@ -139,9 +144,14 @@ impl Project {
         &mut self,
         package_str: &str,
         group_name: &str,
-    ) {
-        self.pyproject_toml
-            .add_optional_dependency(package_str, group_name)
+    ) -> HuakResult<()> {
+        if !self.contains_dependency(package_str)?
+            && !self.contains_optional_dependency(package_str)?
+        {
+            self.pyproject_toml
+                .add_optional_dependency(package_str, group_name)
+        }
+        Ok(())
     }
 
     /// Remove a dependency from the project's manifest file.
