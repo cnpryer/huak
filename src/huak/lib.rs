@@ -308,7 +308,7 @@ impl PyProjectToml {
         None
     }
 
-    /// Get a group of optional dependencies from the Python project.
+    /// Get a group of optional dependencies.
     pub fn optional_dependencey_group(
         &self,
         group_name: &str,
@@ -321,7 +321,7 @@ impl PyProjectToml {
         None
     }
 
-    /// Add a Python package as a dependency to the project.
+    /// Add a dependency.
     pub fn add_dependency(&mut self, package_str: &str) {
         if let Some(project) = self.project.as_mut() {
             if let Some(dependencies) = project.dependencies.as_mut() {
@@ -330,7 +330,7 @@ impl PyProjectToml {
         };
     }
 
-    /// Add a Python package as a dependency to the project.
+    /// Add an optional dependency.
     pub fn add_optional_dependency(
         &mut self,
         package_str: &str,
@@ -350,7 +350,7 @@ impl PyProjectToml {
         };
     }
 
-    /// Remove a dependency from the project.
+    /// Remove a dependency.
     pub fn remove_dependency(&mut self, package_str: &str) {
         if let Some(project) = self.project.as_mut() {
             if let Some(dependencies) = project.dependencies.as_mut() {
@@ -364,7 +364,7 @@ impl PyProjectToml {
         };
     }
 
-    /// Remove an optional dependency from the project.
+    /// Remove an optional dependency.
     pub fn remove_optional_dependency(
         &mut self,
         package_str: &str,
@@ -384,7 +384,7 @@ impl PyProjectToml {
         };
     }
 
-    /// Get the scripts listed in the toml.
+    /// Get the scripts.
     pub fn scripts(&self) -> Option<&IndexMap<String, String, RandomState>> {
         if let Some(project) = self.project.as_ref() {
             return project.scripts.as_ref();
@@ -392,7 +392,7 @@ impl PyProjectToml {
         None
     }
 
-    /// Add a new console script to the toml.
+    /// Add a new script.
     pub fn add_script(
         &mut self,
         name: &str,
@@ -411,7 +411,7 @@ impl PyProjectToml {
         Ok(())
     }
 
-    /// Save the toml contents to a filepath.
+    /// Write the toml file.
     pub fn write_file(&self, path: impl AsRef<Path>) -> HuakResult<()> {
         let string = self.to_string_pretty()?;
         Ok(std::fs::write(path, string)?)
