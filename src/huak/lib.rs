@@ -638,10 +638,7 @@ impl VirtualEnvironment {
         install_options: Option<&InstallerOptions>,
         terminal: &mut Terminal,
     ) -> HuakResult<()> {
-        for package in packages {
-            self.installer.install(package, install_options, terminal)?;
-        }
-        Ok(())
+        self.installer.install(packages, install_options, terminal)
     }
 
     /// Uninstall many Python packages from the environment.
@@ -773,12 +770,13 @@ impl Installer {
 
     pub fn install(
         &self,
-        package: &Package,
+        packages: &[Package],
         options: Option<&InstallerOptions>,
         terminal: &mut Terminal,
     ) -> HuakResult<()> {
         let mut cmd = Command::new(self.config.path.clone());
-        cmd.arg("install").arg(package.dependency_string());
+        cmd.arg("install")
+            .args(packages.iter().map(|item| item.dependency_string()));
         if let Some(it) = options {
             if let Some(args) = it.args.as_ref() {
                 cmd.args(args.iter().map(|item| item.as_str()));
