@@ -1033,31 +1033,40 @@ pub fn find_python_interpreter_paths(
     all_python_interpreters_in_paths(paths)
 }
 
+/// Get an iterator over all found python interpreter paths with their version.
 fn all_python_interpreters_in_paths(
     paths: impl IntoIterator<Item = PathBuf>,
 ) -> impl Iterator<Item = (PathBuf, Option<Version>)> {
-    paths
-        .into_iter()
-        .map(|item| (item.clone(), python_version_from_path(item.as_path())))
+    paths.into_iter().filter_map(|item| {
+        item.file_name()
+            .or(None)
+            .and_then(|raw_file_name| raw_file_name.to_str().or(None))
+            .and_then(|file_name| {
+                if valid_python_interpreter_file_name(file_name) {
+                    Some((
+                        item.clone(),
+                        Version::from_str(
+                            &file_name
+                                .strip_suffix(".exe")
+                                .unwrap_or(file_name)["python".len()..],
+                        )
+                        .ok(),
+                    ))
+                } else {
+                    None
+                }
+            })
+    })
 }
 
-/// Parse a Python interpreter's version from its path if one exists.
-fn python_version_from_path(path: impl AsRef<Path>) -> Option<Version> {
-    path.as_ref()
-        .file_name()
-        .or(None)
-        .and_then(|raw_file_name| raw_file_name.to_str().or(None))
-        .and_then(|file_name| {
-            if valid_python_interpreter_file_name(file_name) {
-                Version::from_str(&file_name["python".len()..]).ok()
-            } else {
-                None
-            }
-        })
-}
-
+#[cfg(unix)]
 fn valid_python_interpreter_file_name(file_name: &str) -> bool {
     file_name.len() >= "python3.0".len() && file_name.starts_with("python")
+}
+
+#[cfg(windows)]
+fn valid_python_interpreter_file_name(file_name: &str) -> bool {
+    file_name.starts_with("python") && file_name.ends_with(".exe")
 }
 
 #[cfg(test)]
