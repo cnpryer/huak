@@ -118,6 +118,13 @@ impl Project {
         self.pyproject_toml.dependencies()
     }
 
+    /// Get the Python project's optional dependencies listed in the project file.
+    pub fn optional_dependencies(
+        &self,
+    ) -> Option<&IndexMap<String, Vec<String>>> {
+        self.pyproject_toml.optional_dependencies()
+    }
+
     /// Get a group of optional dependencies from the Python project's manifest file.
     pub fn optional_dependencey_group(
         &self,
