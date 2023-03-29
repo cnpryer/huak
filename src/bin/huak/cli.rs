@@ -135,6 +135,9 @@ pub enum Commands {
         /// Remove from optional dependency group
         #[arg(long, num_args = 1)]
         group: Option<String>,
+        /// Pass trailing arguments with `--`.
+        #[arg(last = true)]
+        trailing: Option<Vec<String>>,
     },
     /// Run a command within the project's environment context.
     Run {
@@ -270,7 +273,12 @@ impl Cli {
             Commands::Remove {
                 dependencies,
                 group,
-            } => remove(dependencies, group, operation_config),
+                trailing,
+            } => {
+                operation_config.installer_options =
+                    Some(InstallerOptions { args: trailing });
+                remove(dependencies, group, operation_config)
+            }
             Commands::Run { command } => run(command, operation_config),
             Commands::Test { trailing } => {
                 operation_config.test_options =
