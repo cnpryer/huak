@@ -415,7 +415,7 @@ fn run(
     command: Vec<String>,
     operation_config: OperationConfig,
 ) -> HuakResult<()> {
-    ops::run_command_str(&command.join(" "), &operation_config)
+    ops::run_command(&command, &operation_config)
 }
 
 fn test(operation_config: OperationConfig) -> HuakResult<()> {

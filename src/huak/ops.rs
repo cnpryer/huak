@@ -496,8 +496,8 @@ pub fn remove_project_optional_dependencies(
     project.pyproject_toml().write_file(manifest_path(config))
 }
 
-pub fn run_command_str(
-    command: &str,
+pub fn run_command(
+    command: &[String],
     config: &OperationConfig,
 ) -> HuakResult<()> {
     let mut terminal = create_terminal(&config.terminal_options);
@@ -508,7 +508,12 @@ pub fn run_command_str(
     };
     let venv = resolve_venv(config, &mut terminal)?;
     make_venv_command(&mut cmd, &venv)?;
-    cmd.args([flag, command])
+    let command_string = command
+        .iter()
+        .map(|item| format!("'{item}'"))
+        .collect::<Vec<_>>()
+        .join(" ");
+    cmd.args([flag, &command_string])
         .current_dir(&config.workspace_root);
     terminal.run_command(&mut cmd)
 }
@@ -1292,7 +1297,7 @@ if __name__ == "__main__":
     }
 
     #[test]
-    fn test_run_command_str() {
+    fn test_run_command() {
         let dir = tempdir().unwrap().into_path();
         fs::copy_dir(
             &test_resources_dir_path().join("mock-project"),
@@ -1302,7 +1307,7 @@ if __name__ == "__main__":
         let config = OperationConfig {
             workspace_root: dir.join("mock-project"),
             terminal_options: TerminalOptions {
-                verbosity: Verbosity::Quiet,
+                verbosity: Verbosity::Verbose,
             },
             ..Default::default()
         };
@@ -1314,7 +1319,24 @@ if __name__ == "__main__":
             .unwrap();
         let venv_had_package = venv.contains_module("black").unwrap();
 
-        run_command_str("pip install black", &config).unwrap();
+        run_command(
+            &vec![
+                "python".to_string(),
+                "-c".to_string(),
+                "import sys;print(\"path:\",sys.executable)".to_string(),
+            ],
+            &config,
+        )
+        .unwrap();
+        run_command(
+            &vec![
+                "pip".to_string(),
+                "install".to_string(),
+                "black".to_string(),
+            ],
+            &config,
+        )
+        .unwrap();
 
         let venv_contains_package = venv.contains_module("black").unwrap();
         venv.uninstall_packages(&["black"], None, &mut terminal)
