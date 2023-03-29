@@ -136,9 +136,7 @@ impl Project {
 
     /// Add a Python package as a dependency to the project's manifest file.
     pub fn add_dependency(&mut self, package_str: &str) -> HuakResult<()> {
-        if !self.contains_dependency(package_str)?
-            && !self.contains_optional_dependency(package_str)?
-        {
+        if !self.contains_dependency(package_str)? {
             self.pyproject_toml.add_dependency(package_str);
         }
         Ok(())
@@ -150,8 +148,9 @@ impl Project {
         package_str: &str,
         group_name: &str,
     ) -> HuakResult<()> {
-        if !self.contains_dependency(package_str)?
-            && !self.contains_optional_dependency(package_str)?
+        if !self
+            .contains_optional_dependency(package_str, group_name)
+            .unwrap_or_default()
         {
             self.pyproject_toml
                 .add_optional_dependency(package_str, group_name)
@@ -191,7 +190,32 @@ impl Project {
     pub fn contains_optional_dependency(
         &self,
         package_str: &str,
+        group: &str,
     ) -> HuakResult<bool> {
+        if let Some(groups) =
+            self.pyproject_toml.optional_dependencey_group(group)
+        {
+            if groups.is_empty() {
+                return Ok(false);
+            }
+            let package = Package::from_str(package_str)?;
+            for dep in groups {
+                if Package::from_str(dep)?.name() == package.name() {
+                    return Ok(true);
+                }
+            }
+        }
+        Ok(false)
+    }
+
+    /// Check if the project has a dependency listed in its manifest file as part of any group.
+    pub fn contains_dependency_any(
+        &self,
+        package_str: &str,
+    ) -> HuakResult<bool> {
+        if self.contains_dependency(package_str).unwrap_or_default() {
+            return Ok(true);
+        }
         if let Some(groups) = self.pyproject_toml.optional_dependencies() {
             if groups.is_empty() {
                 return Ok(false);
