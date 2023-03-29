@@ -1035,11 +1035,11 @@ pub struct CleanOptions {
 pub fn python_paths() -> impl Iterator<Item = (PathBuf, Option<Version>)> {
     let paths =
         fs::flatten_directories(env_path_values().unwrap_or(Vec::new()));
-    all_python_interpreters_in_paths(paths)
+    python_interpreters_in_paths(paths)
 }
 
 /// Get an iterator over all found python interpreter paths with their version.
-fn all_python_interpreters_in_paths(
+fn python_interpreters_in_paths(
     paths: impl IntoIterator<Item = PathBuf>,
 ) -> impl Iterator<Item = (PathBuf, Option<Version>)> {
     paths.into_iter().filter_map(|item| {
@@ -1048,15 +1048,18 @@ fn all_python_interpreters_in_paths(
             .and_then(|raw_file_name| raw_file_name.to_str().or(None))
             .and_then(|file_name| {
                 if valid_python_interpreter_file_name(file_name) {
-                    Some((
-                        item.clone(),
-                        Version::from_str(
-                            &file_name
-                                .strip_suffix(".exe")
-                                .unwrap_or(file_name)["python".len()..],
-                        )
-                        .ok(),
-                    ))
+                    #[cfg(unix)]
+                    {
+                        if let Ok(version) =
+                            Version::from_str(&file_name["python".len()..])
+                        {
+                            Some((item.clone(), Some(version)))
+                        } else {
+                            None
+                        }
+                    }
+                    #[cfg(windows)]
+                    Some((item.clone(), None))
                 } else {
                     None
                 }
