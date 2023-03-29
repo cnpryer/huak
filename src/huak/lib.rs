@@ -1417,6 +1417,9 @@ dev = [
         let path = python_paths().next().unwrap().0;
 
         assert!(path.exists());
+        assert!(valid_python_interpreter_file_name(
+            &last_path_component(path).unwrap()
+        ))
     }
 
     #[cfg(unix)]
