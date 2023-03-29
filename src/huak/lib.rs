@@ -1090,7 +1090,15 @@ fn python_interpreters_in_paths(
                         }
                     }
                     #[cfg(windows)]
-                    Some((item.clone(), None))
+                    Some((
+                        item.clone(),
+                        Version::from_str(
+                            &file_name
+                                .strip_suffix(".exe")
+                                .unwrap_or(file_name)["python".len()..],
+                        )
+                        .ok(),
+                    ))
                 } else {
                     None
                 }
