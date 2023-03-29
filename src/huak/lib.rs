@@ -334,17 +334,20 @@ impl PyProjectToml {
         group_name: &str,
     ) {
         if let Some(project) = self.project.as_mut() {
-            if let Some(map) = project.optional_dependencies.as_mut() {
-                if let Some(dependencies) = map.get_mut(group_name) {
-                    dependencies.push(package_str.to_string());
+            if project.optional_dependencies.is_none() {
+                project.optional_dependencies = Some(IndexMap::new())
+            }
+            if let Some(deps) = project.optional_dependencies.as_mut() {
+                if let Some(group) = deps.get_mut(group_name) {
+                    group.push(package_str.to_string());
                 } else {
-                    map.insert(
+                    deps.insert(
                         group_name.to_string(),
                         vec![package_str.to_string()],
                     );
-                };
+                }
             }
-        };
+        }
     }
 
     /// Remove a dependency.
