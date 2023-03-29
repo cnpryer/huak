@@ -3,12 +3,12 @@
 use crate::{
     default_entrypoint_string, default_init_file_contents,
     default_main_file_contents, default_test_file_contents,
-    default_virtual_environment_name,
+    default_virtual_environment_name, env_path_values,
     error::HuakResult,
     find_venv_root,
     fs::{self, find_root_file_bottom_up},
     git, package_iter, python_paths,
-    sys::{self, shell_name, Terminal, TerminalOptions},
+    sys::{shell_name, Terminal, TerminalOptions},
     to_importable_package_name, to_package_cononical_name, BuildOptions,
     CleanOptions, Error, FormatOptions, InstallerOptions, LintOptions, Package,
     Project, PublishOptions, PyProjectToml, TestOptions, VirtualEnvironment,
@@ -586,7 +586,7 @@ fn make_venv_command(
     cmd: &mut Command,
     venv: &VirtualEnvironment,
 ) -> HuakResult<()> {
-    let mut paths = match sys::env_path_values() {
+    let mut paths = match env_path_values() {
         Some(it) => it,
         None => {
             return Err(Error::InternalError(

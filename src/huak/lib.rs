@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::hash_map::RandomState,
     env::consts::OS,
+    ffi::OsString,
     fs::File,
     io::{BufRead, BufReader},
     path::{Path, PathBuf},
@@ -29,6 +30,8 @@ mod sys;
 const DEFAULT_VIRTUAL_ENVIRONMENT_NAME: &str = ".venv";
 const VIRTUAL_ENVIRONMENT_CONFIG_FILE_NAME: &str = "pyvenv.cfg";
 const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
+const VIRTUAL_ENV_ENV_VAR: &str = "VIRUTAL_ENV";
+const CONDA_ENV_ENV_VAR: &str = "CONDA_PREFIX";
 
 /// A Python project can be anything from a script to automate some process to a
 /// production web application. Projects consist of Python source code and a
@@ -621,10 +624,10 @@ impl VirtualEnvironment {
 
     /// Check if the environment is already activated.
     pub fn is_active(&self) -> bool {
-        if let Some(path) = sys::active_virtual_env_path() {
+        if let Some(path) = active_virtual_env_path() {
             return self.root == path;
         }
-        if let Some(path) = sys::active_conda_env_path() {
+        if let Some(path) = active_conda_env_path() {
             return self.root == path;
         }
         false
@@ -1028,7 +1031,7 @@ pub struct CleanOptions {
 /// Inspired by brettcannon/python-launcher
 pub fn python_paths() -> impl Iterator<Item = (PathBuf, Option<Version>)> {
     let paths =
-        fs::flatten_directories(sys::env_path_values().unwrap_or(Vec::new()));
+        fs::flatten_directories(env_path_values().unwrap_or(Vec::new()));
     all_python_interpreters_in_paths(paths)
 }
 
@@ -1066,6 +1069,35 @@ fn valid_python_interpreter_file_name(file_name: &str) -> bool {
 #[cfg(windows)]
 fn valid_python_interpreter_file_name(file_name: &str) -> bool {
     file_name.starts_with("python") && file_name.ends_with(".exe")
+}
+
+/// Get a vector of paths from the system PATH environment variable.
+pub fn env_path_values() -> Option<Vec<PathBuf>> {
+    if let Some(val) = env_path_string() {
+        return Some(std::env::split_paths(&val).collect());
+    }
+    None
+}
+
+/// Get the OsString value of the enrionment variable PATH.
+pub fn env_path_string() -> Option<OsString> {
+    std::env::var_os("PATH")
+}
+
+/// Get the VIRTUAL_ENV environment path if it exists.
+pub fn active_virtual_env_path() -> Option<PathBuf> {
+    if let Ok(path) = std::env::var(VIRTUAL_ENV_ENV_VAR) {
+        return Some(PathBuf::from(path));
+    }
+    None
+}
+
+/// Get the CONDA_PREFIX environment path if it exists.
+pub fn active_conda_env_path() -> Option<PathBuf> {
+    if let Ok(path) = std::env::var(CONDA_ENV_ENV_VAR) {
+        return Some(PathBuf::from(path));
+    }
+    None
 }
 
 #[cfg(test)]
