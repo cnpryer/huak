@@ -481,7 +481,7 @@ pub fn remove_project_optional_dependencies(
 ) -> HuakResult<()> {
     let mut terminal = create_terminal(&config.terminal_options);
     let mut project = Project::from_manifest(manifest_path(config))?;
-    if group != "all" && project.optional_dependencey_group(group).is_none() {
+    if project.optional_dependencey_group(group).is_none() {
         return Ok(());
     }
     let dependencies: Vec<String> = dependency_names
@@ -490,8 +490,6 @@ pub fn remove_project_optional_dependencies(
             project
                 .contains_optional_dependency(item)
                 .unwrap_or_default()
-                | (group == "all"
-                    && project.contains_dependency(item).unwrap_or_default())
         })
         .cloned()
         .collect();
@@ -500,9 +498,6 @@ pub fn remove_project_optional_dependencies(
     }
     dependencies.iter().for_each(|item| {
         project.remove_optional_dependency(item, group);
-        if group == "all" {
-            project.remove_dependency(item);
-        }
     });
     let venv =
         VirtualEnvironment::from_path(find_venv_root(&config.workspace_root)?)?;
