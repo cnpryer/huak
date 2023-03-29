@@ -457,6 +457,7 @@ pub fn remove_project_dependencies(
             .iter()
             .map(|item| item.as_str())
             .collect::<Vec<&str>>(),
+        None,
         &mut terminal,
     )?;
     project.pyproject_toml().write_file(&manifest_path)
@@ -494,6 +495,7 @@ pub fn remove_project_optional_dependencies(
             .iter()
             .map(|item| item.as_str())
             .collect::<Vec<&str>>(),
+        None,
         &mut terminal,
     )?;
     project.pyproject_toml().write_file(manifest_path(config))
@@ -696,6 +698,7 @@ mod tests {
         terminal.set_verbosity(Verbosity::Quiet);
         venv.uninstall_packages(
             &deps.iter().map(|item| item.as_str()).collect::<Vec<&str>>(),
+            None,
             &mut terminal,
         )
         .unwrap();
@@ -747,6 +750,7 @@ mod tests {
         terminal.set_verbosity(Verbosity::Quiet);
         venv.uninstall_packages(
             &deps.iter().map(|item| item.as_str()).collect::<Vec<&str>>(),
+            None,
             &mut terminal,
         )
         .unwrap();
@@ -965,7 +969,8 @@ mock-project = "mock_project.main:main"
         let venv = VirtualEnvironment::from_path(".venv").unwrap();
         let mut terminal = Terminal::new();
         terminal.set_verbosity(config.terminal_options.verbosity);
-        venv.uninstall_packages(&["click"], &mut terminal).unwrap();
+        venv.uninstall_packages(&["click"], None, &mut terminal)
+            .unwrap();
         let package = Package::from_str("click").unwrap();
         let had_package = venv.contains_package(&package).unwrap();
 
@@ -993,7 +998,8 @@ mock-project = "mock_project.main:main"
         let venv = VirtualEnvironment::from_path(".venv").unwrap();
         let mut terminal = Terminal::new();
         terminal.set_verbosity(config.terminal_options.verbosity);
-        venv.uninstall_packages(&["pytest"], &mut terminal).unwrap();
+        venv.uninstall_packages(&["pytest"], None, &mut terminal)
+            .unwrap();
         let had_package = venv.contains_module("pytest").unwrap();
 
         install_project_optional_dependencies(&["dev".to_string()], &config)
@@ -1241,7 +1247,7 @@ if __name__ == "__main__":
         let mut terminal = Terminal::new();
         terminal.set_verbosity(config.terminal_options.verbosity);
         let packages = [package.clone()];
-        venv.uninstall_packages(&[package.name()], &mut terminal)
+        venv.uninstall_packages(&[package.name()], None, &mut terminal)
             .unwrap();
         venv.install_packages(
             &packages,
@@ -1271,7 +1277,7 @@ if __name__ == "__main__":
             .dependencies()
             .unwrap()
             .contains(&package.dependency_string());
-        venv.uninstall_packages(&[package.name()], &mut terminal)
+        venv.uninstall_packages(&[package.name()], None, &mut terminal)
             .unwrap();
 
         assert!(venv_had_package);
@@ -1299,13 +1305,15 @@ if __name__ == "__main__":
             VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
         let mut terminal = Terminal::new();
         terminal.set_verbosity(config.terminal_options.verbosity);
-        venv.uninstall_packages(&["black"], &mut terminal).unwrap();
+        venv.uninstall_packages(&["black"], None, &mut terminal)
+            .unwrap();
         let venv_had_package = venv.contains_module("black").unwrap();
 
         run_command_str("pip install black", &config).unwrap();
 
         let venv_contains_package = venv.contains_module("black").unwrap();
-        venv.uninstall_packages(&["black"], &mut terminal).unwrap();
+        venv.uninstall_packages(&["black"], None, &mut terminal)
+            .unwrap();
 
         assert!(!venv_had_package);
         assert!(venv_contains_package);
