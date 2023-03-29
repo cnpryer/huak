@@ -12,6 +12,7 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
     process::ExitCode,
+    str::FromStr,
 };
 
 /// A Python package manager written in Rust inspired by Cargo.
@@ -31,7 +32,7 @@ pub enum Commands {
     /// Add dependencies to the project.
     Add {
         #[arg(num_args = 1.., required = true)]
-        dependencies: Vec<String>,
+        dependencies: Vec<Dependency>,
         /// Adds an optional dependency group.
         #[arg(long)]
         group: Option<String>,
@@ -283,17 +284,19 @@ impl Cli {
 }
 
 fn add(
-    dependencies: Vec<String>,
+    dependencies: Vec<Dependency>,
     group: Option<String>,
     operation_config: OperationConfig,
 ) -> HuakResult<()> {
+    let deps = dependencies
+        .iter()
+        .map(|item| item.to_string())
+        .collect::<Vec<String>>();
     match group.as_ref() {
-        Some(it) => ops::add_project_optional_dependencies(
-            &dependencies,
-            it,
-            &operation_config,
-        ),
-        None => ops::add_project_dependencies(&dependencies, &operation_config),
+        Some(it) => {
+            ops::add_project_optional_dependencies(&deps, it, &operation_config)
+        }
+        None => ops::add_project_dependencies(&deps, &operation_config),
     }
 }
 
@@ -561,4 +564,21 @@ where
     let mut file = File::create(&target_file)?;
     clap_complete::generate(Shell::Fish, cmd, "huak", &mut file);
     Ok(())
+}
+
+#[derive(Debug, Clone)]
+pub struct Dependency(String);
+
+impl FromStr for Dependency {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.replace('@', "==")))
+    }
+}
+
+impl ToString for Dependency {
+    fn to_string(&self) -> String {
+        self.0.to_owned()
+    }
 }
