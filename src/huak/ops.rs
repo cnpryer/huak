@@ -508,9 +508,16 @@ pub fn run_command(
     };
     let venv = resolve_venv(config, &mut terminal)?;
     make_venv_command(&mut cmd, &venv)?;
+    #[cfg(unix)]
     let command_string = command
         .iter()
         .map(|item| format!("'{item}'"))
+        .collect::<Vec<_>>()
+        .join(" ");
+    #[cfg(windows)]
+    let command_string = command
+        .iter()
+        .map(|item| item.to_owned())
         .collect::<Vec<_>>()
         .join(" ");
     cmd.args([flag, &command_string])
