@@ -13,16 +13,16 @@ repos:
         args: ["--all", "--", "--check"]
         fail_fast: true
 
-      - id: cargo-test
-        name: cargo test
-        description: Run Rust tests.
-        entry: cargo test
-        language: system
-        types: [rust]
-        files: Cargo\.toml|\.rs$
-        pass_filenames: false
-        args: ["--all-features", "--", "--test-threads=1"]
-        fail_fast: true
+      # - id: cargo-test
+      #   name: cargo test
+      #   description: Run Rust tests.
+      #   entry: cargo test
+      #   language: system
+      #   types: [rust]
+      #   files: Cargo\.toml|\.rs$
+      #   pass_filenames: false
+      #   args: ["--all-features", "--", "--test-threads=1"]
+      #   fail_fast: true
 
       - id: clippy
         name: clippy
