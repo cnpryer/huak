@@ -20,6 +20,7 @@ use std::{
 };
 use sys::Terminal;
 pub use sys::{TerminalOptions, Verbosity};
+use toml::Table;
 
 mod error;
 mod fs;
@@ -236,6 +237,7 @@ pub struct ProjectLayout {
 pub struct PyProjectToml {
     #[serde(flatten)]
     inner: ProjectToml,
+    tool: Option<Table>,
 }
 
 impl std::ops::Deref for PyProjectToml {
@@ -428,6 +430,7 @@ impl Default for PyProjectToml {
         Self {
             inner: ProjectToml::new(&default_pyproject_toml_contents(""))
                 .expect("could not initilize default pyproject.toml"),
+            tool: None,
         }
     }
 }
