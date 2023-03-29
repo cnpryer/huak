@@ -3,44 +3,11 @@ use crate::Error;
 use std::io::Write;
 use std::path::Path;
 use std::process::Command;
-use std::{ffi::OsString, path::PathBuf};
 use termcolor::{self, Color, ColorSpec, StandardStream, WriteColor};
 use termcolor::{
     Color::{Cyan, Green, Red, Yellow},
     ColorChoice,
 };
-
-const VIRTUAL_ENV_ENV_VAR: &str = "VIRUTAL_ENV";
-const CONDA_ENV_ENV_VAR: &str = "CONDA_PREFIX";
-
-/// Get a vector of paths from the system PATH environment variable.
-pub fn env_path_values() -> Option<Vec<PathBuf>> {
-    if let Some(val) = env_path_string() {
-        return Some(std::env::split_paths(&val).collect());
-    }
-    None
-}
-
-/// Get the OsString value of the enrionment variable PATH.
-pub fn env_path_string() -> Option<OsString> {
-    std::env::var_os("PATH")
-}
-
-/// Get the VIRTUAL_ENV environment path if it exists.
-pub fn active_virtual_env_path() -> Option<PathBuf> {
-    if let Ok(path) = std::env::var(VIRTUAL_ENV_ENV_VAR) {
-        return Some(PathBuf::from(path));
-    }
-    None
-}
-
-/// Get the CONDA_PREFIX environment path if it exists.
-pub fn active_conda_env_path() -> Option<PathBuf> {
-    if let Ok(path) = std::env::var(CONDA_ENV_ENV_VAR) {
-        return Some(PathBuf::from(path));
-    }
-    None
-}
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub enum Verbosity {

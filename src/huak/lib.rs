@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::hash_map::RandomState,
     env::consts::OS,
+    ffi::OsString,
     fs::File,
     io::{BufRead, BufReader},
     path::{Path, PathBuf},
@@ -29,6 +30,8 @@ mod sys;
 const DEFAULT_VIRTUAL_ENVIRONMENT_NAME: &str = ".venv";
 const VIRTUAL_ENVIRONMENT_CONFIG_FILE_NAME: &str = "pyvenv.cfg";
 const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
+const VIRTUAL_ENV_ENV_VAR: &str = "VIRUTAL_ENV";
+const CONDA_ENV_ENV_VAR: &str = "CONDA_PREFIX";
 
 /// A Python project can be anything from a script to automate some process to a
 /// production web application. Projects consist of Python source code and a
@@ -621,10 +624,10 @@ impl VirtualEnvironment {
 
     /// Check if the environment is already activated.
     pub fn is_active(&self) -> bool {
-        if let Some(path) = sys::active_virtual_env_path() {
+        if let Some(path) = active_virtual_env_path() {
             return self.root == path;
         }
-        if let Some(path) = sys::active_conda_env_path() {
+        if let Some(path) = active_conda_env_path() {
             return self.root == path;
         }
         false
@@ -1026,39 +1029,75 @@ pub struct CleanOptions {
 
 /// Get an iterator over available Python interpreter paths parsed from PATH.
 /// Inspired by brettcannon/python-launcher
-pub fn find_python_interpreter_paths(
-) -> impl Iterator<Item = (PathBuf, Version)> {
+pub fn python_paths() -> impl Iterator<Item = (PathBuf, Option<Version>)> {
     let paths =
-        fs::flatten_directories(sys::env_path_values().unwrap_or(Vec::new()));
+        fs::flatten_directories(env_path_values().unwrap_or(Vec::new()));
     all_python_interpreters_in_paths(paths)
 }
 
+/// Get an iterator over all found python interpreter paths with their version.
 fn all_python_interpreters_in_paths(
     paths: impl IntoIterator<Item = PathBuf>,
-) -> impl Iterator<Item = (PathBuf, Version)> {
-    paths
-        .into_iter()
-        .map(|item| (item.clone(), python_version_from_path(item.as_path())))
-        .filter_map(|(path, version)| version.map(|v| (path, v)))
+) -> impl Iterator<Item = (PathBuf, Option<Version>)> {
+    paths.into_iter().filter_map(|item| {
+        item.file_name()
+            .or(None)
+            .and_then(|raw_file_name| raw_file_name.to_str().or(None))
+            .and_then(|file_name| {
+                if valid_python_interpreter_file_name(file_name) {
+                    Some((
+                        item.clone(),
+                        Version::from_str(
+                            &file_name
+                                .strip_suffix(".exe")
+                                .unwrap_or(file_name)["python".len()..],
+                        )
+                        .ok(),
+                    ))
+                } else {
+                    None
+                }
+            })
+    })
 }
 
-/// Parse a Python interpreter's version from its path if one exists.
-fn python_version_from_path(path: impl AsRef<Path>) -> Option<Version> {
-    path.as_ref()
-        .file_name()
-        .or(None)
-        .and_then(|raw_file_name| raw_file_name.to_str().or(None))
-        .and_then(|file_name| {
-            if valid_python_interpreter_file_name(file_name) {
-                Version::from_str(&file_name["python".len()..]).ok()
-            } else {
-                None
-            }
-        })
-}
-
+#[cfg(unix)]
 fn valid_python_interpreter_file_name(file_name: &str) -> bool {
     file_name.len() >= "python3.0".len() && file_name.starts_with("python")
+}
+
+#[cfg(windows)]
+fn valid_python_interpreter_file_name(file_name: &str) -> bool {
+    file_name.starts_with("python") && file_name.ends_with(".exe")
+}
+
+/// Get a vector of paths from the system PATH environment variable.
+pub fn env_path_values() -> Option<Vec<PathBuf>> {
+    if let Some(val) = env_path_string() {
+        return Some(std::env::split_paths(&val).collect());
+    }
+    None
+}
+
+/// Get the OsString value of the enrionment variable PATH.
+pub fn env_path_string() -> Option<OsString> {
+    std::env::var_os("PATH")
+}
+
+/// Get the VIRTUAL_ENV environment path if it exists.
+pub fn active_virtual_env_path() -> Option<PathBuf> {
+    if let Ok(path) = std::env::var(VIRTUAL_ENV_ENV_VAR) {
+        return Some(PathBuf::from(path));
+    }
+    None
+}
+
+/// Get the CONDA_PREFIX environment path if it exists.
+pub fn active_conda_env_path() -> Option<PathBuf> {
+    if let Ok(path) = std::env::var(CONDA_ENV_ENV_VAR) {
+        return Some(PathBuf::from(path));
+    }
+    None
 }
 
 #[cfg(test)]
@@ -1322,13 +1361,33 @@ dev = [
     }
 
     #[test]
+    fn find_python() {
+        let path = python_paths().next().unwrap().0;
+
+        assert!(path.exists());
+    }
+
+    #[cfg(unix)]
+    #[test]
     fn python_search() {
         let dir = tempdir().unwrap().into_path();
         std::fs::write(dir.join("python3.11"), "").unwrap();
         let path_vals = vec![dir.to_str().unwrap().to_string()];
         std::env::set_var("PATH", path_vals.join(":"));
-        let mut interpreter_paths = find_python_interpreter_paths();
+        let mut interpreter_paths = python_paths();
 
         assert_eq!(interpreter_paths.next().unwrap().0, dir.join("python3.11"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn python_search() {
+        let dir = tempdir().unwrap().into_path();
+        std::fs::write(dir.join("python.exe"), "").unwrap();
+        let path_vals = vec![dir.to_str().unwrap().to_string()];
+        std::env::set_var("PATH", path_vals.join(":"));
+        let mut interpreter_paths = python_paths();
+
+        assert_eq!(interpreter_paths.next().unwrap().0, dir.join("python.exe"));
     }
 }
