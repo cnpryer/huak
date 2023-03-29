@@ -457,7 +457,7 @@ pub fn remove_project_dependencies(
             .iter()
             .map(|item| item.as_str())
             .collect::<Vec<&str>>(),
-        None,
+        config.installer_options.as_ref(),
         &mut terminal,
     )?;
     project.pyproject_toml().write_file(&manifest_path)
@@ -495,7 +495,7 @@ pub fn remove_project_optional_dependencies(
             .iter()
             .map(|item| item.as_str())
             .collect::<Vec<&str>>(),
-        None,
+        config.installer_options.as_ref(),
         &mut terminal,
     )?;
     project.pyproject_toml().write_file(manifest_path(config))
