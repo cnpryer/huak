@@ -1329,6 +1329,7 @@ dev = [
         assert_eq!(package.version(), None); // TODO
     }
 
+    #[cfg(unix)]
     #[test]
     fn python_search() {
         let dir = tempdir().unwrap().into_path();
@@ -1338,5 +1339,17 @@ dev = [
         let mut interpreter_paths = find_python_interpreter_paths();
 
         assert_eq!(interpreter_paths.next().unwrap().0, dir.join("python3.11"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn python_search() {
+        let dir = tempdir().unwrap().into_path();
+        std::fs::write(dir.join("python.exe"), "").unwrap();
+        let path_vals = vec![dir.to_str().unwrap().to_string()];
+        std::env::set_var("PATH", path_vals.join(":"));
+        let mut interpreter_paths = find_python_interpreter_paths();
+
+        assert_eq!(interpreter_paths.next().unwrap().0, dir.join("python.exe"));
     }
 }
