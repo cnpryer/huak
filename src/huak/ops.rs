@@ -673,6 +673,7 @@ fn create_virtual_environment(
     config: &OperationConfig,
     terminal: &mut Terminal,
 ) -> HuakResult<()> {
+    // Use the first path found.
     let python_path = match find_python_interpreter_paths().next() {
         Some(it) => it.0,
         None => return Err(Error::PythonNotFoundError),

@@ -1027,7 +1027,7 @@ pub struct CleanOptions {
 /// Get an iterator over available Python interpreter paths parsed from PATH.
 /// Inspired by brettcannon/python-launcher
 pub fn find_python_interpreter_paths(
-) -> impl Iterator<Item = (PathBuf, Version)> {
+) -> impl Iterator<Item = (PathBuf, Option<Version>)> {
     let paths =
         fs::flatten_directories(sys::env_path_values().unwrap_or(Vec::new()));
     all_python_interpreters_in_paths(paths)
@@ -1035,11 +1035,10 @@ pub fn find_python_interpreter_paths(
 
 fn all_python_interpreters_in_paths(
     paths: impl IntoIterator<Item = PathBuf>,
-) -> impl Iterator<Item = (PathBuf, Version)> {
+) -> impl Iterator<Item = (PathBuf, Option<Version>)> {
     paths
         .into_iter()
         .map(|item| (item.clone(), python_version_from_path(item.as_path())))
-        .filter_map(|(path, version)| version.map(|v| (path, v)))
 }
 
 /// Parse a Python interpreter's version from its path if one exists.
