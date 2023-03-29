@@ -41,9 +41,6 @@ pub fn add_project_dependencies(
     let packages = package_iter(dependencies)
         .filter(|item| {
             !project.contains_dependency(item.name()).unwrap_or_default()
-                && !project
-                    .contains_optional_dependency(item.name())
-                    .unwrap_or_default()
         })
         .collect::<Vec<Package>>();
     if packages.is_empty() {
@@ -71,10 +68,9 @@ pub fn add_project_optional_dependencies(
     let mut project = Project::from_manifest(&manifest_path)?;
     let packages = package_iter(dependencies)
         .filter(|item| {
-            !project.contains_dependency(item.name()).unwrap_or_default()
-                && !project
-                    .contains_optional_dependency(item.name())
-                    .unwrap_or_default()
+            !project
+                .contains_optional_dependency(item.name(), group)
+                .unwrap_or_default()
         })
         .collect::<Vec<Package>>();
     if packages.is_empty() {
@@ -104,9 +100,7 @@ pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
             &mut terminal,
         )?;
     }
-    if !project.contains_dependency("build")?
-        && !project.contains_optional_dependency("build")?
-    {
+    if !project.contains_dependency_any("build")? {
         project.add_optional_dependency("build", "dev")?;
         project.pyproject_toml().write_file(&manifest_path)?;
     }
@@ -187,7 +181,7 @@ pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
         .filter(|item| {
             !project.contains_dependency(item.name()).unwrap_or_default()
                 && !project
-                    .contains_optional_dependency(item.name())
+                    .contains_dependency_any(item.name())
                     .unwrap_or_default()
         })
         .collect::<Vec<Package>>();
@@ -324,9 +318,7 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
             &mut terminal,
         )?;
     }
-    if !project.contains_dependency("ruff")?
-        && !project.contains_optional_dependency("ruff")?
-    {
+    if !project.contains_dependency_any("ruff")? {
         project.add_optional_dependency("ruff", "dev")?;
         project.pyproject_toml().write_file(&manifest_path)?;
     }
@@ -344,9 +336,7 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
                     &mut terminal,
                 )?;
             }
-            if !project.contains_dependency("mypy")?
-                && !project.contains_optional_dependency("mypy")?
-            {
+            if !project.contains_dependency_any("mypy")? {
                 project.add_optional_dependency("mypy", "dev")?;
                 project.pyproject_toml().write_file(&manifest_path)?;
             }
@@ -426,9 +416,7 @@ pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
             &mut terminal,
         )?;
     }
-    if !project.contains_dependency("twine")?
-        && !project.contains_optional_dependency("twine")?
-    {
+    if !project.contains_dependency_any("twine")? {
         project.add_optional_dependency("twine", "dev")?;
         project.pyproject_toml().write_file(&manifest_path)?;
     }
@@ -488,7 +476,7 @@ pub fn remove_project_optional_dependencies(
         .iter()
         .filter(|item| {
             project
-                .contains_optional_dependency(item)
+                .contains_optional_dependency(item, group)
                 .unwrap_or_default()
         })
         .cloned()
@@ -540,9 +528,7 @@ pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
             &mut terminal,
         )?;
     }
-    if !project.contains_dependency("pytest")?
-        && !project.contains_optional_dependency("pytest")?
-    {
+    if !project.contains_dependency_any("pytest")? {
         project.add_optional_dependency("pytest", "dev")?;
         project.pyproject_toml.write_file(&manifest_path)?;
     }
