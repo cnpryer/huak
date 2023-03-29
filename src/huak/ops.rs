@@ -7,7 +7,8 @@ use crate::{
     error::HuakResult,
     find_venv_root,
     fs::{self, find_root_file_bottom_up},
-    git, package_iter, python_paths,
+    git::{self, default_python_gitignore},
+    package_iter, python_paths,
     sys::{shell_name, Terminal, TerminalOptions},
     to_importable_package_name, to_package_cononical_name, BuildOptions,
     CleanOptions, Error, FormatOptions, InstallerOptions, LintOptions, Package,
@@ -235,13 +236,7 @@ pub fn init_lib_project(config: &OperationConfig) -> HuakResult<()> {
     if manifest_path.exists() {
         return Err(Error::ProjectTomlExistsError);
     }
-    if !config.workspace_root.join(".git").exists() {
-        if let Some(options) = config.workspace_options.as_ref() {
-            if options.uses_git {
-                git::init(&config.workspace_root)?;
-            }
-        }
-    }
+    init_git(config)?;
     let mut pyproject_toml = PyProjectToml::new();
     let name = fs::last_path_component(config.workspace_root.as_path())?;
     pyproject_toml.set_project_name(&name);
@@ -621,9 +616,19 @@ fn create_workspace(config: &OperationConfig) -> HuakResult<()> {
         return Err(Error::DirectoryExists(path.to_path_buf()));
     }
     std::fs::create_dir(path)?;
+    init_git(config)
+}
+
+fn init_git(config: &OperationConfig) -> HuakResult<()> {
     if let Some(options) = config.workspace_options.as_ref() {
         if options.uses_git {
-            git::init(&config.workspace_root)?;
+            if !config.workspace_root.join(".git").exists() {
+                git::init(&config.workspace_root)?;
+            }
+            let gitignore_path = config.workspace_root.join(".gitignore");
+            if !gitignore_path.exists() {
+                std::fs::write(gitignore_path, default_python_gitignore())?;
+            }
         }
     }
     Ok(())
