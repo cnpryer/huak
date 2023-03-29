@@ -5,9 +5,9 @@ use crate::{
     default_main_file_contents, default_test_file_contents,
     default_virtual_environment_name,
     error::HuakResult,
-    find_python_interpreter_paths, find_venv_root,
+    find_venv_root,
     fs::{self, find_root_file_bottom_up},
-    git, package_iter,
+    git, package_iter, python_paths,
     sys::{self, shell_name, Terminal, TerminalOptions},
     to_importable_package_name, to_package_cononical_name, BuildOptions,
     CleanOptions, Error, FormatOptions, InstallerOptions, LintOptions, Package,
@@ -674,7 +674,7 @@ fn create_virtual_environment(
     terminal: &mut Terminal,
 ) -> HuakResult<()> {
     // Use the first path found.
-    let python_path = match find_python_interpreter_paths().next() {
+    let python_path = match python_paths().next() {
         Some(it) => it.0,
         None => return Err(Error::PythonNotFoundError),
     };

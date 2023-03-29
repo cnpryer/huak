@@ -1026,8 +1026,7 @@ pub struct CleanOptions {
 
 /// Get an iterator over available Python interpreter paths parsed from PATH.
 /// Inspired by brettcannon/python-launcher
-pub fn find_python_interpreter_paths(
-) -> impl Iterator<Item = (PathBuf, Option<Version>)> {
+pub fn python_paths() -> impl Iterator<Item = (PathBuf, Option<Version>)> {
     let paths =
         fs::flatten_directories(sys::env_path_values().unwrap_or(Vec::new()));
     all_python_interpreters_in_paths(paths)
@@ -1329,6 +1328,13 @@ dev = [
         assert_eq!(package.version(), None); // TODO
     }
 
+    #[test]
+    fn find_python() {
+        let path = python_paths().next().unwrap().0;
+
+        assert!(path.exists());
+    }
+
     #[cfg(unix)]
     #[test]
     fn python_search() {
@@ -1336,7 +1342,7 @@ dev = [
         std::fs::write(dir.join("python3.11"), "").unwrap();
         let path_vals = vec![dir.to_str().unwrap().to_string()];
         std::env::set_var("PATH", path_vals.join(":"));
-        let mut interpreter_paths = find_python_interpreter_paths();
+        let mut interpreter_paths = python_paths();
 
         assert_eq!(interpreter_paths.next().unwrap().0, dir.join("python3.11"));
     }
@@ -1348,7 +1354,7 @@ dev = [
         std::fs::write(dir.join("python.exe"), "").unwrap();
         let path_vals = vec![dir.to_str().unwrap().to_string()];
         std::env::set_var("PATH", path_vals.join(":"));
-        let mut interpreter_paths = find_python_interpreter_paths();
+        let mut interpreter_paths = python_paths();
 
         assert_eq!(interpreter_paths.next().unwrap().0, dir.join("python.exe"));
     }
