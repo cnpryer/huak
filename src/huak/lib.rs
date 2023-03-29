@@ -635,25 +635,22 @@ impl VirtualEnvironment {
     pub fn install_packages(
         &self,
         packages: &[Package],
-        install_options: Option<&InstallerOptions>,
+        installer_options: Option<&InstallerOptions>,
         terminal: &mut Terminal,
     ) -> HuakResult<()> {
-        for package in packages {
-            self.installer.install(package, install_options, terminal)?;
-        }
-        Ok(())
+        self.installer
+            .install(packages, installer_options, terminal)
     }
 
     /// Uninstall many Python packages from the environment.
     pub fn uninstall_packages(
         &self,
-        package_names: &[&str],
+        packages: &[&str],
+        installer_options: Option<&InstallerOptions>,
         terminal: &mut Terminal,
     ) -> HuakResult<()> {
-        for package_name in package_names {
-            self.installer.uninstall(package_name, terminal)?;
-        }
-        Ok(())
+        self.installer
+            .uninstall(packages, installer_options, terminal)
     }
 
     /// Check if the environment is already activated.
@@ -773,12 +770,13 @@ impl Installer {
 
     pub fn install(
         &self,
-        package: &Package,
+        packages: &[Package],
         options: Option<&InstallerOptions>,
         terminal: &mut Terminal,
     ) -> HuakResult<()> {
         let mut cmd = Command::new(self.config.path.clone());
-        cmd.arg("install").arg(package.dependency_string());
+        cmd.arg("install")
+            .args(packages.iter().map(|item| item.dependency_string()));
         if let Some(it) = options {
             if let Some(args) = it.args.as_ref() {
                 cmd.args(args.iter().map(|item| item.as_str()));
@@ -789,11 +787,17 @@ impl Installer {
 
     pub fn uninstall(
         &self,
-        package_name: &str,
+        packages: &[&str],
+        options: Option<&InstallerOptions>,
         terminal: &mut Terminal,
     ) -> HuakResult<()> {
         let mut cmd = Command::new(self.config.path.clone());
-        cmd.arg("uninstall").arg(package_name).arg("-y");
+        cmd.arg("uninstall").args(packages).arg("-y");
+        if let Some(it) = options {
+            if let Some(args) = it.args.as_ref() {
+                cmd.args(args.iter().map(|item| item.as_str()));
+            }
+        }
         terminal.run_command(&mut cmd)
     }
 }
