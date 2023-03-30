@@ -1325,13 +1325,12 @@ if __name__ == "__main__":
         venv.uninstall_packages(&["black"], None, &mut terminal)
             .unwrap();
         let venv_had_package = venv.contains_module("black").unwrap();
-
+        #[cfg(unix)]
+        let arg = "import sys;print(\"path:\",sys.executable)".to_string();
+        #[cfg(windows)]
+        let arg = "\"import sys;print('path:',sys.executable)\"".to_string();
         run_command(
-            &vec![
-                "python".to_string(),
-                "-c".to_string(),
-                "import sys;print(\"path:\",sys.executable)".to_string(),
-            ],
+            &vec!["python".to_string(), "-c".to_string(), arg],
             &config,
         )
         .unwrap();

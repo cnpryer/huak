@@ -14,7 +14,7 @@
 
 Use `pip` to install `huak` from [PyPI](https://pypi.org).
 
-```
+```zsh
 ~/github 
 ❯ pip install huak
 ```
@@ -23,14 +23,14 @@ Use `pip` to install `huak` from [PyPI](https://pypi.org).
 
 To create a new project use the `new` command.
 
-```
+```zsh
 ~/github took 2s 
 ❯ huak new my-project
 ```
 
 ### Or initialize an existing project
 
-```
+```zsh
 ~/github/existing-project 
 ❯ huak init
 ```
