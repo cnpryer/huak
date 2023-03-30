@@ -266,7 +266,6 @@ pub fn install_project_optional_dependencies(
     config: &OperationConfig,
 ) -> HuakResult<()> {
     let mut terminal = create_terminal(&config.terminal_options);
-    let venv = resolve_venv(config, &mut terminal)?;
     let pyproject_toml = PyProjectToml::from_path(manifest_path(config))?;
     let mut packages = Vec::new();
     let binding = Vec::new();
@@ -294,6 +293,7 @@ pub fn install_project_optional_dependencies(
     }
     packages.dedup();
     let packages = package_iter(packages.iter()).collect::<Vec<Package>>();
+    let venv = resolve_venv(config, &mut terminal)?;
     venv.install_packages(
         &packages,
         config.installer_options.as_ref(),
