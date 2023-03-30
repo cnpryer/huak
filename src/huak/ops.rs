@@ -1439,7 +1439,7 @@ if __name__ == "__main__":
         let config = OperationConfig {
             workspace_root: dir.join("mock-project"),
             terminal_options: TerminalOptions {
-                verbosity: Verbosity::Verbose,
+                verbosity: Verbosity::Quiet,
             },
             ..Default::default()
         };
@@ -1458,7 +1458,7 @@ if __name__ == "__main__":
         let config = OperationConfig {
             workspace_root: dir.join("mock-project"),
             terminal_options: TerminalOptions {
-                verbosity: Verbosity::Verbose,
+                verbosity: Verbosity::Quiet,
             },
             ..Default::default()
         };
