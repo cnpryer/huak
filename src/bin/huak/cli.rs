@@ -48,10 +48,18 @@ pub enum Commands {
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
-    /// Interact with the configuration of huak.
-    Config {
-        #[command(subcommand)]
-        command: Config,
+    /// Generates a shell completion script for supported shells.
+    Completion {
+        #[arg(short, long, value_name = "shell")]
+        shell: Option<Shell>,
+        #[arg(short, long)]
+        /// Installs the completion script in your shell init file.
+        /// If this flag is passed the --shell is required
+        install: bool,
+        #[arg(short, long)]
+        /// Uninstalls the completion script from your shell init file.
+        /// If this flag is passed the --shell is required
+        uninstall: bool,
     },
     /// Remove tarball and wheel from the built project.
     Clean {
@@ -208,7 +216,24 @@ impl Cli {
                 operation_config.clean_options = Some(options);
                 clean(operation_config)
             }
-            Commands::Config { command } => config(command),
+            Commands::Completion {
+                shell,
+                install,
+                uninstall,
+            } => {
+                if (install || uninstall) && shell.is_none() {
+                    Err(HuakError::HuakConfigurationError(
+                        "no shell provided".to_string(),
+                    ))
+                } else if install {
+                    run_with_install(shell)
+                } else if uninstall {
+                    run_with_uninstall(shell)
+                } else {
+                    generate_shell_completion_script();
+                    Ok(())
+                }
+            }
             Commands::Fix { trailing } => {
                 operation_config.lint_options = Some(LintOptions {
                     args: trailing,
@@ -343,33 +368,6 @@ fn clean(operation_config: OperationConfig) -> HuakResult<()> {
     ops::clean_project(&operation_config)
 }
 
-/// Prints the script to stdout and a way to add the script to the shell init file to stderr. This
-/// way if the user runs completion <shell> > completion.sh only the stdout will be redirected into
-/// completion.sh.
-fn config(command: Config) -> HuakResult<()> {
-    match command {
-        Config::Completion {
-            shell,
-            install,
-            uninstall,
-        } => {
-            if (install || uninstall) && shell.is_none() {
-                return Err(HuakError::HuakConfigurationError(
-                    "no shell provided".to_string(),
-                ));
-            }
-            if install {
-                run_with_install(shell)
-            } else if uninstall {
-                run_with_uninstall(shell)
-            } else {
-                generate_shell_completion_script();
-                Ok(())
-            }
-        }
-    }
-}
-
 fn fix(operation_config: OperationConfig) -> HuakResult<()> {
     ops::lint_project(&operation_config)
 }
@@ -468,24 +466,6 @@ fn update(
 
 fn version(operation_config: OperationConfig) -> HuakResult<()> {
     ops::display_project_version(&operation_config)
-}
-
-#[derive(Subcommand)]
-pub enum Config {
-    /// Generates a shell completion script for supported shells.
-    /// See the help menu for more information on supported shells.
-    Completion {
-        #[arg(short, long, value_name = "shell")]
-        shell: Option<Shell>,
-        #[arg(short, long)]
-        /// Installs the completion script in your shell init file.
-        /// If this flag is passed the --shell is required
-        install: bool,
-        #[arg(short, long)]
-        /// Uninstalls the completion script from your shell init file.
-        /// If this flag is passed the --shell is required
-        uninstall: bool,
-    },
 }
 
 fn generate_shell_completion_script() {
