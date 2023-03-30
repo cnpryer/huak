@@ -532,7 +532,7 @@ if __name__ == "__main__":
 ///        ├── some_pkg
 ///        └── some_pkg-X.X.X.dist-info
 ///   pyvenv.cfg
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct VirtualEnvironment {
     /// Absolute path to the root of the virtual environment directory.
     root: PathBuf,
@@ -587,6 +587,11 @@ impl VirtualEnvironment {
         #[cfg(unix)]
         let file_name = "python";
         self.executables_dir_path().join(file_name)
+    }
+
+    /// The absolute path to the Python interpreter used to create the virtual environment.
+    pub fn base_python_path(&self) -> Option<&PathBuf> {
+        self.config.executable.as_ref()
     }
 
     /// Get the version of the Python environment's Python interpreter.
@@ -726,41 +731,53 @@ pub fn find_venv_root(workspace_root: impl AsRef<Path>) -> HuakResult<PathBuf> {
     Ok(root.to_path_buf())
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 /// Data about some environment's Python configuration. This abstraction is modeled after
 /// the pyenv.cfg file used for Python virtual environments.
 struct VirtualEnvironmentConfig {
-    // The version of the environment's Python interpreter.
+    /// The version of the environment's Python interpreter.
     version: Option<Version>,
+    /// The path to the Python interpreter used to create the virtual environment.
+    executable: Option<PathBuf>,
 }
 
 impl VirtualEnvironmentConfig {
     pub fn new() -> VirtualEnvironmentConfig {
-        VirtualEnvironmentConfig { version: None }
+        VirtualEnvironmentConfig {
+            version: None,
+            executable: None,
+        }
     }
 
     pub fn from_path(
         path: impl AsRef<Path>,
     ) -> HuakResult<VirtualEnvironmentConfig> {
-        let file = File::open(path)?;
+        let file = File::open(&path)?;
         let buff_reader = BufReader::new(file);
         let lines: Vec<String> = buff_reader.lines().flatten().collect();
         let mut version = None;
+        let mut executable = None;
         lines.iter().for_each(|item| {
             let mut vals = item.splitn(2, " = ");
             let name = vals.next().unwrap_or_default();
             let value = vals.next().unwrap_or_default();
             if name == "version" {
-                version = Version::from_str(value).ok()
+                version = Version::from_str(value).ok();
+            }
+            if name == "executable" {
+                executable = Some(PathBuf::from(value));
             }
         });
 
-        Ok(VirtualEnvironmentConfig { version })
+        Ok(VirtualEnvironmentConfig {
+            version,
+            executable,
+        })
     }
 }
 
 /// A struct for managing installing packages.
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Installer {
     /// Configuration for package installation
     config: InstallerConfig,
@@ -831,7 +848,7 @@ impl Installer {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct InstallerConfig {
     path: PathBuf,
 }
@@ -1096,7 +1113,7 @@ pub struct CleanOptions {
 
 /// Get an iterator over available Python interpreter paths parsed from PATH.
 /// Inspired by brettcannon/python-launcher
-pub fn python_paths() -> impl Iterator<Item = (PathBuf, Option<Version>)> {
+pub fn python_paths() -> impl Iterator<Item = (Option<Version>, PathBuf)> {
     let paths =
         fs::flatten_directories(env_path_values().unwrap_or(Vec::new()));
     python_interpreters_in_paths(paths)
@@ -1105,7 +1122,7 @@ pub fn python_paths() -> impl Iterator<Item = (PathBuf, Option<Version>)> {
 /// Get an iterator over all found python interpreter paths with their version.
 fn python_interpreters_in_paths(
     paths: impl IntoIterator<Item = PathBuf>,
-) -> impl Iterator<Item = (PathBuf, Option<Version>)> {
+) -> impl Iterator<Item = (Option<Version>, PathBuf)> {
     paths.into_iter().filter_map(|item| {
         item.file_name()
             .or(None)
@@ -1117,20 +1134,20 @@ fn python_interpreters_in_paths(
                         if let Ok(version) =
                             Version::from_str(&file_name["python".len()..])
                         {
-                            Some((item.clone(), Some(version)))
+                            Some((Some(version), item.clone()))
                         } else {
                             None
                         }
                     }
                     #[cfg(windows)]
                     Some((
-                        item.clone(),
                         Version::from_str(
                             &file_name
                                 .strip_suffix(".exe")
                                 .unwrap_or(file_name)["python".len()..],
                         )
                         .ok(),
+                        item.clone(),
                     ))
                 } else {
                     None
@@ -1440,7 +1457,7 @@ dev = [
 
     #[test]
     fn find_python() {
-        let path = python_paths().next().unwrap().0;
+        let path = python_paths().next().unwrap().1;
 
         assert!(path.exists());
         assert!(valid_python_interpreter_file_name(
@@ -1457,7 +1474,7 @@ dev = [
         std::env::set_var("PATH", path_vals.join(":"));
         let mut interpreter_paths = python_paths();
 
-        assert_eq!(interpreter_paths.next().unwrap().0, dir.join("python3.11"));
+        assert_eq!(interpreter_paths.next().unwrap().1, dir.join("python3.11"));
     }
 
     #[cfg(windows)]
@@ -1469,6 +1486,6 @@ dev = [
         std::env::set_var("PATH", path_vals.join(":"));
         let mut interpreter_paths = python_paths();
 
-        assert_eq!(interpreter_paths.next().unwrap().0, dir.join("python.exe"));
+        assert_eq!(interpreter_paths.next().unwrap().1, dir.join("python.exe"));
     }
 }
