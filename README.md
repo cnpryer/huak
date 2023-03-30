@@ -61,6 +61,7 @@ Commands:
   remove   Remove dependencies from the project
   run      Run a command within the project's environment context
   test     Test the project's Python code
+  update   Update the project's dependencies
   version  Display the version of the project
   help     Print this message or the help of the given subcommand(s)
 
