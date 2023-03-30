@@ -7,6 +7,7 @@ use huak::{
     InstallerOptions, LintOptions, PublishOptions, TerminalOptions,
     TestOptions, Verbosity, WorkspaceOptions,
 };
+use pep440_rs::Version;
 use std::{
     fs::File,
     io::Write,
@@ -20,15 +21,15 @@ use std::{
 #[command(version, author, about, arg_required_else_help = true)]
 pub struct Cli {
     #[command(subcommand)]
-    pub command: Commands,
+    command: Commands,
     #[arg(short, long, global = true)]
-    pub quiet: bool,
+    quiet: bool,
 }
 
 // List of commands.
 #[derive(Subcommand)]
 #[clap(rename_all = "kebab-case")]
-pub enum Commands {
+enum Commands {
     /// Activate the virtual envionrment.
     Activate,
     /// Add dependencies to the project.
@@ -138,6 +139,11 @@ pub enum Commands {
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
+    /// Manage python installations.
+    Python {
+        #[command(subcommand)]
+        command: Python,
+    },
     /// Remove dependencies from the project.
     Remove {
         #[arg(num_args = 1.., required = true)]
@@ -173,6 +179,18 @@ pub enum Commands {
     },
     /// Display the version of the project.
     Version,
+}
+
+#[derive(Subcommand)]
+enum Python {
+    /// List the installed Python interpreters.
+    List,
+    /// Use a specific Python interpreter.
+    Use {
+        /// A Python interpreter version number.
+        #[arg(required = true)]
+        version: PythonVersion,
+    },
 }
 
 // Command gating for Huak.
@@ -309,6 +327,7 @@ impl Cli {
                     Some(PublishOptions { args: trailing });
                 publish(operation_config)
             }
+            Commands::Python { command } => python(command, operation_config),
             Commands::Remove {
                 dependencies,
                 group,
@@ -417,6 +436,18 @@ fn new(
 
 fn publish(operation_config: OperationConfig) -> HuakResult<()> {
     ops::publish_project(&operation_config)
+}
+
+fn python(
+    command: Python,
+    operation_config: OperationConfig,
+) -> HuakResult<()> {
+    match command {
+        Python::List => ops::list_python(&operation_config),
+        Python::Use { version } => {
+            ops::use_python(version.0, &operation_config)
+        }
+    }
 }
 
 fn remove(
@@ -612,5 +643,30 @@ impl FromStr for Dependency {
 impl ToString for Dependency {
     fn to_string(&self) -> String {
         self.0.to_owned()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct PythonVersion(String);
+
+impl FromStr for PythonVersion {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let version = Version::from_str(s).map_err(|_| {
+            Error::new(
+                HuakError::InternalError("failed to parse version".to_string()),
+                ExitCode::FAILURE,
+            )
+        })?;
+        if version.release.len() > 2 {
+            return Err(Error::new(
+                HuakError::InternalError(format!(
+                    "{s} is invalid, use major.minor"
+                )),
+                ExitCode::FAILURE,
+            ));
+        }
+        Ok(Self(version.to_string()))
     }
 }

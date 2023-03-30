@@ -382,6 +382,16 @@ pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
     terminal.run_command(&mut cmd)
 }
 
+pub fn list_python(config: &OperationConfig) -> HuakResult<()> {
+    let mut terminal = create_terminal(&config.terminal_options);
+    python_paths().enumerate().for_each(|(i, item)| {
+        terminal
+            .print_custom(i + 1, item.1.display(), Color::Blue, false)
+            .ok();
+    });
+    Ok(())
+}
+
 pub fn new_app_project(config: &OperationConfig) -> HuakResult<()> {
     new_lib_project(config)?;
     let name = to_importable_package_name(
@@ -672,6 +682,35 @@ pub fn update_project_optional_dependencies(
     )
 }
 
+pub fn use_python(version: String, config: &OperationConfig) -> HuakResult<()> {
+    if let Some(path) = python_paths()
+        .filter_map(|item| {
+            if let Some(version) = item.0 {
+                Some((version, item.1))
+            } else {
+                None
+            }
+        })
+        .find(|item| item.0.to_string() == version)
+        .map(|item| item.1)
+    {
+        if let Ok(venv) = VirtualEnvironment::from_path(
+            config
+                .workspace_root
+                .join(default_virtual_environment_name()),
+        ) {
+            std::fs::remove_dir_all(venv.root())?;
+        }
+        let mut terminal = create_terminal(&config.terminal_options);
+        let mut cmd = Command::new(path);
+        cmd.args(["-m", "venv", default_virtual_environment_name()])
+            .current_dir(&config.workspace_root);
+        terminal.run_command(&mut cmd)
+    } else {
+        Err(Error::PythonNotFoundError)
+    }
+}
+
 pub fn display_project_version(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = create_terminal(&config.terminal_options);
     let project = Project::from_manifest(manifest_path(config))?;
@@ -789,7 +828,7 @@ fn create_virtual_environment(
 ) -> HuakResult<()> {
     // Use the first path found.
     let python_path = match python_paths().next() {
-        Some(it) => it.0,
+        Some(it) => it.1,
         None => return Err(Error::PythonNotFoundError),
     };
     let args = ["-m", "venv", default_virtual_environment_name()];
@@ -1487,6 +1526,36 @@ if __name__ == "__main__":
 
         update_project_optional_dependencies(None, &"dev".to_string(), &config)
             .unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_use_python() {
+        let dir = tempdir().unwrap().into_path();
+        let version = python_paths().max().unwrap().0.unwrap();
+        let config = OperationConfig {
+            workspace_root: dir,
+            terminal_options: TerminalOptions {
+                verbosity: Verbosity::Quiet,
+            },
+            ..Default::default()
+        };
+
+        use_python(version.to_string(), &config).unwrap();
+
+        let venv = VirtualEnvironment::from_path(
+            config
+                .workspace_root
+                .join(default_virtual_environment_name()),
+        )
+        .unwrap();
+        let version_string = version.to_string().replace(".", "");
+
+        assert_eq!(
+            venv.python_version().unwrap().to_string().replace(".", "")
+                [..version_string.len()],
+            version_string
+        );
     }
 
     #[test]
