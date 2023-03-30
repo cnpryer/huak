@@ -271,18 +271,16 @@ my-project on master 📦 v0.0.1 via 🐍 v3.11.0 took 26s
 
 ## Configure Huak
 
-Use `huak config` commands to configure `huak`.
-
 ### Configure shell completion
 
-With `huak config completion` you can setup shell completion for `huak`.
+With `huak completion` you can setup shell completion for `huak`.
 
 ```zsh
 my-project on master 📦 v0.0.1 via 🐍 v3.11.0 
-❯ huak config completion -h
+❯ huak completion -h
 Generates a shell completion script for supported shells. See the help menu for more information on supported shells
 
-Usage: huak config completion [OPTIONS]
+Usage: huak completion [OPTIONS]
 
 Options:
   -s, --shell <shell>  [possible values: bash, elvish, fish, powershell, zsh]
@@ -298,5 +296,5 @@ Any bugs or suggestions can be submitted as issues [here](https://github.com/cnp
 ```zsh
 my-project on master 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ huak --version
-huak 0.0.10-alpha.6
+huak 0.0.16
 ```
