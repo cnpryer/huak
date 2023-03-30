@@ -1562,8 +1562,8 @@ if __name__ == "__main__":
         .unwrap();
 
         assert_eq!(
-            venv.python_version().unwrap().release[..2],
-            version.release[..2]
+            venv.python_version().unwrap().release[..version.release.len()],
+            version.release
         );
     }
 
