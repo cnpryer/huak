@@ -1132,7 +1132,7 @@ fn python_interpreters_in_paths(
                     #[cfg(unix)]
                     {
                         if let Ok(version) =
-                            Version::from_str(&file_name["python".len()..])
+                            version_from_python_interpreter_file_name(file_name)
                         {
                             Some((Some(version), item.clone()))
                         } else {
@@ -1141,12 +1141,8 @@ fn python_interpreters_in_paths(
                     }
                     #[cfg(windows)]
                     Some((
-                        Version::from_str(
-                            &file_name
-                                .strip_suffix(".exe")
-                                .unwrap_or(file_name)["python".len()..],
-                        )
-                        .ok(),
+                        version_from_python_interpreter_file_name(file_name)
+                            .ok(),
                         item.clone(),
                     ))
                 } else {
@@ -1164,6 +1160,21 @@ fn valid_python_interpreter_file_name(file_name: &str) -> bool {
 #[cfg(windows)]
 fn valid_python_interpreter_file_name(file_name: &str) -> bool {
     file_name.starts_with("python") && file_name.ends_with(".exe")
+}
+
+fn version_from_python_interpreter_file_name(
+    file_name: &str,
+) -> HuakResult<Version> {
+    match OS {
+        "windows" => Version::from_str(
+            &file_name.strip_suffix(".exe").unwrap_or(file_name)
+                ["python".len()..],
+        ),
+        _ => Version::from_str(&file_name["python".len()..]),
+    }
+    .map_err(|_| {
+        Error::InternalError(format!("could not version from {file_name}"))
+    })
 }
 
 /// Get a vector of paths from the system PATH environment variable.

@@ -1560,10 +1560,12 @@ if __name__ == "__main__":
                 .join(default_virtual_environment_name()),
         )
         .unwrap();
+        let version_string = version.to_string().replace(".", "");
 
         assert_eq!(
-            venv.python_version().unwrap().release[..version.release.len()],
-            version.release
+            venv.python_version().unwrap().to_string().replace(".", "")
+                [..version_string.len()],
+            version_string
         );
     }
 
