@@ -32,6 +32,34 @@ pub struct OperationConfig {
     pub clean_options: Option<CleanOptions>,
 }
 
+pub fn activate_venv(config: &OperationConfig) -> HuakResult<()> {
+    let mut terminal = create_terminal(&config.terminal_options);
+    let venv = resolve_venv(config, &mut terminal)?;
+    #[cfg(unix)]
+    let mut cmd = Command::new("bash");
+    #[cfg(windows)]
+    let mut cmd = Command::new("powershell");
+    #[cfg(unix)]
+    cmd.args([
+        "--init-file",
+        &format!("{}", venv.executables_dir_path().join("activate").display()),
+        "-i",
+    ]);
+    #[cfg(windows)]
+    cmd.args([
+        "-executionpolicy",
+        "bypass",
+        "-NoExit",
+        "-NoLogo",
+        "-File",
+        &format!(
+            "{}",
+            venv.executables_dir_path().join("activate.ps1").display()
+        ),
+    ]);
+    terminal.run_command(&mut cmd)
+}
+
 pub fn add_project_dependencies(
     dependencies: &[String],
     config: &OperationConfig,
