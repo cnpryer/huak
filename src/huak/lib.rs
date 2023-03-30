@@ -656,6 +656,16 @@ impl VirtualEnvironment {
             .uninstall(packages, installer_options, terminal)
     }
 
+    /// Update many Python packages in the environment.
+    pub fn update_packages(
+        &self,
+        packages: &[&str],
+        installer_options: Option<&InstallerOptions>,
+        terminal: &mut Terminal,
+    ) -> HuakResult<()> {
+        self.installer.update(packages, installer_options, terminal)
+    }
+
     /// Check if the environment is already activated.
     pub fn is_active(&self) -> bool {
         if let Some(path) = active_virtual_env_path() {
@@ -796,6 +806,22 @@ impl Installer {
     ) -> HuakResult<()> {
         let mut cmd = Command::new(self.config.path.clone());
         cmd.arg("uninstall").args(packages).arg("-y");
+        if let Some(it) = options {
+            if let Some(args) = it.args.as_ref() {
+                cmd.args(args.iter().map(|item| item.as_str()));
+            }
+        }
+        terminal.run_command(&mut cmd)
+    }
+
+    pub fn update(
+        &self,
+        packages: &[&str],
+        options: Option<&InstallerOptions>,
+        terminal: &mut Terminal,
+    ) -> HuakResult<()> {
+        let mut cmd = Command::new(self.config.path.clone());
+        cmd.args(["install", "--upgrade"]).args(packages);
         if let Some(it) = options {
             if let Some(args) = it.args.as_ref() {
                 cmd.args(args.iter().map(|item| item.as_str()));

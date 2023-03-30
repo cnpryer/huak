@@ -150,6 +150,17 @@ pub enum Commands {
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
+    /// Update the project's dependencies.
+    Update {
+        #[arg(num_args = 0..)]
+        dependencies: Option<Vec<String>>,
+        /// Update an optional dependency group
+        #[arg(long)]
+        group: Option<String>,
+        /// Pass trailing arguments with `--`.
+        #[arg(last = true)]
+        trailing: Option<Vec<String>>,
+    },
     /// Display the version of the project.
     Version,
 }
@@ -284,6 +295,15 @@ impl Cli {
                 operation_config.test_options =
                     Some(TestOptions { args: trailing });
                 test(operation_config)
+            }
+            Commands::Update {
+                dependencies,
+                group,
+                trailing,
+            } => {
+                operation_config.installer_options =
+                    Some(InstallerOptions { args: trailing });
+                update(dependencies, group, operation_config)
             }
             Commands::Version => version(operation_config),
         }
@@ -420,6 +440,23 @@ fn run(
 
 fn test(operation_config: OperationConfig) -> HuakResult<()> {
     ops::test_project(&operation_config)
+}
+
+fn update(
+    dependencies: Option<Vec<String>>,
+    groups: Option<String>,
+    operation_config: OperationConfig,
+) -> HuakResult<()> {
+    match groups.as_ref() {
+        Some(it) => ops::update_project_optional_dependencies(
+            dependencies,
+            it,
+            &operation_config,
+        ),
+        None => {
+            ops::update_project_dependencies(dependencies, &operation_config)
+        }
+    }
 }
 
 fn version(operation_config: OperationConfig) -> HuakResult<()> {

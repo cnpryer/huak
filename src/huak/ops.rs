@@ -546,6 +546,110 @@ pub fn test_project(config: &OperationConfig) -> HuakResult<()> {
     terminal.run_command(&mut cmd)
 }
 
+pub fn update_project_dependencies(
+    dependencies: Option<Vec<String>>,
+    config: &OperationConfig,
+) -> HuakResult<()> {
+    let mut terminal = create_terminal(&config.terminal_options);
+    let project = Project::from_manifest(manifest_path(config))?;
+    let venv = resolve_venv(config, &mut terminal)?;
+    if let Some(it) = dependencies.as_ref() {
+        let deps = it
+            .iter()
+            .filter_map(|item| {
+                if project.contains_dependency(item).unwrap_or_default() {
+                    Some(item.as_str())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        if deps.is_empty() {
+            return Ok(());
+        }
+        venv.update_packages(
+            &deps,
+            config.installer_options.as_ref(),
+            &mut terminal,
+        )?;
+        return Ok(());
+    }
+    if let Some(it) = project.dependencies() {
+        venv.update_packages(
+            &it.iter().map(|item| item.as_str()).collect::<Vec<_>>(),
+            config.installer_options.as_ref(),
+            &mut terminal,
+        )?;
+    }
+    Ok(())
+}
+
+pub fn update_project_optional_dependencies(
+    dependencies: Option<Vec<String>>,
+    group: &String,
+    config: &OperationConfig,
+) -> HuakResult<()> {
+    let mut terminal = create_terminal(&config.terminal_options);
+    let project = Project::from_manifest(manifest_path(config))?;
+    let venv = resolve_venv(config, &mut terminal)?;
+    if let Some(it) = dependencies.as_ref() {
+        let deps = it
+            .iter()
+            .filter_map(|item| {
+                if project
+                    .contains_optional_dependency(item, group)
+                    .unwrap_or_default()
+                {
+                    Some(item.as_str())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        if deps.is_empty() {
+            return Ok(());
+        }
+        venv.update_packages(
+            &deps,
+            config.installer_options.as_ref(),
+            &mut terminal,
+        )?;
+        return Ok(());
+    }
+    let mut packages = Vec::new();
+    let binding = Vec::new();
+    // If the group "all" is passed and isn't a valid optional dependency group
+    // then install everything, disregarding other groups passed.
+    if project
+        .pyproject_toml
+        .optional_dependencey_group("all")
+        .is_none()
+        && *group == "all"
+    {
+        update_project_dependencies(dependencies, config)?;
+        if let Some(deps) = project.pyproject_toml.optional_dependencies() {
+            for (_, vals) in deps {
+                packages.extend(vals.iter().map(|item| item.as_str()));
+            }
+        }
+    } else {
+        project
+            .pyproject_toml
+            .optional_dependencey_group(group)
+            .unwrap_or(&binding)
+            .iter()
+            .for_each(|v| {
+                packages.push(v.as_str());
+            });
+    }
+    packages.dedup();
+    venv.update_packages(
+        &packages,
+        config.installer_options.as_ref(),
+        &mut terminal,
+    )
+}
+
 pub fn display_project_version(config: &OperationConfig) -> HuakResult<()> {
     let mut terminal = create_terminal(&config.terminal_options);
     let project = Project::from_manifest(manifest_path(config))?;
@@ -1322,6 +1426,45 @@ if __name__ == "__main__":
 
         assert!(!venv_had_package);
         assert!(venv_contains_package);
+    }
+
+    #[test]
+    fn test_update_project_dependencies() {
+        let dir = tempdir().unwrap().into_path();
+        fs::copy_dir(
+            &test_resources_dir_path().join("mock-project"),
+            &dir.join("mock-project"),
+        )
+        .unwrap();
+        let config = OperationConfig {
+            workspace_root: dir.join("mock-project"),
+            terminal_options: TerminalOptions {
+                verbosity: Verbosity::Verbose,
+            },
+            ..Default::default()
+        };
+
+        update_project_dependencies(None, &config).unwrap();
+    }
+
+    #[test]
+    fn test_update_project_optional_dependencies() {
+        let dir = tempdir().unwrap().into_path();
+        fs::copy_dir(
+            &test_resources_dir_path().join("mock-project"),
+            &dir.join("mock-project"),
+        )
+        .unwrap();
+        let config = OperationConfig {
+            workspace_root: dir.join("mock-project"),
+            terminal_options: TerminalOptions {
+                verbosity: Verbosity::Verbose,
+            },
+            ..Default::default()
+        };
+
+        update_project_optional_dependencies(None, &"dev".to_string(), &config)
+            .unwrap();
     }
 
     #[test]
