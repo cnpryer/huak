@@ -139,7 +139,7 @@ enum Commands {
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
-    /// Manage python installations.
+    /// Manage Python installations.
     Python {
         #[command(subcommand)]
         command: Python,

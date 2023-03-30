@@ -59,7 +59,7 @@ Commands:
   lint        Lint the project's Python code
   new         Create a new project at <path>
   publish     Builds and uploads current project to a registry
-  python      Manage python installations
+  python      Manage Python installations
   remove      Remove dependencies from the project
   run         Run a command within the project's environment context
   test        Test the project's Python code
