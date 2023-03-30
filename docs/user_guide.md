@@ -227,6 +227,25 @@ Note that currently `huak` just runs `bash --init-file` on unix systems and uses
 
 See [#486](https://github.com/cnpryer/huak/issues/486) for the status on the `activate` command.
 
+## Manage your Python installations
+
+By default `huak` will use the first Python interpreter found from your `PATH` environment variable. You can `list` these by using the `python` command.
+
+```zsh
+my-project on master 📦 v0.0.1 via 🐍 v3.11.0 
+❯ huak python list
+1: /Users/chrispryer/.pyenv/shims/python3.11
+2: /Users/chrispryer/.pyenv/shims/python3.10
+...
+```
+
+So `huak` would use `/Users/chrispryer/.pyenv/shims/python3.11` out of the box. You can use a different installed Python version with `use`.
+
+```zsh
+my-project on master 📦 v0.0.1 via 🐍 v3.11.0 
+❯ huak python use 3.10
+```
+
 ## Distribute your project
 
 ### Publish to PyPI
