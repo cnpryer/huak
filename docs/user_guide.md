@@ -14,7 +14,7 @@
 
 Use `pip` to install `huak` from [PyPI](https://pypi.org).
 
-```
+```zsh
 ~/github 
 ❯ pip install huak
 ```
@@ -23,14 +23,14 @@ Use `pip` to install `huak` from [PyPI](https://pypi.org).
 
 To create a new project use the `new` command.
 
-```
+```zsh
 ~/github took 2s 
 ❯ huak new my-project
 ```
 
 ### Or initialize an existing project
 
-```
+```zsh
 ~/github/existing-project 
 ❯ huak init
 ```
@@ -39,8 +39,8 @@ To create a new project use the `new` command.
 
 Initializing an existing project adds a `pyproject.toml` to the current directory. Bootstrapping the project with the `new` command creates a Python project with the following structure:
 
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ tree .
 .
 ├── pyproject.toml
@@ -59,8 +59,8 @@ Note that without `--no-vcs` `huak` generates a `git`-initialized project.
 
 Use `huak` to add dependencies to your Python project.
 
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ huak add xlcsv
 ```
 
@@ -68,8 +68,8 @@ my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0
 
 Currently `huak` uses `pip` under the hood for package installation. You can pass additional arguments onto `pip`. Any arguments after `--` are handed off to `pip install`.
 
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ huak add torch torchvision torchaudio -- --extra-index-url https://download.pytorch.org/whl/cu117
 ```
 
@@ -81,8 +81,8 @@ You can also assign dependencies to a group using `--group`.
 
 Use the `install` command to install the project's dependencies.
 
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ huak install
 ```
 
@@ -90,8 +90,8 @@ my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0
 
 To install all dependencies (including optional dependencies) use the group name "all".
 
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ huak install --groups all
 ```
 
@@ -101,22 +101,45 @@ If you already have an optional dependency group named "all" then `--groups` wil
 
 `huak install` would trigger a standard `pip install` on your group's packages. So without PEP 508 you won't install the pytorch.org packages as demonstrated with `huak add` earlier. To do this you could pass the same options given to `huak add`. Use a group to isolate these options to those specific dependencies.
 
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ huak add torch torchvision torchaudio --group torch -- --extra-index-url https://download.pytorch.org/whl/cu117
 
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ huak install --groups torch -- --extra-index-url https://download.pytorch.org/whl/cu117
 ```
 
 In the future `huak` will manage translating installer options to PEP 508 strings for you.
 
+### Update dependencies
+
+To update a dependency use the `update` command.
+
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
+❯ huak update xlcsv
+```
+
+You can also update a group of dependencies using `--group`.
+
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
+❯ huak update --group dev
+```
+
+Or everything with "all".
+
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
+❯ huak update --group all
+```
+
 ### Remove dependencies
 
 To remove a dependency from the project use the `remove` command.
 
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ huak remove xlcsv
 ```
 
@@ -128,8 +151,8 @@ Huak ships commands allowing you to format your python code, lint it, and test i
 
 Use the `fmt` command to format your Python project's code.
 
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ huak fmt
 ```
 
@@ -143,8 +166,8 @@ Use `--check` if all you want to do is verify your code is already formatted. No
 
 Use the `lint` command to lint your Python project's code.
 
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 took 2s 
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 took 2s 
 ❯ huak lint
 ```
 
@@ -159,8 +182,8 @@ The `--fix` flag can be used to address any auto-fixable issues.
 
 `huak` also uses `mypy` for type-checking. To disable this behavior use `--no-types`.
 
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 took 2s 
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 took 2s 
 ❯ huak lint --no-types
 ```
 
@@ -170,8 +193,8 @@ Currently, since `ruff` is the default tool used by `huak lint`, passing additio
 
 Use the `test` command to test your project.
 
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0
 ❯ huak test
 ```
 
@@ -179,8 +202,8 @@ my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0
 
 You can use `huak` to run a command within the Python environment your project uses.
 
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ huak run which python
 /Users/chrispryer/github/my-project/.venv/bin/python
 ```
@@ -191,11 +214,11 @@ my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0
 
 If you're building a Python package you'd like to share, use `huak build` and `huak publish` to build and publish the project to [PyPI](https://pypi.org).
 
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ huak build
 
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ huak publish
 ```
 
@@ -203,8 +226,8 @@ my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0
 
 Use `huak clean` to clean out the dist/ directory.
 
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 took 26s 
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 took 26s 
 ❯ huak clean
 ```
 
@@ -216,8 +239,8 @@ Use `huak config` commands to configure `huak`.
 
 With `huak config completion` you can setup shell completion for `huak`.
 
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ huak config completion -h
 Generates a shell completion script for supported shells. See the help menu for more information on supported shells
 
@@ -234,8 +257,8 @@ Options:
 
 Any bugs or suggestions can be submitted as issues [here](https://github.com/cnpryer/huak/issues/new). All feedback is welcome and greatly appreciated ❤️.
 
-```
-my-project on  master [?] is 📦 v0.0.1 via 🐍 v3.11.0 
+```zsh
+my-project on  master 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ huak --version
 huak 0.0.10-alpha.6
 ```
