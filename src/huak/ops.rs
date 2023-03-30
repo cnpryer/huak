@@ -682,17 +682,6 @@ pub fn update_project_optional_dependencies(
     )
 }
 
-#[cfg(windows)]
-pub fn use_python(
-    _version: String,
-    _config: &OperationConfig,
-) -> HuakResult<()> {
-    Err(Error::UnimplementedError(
-        "python use operation is unsupported on windows".to_string(),
-    ))
-}
-
-#[cfg(unix)]
 pub fn use_python(version: String, config: &OperationConfig) -> HuakResult<()> {
     if let Some(path) = python_paths()
         .filter_map(|item| {
