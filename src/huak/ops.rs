@@ -428,30 +428,27 @@ pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
 }
 
 pub fn remove_project_dependencies(
-    dependency_names: &[String],
+    dependencies: &[String],
     config: &OperationConfig,
 ) -> HuakResult<()> {
     let mut terminal = create_terminal(&config.terminal_options);
     let manifest_path = manifest_path(config);
     let mut project = Project::from_manifest(&manifest_path)?;
-    let dependencies: Vec<String> = dependency_names
+    let deps: Vec<String> = dependencies
         .iter()
         .filter(|item| project.contains_dependency(item).unwrap_or_default())
         .cloned()
         .collect();
-    if dependencies.is_empty() {
+    if deps.is_empty() {
         return Ok(());
     }
-    dependencies.iter().for_each(|item| {
+    deps.iter().for_each(|item| {
         project.remove_dependency(item);
     });
     let venv =
         VirtualEnvironment::from_path(find_venv_root(&config.workspace_root)?)?;
     venv.uninstall_packages(
-        &dependency_names
-            .iter()
-            .map(|item| item.as_str())
-            .collect::<Vec<&str>>(),
+        &deps.iter().map(|item| item.as_str()).collect::<Vec<&str>>(),
         config.installer_options.as_ref(),
         &mut terminal,
     )?;
@@ -459,7 +456,7 @@ pub fn remove_project_dependencies(
 }
 
 pub fn remove_project_optional_dependencies(
-    dependency_names: &[String],
+    dependencies: &[String],
     group: &str,
     config: &OperationConfig,
 ) -> HuakResult<()> {
@@ -468,7 +465,7 @@ pub fn remove_project_optional_dependencies(
     if project.optional_dependencey_group(group).is_none() {
         return Ok(());
     }
-    let dependencies: Vec<String> = dependency_names
+    let deps: Vec<String> = dependencies
         .iter()
         .filter(|item| {
             project
@@ -477,19 +474,16 @@ pub fn remove_project_optional_dependencies(
         })
         .cloned()
         .collect();
-    if dependencies.is_empty() {
+    if deps.is_empty() {
         return Ok(());
     }
-    dependencies.iter().for_each(|item| {
+    deps.iter().for_each(|item| {
         project.remove_optional_dependency(item, group);
     });
     let venv =
         VirtualEnvironment::from_path(find_venv_root(&config.workspace_root)?)?;
     venv.uninstall_packages(
-        &dependency_names
-            .iter()
-            .map(|item| item.as_str())
-            .collect::<Vec<&str>>(),
+        &deps.iter().map(|item| item.as_str()).collect::<Vec<&str>>(),
         config.installer_options.as_ref(),
         &mut terminal,
     )?;
