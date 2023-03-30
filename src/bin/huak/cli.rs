@@ -29,6 +29,8 @@ pub struct Cli {
 #[derive(Subcommand)]
 #[clap(rename_all = "kebab-case")]
 pub enum Commands {
+    /// Activate the virtual envionrment.
+    Activate,
     /// Add dependencies to the project.
     Add {
         #[arg(num_args = 1.., required = true)]
@@ -180,7 +182,7 @@ impl Cli {
             ..Default::default()
         };
         match self.command {
-            Commands::Config { command } => config(command),
+            Commands::Activate => activate(operation_config),
             Commands::Add {
                 dependencies,
                 group,
@@ -206,6 +208,7 @@ impl Cli {
                 operation_config.clean_options = Some(options);
                 clean(operation_config)
             }
+            Commands::Config { command } => config(command),
             Commands::Fix { trailing } => {
                 operation_config.lint_options = Some(LintOptions {
                     args: trailing,
@@ -309,6 +312,10 @@ impl Cli {
         }
         .map_err(|e| Error::new(e, ExitCode::FAILURE))
     }
+}
+
+fn activate(operation_config: OperationConfig) -> HuakResult<()> {
+    ops::activate_venv(&operation_config)
 }
 
 fn add(
