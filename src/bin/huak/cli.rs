@@ -49,6 +49,15 @@ enum Commands {
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
+    /// Remove tarball and wheel from the built project.
+    Clean {
+        #[arg(long, required = false)]
+        /// Remove all .pyc files.
+        include_pyc: bool,
+        #[arg(long, required = false)]
+        /// Remove all __pycache__ directories.
+        include_pycache: bool,
+    },
     /// Generates a shell completion script for supported shells.
     Completion {
         #[arg(short, long, value_name = "shell")]
@@ -61,15 +70,6 @@ enum Commands {
         /// Uninstalls the completion script from your shell init file.
         /// If this flag is passed the --shell is required
         uninstall: bool,
-    },
-    /// Remove tarball and wheel from the built project.
-    Clean {
-        #[arg(long, required = false)]
-        /// Remove all .pyc files.
-        include_pyc: bool,
-        #[arg(long, required = false)]
-        /// Remove all __pycache__ directories.
-        include_pycache: bool,
     },
     /// Auto-fix fixable lint conflicts
     Fix {

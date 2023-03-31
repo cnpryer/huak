@@ -1,19 +1,19 @@
 ///! This module implements various operations to interact with valid workspaces
 ///! existing on a system.
 use crate::{
-    default_entrypoint_string, default_init_file_contents,
-    default_main_file_contents, default_test_file_contents,
-    default_virtual_environment_name, env_path_values,
+    cononical_package_name, default_entrypoint_string,
+    default_init_file_contents, default_main_file_contents,
+    default_test_file_contents, default_virtual_environment_name,
+    env_path_values,
     error::HuakResult,
     find_venv_root,
     fs::{self, find_root_file_bottom_up},
     git::{self, default_python_gitignore},
-    package_iter, python_paths,
+    importable_package_name, package_iter, python_paths,
     sys::{shell_name, Terminal, TerminalOptions},
-    to_importable_package_name, to_package_cononical_name, BuildOptions,
-    CleanOptions, Error, FormatOptions, InstallerOptions, LintOptions, Package,
-    Project, PublishOptions, PyProjectToml, TestOptions, VirtualEnvironment,
-    WorkspaceOptions,
+    BuildOptions, CleanOptions, Error, FormatOptions, InstallerOptions,
+    LintOptions, Package, Project, PublishOptions, PyProjectToml, TestOptions,
+    VirtualEnvironment, WorkspaceOptions,
 };
 use std::{env::consts::OS, path::PathBuf, process::Command, str::FromStr};
 use termcolor::Color;
@@ -253,8 +253,8 @@ pub fn init_app_project(config: &OperationConfig) -> HuakResult<()> {
         "failed to read project name from toml".to_string(),
     ))?;
     pyproject_toml.add_script(
-        &to_package_cononical_name(name)?,
-        default_entrypoint_string(&to_importable_package_name(name)?).as_str(),
+        &cononical_package_name(name)?,
+        default_entrypoint_string(&importable_package_name(name)?).as_str(),
     )?;
     pyproject_toml.write_file(manifest_path(config))
 }
@@ -394,7 +394,7 @@ pub fn list_python(config: &OperationConfig) -> HuakResult<()> {
 
 pub fn new_app_project(config: &OperationConfig) -> HuakResult<()> {
     new_lib_project(config)?;
-    let name = to_importable_package_name(
+    let name = importable_package_name(
         fs::last_path_component(config.workspace_root.as_path())?.as_str(),
     )?;
     let mut pyproject_toml = PyProjectToml::from_path(manifest_path(config))?;
@@ -404,8 +404,8 @@ pub fn new_app_project(config: &OperationConfig) -> HuakResult<()> {
         default_main_file_contents(),
     )?;
     pyproject_toml.add_script(
-        &to_package_cononical_name(name.as_str())?,
-        default_entrypoint_string(&to_importable_package_name(&name)?).as_str(),
+        &cononical_package_name(name.as_str())?,
+        default_entrypoint_string(&importable_package_name(&name)?).as_str(),
     )?;
     pyproject_toml.write_file(manifest_path(config))
 }
@@ -414,7 +414,7 @@ pub fn new_lib_project(config: &OperationConfig) -> HuakResult<()> {
     create_workspace(config)?;
     let last_path_component =
         fs::last_path_component(config.workspace_root.as_path())?;
-    let processed_name = to_importable_package_name(&last_path_component)?;
+    let processed_name = importable_package_name(&last_path_component)?;
     if manifest_path(config).exists() {
         return Err(Error::ProjectTomlExistsError);
     }
@@ -761,13 +761,13 @@ pub fn find_workspace() -> HuakResult<PathBuf> {
         PathBuf::from("/"),
     ) {
         Ok(it) => it
-            .ok_or(Error::ProjectFileNotFound)?
+            .ok_or(Error::ManifestNotFound)?
             .parent()
             .ok_or(Error::InternalError(
                 "failed to parse parent directory".to_string(),
             ))?
             .to_path_buf(),
-        Err(_) => return Err(Error::ProjectFileNotFound),
+        Err(_) => return Err(Error::ManifestNotFound),
     };
     Ok(path)
 }

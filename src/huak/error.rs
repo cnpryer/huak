@@ -54,8 +54,8 @@ pub enum Error {
     PackageInvalidVersion(String),
     #[error("a problem with the package version specifier occurred")]
     PackageVersionSpecifierError,
-    #[error("a project file could not be found")]
-    ProjectFileNotFound,
+    #[error("a manifest could not be found")]
+    ManifestNotFound,
     #[error("a pyproject.toml already exists")]
     ProjectTomlExistsError,
     #[error("a problem with locating the project's version number occurred")]
