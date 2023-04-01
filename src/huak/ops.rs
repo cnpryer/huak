@@ -1,50 +1,65 @@
 ///! This module implements various operations to interact with valid workspaces
 ///! existing on a system.
-use crate::{
-    cononical_package_name, default_entrypoint_string,
-    default_init_file_contents, default_main_file_contents,
-    default_test_file_contents, default_virtual_environment_name,
-    env_path_values,
-    error::HuakResult,
-    find_venv_root,
-    fs::{self, find_root_file_bottom_up},
-    git::{self, default_python_gitignore},
-    importable_package_name, package_iter, python_paths,
-    sys::{shell_name, Terminal, TerminalOptions},
-    BuildOptions, CleanOptions, Error, FormatOptions, InstallerOptions,
-    LintOptions, Package, Project, PublishOptions, PyProjectToml, TestOptions,
-    VirtualEnvironment, WorkspaceOptions,
-};
+///
+use indexmap::IndexMap;
 use std::{env::consts::OS, path::PathBuf, process::Command, str::FromStr};
 use termcolor::Color;
 
-#[derive(Default)]
-pub struct OperationConfig {
-    pub workspace_root: PathBuf,
-    pub terminal_options: TerminalOptions,
-    pub workspace_options: Option<WorkspaceOptions>,
-    pub build_options: Option<BuildOptions>,
-    pub format_options: Option<FormatOptions>,
-    pub lint_options: Option<LintOptions>,
-    pub publish_options: Option<PublishOptions>,
-    pub test_options: Option<TestOptions>,
-    pub installer_options: Option<InstallerOptions>,
-    pub clean_options: Option<CleanOptions>,
+use crate::{
+    default_entrypoint_string, default_init_file_contents,
+    default_main_file_contents, default_project_version_str,
+    default_test_file_contents, default_virtual_environment_name,
+    dependency_iter, env_path_values, fs,
+    git::{self, default_python_gitignore},
+    python_paths,
+    sys::Terminal,
+    Config, Dependency, Error, HuakResult, PackageInstallerOptions,
+    PythonEnvironment, Workspace, WorkspaceOptions,
+};
+
+pub struct AddOptions {
+    pub args: Option<Vec<String>>,
+    pub installer_options: Option<PackageInstallerOptions>,
+}
+pub struct BuildOptions {
+    pub args: Option<Vec<String>>,
+    pub installer_options: Option<PackageInstallerOptions>,
+}
+pub struct FormatOptions {
+    pub args: Option<Vec<String>>,
+    pub installer_options: Option<PackageInstallerOptions>,
+}
+pub struct LintOptions {
+    pub args: Option<Vec<String>>,
+    pub include_types: bool,
+    pub installer_options: Option<PackageInstallerOptions>,
+}
+pub struct PublishOptions {
+    pub args: Option<Vec<String>>,
+    pub installer_options: Option<PackageInstallerOptions>,
+}
+pub struct TestOptions {
+    pub args: Option<Vec<String>>,
+}
+pub struct CleanOptions {
+    pub include_pycache: bool,
+    pub include_compiled_bytecode: bool,
 }
 
-pub fn activate_venv(config: &OperationConfig) -> HuakResult<()> {
-    let mut terminal = create_terminal(&config.terminal_options);
-    let venv = resolve_venv(config, &mut terminal)?;
+pub fn activate_venv(config: &mut Config) -> HuakResult<()> {
+    let mut ws = config.workspace()?;
+    let venv = ws.current_python_environment(config)?;
+
     #[cfg(unix)]
     let mut cmd = Command::new("bash");
-    #[cfg(windows)]
-    let mut cmd = Command::new("powershell");
     #[cfg(unix)]
     cmd.args([
         "--init-file",
         &format!("{}", venv.executables_dir_path().join("activate").display()),
         "-i",
     ]);
+    #[cfg(windows)]
+    let mut cmd = Command::new("powershell");
     #[cfg(windows)]
     cmd.args([
         "-executionpolicy",
@@ -57,97 +72,144 @@ pub fn activate_venv(config: &OperationConfig) -> HuakResult<()> {
             venv.executables_dir_path().join("activate.ps1").display()
         ),
     ]);
-    terminal.run_command(&mut cmd)
+
+    config.terminal().run_command(&mut cmd)
 }
 
 pub fn add_project_dependencies(
     dependencies: &[String],
-    config: &OperationConfig,
+    config: &mut Config,
+    options: Option<AddOptions>,
 ) -> HuakResult<()> {
-    let mut terminal = create_terminal(&config.terminal_options);
-    let manifest_path = manifest_path(config);
-    let mut project = Project::from_manifest(&manifest_path)?;
-    let packages = package_iter(dependencies)
-        .filter(|item| {
-            !project.contains_dependency(item.name()).unwrap_or_default()
-        })
-        .collect::<Vec<Package>>();
-    if packages.is_empty() {
+    let mut ws = config.workspace()?;
+    let mut project = ws.current_project(config)?;
+
+    let deps = dependency_iter(dependencies)
+        .filter(|dep| !project.contains_dependency(dep).unwrap_or_default())
+        .collect::<Vec<Dependency>>();
+    if deps.is_empty() {
         return Ok(());
     }
-    let venv = resolve_venv(config, &mut terminal)?;
-    venv.install_packages(
-        &packages,
-        config.installer_options.as_ref(),
-        &mut terminal,
+
+    let python_env = match ws.current_python_environment(config) {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            create_venv(&mut &ws, config)?
+        }
+        Err(e) => return Err(e),
+    };
+    python_env.install_packages(
+        &dependencies,
+        if let Some(o) = options {
+            o.installer_options.as_ref()
+        } else {
+            None
+        },
+        &mut config.terminal(),
     )?;
-    for package in packages {
-        project.add_dependency(&package.dependency_string())?;
+
+    for dep in deps {
+        project.add_dependency(dep)?;
     }
-    project.pyproject_toml().write_file(&manifest_path)
+    project.write_manifest()
 }
 
 pub fn add_project_optional_dependencies(
     dependencies: &[String],
     group: &str,
-    config: &OperationConfig,
+    config: &mut Config,
+    options: Option<AddOptions>,
 ) -> HuakResult<()> {
-    let mut terminal = create_terminal(&config.terminal_options);
-    let manifest_path = manifest_path(config);
-    let mut project = Project::from_manifest(&manifest_path)?;
-    let packages = package_iter(dependencies)
-        .filter(|item| {
+    let mut ws = config.workspace()?;
+    let mut project = ws.current_project(config)?;
+
+    let deps = dependency_iter(dependencies)
+        .filter(|dep| {
             !project
-                .contains_optional_dependency(item.name(), group)
+                .contains_optional_dependency(dep, group)
                 .unwrap_or_default()
         })
-        .collect::<Vec<Package>>();
-    if packages.is_empty() {
+        .collect::<Vec<Dependency>>();
+    if deps.is_empty() {
         return Ok(());
-    }
-    let venv = resolve_venv(config, &mut terminal)?;
-    venv.install_packages(
-        &packages,
-        config.installer_options.as_ref(),
-        &mut terminal,
+    };
+
+    let python_env = match ws.current_python_environment(config) {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            create_venv(&mut &ws, config)?
+        }
+        Err(e) => return Err(e),
+    };
+    python_env.install_packages(
+        &dependencies,
+        if let Some(o) = options {
+            o.installer_options.as_ref()
+        } else {
+            None
+        },
+        &mut config.terminal(),
     )?;
-    for package in packages {
-        project.add_optional_dependency(&package.dependency_string(), group)?;
+
+    for dep in deps {
+        project.add_optional_dependency(dep, group)?;
     }
-    project.pyproject_toml().write_file(&manifest_path)
+    project.write_manifest()
 }
 
-pub fn build_project(config: &OperationConfig) -> HuakResult<()> {
-    let mut terminal = create_terminal(&config.terminal_options);
-    let manifest_path = manifest_path(config);
-    let mut project = Project::from_manifest(&manifest_path)?;
-    let venv = resolve_venv(config, &mut terminal)?;
-    if !venv.contains_module("build")? {
-        venv.install_packages(
-            &[Package::from_str("build")?],
-            config.installer_options.as_ref(),
-            &mut terminal,
+pub fn build_project(
+    config: &mut Config,
+    options: Option<BuildOptions>,
+) -> HuakResult<()> {
+    let mut ws = config.workspace()?;
+    let mut project = ws.current_project(config)?;
+
+    let python_env = match ws.current_python_environment(config) {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            create_venv(&mut &ws, config)?
+        }
+        Err(e) => return Err(e),
+    };
+    let build_dep = Dependency::from_str("build")?;
+    if !python_env.contains_module(&build_dep.name)? {
+        python_env.install_packages(
+            &[build_dep],
+            if let Some(o) = options {
+                o.installer_options.as_ref()
+            } else {
+                None
+            },
+            &mut config.terminal(),
         )?;
     }
-    if !project.contains_dependency_any("build")? {
-        project.add_optional_dependency("build", "dev")?;
-        project.pyproject_toml().write_file(&manifest_path)?;
+
+    if !project.contains_dependency_any(&build_dep)? {
+        project.add_optional_dependency(build_dep, "dev")?;
+        project.write_manifest();
     }
-    let mut cmd = Command::new(venv.python_path());
+
+    let mut cmd = Command::new(python_env.python_path());
     let mut args = vec!["-m", "build"];
-    if let Some(options) = config.build_options.as_ref() {
+    if let Some(options) = options.as_ref() {
         if let Some(it) = options.args.as_ref() {
             args.extend(it.iter().map(|item| item.as_str()));
         }
     }
-    make_venv_command(&mut cmd, &venv)?;
-    cmd.args(args).current_dir(&config.workspace_root);
-    terminal.run_command(&mut cmd)
+    make_venv_command(&mut cmd, python_env)?;
+    cmd.args(args).current_dir(&ws.root);
+
+    config.terminal().run_command(&mut cmd)
 }
 
-pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
-    if config.workspace_root.join("dist").exists() {
-        std::fs::read_dir(config.workspace_root.join("dist"))?
+pub fn clean_project(
+    config: &mut Config,
+    options: Option<CleanOptions>,
+) -> HuakResult<()> {
+    let mut ws = config.workspace()?;
+
+    if ws.root.join("dist").exists() {
+        std::fs::read_dir(ws.root.join("dist"))?
             .filter_map(|x| x.ok().map(|item| item.path()))
             .for_each(|item| {
                 if item.is_dir() {
@@ -157,27 +219,19 @@ pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
                 }
             });
     }
-    if let Some(options) = config.clean_options.as_ref() {
-        if options.include_pycache {
-            let pattern = format!(
-                "{}",
-                config
-                    .workspace_root
-                    .join("**")
-                    .join("__pycache__")
-                    .display()
-            );
+    if let Some(o) = options.as_ref() {
+        if o.include_pycache {
+            let pattern =
+                format!("{}", ws.root.join("**").join("__pycache__").display());
             glob::glob(&pattern)?.for_each(|item| {
                 if let Ok(it) = item {
                     std::fs::remove_dir_all(it).ok();
                 }
             })
         }
-        if options.include_compiled_bytecode {
-            let pattern = format!(
-                "{}",
-                config.workspace_root.join("**").join("*.pyc").display()
-            );
+        if o.include_compiled_bytecode {
+            let pattern =
+                format!("{}", ws.root.join("**").join("*.pyc").display());
             glob::glob(&pattern)?.for_each(|item| {
                 if let Ok(it) = item {
                     std::fs::remove_file(it).ok();
@@ -188,48 +242,64 @@ pub fn clean_project(config: &OperationConfig) -> HuakResult<()> {
     Ok(())
 }
 
-pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
-    let mut terminal = create_terminal(&config.terminal_options);
-    let manifest_path = manifest_path(config);
-    let mut project = Project::from_manifest(&manifest_path)?;
-    let venv = resolve_venv(config, &mut terminal)?;
-    let packages = ["black", "ruff"]
-        .iter()
-        .filter(|item| !venv.contains_module(item).unwrap_or_default())
-        .filter_map(|item| Package::from_str(item).ok())
-        .collect::<Vec<Package>>();
-    if !packages.is_empty() {
-        venv.install_packages(
-            &packages,
-            config.installer_options.as_ref(),
-            &mut terminal,
+pub fn format_project(
+    config: &mut Config,
+    options: Option<FormatOptions>,
+) -> HuakResult<()> {
+    let mut ws = config.workspace()?;
+    let mut project = ws.current_project(config)?;
+
+    let python_env = match ws.current_python_environment(config) {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            create_venv(&mut &ws, config)?
+        }
+        Err(e) => return Err(e),
+    };
+    let format_deps = [
+        Dependency::from_str("black")?,
+        Dependency::from_str("ruff")?,
+    ]
+    .iter()
+    .filter(|item| !python_env.contains_module(&item.name).unwrap_or_default())
+    .collect::<Vec<&Dependency>>();
+    if !format_deps.is_empty() {
+        python_env.install_packages(
+            &format_deps,
+            if let Some(o) = options {
+                o.installer_options.as_ref()
+            } else {
+                None
+            },
+            &mut config.terminal(),
         )?;
     }
-    let packages = packages
+
+    let format_deps = format_deps
         .into_iter()
         .filter(|item| {
-            !project.contains_dependency(item.name()).unwrap_or_default()
-                && !project
-                    .contains_dependency_any(item.name())
-                    .unwrap_or_default()
+            !project.contains_dependency(item).unwrap_or_default()
+                && !project.contains_dependency_any(item).unwrap_or_default()
         })
-        .collect::<Vec<Package>>();
-    for package in &packages {
+        .collect::<Vec<&Dependency>>();
+    for dep in format_deps {
         {
-            project.add_optional_dependency(package.name(), "dev")?;
+            project.add_optional_dependency(*dep, "dev")?;
         }
     }
-    if !packages.is_empty() {
-        project.pyproject_toml().write_file(manifest_path)?;
+    if !format_deps.is_empty() {
+        project.write_manifest()?;
     }
-    let mut cmd = Command::new(venv.python_path());
-    let mut ruff_cmd = Command::new(venv.python_path());
+
+    let mut cmd = Command::new(python_env.python_path());
+    let mut ruff_cmd = Command::new(python_env.python_path());
     let mut ruff_args =
         vec!["-m", "ruff", "check", ".", "--select", "I001", "--fix"];
-    make_venv_command(&mut cmd, &venv)?;
-    make_venv_command(&mut ruff_cmd, &venv)?;
+    make_venv_command(&mut cmd, &python_env)?;
+    make_venv_command(&mut ruff_cmd, &python_env)?;
     let mut args = vec!["-m", "black", "."];
-    if let Some(it) = config.format_options.as_ref() {
+    let terminal = config.terminal();
+    if let Some(it) = options.as_ref() {
         if let Some(a) = it.args.as_ref() {
             args.extend(a.iter().map(|item| item.as_str()));
             if a.contains(&"--check".to_string()) {
@@ -240,229 +310,323 @@ pub fn format_project(config: &OperationConfig) -> HuakResult<()> {
             }
         }
     }
-    ruff_cmd.args(ruff_args).current_dir(&config.workspace_root);
+    ruff_cmd.args(ruff_args).current_dir(ws.root);
     terminal.run_command(&mut ruff_cmd)?;
-    cmd.args(args).current_dir(&config.workspace_root);
+    cmd.args(args).current_dir(ws.root);
     terminal.run_command(&mut cmd)
 }
 
-pub fn init_app_project(config: &OperationConfig) -> HuakResult<()> {
-    init_lib_project(config)?;
-    let mut pyproject_toml = PyProjectToml::from_path(manifest_path(config))?;
-    let name = pyproject_toml.project_name().ok_or(Error::InternalError(
-        "failed to read project name from toml".to_string(),
-    ))?;
-    pyproject_toml.add_script(
-        &cononical_package_name(name)?,
-        default_entrypoint_string(&importable_package_name(name)?).as_str(),
-    )?;
-    pyproject_toml.write_file(manifest_path(config))
+pub fn init_app_project(
+    config: &mut Config,
+    options: Option<WorkspaceOptions>,
+) -> HuakResult<()> {
+    init_lib_project(config, options)?;
+
+    let mut ws = config.workspace()?;
+    let mut project = ws.current_project(config)?;
+    let manifest = &mut project.manifest;
+    let as_dep = Dependency::from_str(&manifest.name)?;
+    let entry_point = default_entrypoint_string(&as_dep.importable_name()?);
+    if let Some(scripts) = manifest.scripts.as_mut() {
+        if !scripts.contains_key(&as_dep.canonical_name) {
+            scripts.insert(as_dep.canonical_name, entry_point);
+        }
+    } else {
+        manifest.scripts =
+            Some(IndexMap::from_iter([(as_dep.canonical_name, entry_point)]));
+    }
+
+    project.write_manifest()
 }
 
-pub fn init_lib_project(config: &OperationConfig) -> HuakResult<()> {
-    let manifest_path = manifest_path(config);
-    if manifest_path.exists() {
-        return Err(Error::ProjectTomlExistsError);
+pub fn init_lib_project(
+    config: &mut Config,
+    options: Option<WorkspaceOptions>,
+) -> HuakResult<()> {
+    let mut ws = config.workspace()?;
+    let mut project = ws.current_project(config)?;
+
+    if project.manifest_path.exists() {
+        return Err(Error::ProjectManifestExistsError);
     }
-    init_git(config)?;
-    let mut pyproject_toml = PyProjectToml::new();
-    let name = fs::last_path_component(config.workspace_root.as_path())?;
-    pyproject_toml.set_project_name(&name);
-    pyproject_toml.write_file(manifest_path)
+
+    init_git(&ws, options)?;
+    let manifest = &mut project.manifest;
+    let name = fs::last_path_component(ws.root)?;
+    manifest.name = name;
+    project.write_manifest()
 }
 
 pub fn install_project_dependencies(
-    config: &OperationConfig,
+    config: &mut Config,
+    options: Option<PackageInstallerOptions>,
 ) -> HuakResult<()> {
-    let mut terminal = create_terminal(&config.terminal_options);
-    let project = Project::from_manifest(manifest_path(config))?;
+    let mut ws = config.workspace()?;
+    let project = ws.current_project(config)?;
+
+    let python_env = match ws.current_python_environment(config) {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            create_venv(&mut &ws, config)?
+        }
+        Err(e) => return Err(e),
+    };
+
     let dependencies = match project.dependencies() {
         Some(it) => it,
         None => return Ok(()),
     };
-    let packages = package_iter(dependencies).collect::<Vec<Package>>();
-    let venv = resolve_venv(config, &mut terminal)?;
-    venv.install_packages(
-        &packages,
-        config.installer_options.as_ref(),
-        &mut terminal,
+    python_env.install_packages(
+        &dependencies,
+        options.as_ref(),
+        &mut config.terminal(),
     )
 }
 
 pub fn install_project_optional_dependencies(
     groups: &[String],
-    config: &OperationConfig,
+    config: &mut Config,
+    options: Option<PackageInstallerOptions>,
 ) -> HuakResult<()> {
-    let mut terminal = create_terminal(&config.terminal_options);
-    let pyproject_toml = PyProjectToml::from_path(manifest_path(config))?;
-    let mut packages = Vec::new();
-    let binding = Vec::new();
+    let mut ws = config.workspace()?;
+    let project = ws.current_project(config)?;
+
+    let binding = Vec::new(); // TODO
+    let mut dependencies = Vec::new();
     // If the group "all" is passed and isn't a valid optional dependency group
     // then install everything, disregarding other groups passed.
-    if pyproject_toml.optional_dependencey_group("all").is_none()
+    if project.optional_dependencey_group("all").is_none()
         && groups.contains(&"all".to_string())
     {
-        install_project_dependencies(config)?;
-        if let Some(deps) = pyproject_toml.optional_dependencies() {
+        install_project_dependencies(config, options)?;
+        if let Some(deps) = project.optional_dependencies() {
             for (_, vals) in deps {
-                packages.extend(vals);
+                dependencies.extend(vals);
             }
         }
     } else {
         groups.iter().for_each(|item| {
-            pyproject_toml
+            project
                 .optional_dependencey_group(item)
                 .unwrap_or(&binding)
                 .iter()
                 .for_each(|v| {
-                    packages.push(v);
+                    dependencies.push(v);
                 });
         })
     }
-    packages.dedup();
-    let packages = package_iter(packages.iter()).collect::<Vec<Package>>();
-    let venv = resolve_venv(config, &mut terminal)?;
-    venv.install_packages(
-        &packages,
-        config.installer_options.as_ref(),
-        &mut terminal,
+    dependencies.dedup();
+
+    let python_env = match ws.current_python_environment(config) {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            create_venv(&mut &ws, config)?
+        }
+        Err(e) => return Err(e),
+    };
+    python_env.install_packages(
+        &dependencies,
+        options.as_ref(),
+        &mut config.terminal(),
     )
 }
 
-pub fn lint_project(config: &OperationConfig) -> HuakResult<()> {
-    let mut terminal = create_terminal(&config.terminal_options);
-    let manifest_path = manifest_path(config);
-    let mut project = Project::from_manifest(&manifest_path)?;
-    let venv = resolve_venv(config, &mut terminal)?;
-    if !venv.contains_module("ruff")? {
-        venv.install_packages(
-            &[Package::from_str("ruff")?],
-            config.installer_options.as_ref(),
-            &mut terminal,
+pub fn lint_project(
+    config: &mut Config,
+    options: Option<LintOptions>,
+) -> HuakResult<()> {
+    let mut ws = config.workspace()?;
+    let mut project = ws.current_project(config)?;
+
+    let python_env = match ws.current_python_environment(config) {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            create_venv(&mut &ws, config)?
+        }
+        Err(e) => return Err(e),
+    };
+
+    let ruff_dep = Dependency::from_str("ruff")?;
+    if !python_env.contains_module("ruff")? {
+        python_env.install_packages(
+            &[ruff_dep],
+            if let Some(o) = options {
+                o.installer_options.as_ref()
+            } else {
+                None
+            },
+            &mut config.terminal(),
         )?;
     }
-    if !project.contains_dependency_any("ruff")? {
-        project.add_optional_dependency("ruff", "dev")?;
-        project.pyproject_toml().write_file(&manifest_path)?;
+
+    let mut write_manifest = false;
+    if !project.contains_dependency_any(&ruff_dep)? {
+        project.add_optional_dependency(ruff_dep, "dev")?;
+        write_manifest = true;
     }
-    let mut cmd = Command::new(venv.python_path());
+
+    let mut cmd = Command::new(python_env.python_path());
     let mut args = vec!["-m", "ruff", "check", "."];
-    if let Some(it) = config.lint_options.as_ref() {
+    if let Some(it) = options.as_ref() {
         if let Some(a) = it.args.as_ref() {
             args.extend(a.iter().map(|item| item.as_str()));
         }
         if it.include_types {
-            if !venv.contains_module("mypy")? {
-                venv.install_packages(
-                    &[Package::from_str("mypy")?],
-                    config.installer_options.as_ref(),
-                    &mut terminal,
+            let mypy_dep = Dependency::from_str("mypy")?;
+            if !python_env.contains_module("mypy")? {
+                python_env.install_packages(
+                    &[mypy_dep],
+                    if let Some(o) = options {
+                        o.installer_options.as_ref()
+                    } else {
+                        None
+                    },
+                    &mut config.terminal(),
                 )?;
             }
-            if !project.contains_dependency_any("mypy")? {
-                project.add_optional_dependency("mypy", "dev")?;
-                project.pyproject_toml().write_file(&manifest_path)?;
+            if !project.contains_dependency_any(&mypy_dep)? {
+                project.add_optional_dependency(mypy_dep, "dev")?;
+                write_manifest = true;
             }
-            let mut mypy_cmd = Command::new(venv.python_path());
-            make_venv_command(&mut mypy_cmd, &venv)?;
+            let mut mypy_cmd = Command::new(python_env.python_path());
+            make_venv_command(&mut mypy_cmd, &python_env)?;
             mypy_cmd
                 .args(vec![
                     "-m",
                     "mypy",
                     ".",
                     "--exclude",
-                    venv.name()?.as_str(),
+                    python_env.name()?.as_str(),
                 ])
-                .current_dir(&config.workspace_root);
-            terminal.run_command(&mut mypy_cmd)?;
+                .current_dir(ws.root);
+            config.terminal().run_command(&mut mypy_cmd)?;
         }
     }
-    make_venv_command(&mut cmd, &venv)?;
-    cmd.args(args).current_dir(&config.workspace_root);
-    terminal.run_command(&mut cmd)
+    make_venv_command(&mut cmd, &python_env)?;
+    cmd.args(args).current_dir(ws.root);
+    config.terminal().run_command(&mut cmd)?;
+
+    if write_manifest {
+        project.write_manifest()?;
+    }
+    Ok(())
 }
 
-pub fn list_python(config: &OperationConfig) -> HuakResult<()> {
-    let mut terminal = create_terminal(&config.terminal_options);
+pub fn list_python(config: &mut Config) -> HuakResult<()> {
     python_paths().enumerate().for_each(|(i, item)| {
-        terminal
+        config
+            .terminal()
             .print_custom(i + 1, item.1.display(), Color::Blue, false)
             .ok();
     });
     Ok(())
 }
 
-pub fn new_app_project(config: &OperationConfig) -> HuakResult<()> {
-    new_lib_project(config)?;
-    let name = importable_package_name(
-        fs::last_path_component(config.workspace_root.as_path())?.as_str(),
-    )?;
-    let mut pyproject_toml = PyProjectToml::from_path(manifest_path(config))?;
-    let src_path = config.workspace_root.join("src");
+pub fn new_app_project(
+    config: &mut Config,
+    options: Option<WorkspaceOptions>,
+) -> HuakResult<()> {
+    new_lib_project(config, options)?;
+
+    let mut ws = config.workspace()?;
+    let mut project = ws.current_project(config)?;
+    let manifest = &mut project.manifest;
+    manifest.name = fs::last_path_component(ws.root.as_path())?;
+    let as_dep = Dependency::from_str(&manifest.name)?;
+
+    let src_path = ws.root.join("src");
     std::fs::write(
-        src_path.join(&name).join("main.py"),
+        src_path.join(as_dep.importable_name()?).join("main.py"),
         default_main_file_contents(),
     )?;
-    pyproject_toml.add_script(
-        &cononical_package_name(name.as_str())?,
-        default_entrypoint_string(&importable_package_name(&name)?).as_str(),
-    )?;
-    pyproject_toml.write_file(manifest_path(config))
+    let entry_point = default_entrypoint_string(&as_dep.importable_name()?);
+    if let Some(scripts) = manifest.scripts.as_ref() {
+        if !scripts.contains_key(&as_dep.canonical_name) {
+            scripts.insert(as_dep.canonical_name, entry_point);
+        }
+    } else {
+        manifest.scripts =
+            Some(IndexMap::from_iter([(as_dep.canonical_name, entry_point)]));
+    }
+
+    project.write_manifest()
 }
 
-pub fn new_lib_project(config: &OperationConfig) -> HuakResult<()> {
-    create_workspace(config)?;
-    let last_path_component =
-        fs::last_path_component(config.workspace_root.as_path())?;
-    let processed_name = importable_package_name(&last_path_component)?;
-    if manifest_path(config).exists() {
-        return Err(Error::ProjectTomlExistsError);
+pub fn new_lib_project(
+    config: &mut Config,
+    options: Option<WorkspaceOptions>,
+) -> HuakResult<()> {
+    let mut ws = config.workspace()?;
+    let project = ws.current_project(config)?;
+
+    if project.manifest_path.exists() {
+        return Err(Error::ProjectManifestExistsError);
     }
-    let mut pyproject_toml = PyProjectToml::new();
-    pyproject_toml.set_project_name(&last_path_component);
-    pyproject_toml.write_file(manifest_path(config))?;
-    let src_path = config.workspace_root.join("src");
-    std::fs::create_dir_all(src_path.join(&processed_name))?;
-    std::fs::create_dir_all(config.workspace_root.join("tests"))?;
+
+    create_workspace(&ws, config, options)?;
+
+    let name = &fs::last_path_component(ws.root)?;
+    let as_dep = Dependency::from_str(name)?;
+    let manifest = &mut project.manifest;
+    manifest.name = *name;
+    project.write_manifest()?;
+
+    let src_path = ws.root.join("src");
+    std::fs::create_dir_all(src_path.join(as_dep.importable_name()?))?;
+    std::fs::create_dir_all(ws.root.join("tests"))?;
     std::fs::write(
-        src_path.join(&processed_name).join("__init__.py"),
-        default_init_file_contents(pyproject_toml.project_version().ok_or(
-            Error::InternalError("failed to read project version".to_string()),
-        )?),
+        src_path.join(as_dep.importable_name()?).join("__init__.py"),
+        default_init_file_contents(default_project_version_str()),
     )?;
     std::fs::write(
-        config.workspace_root.join("tests").join("test_version.py"),
-        default_test_file_contents(&processed_name),
+        ws.root.join("tests").join("test_version.py"),
+        default_test_file_contents(&as_dep.importable_name()?),
     )
     .map_err(Error::IOError)
 }
 
-pub fn publish_project(config: &OperationConfig) -> HuakResult<()> {
-    let mut terminal = create_terminal(&config.terminal_options);
-    let manifest_path = manifest_path(config);
-    let mut project = Project::from_manifest(&manifest_path)?;
-    let venv = resolve_venv(config, &mut terminal)?;
-    if !venv.contains_module("twine")? {
-        venv.install_packages(
-            &[Package::from_str("twine")?],
-            config.installer_options.as_ref(),
-            &mut terminal,
+pub fn publish_project(
+    config: &mut Config,
+    options: Option<PublishOptions>,
+) -> HuakResult<()> {
+    let mut ws = config.workspace()?;
+    let mut project = ws.current_project(config)?;
+
+    let python_env = match ws.current_python_environment(config) {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            create_venv(&mut &ws, config)?
+        }
+        Err(e) => return Err(e),
+    };
+    let pub_dep = Dependency::from_str("twine")?;
+    if !python_env.contains_module(&pub_dep.name)? {
+        python_env.install_packages(
+            &[pub_dep],
+            if let Some(o) = options {
+                o.installer_options.as_ref()
+            } else {
+                None
+            },
+            &mut config.terminal(),
         )?;
     }
-    if !project.contains_dependency_any("twine")? {
-        project.add_optional_dependency("twine", "dev")?;
-        project.pyproject_toml().write_file(&manifest_path)?;
+
+    if !project.contains_dependency_any(&pub_dep)? {
+        project.add_optional_dependency(pub_dep, "dev")?;
+        project.write_manifest()?;
     }
-    let mut cmd = Command::new(venv.python_path());
+
+    let mut cmd = Command::new(python_env.python_path());
     let mut args = vec!["-m", "twine", "upload", "dist/*"];
-    if let Some(it) = config.publish_options.as_ref() {
+    if let Some(it) = options.as_ref() {
         if let Some(a) = it.args.as_ref() {
             args.extend(a.iter().map(|item| item.as_str()));
         }
     }
-    make_venv_command(&mut cmd, &venv)?;
-    cmd.args(args).current_dir(&config.workspace_root);
-    terminal.run_command(&mut cmd)
+    make_venv_command(&mut cmd, &python_env)?;
+    cmd.args(args).current_dir(ws.root);
+    config.terminal().run_command(&mut cmd)
 }
 
 pub fn remove_project_dependencies(
@@ -483,8 +647,7 @@ pub fn remove_project_dependencies(
     deps.iter().for_each(|item| {
         project.remove_dependency(item);
     });
-    let venv =
-        VirtualEnvironment::from_path(find_venv_root(&config.workspace_root)?)?;
+    let venv = Venv::from_path(find_venv_root(&config.workspace_root)?)?;
     venv.uninstall_packages(
         &deps.iter().map(|item| item.as_str()).collect::<Vec<&str>>(),
         config.installer_options.as_ref(),
@@ -518,8 +681,7 @@ pub fn remove_project_optional_dependencies(
     deps.iter().for_each(|item| {
         project.remove_optional_dependency(item, group);
     });
-    let venv =
-        VirtualEnvironment::from_path(find_venv_root(&config.workspace_root)?)?;
+    let venv = Venv::from_path(find_venv_root(&config.workspace_root)?)?;
     venv.uninstall_packages(
         &deps.iter().map(|item| item.as_str()).collect::<Vec<&str>>(),
         config.installer_options.as_ref(),
@@ -694,7 +856,7 @@ pub fn use_python(version: String, config: &OperationConfig) -> HuakResult<()> {
         .find(|item| item.0.to_string() == version)
         .map(|item| item.1)
     {
-        if let Ok(venv) = VirtualEnvironment::from_path(
+        if let Ok(venv) = Venv::from_path(
             config
                 .workspace_root
                 .join(default_virtual_environment_name()),
@@ -727,7 +889,7 @@ pub fn display_project_version(config: &OperationConfig) -> HuakResult<()> {
 
 fn make_venv_command(
     cmd: &mut Command,
-    venv: &VirtualEnvironment,
+    venv: &PythonEnvironment,
 ) -> HuakResult<()> {
     let mut paths = match env_path_values() {
         Some(it) => it,
@@ -737,7 +899,7 @@ fn make_venv_command(
             ))
         }
     };
-    paths.insert(0, venv.executables_dir_path());
+    paths.insert(0, venv.executables_dir_path().clone());
     cmd.env(
         "PATH",
         std::env::join_paths(paths)
@@ -747,50 +909,30 @@ fn make_venv_command(
     Ok(())
 }
 
-fn create_terminal(options: &TerminalOptions) -> Terminal {
-    let mut terminal = Terminal::new();
-    terminal.set_verbosity(options.verbosity);
-    terminal
-}
-
-pub fn find_workspace() -> HuakResult<PathBuf> {
-    let cwd = std::env::current_dir()?;
-    let path = match find_root_file_bottom_up(
-        "pyproject.toml",
-        cwd,
-        PathBuf::from("/"),
-    ) {
-        Ok(it) => it
-            .ok_or(Error::ManifestNotFound)?
-            .parent()
-            .ok_or(Error::InternalError(
-                "failed to parse parent directory".to_string(),
-            ))?
-            .to_path_buf(),
-        Err(_) => return Err(Error::ManifestNotFound),
-    };
-    Ok(path)
-}
-
-fn create_workspace(config: &OperationConfig) -> HuakResult<()> {
-    let path = config.workspace_root.as_path();
-    let cwd = std::env::current_dir()?;
-    if (path.exists() && path != cwd)
-        || (path == cwd && path.read_dir()?.count() > 0)
+fn create_workspace(
+    ws: &Workspace,
+    config: &Config,
+    options: Option<WorkspaceOptions>,
+) -> HuakResult<()> {
+    if (ws.root.exists() && ws.root != config.cwd)
+        || (ws.root == config.cwd && ws.root.read_dir()?.count() > 0)
     {
-        return Err(Error::DirectoryExists(path.to_path_buf()));
+        return Err(Error::DirectoryExists(ws.root.to_path_buf()));
     }
-    std::fs::create_dir(path)?;
-    init_git(config)
+    std::fs::create_dir(ws.root)?;
+    init_git(ws, options)
 }
 
-fn init_git(config: &OperationConfig) -> HuakResult<()> {
-    if let Some(options) = config.workspace_options.as_ref() {
-        if options.uses_git {
-            if !config.workspace_root.join(".git").exists() {
-                git::init(&config.workspace_root)?;
+fn init_git(
+    ws: &Workspace,
+    options: Option<WorkspaceOptions>,
+) -> HuakResult<()> {
+    if let Some(o) = options.as_ref() {
+        if o.uses_git {
+            if !ws.root.join(".git").exists() {
+                git::init(ws.root)?;
             }
-            let gitignore_path = config.workspace_root.join(".gitignore");
+            let gitignore_path = ws.root.join(".gitignore");
             if !gitignore_path.exists() {
                 std::fs::write(gitignore_path, default_python_gitignore())?;
             }
@@ -807,43 +949,47 @@ fn manifest_path(config: &OperationConfig) -> PathBuf {
 fn resolve_venv(
     config: &OperationConfig,
     terminal: &mut Terminal,
-) -> HuakResult<VirtualEnvironment> {
+) -> HuakResult<Venv> {
     let root = match find_venv_root(&config.workspace_root) {
         Ok(it) => it,
-        Err(Error::VenvNotFoundError) => {
-            create_virtual_environment(config, terminal)?;
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            create_venv(config, terminal)?;
             config
                 .workspace_root
                 .join(default_virtual_environment_name())
         }
         Err(e) => return Err(e),
     };
-    VirtualEnvironment::from_path(root)
+    Venv::from_path(root)
 }
 
-/// Create a new virtual environment at workspace root using the found Python interpreter.
-fn create_virtual_environment(
-    config: &OperationConfig,
-    terminal: &mut Terminal,
-) -> HuakResult<()> {
-    // Use the first path found.
+/// Create a new Python environment at the workspace root.
+/// found on the PATH environment variable.
+/// TODO: Allow version selection.
+fn create_venv<'a>(
+    ws: &'a mut Workspace,
+    config: &'a mut Config,
+) -> HuakResult<&'a PythonEnvironment> {
     let python_path = match python_paths().next() {
         Some(it) => it.1,
         None => return Err(Error::PythonNotFoundError),
     };
-    let args = ["-m", "venv", default_virtual_environment_name()];
+    let name = default_virtual_environment_name();
+    let args = ["-m", "venv", name];
     let mut cmd = Command::new(python_path);
-    cmd.args(args).current_dir(&config.workspace_root);
-    terminal.run_command(&mut cmd)
+    cmd.args(args).current_dir(ws.root);
+    let mut terminal = config.terminal;
+    terminal.run_command(&mut cmd)?;
+    let path = ws.root.join(name);
+    let env = PythonEnvironment::new(path)?;
+    ws.python_environments.envs.insert(path.to_path_buf(), env);
+    Ok(&env)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        fs, test_resources_dir_path, PyProjectToml, Verbosity,
-        VirtualEnvironment,
-    };
+    use crate::{fs, test_resources_dir_path, PyProjectToml, Venv, Verbosity};
     use tempfile::tempdir;
 
     #[test]
@@ -862,8 +1008,7 @@ mod tests {
             },
             ..Default::default()
         };
-        let venv =
-            VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
+        let venv = Venv::from_path(PathBuf::from(".venv")).unwrap();
         let mut terminal = Terminal::new();
         terminal.set_verbosity(Verbosity::Quiet);
         venv.uninstall_packages(
@@ -914,8 +1059,7 @@ mod tests {
             },
             ..Default::default()
         };
-        let venv =
-            VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
+        let venv = Venv::from_path(PathBuf::from(".venv")).unwrap();
         let mut terminal = Terminal::new();
         terminal.set_verbosity(Verbosity::Quiet);
         venv.uninstall_packages(
@@ -1136,7 +1280,7 @@ mock-project = "mock_project.main:main"
             },
             ..Default::default()
         };
-        let venv = VirtualEnvironment::from_path(".venv").unwrap();
+        let venv = Venv::from_path(".venv").unwrap();
         let mut terminal = Terminal::new();
         terminal.set_verbosity(config.terminal_options.verbosity);
         venv.uninstall_packages(&["click"], None, &mut terminal)
@@ -1165,7 +1309,7 @@ mock-project = "mock_project.main:main"
             },
             ..Default::default()
         };
-        let venv = VirtualEnvironment::from_path(".venv").unwrap();
+        let venv = Venv::from_path(".venv").unwrap();
         let mut terminal = Terminal::new();
         terminal.set_verbosity(config.terminal_options.verbosity);
         venv.uninstall_packages(&["pytest"], None, &mut terminal)
@@ -1354,8 +1498,7 @@ if __name__ == "__main__":
             ..Default::default()
         };
         let project = Project::from_manifest(manifest_path(&config)).unwrap();
-        let venv =
-            VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
+        let venv = Venv::from_path(PathBuf::from(".venv")).unwrap();
         let package = Package::from_str("click==8.1.3").unwrap();
         let mut terminal = Terminal::new();
         terminal.set_verbosity(config.terminal_options.verbosity);
@@ -1411,8 +1554,7 @@ if __name__ == "__main__":
             ..Default::default()
         };
         let project = Project::from_manifest(manifest_path(&config)).unwrap();
-        let venv =
-            VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
+        let venv = Venv::from_path(PathBuf::from(".venv")).unwrap();
         let package = Package::from_str("black==22.8.0").unwrap();
         let mut terminal = Terminal::new();
         terminal.set_verbosity(config.terminal_options.verbosity);
@@ -1471,8 +1613,7 @@ if __name__ == "__main__":
             },
             ..Default::default()
         };
-        let venv =
-            VirtualEnvironment::from_path(PathBuf::from(".venv")).unwrap();
+        let venv = Venv::from_path(PathBuf::from(".venv")).unwrap();
         let mut terminal = Terminal::new();
         terminal.set_verbosity(config.terminal_options.verbosity);
         venv.uninstall_packages(&["black"], None, &mut terminal)
@@ -1543,7 +1684,7 @@ if __name__ == "__main__":
 
         use_python(version.to_string(), &config).unwrap();
 
-        let venv = VirtualEnvironment::from_path(
+        let venv = Venv::from_path(
             config
                 .workspace_root
                 .join(default_virtual_environment_name()),

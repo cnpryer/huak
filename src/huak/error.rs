@@ -42,8 +42,8 @@ pub enum Error {
     LintOptionsMissingError,
     #[error("a problem with building the project occurred")]
     PackageBuildError,
-    #[error("a problem occurred initializing a package from a string")]
-    PackageFromStringError(String),
+    #[error("a problem occurred initializing a dependency from a string")]
+    DependencyFromStringError(String),
     #[error("a problem with the package index occurred: {0}")]
     PackageIndexError(String),
     #[error("a problem with package installation occurred: {0}")]
@@ -54,10 +54,10 @@ pub enum Error {
     PackageInvalidVersion(String),
     #[error("a problem with the package version specifier occurred")]
     PackageVersionSpecifierError,
-    #[error("a manifest could not be found")]
+    #[error("a manifest file could not be found")]
     ManifestNotFound,
-    #[error("a pyproject.toml already exists")]
-    ProjectTomlExistsError,
+    #[error("a manifest file already exists")]
+    ProjectManifestExistsError,
     #[error("a problem with locating the project's version number occurred")]
     ProjectVersionNotFound,
     #[error("a problem occurred attempting to locate the project's root")]
@@ -74,8 +74,8 @@ pub enum Error {
         "a problem occurred parsing the virtual environment's config file: {0}"
     )]
     VenvInvalidConfigFile(String),
-    #[error("a venv could not be found")]
-    VenvNotFoundError,
+    #[error("a python environment could not be found")]
+    PythonEnvironmentNotFoundError,
     #[error("a regex error occurred: {0}")]
     RegexError(#[from] regex::Error),
     #[error("a http request failed: {0}")]

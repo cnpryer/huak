@@ -96,7 +96,7 @@ pub fn find_root_file_bottom_up<T: AsRef<Path>>(
 /// Get the last component of a path. For example this function would return
 /// "dir" from the following path:
 /// /some/path/to/some/dir
-pub fn last_path_component(path: impl AsRef<Path>) -> HuakResult<String> {
+pub fn last_path_component<T: AsRef<Path>>(path: T) -> HuakResult<String> {
     let path = path.as_ref();
     let path = path
         .components()
