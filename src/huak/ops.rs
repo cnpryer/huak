@@ -411,6 +411,10 @@ pub fn install_project_dependencies(
         None => return Ok(()),
     };
 
+    if dependencies.is_empty() {
+        return Ok(());
+    }
+
     python_env.install_packages(
         dependencies,
         parse_installer_options(options.as_ref()).as_ref(),
@@ -450,6 +454,10 @@ pub fn install_project_optional_dependencies(
         })
     }
     dependencies.dedup();
+
+    if dependencies.is_empty() {
+        return Ok(());
+    }
 
     let python_env = match workspace.current_python_environment() {
         Ok(it) => it,
