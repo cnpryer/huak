@@ -881,7 +881,7 @@ impl PythonEnvironment {
         #[cfg(unix)]
         let installer = PackageInstaller::Pip(executables_dir_path.join("pip"));
         #[cfg(windows)]
-        let site_packages_path = self.root.join("Lib").join("site-packages");
+        let site_packages_path = root.join("Lib").join("site-packages");
         #[cfg(windows)]
         let installer =
             PackageInstaller::Pip(executables_dir_path.join("pip.exe"));
