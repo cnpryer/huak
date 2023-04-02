@@ -316,8 +316,7 @@ impl Cli {
                 lib,
                 no_vcs,
             } => {
-                config.workspace_root =
-                    std::fs::canonicalize(PathBuf::from(path))?;
+                config.workspace_root = PathBuf::from(path);
                 let options = Some(WorkspaceOptions { uses_git: !no_vcs });
                 new(app, lib, &mut config, options)
             }
