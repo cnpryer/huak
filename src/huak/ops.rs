@@ -601,14 +601,15 @@ pub fn new_lib_project(
         return Err(Error::ProjectManifestExistsError);
     }
 
-    let pyproject_toml = PyProjectToml::default();
+    let mut pyproject_toml = PyProjectToml::default();
 
     create_workspace(&config.workspace_root, config, options)?;
 
     let name = &fs::last_path_component(&config.workspace_root)?;
-    let as_dep = Dependency::from_str(name)?;
+    pyproject_toml.set_project_name(name.to_string());
     pyproject_toml.write_file(manifest_path)?;
 
+    let as_dep = Dependency::from_str(name)?;
     let src_path = config.workspace_root.join("src");
     std::fs::create_dir_all(src_path.join(as_dep.importable_name()?))?;
     std::fs::create_dir_all(config.workspace_root.join("tests"))?;
