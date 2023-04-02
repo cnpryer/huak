@@ -827,6 +827,7 @@ struct PythonEnvironment {
     site_packages_path: PathBuf,
     /// The Python package installer associated with the Python environment.
     installer: Option<PackageInstaller>,
+    #[allow(dead_code)]
     /// The kind of Python environment the environment is.
     kind: PythonEnvironmentKind,
 }
@@ -926,6 +927,7 @@ impl PythonEnvironment {
         &self.python_path
     }
 
+    #[allow(dead_code)]
     /// Get the version of the Python environment's Python interpreter.
     pub fn python_version(&self) -> &Version {
         &self.python_version
@@ -1017,6 +1019,7 @@ impl PythonEnvironment {
         }
     }
 
+    #[allow(dead_code)]
     /// Check if the environment has a package already installed.
     pub fn contains_package(&self, package: &Package) -> bool {
         self.site_packages_dir_path()
@@ -1065,12 +1068,8 @@ fn parse_python_interpreter_version<T: AsRef<Path>>(
 ///        ├── some_pkg
 ///        └── some_pkg-X.X.X.dist-info
 ///   pyvenv.cfg
-///
-/// Global
-///   An environment created from a global install of Python.
 enum PythonEnvironmentKind {
     Venv,
-    Global,
 }
 
 /// Search for a workspace.
