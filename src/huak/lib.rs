@@ -255,8 +255,9 @@ impl Project {
         }
         self.manifest
             .dependencies
-            .get_or_insert(Vec::new())
+            .get_or_insert_with(Vec::new)
             .push(dependency);
+
         Ok(())
     }
 
@@ -269,12 +270,14 @@ impl Project {
         if self.contains_optional_dependency(&dependency, group)? {
             return Ok(());
         }
+
         self.manifest
             .optional_dependencies
-            .get_or_insert(IndexMap::new())
-            .get_mut(group)
-            .unwrap_or(&mut Vec::new())
+            .get_or_insert_with(IndexMap::new)
+            .entry(group.to_string())
+            .or_insert_with(Vec::new)
             .push(dependency);
+
         Ok(())
     }
 
