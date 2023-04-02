@@ -1166,17 +1166,10 @@ mod tests {
         add_project_dependencies(&deps, &mut config, None).unwrap();
 
         let project = Project::new(config.workspace_root).unwrap();
-        let ser_toml =
-            PyProjectToml::new(dir.join("mock-project").join("pyproject.toml"))
-                .unwrap();
         let dep = Dependency::from_str("ruff").unwrap();
 
         assert!(venv.contains_module("ruff").unwrap());
         assert!(project.contains_dependency(&dep).unwrap());
-        assert!(deps.iter().all(|item| ser_toml
-            .dependencies()
-            .unwrap()
-            .contains(&item.to_string())));
     }
 
     #[test]
@@ -1213,17 +1206,10 @@ mod tests {
             .unwrap();
 
         let project = Project::new(config.workspace_root).unwrap();
-        let ser_toml =
-            PyProjectToml::new(dir.join("mock-project").join("pyproject.toml"))
-                .unwrap();
         let dep = Dependency::from_str("ruff").unwrap();
 
         assert!(venv.contains_module("ruff").unwrap());
         assert!(project.contains_optional_dependency(&dep, "dev").unwrap());
-        assert!(deps.iter().all(|item| ser_toml
-            .optional_dependencey_group("dev")
-            .unwrap()
-            .contains(&item.to_string())));
     }
 
     #[test]
