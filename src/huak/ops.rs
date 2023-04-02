@@ -1744,6 +1744,8 @@ if __name__ == "__main__":
         )
         .unwrap();
         let version_string = version.to_string().replace(".", "");
+        dbg!(&version_string);
+        dbg!(&venv.python_version().to_string());
 
         assert_eq!(
             venv.python_version().to_string().replace(".", "")
