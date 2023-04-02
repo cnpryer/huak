@@ -81,7 +81,7 @@ impl Project {
         let mut project = Project {
             kind: ProjectKind::Library,
             manifest: Manifest::from(pyproject_toml),
-            manifest_path: manifest_path,
+            manifest_path,
         };
 
         // If the manifest contains any scripts the project is considered an application.
@@ -238,7 +238,7 @@ impl Project {
                     return Ok(false);
                 }
                 for d in g {
-                    if d.eq(&dependency) {
+                    if d.eq(dependency) {
                         return Ok(true);
                     }
                 }
@@ -261,7 +261,7 @@ impl Project {
                 return Ok(false);
             }
             for d in deps.values().flatten() {
-                if d.eq(&dependency) {
+                if d.eq(dependency) {
                     return Ok(true);
                 }
             }
@@ -287,9 +287,7 @@ impl Project {
 
         // If a valie file already exists merge with it and write the file.
         let file = if self.manifest_path.exists() {
-            self.merge_pyproject_toml(PyProjectToml::new(
-                self.manifest_path.to_path_buf(),
-            )?)
+            self.merge_pyproject_toml(PyProjectToml::new(&self.manifest_path)?)
         } else {
             self.merge_pyproject_toml(PyProjectToml::default())
         };
@@ -303,7 +301,7 @@ impl Project {
     /// 1. toml <- manifest
     /// 2. toml <- other.exclude(manfiest)
     fn merge_pyproject_toml(&self, other: PyProjectToml) -> PyProjectToml {
-        let mut pyproject_toml = other.clone();
+        let mut pyproject_toml = other;
         pyproject_toml.set_project_name(self.manifest.name.clone());
         if self.manifest.version.is_some() {
             pyproject_toml.set_project_version(self.manifest.version.clone());
@@ -333,20 +331,14 @@ impl Project {
         }
         if self.manifest.optional_dependencies.is_some() {
             pyproject_toml.set_project_optional_dependencies(
-                self.manifest.optional_dependencies.as_ref().and_then(
-                    |groups| {
-                        Some(IndexMap::from_iter(groups.iter().map(
-                            |(group, deps)| {
-                                (
-                                    group.clone(),
-                                    deps.iter()
-                                        .map(|dep| dep.to_string())
-                                        .collect(),
-                                )
-                            },
-                        )))
-                    },
-                ),
+                self.manifest.optional_dependencies.as_ref().map(|groups| {
+                    IndexMap::from_iter(groups.iter().map(|(group, deps)| {
+                        (
+                            group.clone(),
+                            deps.iter().map(|dep| dep.to_string()).collect(),
+                        )
+                    }))
+                }),
             );
         }
         pyproject_toml
@@ -393,24 +385,19 @@ impl From<PyProjectToml> for Manifest {
 
         Self {
             authors: project.authors.clone(),
-            dependencies: project.dependencies.as_ref().and_then(|items| {
-                Some(
-                    items
+            dependencies: project.dependencies.as_ref().map(|items| items
                         .iter()
                         .map(|item| {
                             Dependency::from_str(item)
                                 .expect("failed to parse toml dependencies")
                         })
-                        .collect::<Vec<Dependency>>(),
-                )
-            }),
+                        .collect::<Vec<Dependency>>()),
             description: project.description.clone(),
             scripts: project.scripts.clone(),
             license: project.license.clone(),
             name: project.name.clone(),
-            optional_dependencies: project.optional_dependencies.as_ref().and_then(|groups| {
-                Some(IndexMap::from_iter(groups.iter().map(|(group, deps)| (group.clone(), deps.iter().map(|dep| Dependency::from_str(dep).expect("failed to parse toml optinoal dependencies")).collect()))))
-            }),
+            // TODO: fmt?
+            optional_dependencies: project.optional_dependencies.as_ref().map(|groups| IndexMap::from_iter(groups.iter().map(|(group, deps)| (group.clone(), deps.iter().map(|dep| Dependency::from_str(dep).expect("failed to parse toml optinoal dependencies")).collect())))),
             readme: project.readme.clone(),
             version: project.version.clone(),
         }
@@ -1156,7 +1143,7 @@ impl From<&Path> for VenvConfig {
     fn from(value: &Path) -> Self {
         // Read the file and flatten the lines for parsing.
         let file = File::open(value)
-            .expect(format!("failed to open {}", value.display()).as_str());
+            .unwrap_or_else(|_| panic!("failed to open {}", value.display()));
         let buff_reader = BufReader::new(file);
         let lines: Vec<String> = buff_reader.lines().flatten().collect();
 
@@ -1170,10 +1157,9 @@ impl From<&Path> for VenvConfig {
                 version = Version::from_str(val);
             }
         });
-        let version = version.expect(
-            format!("failed to parse version from {}", value.display())
-                .as_str(),
-        );
+        let version = version.unwrap_or_else(|_| {
+            panic!("failed to parse version from {}", value.display())
+        });
 
         VenvConfig { version }
     }
@@ -1314,7 +1300,7 @@ impl FromStr for Version {
         };
 
         let mut release = vec![0, 0, 0];
-        for i in 0..release.len() {
+        for i in [0, 1, 2].into_iter() {
             if let Some(it) = captures.get(i + 1) {
                 release[i] = it
                     .as_str()

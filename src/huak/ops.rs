@@ -128,7 +128,7 @@ pub fn add_project_dependencies(
         None => None,
     };
     python_env.install_packages(
-        &dependencies,
+        dependencies,
         installer_options.as_ref(),
         &mut config.terminal,
     )?;
@@ -168,7 +168,7 @@ pub fn add_project_optional_dependencies(
         None => None,
     };
     python_env.install_packages(
-        &dependencies,
+        dependencies,
         installer_options.as_ref(),
         &mut config.terminal,
     )?;
@@ -185,12 +185,11 @@ pub fn build_project(
 ) -> HuakResult<()> {
     let mut project = Project::new(&config.workspace_root)?;
 
-    let mut python_env =
-        match find_venv_root(&config.cwd, &config.workspace_root) {
-            Ok(it) => PythonEnvironment::new(it)?,
-            Err(Error::PythonEnvironmentNotFoundError) => create_venv(config)?,
-            Err(e) => return Err(e),
-        };
+    let python_env = match find_venv_root(&config.cwd, &config.workspace_root) {
+        Ok(it) => PythonEnvironment::new(it)?,
+        Err(Error::PythonEnvironmentNotFoundError) => create_venv(config)?,
+        Err(e) => return Err(e),
+    };
     let build_dep = Dependency::from_str("build")?;
     if !python_env.contains_module(&build_dep.name)? {
         let installer_options = match options.as_ref() {
@@ -216,7 +215,7 @@ pub fn build_project(
             args.extend(it.iter().map(|item| item.as_str()));
         }
     }
-    make_venv_command(&mut cmd, &mut python_env)?;
+    make_venv_command(&mut cmd, &python_env)?;
     cmd.args(args).current_dir(&config.workspace_root);
 
     config.terminal.run_command(&mut cmd)
@@ -402,7 +401,7 @@ pub fn install_project_dependencies(
     };
 
     python_env.install_packages(
-        &dependencies,
+        dependencies,
         parse_installer_options(options.as_ref()).as_ref(),
         &mut config.terminal,
     )
@@ -835,7 +834,7 @@ pub fn update_project_dependencies(
             None => None,
         };
         python_env.update_packages(
-            &deps,
+            deps,
             installer_options.as_ref(),
             &mut config.terminal,
         )?;
@@ -1028,19 +1027,15 @@ fn create_venv(config: &mut Config) -> HuakResult<PythonEnvironment> {
     let terminal = &mut config.terminal;
     terminal.run_command(&mut cmd)?;
     let path = config.workspace_root.join(name);
-    Ok(PythonEnvironment::new(path)?)
+    PythonEnvironment::new(path)
 }
 
 fn parse_installer_options(
     options: Option<&InstallOptions>,
 ) -> Option<PackageInstallerOptions> {
-    if let Some(it) = options {
-        Some(PackageInstallerOptions::Pip {
-            args: it.args.clone(),
-        })
-    } else {
-        None
-    }
+    options.map(|it| PackageInstallerOptions::Pip {
+        args: it.args.clone(),
+    })
 }
 
 #[cfg(test)]
@@ -1094,7 +1089,7 @@ mod tests {
 
         assert!(venv.contains_module("ruff").unwrap());
         assert!(project.contains_dependency(&dep).unwrap());
-        assert!(deps.iter().map(|item| item).all(|item| ser_toml
+        assert!(deps.iter().all(|item| ser_toml
             .dependencies()
             .unwrap()
             .contains(&item.to_string())));
@@ -1141,7 +1136,7 @@ mod tests {
 
         assert!(venv.contains_module("ruff").unwrap());
         assert!(project.contains_optional_dependency(&dep, "dev").unwrap());
-        assert!(deps.iter().map(|item| item).all(|item| ser_toml
+        assert!(deps.iter().all(|item| ser_toml
             .optional_dependencey_group("dev")
             .unwrap()
             .contains(&item.to_string())));
@@ -1193,7 +1188,6 @@ mod tests {
             config.workspace_root.join("dist").join("*").display()
         ))
         .unwrap()
-        .into_iter()
         .map(|item| item.unwrap())
         .collect::<Vec<_>>();
         let pycaches = glob::glob(&format!(
@@ -1205,7 +1199,6 @@ mod tests {
                 .display()
         ))
         .unwrap()
-        .into_iter()
         .map(|item| item.unwrap())
         .collect::<Vec<_>>();
         let bytecode = glob::glob(&format!(
@@ -1213,7 +1206,6 @@ mod tests {
             config.workspace_root.join("**").join("*.pyc").display()
         ))
         .unwrap()
-        .into_iter()
         .map(|item| item.unwrap())
         .collect::<Vec<_>>();
 
@@ -1487,7 +1479,7 @@ def fn():
             .unwrap()
             .join("tests")
             .join("test_version.py");
-        let test_file = std::fs::read_to_string(&test_file_filepath).unwrap();
+        let test_file = std::fs::read_to_string(test_file_filepath).unwrap();
         let expected_test_file = r#"from mock_project import __version__
 
 
@@ -1500,7 +1492,7 @@ def test_version():
             .join("src")
             .join("mock_project")
             .join("__init__.py");
-        let init_file = std::fs::read_to_string(&init_file_filepath).unwrap();
+        let init_file = std::fs::read_to_string(init_file_filepath).unwrap();
         let expected_init_file = "__version__ = \"0.0.1\"
 ";
 
@@ -1529,7 +1521,7 @@ def test_version():
             .join("src")
             .join("mock_project")
             .join("main.py");
-        let main_file = std::fs::read_to_string(&main_file_filepath).unwrap();
+        let main_file = std::fs::read_to_string(main_file_filepath).unwrap();
         let expected_main_file = r#"def main():
     print("Hello, World!")
 
@@ -1718,13 +1710,8 @@ if __name__ == "__main__":
             terminal,
         };
 
-        update_project_optional_dependencies(
-            None,
-            &"dev".to_string(),
-            &mut config,
-            None,
-        )
-        .unwrap();
+        update_project_optional_dependencies(None, "dev", &mut config, None)
+            .unwrap();
     }
 
     #[cfg(unix)]
