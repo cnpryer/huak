@@ -133,9 +133,24 @@ pub fn add_project_dependencies(
         &mut config.terminal,
     )?;
 
-    for dep in deps {
+    let packages = python_env.installed_packages()?;
+    for pkg in packages.iter().filter(|pkg| {
+        deps.iter().any(|dep| {
+            pkg.canonical_name == dep.canonical_name
+                && dep.version_specifiers.is_none()
+        })
+    }) {
+        let dep = Dependency::from_str(&pkg.to_string())?;
         project.add_dependency(dep)?;
     }
+
+    for dep in deps
+        .into_iter()
+        .filter(|dep| dep.version_specifiers.is_some())
+    {
+        project.add_dependency(dep)?;
+    }
+
     project.write_manifest()
 }
 
@@ -176,9 +191,24 @@ pub fn add_project_optional_dependencies(
         &mut config.terminal,
     )?;
 
-    for dep in deps {
+    let packages = python_env.installed_packages()?;
+    for pkg in packages.iter().filter(|pkg| {
+        deps.iter().any(|dep| {
+            pkg.canonical_name == dep.canonical_name
+                && dep.version_specifiers.is_none()
+        })
+    }) {
+        let dep = Dependency::from_str(&pkg.to_string())?;
         project.add_optional_dependency(dep, group)?;
     }
+
+    for dep in deps
+        .into_iter()
+        .filter(|dep| dep.version_specifiers.is_some())
+    {
+        project.add_optional_dependency(dep, group)?;
+    }
+
     project.write_manifest()
 }
 
@@ -872,17 +902,17 @@ pub fn update_project_dependencies(
         )?;
     }
 
-    let mut write = false;
+    let mut write_manifest = false;
     let packages = python_env.installed_packages()?;
     for pkg in packages {
         let dep = Dependency::from_str(&pkg.to_string())?;
         if project.contains_dependency(&dep)? {
             project.remove_dependency(&dep)?;
             project.add_dependency(dep)?;
-            write = true;
+            write_manifest = true;
         }
 
-        if write {
+        if write_manifest {
             project.write_manifest()?;
         }
     }
@@ -967,21 +997,21 @@ pub fn update_project_optional_dependencies(
         )?;
     }
 
-    let mut write = false;
+    let mut write_manifest = false;
     let packages = python_env.installed_packages()?;
     for pkg in packages {
         let dep = Dependency::from_str(&pkg.to_string())?;
         if project.contains_dependency(&dep)? && group == "all" {
             project.remove_dependency(&dep)?;
             project.add_dependency(dep)?;
-            write = true;
+            write_manifest = true;
         } else if project.contains_optional_dependency(&dep, group)? {
             project.remove_optional_dependency(&dep, group)?;
             project.add_optional_dependency(dep, group)?;
-            write = true;
+            write_manifest = true;
         }
 
-        if write {
+        if write_manifest {
             project.write_manifest()?;
         }
     }
@@ -1145,17 +1175,10 @@ mod tests {
         add_project_dependencies(&deps, &mut config, None).unwrap();
 
         let project = Project::new(config.workspace_root).unwrap();
-        let ser_toml =
-            PyProjectToml::new(dir.join("mock-project").join("pyproject.toml"))
-                .unwrap();
         let dep = Dependency::from_str("ruff").unwrap();
 
         assert!(venv.contains_module("ruff").unwrap());
         assert!(project.contains_dependency(&dep).unwrap());
-        assert!(deps.iter().all(|item| ser_toml
-            .dependencies()
-            .unwrap()
-            .contains(&item.to_string())));
     }
 
     #[test]
@@ -1192,17 +1215,10 @@ mod tests {
             .unwrap();
 
         let project = Project::new(config.workspace_root).unwrap();
-        let ser_toml =
-            PyProjectToml::new(dir.join("mock-project").join("pyproject.toml"))
-                .unwrap();
         let dep = Dependency::from_str("ruff").unwrap();
 
         assert!(venv.contains_module("ruff").unwrap());
         assert!(project.contains_optional_dependency(&dep, "dev").unwrap());
-        assert!(deps.iter().all(|item| ser_toml
-            .optional_dependencey_group("dev")
-            .unwrap()
-            .contains(&item.to_string())));
     }
 
     #[test]
