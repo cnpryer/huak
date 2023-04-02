@@ -54,10 +54,14 @@ pub enum Error {
     PackageInvalidVersion(String),
     #[error("a problem with the package version specifier occurred")]
     PackageVersionSpecifierError,
+    #[error("a project already exists")]
+    ProjectExistsError,
     #[error("a manifest file could not be found")]
-    ManifestNotFound,
+    ProjectManifestNotFoundError,
     #[error("a manifest file already exists")]
     ProjectManifestExistsError,
+    #[error("a project could not be found")]
+    ProjectNotFoundError,
     #[error("a problem with locating the project's version number occurred")]
     ProjectVersionNotFound,
     #[error("a problem occurred attempting to locate the project's root")]

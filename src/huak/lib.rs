@@ -7,7 +7,8 @@ use pyproject_toml::{Contact, License, PyProjectToml as ProjectToml, ReadMe};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{hash_map::RandomState, HashMap},
+    cmp::Ordering,
+    collections::hash_map::RandomState,
     env::consts::OS,
     ffi::{OsStr, OsString},
     fmt::Display,
@@ -17,8 +18,7 @@ use std::{
     process::Command,
     str::FromStr,
 };
-use sys::{parse_command_output, Terminal};
-pub use sys::{TerminalOptions, Verbosity};
+pub use sys::{Terminal, Verbosity};
 use toml::Table;
 
 mod error;
@@ -41,123 +41,13 @@ const DEFAULT_MANIFEST_FILE_NAME: &str = "pyproject.toml";
 /// implementations need to know things like what directory should a process
 /// execute from, what environment information to fallback to, how processes
 /// should interact with the terminal, and so on.
-struct Config {
+pub struct Config {
+    /// The workspace root.
+    pub workspace_root: PathBuf,
     /// The current working directory.
-    cwd: PathBuf,
+    pub cwd: PathBuf,
     /// A terminal to use.
-    terminal: Terminal,
-    /// The environment to use.
-    env: Environment,
-}
-
-impl Config {
-    /// Workspace initialization. Inspired by Cargo.
-    fn workspace(&self) -> HuakResult<Workspace> {
-        let root = find_workspace_root(self)?;
-        Workspace::new(root)
-    }
-
-    fn terminal(&mut self) -> Terminal {
-        self.terminal
-    }
-}
-
-/// The Workspace struct.
-///
-/// This struct defines the workspace various processes would interact with.
-/// It contains information about where the workspace is located, where to
-/// retrieve metadata about the workspace, how to identify it, etc.
-struct Workspace {
-    /// The absolute path to the root of the workspace.
-    root: PathBuf,
-    /// The absolute path to the workspace's manifest file.
-    manifest_path: PathBuf,
-    /// Any projects a part of the workspace.
-    projects: Projects,
-    /// Any Python environments associated with the workspace.
-    python_environments: PythonEnvironments,
-}
-
-impl Workspace {
-    fn new<T: AsRef<Path>>(path: T) -> HuakResult<Workspace> {
-        let root = path.as_ref();
-        let manifest_path = root.join(DEFAULT_MANIFEST_FILE_NAME);
-        if !manifest_path.exists() {
-            return Err(Error::ManifestNotFound);
-        }
-
-        let ws = Workspace {
-            root: root.to_path_buf(),
-            manifest_path,
-            projects: Projects::new(),
-            python_environments: PythonEnvironments::new(),
-        };
-
-        Ok(ws)
-    }
-
-    /// Get the current Python environment by attempting to use one from the
-    /// configured cwd. Otherwise try to locate one from the workspace root.
-    /// Note that this method prioritizes Venvs.
-    fn current_python_environment(
-        &mut self,
-        config: &Config,
-    ) -> HuakResult<&PythonEnvironment> {
-        let path = find_venv_root(self.root, config);
-
-        // If the Python environment is already associated with the workspace, return it.
-        // Otherwise initialize one if it exists and add it to the associated environments.
-        let env = match path {
-            Ok(p) => {
-                if let Some(e) = self.python_environments.envs.get(&p) {
-                    e
-                } else {
-                    let e = PythonEnvironment::new(p)?;
-                    self.python_environments.envs.insert(p.to_path_buf(), e);
-                    &e
-                }
-            }
-            Err(e) => return Err(e),
-        };
-
-        Ok(env)
-    }
-
-    /// Get the current Python project by attempting to use one from configured cwd. Otherwise
-    /// initialize one if it exists and add it to the associated projects.
-    fn current_project(&mut self, config: &Config) -> HuakResult<&Project> {
-        let path = find_project_root(config);
-
-        // If the Python project is already associated with the workspace, return it.
-        let project = match path {
-            Ok(p) => {
-                if let Some(e) = self.projects.projects.get(&p) {
-                    e
-                } else {
-                    let prj = Project::new(p)?;
-                    self.projects.projects.insert(p.to_path_buf(), prj);
-                    &prj
-                }
-            }
-            Err(e) => return Err(e),
-        };
-
-        Ok(project)
-    }
-}
-
-/// A struct containing multiple Projects.
-struct Projects {
-    /// A collection of projects identified by their paths.
-    projects: HashMap<PathBuf, Project>,
-}
-
-impl Projects {
-    fn new() -> Projects {
-        Projects {
-            projects: HashMap::new(),
-        }
-    }
+    pub terminal: Terminal,
 }
 
 /// A Python project can be anything from a script to automate some process to a
@@ -182,7 +72,7 @@ impl Project {
 
         let manifest_path = root.join(DEFAULT_MANIFEST_FILE_NAME);
         if !manifest_path.exists() {
-            return Err(Error::ManifestNotFound);
+            return Err(Error::ProjectManifestNotFoundError);
         }
 
         let pyproject_toml =
@@ -252,8 +142,8 @@ impl Project {
     ) -> Option<&Vec<Dependency>> {
         self.manifest
             .optional_dependencies
-            .map(|item| *item.get(group).unwrap_or(&Vec::new()))
             .as_ref()
+            .and_then(|item| item.get(group))
     }
 
     /// Add a Python package as a dependency to the project's manifest.
@@ -342,7 +232,7 @@ impl Project {
         dependency: &Dependency,
         group: &str,
     ) -> HuakResult<bool> {
-        if let Some(deps) = self.manifest.optional_dependencies {
+        if let Some(deps) = self.manifest.optional_dependencies.as_ref() {
             if let Some(g) = deps.get(group) {
                 if deps.is_empty() {
                     return Ok(false);
@@ -366,7 +256,7 @@ impl Project {
             return Ok(true);
         }
 
-        if let Some(deps) = self.manifest.optional_dependencies {
+        if let Some(deps) = self.manifest.optional_dependencies.as_ref() {
             if deps.is_empty() {
                 return Ok(false);
             }
@@ -397,12 +287,14 @@ impl Project {
 
         // If a valie file already exists merge with it and write the file.
         let file = if self.manifest_path.exists() {
-            self.merge_pyproject_toml(PyProjectToml::new(self.manifest_path)?)
+            self.merge_pyproject_toml(PyProjectToml::new(
+                self.manifest_path.to_path_buf(),
+            )?)
         } else {
             self.merge_pyproject_toml(PyProjectToml::default())
         };
 
-        file.write_file(self.manifest_path)
+        file.write_file(&self.manifest_path)
     }
 
     /// Merge the project's manifest data with other pyproject.toml data.
@@ -412,46 +304,49 @@ impl Project {
     /// 2. toml <- other.exclude(manfiest)
     fn merge_pyproject_toml(&self, other: PyProjectToml) -> PyProjectToml {
         let mut pyproject_toml = other.clone();
-        pyproject_toml.set_project_name(self.manifest.name);
+        pyproject_toml.set_project_name(self.manifest.name.clone());
         if self.manifest.version.is_some() {
-            pyproject_toml.set_project_version(self.manifest.version);
+            pyproject_toml.set_project_version(self.manifest.version.clone());
         }
         if self.manifest.description.is_some() {
-            pyproject_toml.set_project_description(self.manifest.description);
+            pyproject_toml
+                .set_project_description(self.manifest.description.clone());
         }
         if self.manifest.authors.is_some() {
-            pyproject_toml.set_project_authors(self.manifest.authors);
+            pyproject_toml.set_project_authors(self.manifest.authors.clone());
         }
         if self.manifest.scripts.is_some() {
-            pyproject_toml.set_project_scripts(self.manifest.scripts);
+            pyproject_toml.set_project_scripts(self.manifest.scripts.clone());
         }
         if self.manifest.license.is_some() {
-            pyproject_toml.set_project_license(self.manifest.license);
+            pyproject_toml.set_project_license(self.manifest.license.clone());
         }
         if self.manifest.readme.is_some() {
-            pyproject_toml.set_project_readme(self.manifest.readme);
+            pyproject_toml.set_project_readme(self.manifest.readme.clone());
         }
         if self.manifest.dependencies.is_some() {
             pyproject_toml.set_project_dependencies(
-                self.manifest.dependencies.map(|deps| {
+                self.manifest.dependencies.as_ref().map(|deps| {
                     deps.iter().map(|dep| dep.to_string()).collect()
                 }),
             );
         }
         if self.manifest.optional_dependencies.is_some() {
             pyproject_toml.set_project_optional_dependencies(
-                self.manifest.optional_dependencies.and_then(|groups| {
-                    Some(IndexMap::from_iter(groups.iter().map(
-                        |(group, deps)| {
-                            (
-                                group.clone(),
-                                deps.iter()
-                                    .map(|dep| dep.to_string())
-                                    .collect(),
-                            )
-                        },
-                    )))
-                }),
+                self.manifest.optional_dependencies.as_ref().and_then(
+                    |groups| {
+                        Some(IndexMap::from_iter(groups.iter().map(
+                            |(group, deps)| {
+                                (
+                                    group.clone(),
+                                    deps.iter()
+                                        .map(|dep| dep.to_string())
+                                        .collect(),
+                                )
+                            },
+                        )))
+                    },
+                ),
             );
         }
         pyproject_toml
@@ -476,7 +371,7 @@ pub enum ProjectKind {
 /// The manifest contains information about the project including its name, version,
 /// dependencies, etc.
 #[derive(Default, Debug)]
-struct Manifest {
+pub struct Manifest {
     authors: Option<Vec<Contact>>,
     dependencies: Option<Vec<Dependency>>,
     description: Option<String>,
@@ -491,14 +386,14 @@ struct Manifest {
 /// Initialize a `Manifest` from `PyProjectToml`.
 impl From<PyProjectToml> for Manifest {
     fn from(value: PyProjectToml) -> Self {
-        let project = match value.project {
+        let project = match value.project.as_ref() {
             Some(it) => it,
             None => return Self::default(),
         };
 
         Self {
-            authors: project.authors,
-            dependencies: project.dependencies.and_then(|items| {
+            authors: project.authors.clone(),
+            dependencies: project.dependencies.as_ref().and_then(|items| {
                 Some(
                     items
                         .iter()
@@ -509,22 +404,22 @@ impl From<PyProjectToml> for Manifest {
                         .collect::<Vec<Dependency>>(),
                 )
             }),
-            description: project.description,
-            scripts: project.scripts,
-            license: project.license,
-            name: project.name,
-            optional_dependencies: project.optional_dependencies.and_then(|groups| {
+            description: project.description.clone(),
+            scripts: project.scripts.clone(),
+            license: project.license.clone(),
+            name: project.name.clone(),
+            optional_dependencies: project.optional_dependencies.as_ref().and_then(|groups| {
                 Some(IndexMap::from_iter(groups.iter().map(|(group, deps)| (group.clone(), deps.iter().map(|dep| Dependency::from_str(dep).expect("failed to parse toml optinoal dependencies")).collect()))))
             }),
-            readme: project.readme,
-            version: project.version,
+            readme: project.readme.clone(),
+            version: project.version.clone(),
         }
     }
 }
 
 #[derive(Debug)]
 /// A Python `Dependency` struct.
-struct Dependency {
+pub struct Dependency {
     /// The dependency's name unmodified.
     name: String,
     /// The canonical dependency name.
@@ -536,7 +431,7 @@ struct Dependency {
 impl Dependency {
     /// Get the dependency name with its version specifiers as a &str.
     pub fn dependency_string(&self) -> String {
-        let specs = match self.version_specifiers {
+        let specs = match self.version_specifiers.as_ref() {
             Some(it) => it,
             None => {
                 return self.name.to_string();
@@ -548,7 +443,11 @@ impl Dependency {
             self.name,
             specs
                 .iter()
-                .map(|spec| spec.to_string())
+                .map(|spec| spec
+                    .to_string()
+                    .split_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(""))
                 .collect::<Vec<String>>()
                 .join(",")
         )
@@ -569,7 +468,7 @@ impl Display for Dependency {
 
 impl AsRef<OsStr> for Dependency {
     fn as_ref(&self) -> &OsStr {
-        OsStr::new(self.to_string().as_str()).as_ref()
+        OsStr::new(self)
     }
 }
 
@@ -599,8 +498,8 @@ impl FromStr for Dependency {
             .map_err(|e| Error::DependencyFromStringError(e.to_string()))?;
 
         let dependency = Dependency {
-            name,
-            canonical_name: canonical_package_name(name.as_str())?,
+            name: name.to_string(),
+            canonical_name: canonical_package_name(name.as_ref())?,
             version_specifiers: Some(specs),
         };
 
@@ -849,10 +748,8 @@ impl Default for PyProjectToml {
     }
 }
 
-impl From<Manifest> for PyProjectToml {
-    fn from(value: Manifest) -> Self {
-        todo!()
-    }
+fn default_project_manifest_file_name() -> &'static str {
+    DEFAULT_MANIFEST_FILE_NAME
 }
 
 fn default_project_version_str() -> &'static str {
@@ -911,20 +808,6 @@ if __name__ == "__main__":
     .to_string()
 }
 
-/// A struct containing multiple PythonEnvironments.
-struct PythonEnvironments {
-    /// A collection of Python environments identified by their paths.
-    envs: HashMap<PathBuf, PythonEnvironment>,
-}
-
-impl PythonEnvironments {
-    fn new() -> PythonEnvironments {
-        PythonEnvironments {
-            envs: HashMap::new(),
-        }
-    }
-}
-
 /// The PythonEnvironment struct.
 ///
 /// Python environments are used to execute Python-based processes. Python
@@ -951,12 +834,7 @@ struct PythonEnvironment {
 impl PythonEnvironment {
     /// Initialize a new `PythonEnvironment`.
     pub fn new<T: AsRef<Path>>(path: T) -> HuakResult<PythonEnvironment> {
-        if Some(VENV_CONFIG_FILE_NAME)
-            != path
-                .as_ref()
-                .file_name()
-                .and_then(|raw_file_name| raw_file_name.to_str())
-        {
+        if !path.as_ref().join(VENV_CONFIG_FILE_NAME).exists() {
             return Err(Error::UnimplementedError(format!(
                 "{} is not supported",
                 path.as_ref().display()
@@ -986,8 +864,8 @@ impl PythonEnvironment {
         let python_version = if python_version.semver.is_some() {
             python_version
         } else {
-            parse_python_interpreter_version(python_path)?.unwrap_or(Version {
-                release: python_version.release,
+            parse_python_interpreter_version(&python_path)?.unwrap_or(Version {
+                release: python_version.release.clone(),
                 semver: Some(SemVerVersion {
                     major: python_version.release[0],
                     minor: *python_version.release.get(1).unwrap_or(&0),
@@ -996,7 +874,7 @@ impl PythonEnvironment {
             })
         };
 
-        let semver = match python_version.semver {
+        let semver = match python_version.semver.as_ref() {
             Some(it) => it,
             None => {
                 return Err(Error::VenvInvalidConfigFile(format!(
@@ -1038,6 +916,11 @@ impl PythonEnvironment {
         self.root.as_ref()
     }
 
+    /// Get the name of the Python environment.
+    pub fn name(&self) -> HuakResult<String> {
+        fs::last_path_component(&self.root)
+    }
+
     /// The absolute path to the Python environment's python interpreter binary.
     pub fn python_path(&self) -> &PathBuf {
         &self.python_path
@@ -1068,7 +951,7 @@ impl PythonEnvironment {
     where
         T: Display + AsRef<OsStr>,
     {
-        if let Some(installer) = self.installer {
+        if let Some(installer) = self.installer.as_ref() {
             installer.install(packages, installer_options, terminal)?;
         }
         Ok(())
@@ -1084,7 +967,7 @@ impl PythonEnvironment {
     where
         T: Display + AsRef<OsStr>,
     {
-        if let Some(installer) = self.installer {
+        if let Some(installer) = self.installer.as_ref() {
             installer.uninstall(packages, installer_options, terminal)?;
         }
         Ok(())
@@ -1100,7 +983,7 @@ impl PythonEnvironment {
     where
         T: Display + AsRef<OsStr>,
     {
-        if let Some(installer) = self.installer {
+        if let Some(installer) = self.installer.as_ref() {
             installer.update(packages, installer_options, terminal)?;
         }
         Ok(())
@@ -1135,11 +1018,14 @@ impl PythonEnvironment {
     }
 
     /// Check if the environment has a package already installed.
-    pub fn contains_package(&self, package: &Package) -> HuakResult<bool> {
-        Ok(self
-            .site_packages_dir_path()
-            .join(package.importable_name)
-            .exists())
+    pub fn contains_package(&self, package: &Package) -> bool {
+        self.site_packages_dir_path()
+            .join(
+                package
+                    .importable_name()
+                    .unwrap_or(package.canonical_name.to_string()),
+            )
+            .exists()
     }
 }
 
@@ -1162,7 +1048,7 @@ fn parse_python_interpreter_version<T: AsRef<Path>>(
             let mut cmd = Command::new(path.as_ref());
             cmd.args(["--version"]);
             let output = cmd.output()?;
-            Version::from_str(&parse_command_output(output)?).ok()
+            Version::from_str(&sys::parse_command_output(output)?).ok()
         }
     };
     Ok(version)
@@ -1192,20 +1078,20 @@ enum PythonEnvironmentKind {
 /// 2. Walk from configured cwd up searching for dir containing containing manifest file.
 /// 3. Stop after searching the system root (TODO: something more restrictive).
 /// Note this is the same search as find_project_root. This will change in the future.
-pub fn find_workspace_root(config: &Config) -> HuakResult<PathBuf> {
+pub fn find_workspace_root<T: AsRef<Path>>(from: T) -> HuakResult<PathBuf> {
     let path = match fs::find_root_file_bottom_up(
         DEFAULT_MANIFEST_FILE_NAME,
-        config.cwd.as_ref(),
+        from.as_ref(),
         Path::new("/"),
     ) {
         Ok(it) => it
-            .ok_or(Error::ManifestNotFound)?
+            .ok_or(Error::ProjectManifestNotFoundError)?
             .parent()
             .ok_or(Error::InternalError(
                 "failed to parse parent directory".to_string(),
             ))?
             .to_path_buf(),
-        Err(_) => return Err(Error::ManifestNotFound),
+        Err(_) => return Err(Error::ProjectManifestNotFoundError),
     };
     Ok(path)
 }
@@ -1214,20 +1100,20 @@ pub fn find_workspace_root(config: &Config) -> HuakResult<PathBuf> {
 /// 1. If manifest file exists use its directory.
 /// 2. Walk from configured cwd up searching for dir containing containing manifest file.
 /// 3. Stop after searching the system root (TODO: something more restrictive).
-pub fn find_project_root(config: &Config) -> HuakResult<PathBuf> {
+pub fn find_project_root<T: AsRef<Path>>(from: T) -> HuakResult<PathBuf> {
     let path = match fs::find_root_file_bottom_up(
         DEFAULT_MANIFEST_FILE_NAME,
-        config.cwd.as_ref(),
+        from.as_ref(),
         Path::new("/"),
     ) {
         Ok(it) => it
-            .ok_or(Error::ManifestNotFound)?
+            .ok_or(Error::ProjectManifestNotFoundError)?
             .parent()
             .ok_or(Error::InternalError(
                 "failed to parse parent directory".to_string(),
             ))?
             .to_path_buf(),
-        Err(_) => return Err(Error::ManifestNotFound),
+        Err(_) => return Err(Error::ProjectManifestNotFoundError),
     };
     Ok(path)
 }
@@ -1237,8 +1123,8 @@ pub fn find_project_root(config: &Config) -> HuakResult<PathBuf> {
 /// 2. Walk from configured cwd up searching for dir containing the Python environment config file.
 /// 3. Stop after searching `stop_after`.
 pub fn find_venv_root<T: AsRef<Path>>(
+    from: T,
     stop_after: T,
-    config: &Config,
 ) -> HuakResult<PathBuf> {
     if let Ok(path) = std::env::var("VIRTUAL_ENV") {
         return Ok(PathBuf::from(path));
@@ -1246,8 +1132,8 @@ pub fn find_venv_root<T: AsRef<Path>>(
 
     let file_path = match fs::find_root_file_bottom_up(
         VENV_CONFIG_FILE_NAME,
-        config.cwd.as_ref(),
-        stop_after.as_ref(),
+        from,
+        stop_after,
     ) {
         Ok(it) => it.ok_or(Error::PythonEnvironmentNotFoundError)?,
         Err(_) => return Err(Error::PythonEnvironmentNotFoundError),
@@ -1276,18 +1162,19 @@ impl From<&Path> for VenvConfig {
         let lines: Vec<String> = buff_reader.lines().flatten().collect();
 
         // Search for version = "X.X.X"
-        let mut version;
+        let mut version = Version::from_str("");
         lines.iter().for_each(|item| {
             let mut split = item.splitn(2, '=');
             let key = split.next().unwrap_or_default().trim();
             let val = split.next().unwrap_or_default().trim();
             if key == "version" {
-                version = Version::from_str(val).expect(
-                    format!("failed to parse version from {}", value.display())
-                        .as_str(),
-                );
+                version = Version::from_str(val);
             }
         });
+        let version = version.expect(
+            format!("failed to parse version from {}", value.display())
+                .as_str(),
+        );
 
         VenvConfig { version }
     }
@@ -1303,10 +1190,6 @@ enum PackageInstaller {
 }
 
 impl PackageInstaller {
-    pub fn new() -> PackageInstaller {
-        PackageInstaller::new()
-    }
-
     pub fn install<T>(
         &self,
         packages: &[T],
@@ -1330,9 +1213,6 @@ impl PackageInstaller {
 
                 terminal.run_command(&mut cmd)
             }
-            _ => Err(Error::UnimplementedError(
-                "unsupported package installer".to_string(),
-            )),
         }
     }
 
@@ -1348,7 +1228,9 @@ impl PackageInstaller {
         match self {
             PackageInstaller::Pip(path) => {
                 let mut cmd = Command::new(path);
-                cmd.arg("uninstall").args(packages).arg("-y");
+                cmd.arg("uninstall")
+                    .args(packages.iter().map(|item| item.to_string()))
+                    .arg("-y");
 
                 if let Some(PackageInstallerOptions::Pip { args }) = options {
                     if let Some(args) = args.as_ref() {
@@ -1358,9 +1240,6 @@ impl PackageInstaller {
 
                 terminal.run_command(&mut cmd)
             }
-            _ => Err(Error::UnimplementedError(
-                "unsupported package installer".to_string(),
-            )),
         }
     }
 
@@ -1376,7 +1255,8 @@ impl PackageInstaller {
         match self {
             PackageInstaller::Pip(path) => {
                 let mut cmd = Command::new(path);
-                cmd.args(["install", "--upgrade"]).args(packages);
+                cmd.args(["install", "--upgrade"])
+                    .args(packages.iter().map(|item| item.to_string()));
 
                 if let Some(PackageInstallerOptions::Pip { args }) = options {
                     if let Some(args) = args.as_ref() {
@@ -1386,9 +1266,6 @@ impl PackageInstaller {
 
                 terminal.run_command(&mut cmd)
             }
-            _ => Err(Error::UnimplementedError(
-                "unsupported package installer".to_string(),
-            )),
         }
     }
 }
@@ -1401,30 +1278,30 @@ pub enum PackageInstallerOptions {
     Pip { args: Option<Vec<String>> },
 }
 
-/// A Context that can be utilized by any process.
-///
-/// This is *additional* context (other than the implied context) that various
-/// processes could utilize. This would include extra information about the
-/// environment.
-pub struct Context {
-    /// The context's environment data.
-    env: Environment,
-}
-
-/// Enrionment data.
-///
-/// A generic struct containing information about the environment. This includes
-/// environment variables and their values.
-pub struct Environment {
-    env: HashMap<OsString, OsString>,
-}
-
 /// The Version struct.
 ///
 /// This is a generic version abstraction.
-struct Version {
+pub struct Version {
     release: Vec<usize>,
     semver: Option<SemVerVersion>,
+}
+
+impl Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(semver) = self.semver.as_ref() {
+            write!(f, "{}", semver)
+        } else {
+            write!(
+                f,
+                "{}",
+                self.release
+                    .iter()
+                    .map(|item| item.to_string())
+                    .collect::<Vec<_>>()
+                    .join(".")
+            )
+        }
+    }
 }
 
 impl FromStr for Version {
@@ -1437,25 +1314,69 @@ impl FromStr for Version {
             None => return Err(Error::InvalidVersionString(s.to_string())),
         };
 
-        let major = captures[1]
-            .parse::<usize>()
-            .map_err(|e| Error::InternalError(e.to_string()))?;
-        let minor = captures[2]
-            .parse::<usize>()
-            .map_err(|e| Error::InternalError(e.to_string()))?;
-        let patch = captures[3]
-            .parse::<usize>()
-            .map_err(|e| Error::InternalError(e.to_string()))?;
+        let mut release = vec![0, 0, 0];
+        for i in 0..release.len() {
+            if let Some(it) = captures.get(i + 1) {
+                release[i] = it
+                    .as_str()
+                    .parse::<usize>()
+                    .map_err(|e| Error::InternalError(e.to_string()))?
+            }
+        }
 
-        let release = vec![major, minor, patch];
         let semver = Some(SemVerVersion {
-            major,
-            minor,
-            patch,
+            major: release[0],
+            minor: release[1],
+            patch: release[2],
         });
 
         Ok(Version { release, semver })
     }
+}
+
+impl PartialEq<Self> for Version {
+    fn eq(&self, other: &Self) -> bool {
+        self.cmp(other) == Ordering::Equal
+    }
+}
+
+impl Eq for Version {}
+
+impl PartialOrd<Self> for Version {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Version {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match compare_release(&self.release, &other.release) {
+            Ordering::Less => Ordering::Less,
+            Ordering::Equal => Ordering::Equal,
+            Ordering::Greater => Ordering::Greater,
+        }
+    }
+}
+
+pub fn compare_release(this: &[usize], other: &[usize]) -> Ordering {
+    let iterator = if this.len() < other.len() {
+        this.iter()
+            .chain(std::iter::repeat(&0))
+            .zip(other)
+            .collect::<Vec<_>>()
+    } else {
+        this.iter()
+            .zip(other.iter().chain(std::iter::repeat(&0)))
+            .collect()
+    };
+
+    for (a, b) in iterator {
+        if a != b {
+            return a.cmp(b);
+        }
+    }
+
+    Ordering::Equal
 }
 
 /// A `SemVerVersion` struct for Semantic Version numbers.
@@ -1467,6 +1388,12 @@ struct SemVerVersion {
     patch: usize,
 }
 
+impl Display for SemVerVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
+    }
+}
+
 /// The python package compliant with packaging.python.og.
 /// See <https://peps.python.org/pep-0440/>
 #[derive(Clone, Debug)]
@@ -1475,8 +1402,6 @@ pub struct Package {
     name: String,
     /// Normalized name of the Python package.
     canonical_name: String,
-    /// Importable name of the Python package.
-    importable_name: String,
     /// The PEP 440 version of the package.
     version: Version440,
 }
@@ -1493,8 +1418,8 @@ impl Package {
     }
 
     /// Get the importable version of the package's name.
-    pub fn importable_name(&self) -> &str {
-        self.importable_name.as_ref()
+    pub fn importable_name(&self) -> HuakResult<String> {
+        importable_package_name(&self.canonical_name)
     }
 
     /// Get the package's PEP440 version.
@@ -1919,8 +1844,7 @@ dev = [
     }
 
     #[test]
-    /// NOTE: This test depends on local virtual environment.
-    fn virtual_environment_executable_dir_name() {
+    fn python_environment_executable_dir_name() {
         let venv = PythonEnvironment::new(
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".venv"),
         )

@@ -281,11 +281,6 @@ impl TerminalOut {
     }
 }
 
-#[derive(Default)]
-pub struct TerminalOptions {
-    pub verbosity: Verbosity,
-}
-
 /// Gets the name of the current shell.
 pub fn shell_name() -> HuakResult<String> {
     let shell_path = shell_path()?;
