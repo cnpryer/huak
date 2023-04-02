@@ -201,6 +201,15 @@ impl Terminal {
     }
 }
 
+pub fn parse_command_output(
+    output: std::process::Output,
+) -> HuakResult<String> {
+    let mut s = String::new();
+    s.push_str(std::str::from_utf8(&output.stdout)?);
+    s.push_str(std::str::from_utf8(&output.stderr)?);
+    Ok(s)
+}
+
 impl Default for Terminal {
     fn default() -> Self {
         Self::new()
@@ -270,11 +279,6 @@ impl TerminalOut {
             TerminalOut::Stream { ref mut stderr, .. } => stderr,
         }
     }
-}
-
-#[derive(Default)]
-pub struct TerminalOptions {
-    pub verbosity: Verbosity,
 }
 
 /// Gets the name of the current shell.

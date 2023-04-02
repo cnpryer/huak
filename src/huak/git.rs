@@ -83,7 +83,7 @@ cython_debug/
 
 /// Initialize a directory on a local system as a git repository
 /// and return the Repository.
-pub fn init(path: impl AsRef<Path>) -> HuakResult<Repository> {
+pub fn init<T: AsRef<Path>>(path: T) -> HuakResult<Repository> {
     Repository::init(path).map_err(Error::GitError)
 }
 
