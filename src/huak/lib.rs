@@ -36,18 +36,120 @@ const DEFAULT_PROJECT_VERSION_STR: &str = "0.0.1";
 const DEFAULT_MANIFEST_FILE_NAME: &str = "pyproject.toml";
 
 /// Configuration for Huak.
-///
-/// This configuration information is used throughout Huak. At times various
-/// implementations need to know things like what directory should a process
-/// execute from, what environment information to fallback to, how processes
-/// should interact with the terminal, and so on.
 pub struct Config {
-    /// The workspace root.
+    /// The configured workspace root.
     pub workspace_root: PathBuf,
     /// The current working directory.
     pub cwd: PathBuf,
     /// A terminal to use.
     pub terminal: Terminal,
+}
+
+impl Config {
+    /// Establish the workspace.
+    pub fn workspace(&self) -> HuakResult<Workspace> {
+        let stop_after = match OS {
+            "windows" => std::env::var_os("SYSTEMROOT")
+                .map(PathBuf::from)
+                .unwrap_or(PathBuf::from("\\")),
+            _ => PathBuf::from("/"),
+        };
+
+        let root = match fs::find_root_file_bottom_up(
+            DEFAULT_MANIFEST_FILE_NAME,
+            &self.workspace_root,
+            &stop_after,
+        ) {
+            Ok(it) => it
+                .ok_or(Error::WorkspaceNotFoundError)?
+                .parent()
+                .ok_or(Error::InternalError(
+                    "failed to parse parent directory".to_string(),
+                ))?
+                .to_path_buf(),
+            Err(e) => return Err(e),
+        };
+
+        let mut terminal = Terminal::new();
+        terminal.set_verbosity(*self.terminal.verbosity());
+        let ws = Workspace {
+            root,
+            config: Config {
+                workspace_root: self.workspace_root.to_path_buf(),
+                cwd: self.cwd.to_path_buf(),
+                terminal,
+            },
+        };
+
+        Ok(ws)
+    }
+}
+
+pub struct Workspace {
+    root: PathBuf,
+    config: Config,
+}
+
+impl Workspace {
+    /// Resolve the current project.
+    fn current_project(&self) -> HuakResult<Project> {
+        Project::new(&self.root)
+    }
+
+    /// Resolve the current Python environment.
+    fn current_python_environment(&mut self) -> HuakResult<PythonEnvironment> {
+        let path = find_venv_root(&self.config.cwd, &self.root)?;
+        let env = PythonEnvironment::new(path)?;
+
+        Ok(env)
+    }
+
+    /// Create a new Python environment to use based on the config data.
+    fn new_python_environment(&mut self) -> HuakResult<PythonEnvironment> {
+        let python_path = match python_paths().next() {
+            Some(it) => it.1,
+            None => return Err(Error::PythonNotFoundError),
+        };
+
+        let name = DEFAULT_VENV_NAME;
+        let path = self.root.join(name);
+
+        let args = ["-m", "venv", name];
+        let mut cmd = Command::new(python_path);
+        cmd.args(args).current_dir(&self.root);
+
+        self.config.terminal.run_command(&mut cmd)?;
+
+        PythonEnvironment::new(path)
+    }
+}
+
+/// Search for a Python virtual environment.
+/// 1. If VIRTUAL_ENV exists then a venv is active; use it.
+/// 2. Walk from configured cwd up searching for dir containing the Python environment config file.
+/// 3. Stop after searching `stop_after`.
+pub fn find_venv_root<T: AsRef<Path>>(
+    from: T,
+    stop_after: T,
+) -> HuakResult<PathBuf> {
+    if let Ok(path) = std::env::var("VIRTUAL_ENV") {
+        return Ok(PathBuf::from(path));
+    }
+
+    let file_path = match fs::find_root_file_bottom_up(
+        VENV_CONFIG_FILE_NAME,
+        from,
+        stop_after,
+    ) {
+        Ok(it) => it.ok_or(Error::PythonEnvironmentNotFoundError)?,
+        Err(_) => return Err(Error::PythonEnvironmentNotFoundError),
+    };
+
+    let root = file_path.parent().ok_or(Error::InternalError(
+        "failed to establish parent directory".to_string(),
+    ))?;
+
+    Ok(root.to_path_buf())
 }
 
 /// A Python project can be anything from a script to automate some process to a
@@ -865,7 +967,7 @@ impl PythonEnvironment {
         let semver = match python_version.semver.as_ref() {
             Some(it) => it,
             None => {
-                return Err(Error::VenvInvalidConfigFile(format!(
+                return Err(Error::VenvInvalidConfigFileError(format!(
                     "could not parse version from {VENV_CONFIG_FILE_NAME}"
                 )))
             }
@@ -1057,79 +1159,6 @@ fn parse_python_interpreter_version<T: AsRef<Path>>(
 ///   pyvenv.cfg
 enum PythonEnvironmentKind {
     Venv,
-}
-
-/// Search for a workspace.
-/// 1. If manifest file exists use its directory.
-/// 2. Walk from configured cwd up searching for dir containing containing manifest file.
-/// 3. Stop after searching the system root (TODO: something more restrictive).
-/// Note this is the same search as find_project_root. This will change in the future.
-pub fn find_workspace_root<T: AsRef<Path>>(from: T) -> HuakResult<PathBuf> {
-    let path = match fs::find_root_file_bottom_up(
-        DEFAULT_MANIFEST_FILE_NAME,
-        from.as_ref(),
-        Path::new("/"),
-    ) {
-        Ok(it) => it
-            .ok_or(Error::ProjectManifestNotFoundError)?
-            .parent()
-            .ok_or(Error::InternalError(
-                "failed to parse parent directory".to_string(),
-            ))?
-            .to_path_buf(),
-        Err(_) => return Err(Error::ProjectManifestNotFoundError),
-    };
-    Ok(path)
-}
-
-/// Search for a Python project.
-/// 1. If manifest file exists use its directory.
-/// 2. Walk from configured cwd up searching for dir containing containing manifest file.
-/// 3. Stop after searching the system root (TODO: something more restrictive).
-pub fn find_project_root<T: AsRef<Path>>(from: T) -> HuakResult<PathBuf> {
-    let path = match fs::find_root_file_bottom_up(
-        DEFAULT_MANIFEST_FILE_NAME,
-        from.as_ref(),
-        Path::new("/"),
-    ) {
-        Ok(it) => it
-            .ok_or(Error::ProjectManifestNotFoundError)?
-            .parent()
-            .ok_or(Error::InternalError(
-                "failed to parse parent directory".to_string(),
-            ))?
-            .to_path_buf(),
-        Err(_) => return Err(Error::ProjectManifestNotFoundError),
-    };
-    Ok(path)
-}
-
-/// Search for a Python virtual environment.
-/// 1. If VIRTUAL_ENV exists then a venv is active; use it.
-/// 2. Walk from configured cwd up searching for dir containing the Python environment config file.
-/// 3. Stop after searching `stop_after`.
-pub fn find_venv_root<T: AsRef<Path>>(
-    from: T,
-    stop_after: T,
-) -> HuakResult<PathBuf> {
-    if let Ok(path) = std::env::var("VIRTUAL_ENV") {
-        return Ok(PathBuf::from(path));
-    }
-
-    let file_path = match fs::find_root_file_bottom_up(
-        VENV_CONFIG_FILE_NAME,
-        from,
-        stop_after,
-    ) {
-        Ok(it) => it.ok_or(Error::PythonEnvironmentNotFoundError)?,
-        Err(_) => return Err(Error::PythonEnvironmentNotFoundError),
-    };
-
-    let root = file_path.parent().ok_or(Error::InternalError(
-        "failed to establish parent directory".to_string(),
-    ))?;
-
-    Ok(root.to_path_buf())
 }
 
 /// Data about some environment's Python configuration. This abstraction is modeled after
@@ -1618,7 +1647,7 @@ mod tests {
         let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
-        let pyproject_toml = PyProjectToml::new(&path).unwrap();
+        let pyproject_toml = PyProjectToml::new(path).unwrap();
 
         assert_eq!(pyproject_toml.project_name().unwrap(), "mock_project");
         assert_eq!(pyproject_toml.project_version().unwrap(), "0.0.1");
@@ -1630,7 +1659,7 @@ mod tests {
         let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
-        let pyproject_toml = PyProjectToml::new(&path).unwrap();
+        let pyproject_toml = PyProjectToml::new(path).unwrap();
 
         assert_eq!(
             pyproject_toml.to_string_pretty().unwrap(),

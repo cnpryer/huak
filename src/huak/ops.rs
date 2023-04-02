@@ -2,15 +2,14 @@
 ///! existing on a system.
 ///
 use indexmap::IndexMap;
-use std::{env::consts::OS, process::Command, str::FromStr};
+use std::{env::consts::OS, path::Path, process::Command, str::FromStr};
 use termcolor::Color;
 
 use crate::{
     default_entrypoint_string, default_init_file_contents,
     default_main_file_contents, default_project_manifest_file_name,
     default_project_version_str, default_test_file_contents,
-    default_virtual_environment_name, dependency_iter, env_path_values,
-    find_venv_root, fs,
+    default_virtual_environment_name, dependency_iter, env_path_values, fs,
     git::{self, default_python_gitignore},
     python_paths,
     sys::shell_name,
@@ -63,10 +62,8 @@ pub struct CleanOptions {
 }
 
 pub fn activate_python_environment(config: &mut Config) -> HuakResult<()> {
-    let python_env = PythonEnvironment::new(find_venv_root(
-        &config.cwd,
-        &config.workspace_root,
-    )?)?;
+    let mut workspace = config.workspace()?;
+    let python_env = workspace.current_python_environment()?;
 
     if python_env.is_active() {
         return Ok(());
@@ -109,7 +106,8 @@ pub fn add_project_dependencies(
     config: &mut Config,
     options: Option<AddOptions>,
 ) -> HuakResult<()> {
-    let mut project = Project::new(&config.workspace_root)?;
+    let mut workspace = config.workspace()?;
+    let mut project = workspace.current_project()?;
 
     let deps = dependency_iter(dependencies)
         .filter(|dep| !project.contains_dependency(dep).unwrap_or_default())
@@ -118,9 +116,11 @@ pub fn add_project_dependencies(
         return Ok(());
     }
 
-    let python_env = match find_venv_root(&config.cwd, &config.workspace_root) {
-        Ok(it) => PythonEnvironment::new(it)?,
-        Err(Error::PythonEnvironmentNotFoundError) => create_venv(config)?,
+    let python_env = match workspace.current_python_environment() {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            workspace.new_python_environment()?
+        }
         Err(e) => return Err(e),
     };
     let installer_options = match options.as_ref() {
@@ -145,7 +145,8 @@ pub fn add_project_optional_dependencies(
     config: &mut Config,
     options: Option<AddOptions>,
 ) -> HuakResult<()> {
-    let mut project = Project::new(&config.workspace_root)?;
+    let mut workspace = config.workspace()?;
+    let mut project = workspace.current_project()?;
 
     let deps = dependency_iter(dependencies)
         .filter(|dep| {
@@ -158,9 +159,11 @@ pub fn add_project_optional_dependencies(
         return Ok(());
     };
 
-    let python_env = match find_venv_root(&config.cwd, &config.workspace_root) {
-        Ok(it) => PythonEnvironment::new(it)?,
-        Err(Error::PythonEnvironmentNotFoundError) => create_venv(config)?,
+    let python_env = match workspace.current_python_environment() {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            workspace.new_python_environment()?
+        }
         Err(e) => return Err(e),
     };
     let installer_options = match options.as_ref() {
@@ -183,11 +186,14 @@ pub fn build_project(
     config: &mut Config,
     options: Option<BuildOptions>,
 ) -> HuakResult<()> {
-    let mut project = Project::new(&config.workspace_root)?;
+    let mut workspace = config.workspace()?;
+    let mut project = workspace.current_project()?;
 
-    let python_env = match find_venv_root(&config.cwd, &config.workspace_root) {
-        Ok(it) => PythonEnvironment::new(it)?,
-        Err(Error::PythonEnvironmentNotFoundError) => create_venv(config)?,
+    let python_env = match workspace.current_python_environment() {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            workspace.new_python_environment()?
+        }
         Err(e) => return Err(e),
     };
     let build_dep = Dependency::from_str("build")?;
@@ -216,7 +222,7 @@ pub fn build_project(
         }
     }
     make_venv_command(&mut cmd, &python_env)?;
-    cmd.args(args).current_dir(&config.workspace_root);
+    cmd.args(args).current_dir(&workspace.root);
 
     config.terminal.run_command(&mut cmd)
 }
@@ -225,8 +231,10 @@ pub fn clean_project(
     config: &mut Config,
     options: Option<CleanOptions>,
 ) -> HuakResult<()> {
-    if config.workspace_root.join("dist").exists() {
-        std::fs::read_dir(config.workspace_root.join("dist"))?
+    let workspace = config.workspace()?;
+
+    if workspace.root.join("dist").exists() {
+        std::fs::read_dir(workspace.root.join("dist"))?
             .filter_map(|x| x.ok().map(|item| item.path()))
             .for_each(|item| {
                 if item.is_dir() {
@@ -240,11 +248,7 @@ pub fn clean_project(
         if o.include_pycache {
             let pattern = format!(
                 "{}",
-                config
-                    .workspace_root
-                    .join("**")
-                    .join("__pycache__")
-                    .display()
+                workspace.root.join("**").join("__pycache__").display()
             );
             glob::glob(&pattern)?.for_each(|item| {
                 if let Ok(it) = item {
@@ -255,7 +259,7 @@ pub fn clean_project(
         if o.include_compiled_bytecode {
             let pattern = format!(
                 "{}",
-                config.workspace_root.join("**").join("*.pyc").display()
+                workspace.root.join("**").join("*.pyc").display()
             );
             glob::glob(&pattern)?.for_each(|item| {
                 if let Ok(it) = item {
@@ -271,11 +275,14 @@ pub fn format_project(
     config: &mut Config,
     options: Option<FormatOptions>,
 ) -> HuakResult<()> {
-    let mut project = Project::new(&config.workspace_root)?;
+    let mut workspace = config.workspace()?;
+    let mut project = workspace.current_project()?;
 
-    let python_env = match find_venv_root(&config.cwd, &config.workspace_root) {
-        Ok(it) => PythonEnvironment::new(it)?,
-        Err(Error::PythonEnvironmentNotFoundError) => create_venv(config)?,
+    let python_env = match workspace.current_python_environment() {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            workspace.new_python_environment()?
+        }
         Err(e) => return Err(e),
     };
     let format_deps = [
@@ -334,9 +341,9 @@ pub fn format_project(
             }
         }
     }
-    ruff_cmd.args(ruff_args).current_dir(&config.workspace_root);
+    ruff_cmd.args(ruff_args).current_dir(&workspace.root);
     config.terminal.run_command(&mut ruff_cmd)?;
-    cmd.args(args).current_dir(&config.workspace_root);
+    cmd.args(args).current_dir(&workspace.root);
     config.terminal.run_command(&mut cmd)
 }
 
@@ -346,7 +353,8 @@ pub fn init_app_project(
 ) -> HuakResult<()> {
     init_lib_project(config, options)?;
 
-    let mut project = Project::new(&config.workspace_root)?;
+    let workspace = config.workspace()?;
+    let mut project = workspace.current_project()?;
 
     let manifest = &mut project.manifest;
     let as_dep = Dependency::from_str(&manifest.name)?;
@@ -376,7 +384,7 @@ pub fn init_lib_project(
 
     let mut pyproject_toml = PyProjectToml::default();
 
-    init_git(config, options)?;
+    init_git(&config.workspace_root, options)?;
     let name = fs::last_path_component(&config.workspace_root)?;
     pyproject_toml.set_project_name(name);
 
@@ -387,11 +395,14 @@ pub fn install_project_dependencies(
     config: &mut Config,
     options: Option<InstallOptions>,
 ) -> HuakResult<()> {
-    let project = Project::new(&config.workspace_root)?;
+    let mut workspace = config.workspace()?;
+    let project = Project::new(&workspace.root)?;
 
-    let python_env = match find_venv_root(&config.cwd, &config.workspace_root) {
-        Ok(it) => PythonEnvironment::new(it)?,
-        Err(Error::PythonEnvironmentNotFoundError) => create_venv(config)?,
+    let python_env = match workspace.current_python_environment() {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            workspace.new_python_environment()?
+        }
         Err(e) => return Err(e),
     };
 
@@ -412,7 +423,8 @@ pub fn install_project_optional_dependencies(
     config: &mut Config,
     options: Option<InstallOptions>,
 ) -> HuakResult<()> {
-    let project = Project::new(&config.workspace_root)?;
+    let mut workspace = config.workspace()?;
+    let project = Project::new(&workspace.root)?;
 
     let binding = Vec::new(); // TODO
     let mut dependencies = Vec::new();
@@ -439,9 +451,11 @@ pub fn install_project_optional_dependencies(
     }
     dependencies.dedup();
 
-    let python_env = match find_venv_root(&config.cwd, &config.workspace_root) {
-        Ok(it) => PythonEnvironment::new(it)?,
-        Err(Error::PythonEnvironmentNotFoundError) => create_venv(config)?,
+    let python_env = match workspace.current_python_environment() {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            workspace.new_python_environment()?
+        }
         Err(e) => return Err(e),
     };
     python_env.install_packages(
@@ -455,11 +469,14 @@ pub fn lint_project(
     config: &mut Config,
     options: Option<LintOptions>,
 ) -> HuakResult<()> {
-    let mut project = Project::new(&config.workspace_root)?;
+    let mut workspace = config.workspace()?;
+    let mut project = workspace.current_project()?;
 
-    let python_env = match find_venv_root(&config.cwd, &config.workspace_root) {
-        Ok(it) => PythonEnvironment::new(it)?,
-        Err(Error::PythonEnvironmentNotFoundError) => create_venv(config)?,
+    let python_env = match workspace.current_python_environment() {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            workspace.new_python_environment()?
+        }
         Err(e) => return Err(e),
     };
 
@@ -517,12 +534,12 @@ pub fn lint_project(
                     "--exclude",
                     python_env.name()?.as_str(),
                 ])
-                .current_dir(&config.workspace_root);
+                .current_dir(&workspace.root);
             config.terminal.run_command(&mut mypy_cmd)?;
         }
     }
     make_venv_command(&mut cmd, &python_env)?;
-    cmd.args(args).current_dir(&config.workspace_root);
+    cmd.args(args).current_dir(&workspace.root);
     config.terminal.run_command(&mut cmd)?;
 
     if write_manifest {
@@ -547,14 +564,15 @@ pub fn new_app_project(
 ) -> HuakResult<()> {
     new_lib_project(config, options)?;
 
-    let mut project = Project::new(&config.workspace_root)?;
+    let workspace = config.workspace()?;
+    let mut project = workspace.current_project()?;
     project.kind = ProjectKind::Application;
 
     let manifest = &mut project.manifest;
-    manifest.name = fs::last_path_component(config.workspace_root.as_path())?;
+    manifest.name = fs::last_path_component(workspace.root.as_path())?;
     let as_dep = Dependency::from_str(&manifest.name)?;
 
-    let src_path = config.workspace_root.join("src");
+    let src_path = workspace.root.join("src");
     std::fs::write(
         src_path.join(as_dep.importable_name()?).join("main.py"),
         default_main_file_contents(),
@@ -585,7 +603,7 @@ pub fn new_lib_project(
 
     let pyproject_toml = PyProjectToml::default();
 
-    create_workspace(config, options)?;
+    create_workspace(&config.workspace_root, config, options)?;
 
     let name = &fs::last_path_component(&config.workspace_root)?;
     let as_dep = Dependency::from_str(name)?;
@@ -609,11 +627,14 @@ pub fn publish_project(
     config: &mut Config,
     options: Option<PublishOptions>,
 ) -> HuakResult<()> {
-    let mut project = Project::new(&config.workspace_root)?;
+    let mut workspace = config.workspace()?;
+    let mut project = workspace.current_project()?;
 
-    let python_env = match find_venv_root(&config.cwd, &config.workspace_root) {
-        Ok(it) => PythonEnvironment::new(it)?,
-        Err(Error::PythonEnvironmentNotFoundError) => create_venv(config)?,
+    let python_env = match workspace.current_python_environment() {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            workspace.new_python_environment()?
+        }
         Err(e) => return Err(e),
     };
     let pub_dep = Dependency::from_str("twine")?;
@@ -642,7 +663,7 @@ pub fn publish_project(
         }
     }
     make_venv_command(&mut cmd, &python_env)?;
-    cmd.args(args).current_dir(&config.workspace_root);
+    cmd.args(args).current_dir(&workspace.root);
     config.terminal.run_command(&mut cmd)
 }
 
@@ -651,7 +672,8 @@ pub fn remove_project_dependencies(
     config: &mut Config,
     options: Option<RemoveOptions>,
 ) -> HuakResult<()> {
-    let mut project = Project::new(&config.workspace_root)?;
+    let mut workspace = config.workspace()?;
+    let mut project = workspace.current_project()?;
 
     let deps = dependency_iter(dependencies)
         .filter(|item| project.contains_dependency(item).unwrap_or_default())
@@ -666,8 +688,8 @@ pub fn remove_project_dependencies(
 
     project.write_manifest()?;
 
-    let python_env = match find_venv_root(&config.cwd, &config.workspace_root) {
-        Ok(it) => PythonEnvironment::new(it)?,
+    let python_env = match workspace.current_python_environment() {
+        Ok(it) => it,
         Err(Error::PythonEnvironmentNotFoundError) => return Ok(()),
         Err(e) => return Err(e),
     };
@@ -688,7 +710,8 @@ pub fn remove_project_optional_dependencies(
     config: &mut Config,
     options: Option<RemoveOptions>,
 ) -> HuakResult<()> {
-    let mut project = Project::new(&config.workspace_root)?;
+    let mut workspace = config.workspace()?;
+    let mut project = workspace.current_project()?;
 
     if project.optional_dependencey_group(group).is_none() {
         return Ok(());
@@ -711,8 +734,8 @@ pub fn remove_project_optional_dependencies(
 
     project.write_manifest()?;
 
-    let python_env = match find_venv_root(&config.cwd, &config.workspace_root) {
-        Ok(it) => PythonEnvironment::new(it)?,
+    let python_env = match workspace.current_python_environment() {
+        Ok(it) => it,
         Err(Error::PythonEnvironmentNotFoundError) => return Ok(()),
         Err(e) => return Err(e),
     };
@@ -728,10 +751,8 @@ pub fn remove_project_optional_dependencies(
 }
 
 pub fn run_command_str(command: &str, config: &mut Config) -> HuakResult<()> {
-    let python_env = PythonEnvironment::new(find_venv_root(
-        &config.cwd,
-        &config.workspace_root,
-    )?)?;
+    let mut workspace = config.workspace()?;
+    let python_env = workspace.current_python_environment()?;
 
     let mut cmd = Command::new(shell_name()?);
     let flag = match OS {
@@ -739,8 +760,7 @@ pub fn run_command_str(command: &str, config: &mut Config) -> HuakResult<()> {
         _ => "-c",
     };
     make_venv_command(&mut cmd, &python_env)?;
-    cmd.args([flag, command])
-        .current_dir(&config.workspace_root);
+    cmd.args([flag, command]).current_dir(&workspace.root);
     config.terminal.run_command(&mut cmd)
 }
 
@@ -748,11 +768,14 @@ pub fn test_project(
     config: &mut Config,
     options: Option<TestOptions>,
 ) -> HuakResult<()> {
-    let mut project = Project::new(&config.workspace_root)?;
+    let mut workspace = config.workspace()?;
+    let mut project = workspace.current_project()?;
 
-    let python_env = match find_venv_root(&config.cwd, &config.workspace_root) {
-        Ok(it) => PythonEnvironment::new(it)?,
-        Err(Error::PythonEnvironmentNotFoundError) => create_venv(config)?,
+    let python_env = match workspace.current_python_environment() {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            workspace.new_python_environment()?
+        }
         Err(e) => return Err(e),
     };
     let test_dep = Dependency::from_str("pytest")?;
@@ -775,10 +798,10 @@ pub fn test_project(
 
     let mut cmd = Command::new(python_env.python_path());
     make_venv_command(&mut cmd, &python_env)?;
-    let python_path = if config.workspace_root.join("src").exists() {
-        config.workspace_root.join("src")
+    let python_path = if workspace.root.join("src").exists() {
+        workspace.root.join("src")
     } else {
-        config.workspace_root.clone()
+        workspace.root.clone()
     };
     let mut args = vec!["-m", "pytest"];
     if let Some(o) = options.as_ref() {
@@ -795,11 +818,14 @@ pub fn update_project_dependencies(
     config: &mut Config,
     options: Option<UpdateOptions>,
 ) -> HuakResult<()> {
-    let project = Project::new(&config.workspace_root)?;
+    let mut workspace = config.workspace()?;
+    let project = Project::new(&workspace.root)?;
 
-    let python_env = match find_venv_root(&config.cwd, &config.workspace_root) {
-        Ok(it) => PythonEnvironment::new(it)?,
-        Err(Error::PythonEnvironmentNotFoundError) => create_venv(config)?,
+    let python_env = match workspace.current_python_environment() {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            workspace.new_python_environment()?
+        }
         Err(e) => return Err(e),
     };
 
@@ -848,11 +874,14 @@ pub fn update_project_optional_dependencies(
     config: &mut Config,
     options: Option<UpdateOptions>,
 ) -> HuakResult<()> {
-    let project = Project::new(&config.workspace_root)?;
+    let mut workspace = config.workspace()?;
+    let project = Project::new(&workspace.root)?;
 
-    let python_env = match find_venv_root(&config.cwd, &config.workspace_root) {
-        Ok(it) => PythonEnvironment::new(it)?,
-        Err(Error::PythonEnvironmentNotFoundError) => create_venv(config)?,
+    let python_env = match workspace.current_python_environment() {
+        Ok(it) => it,
+        Err(Error::PythonEnvironmentNotFoundError) => {
+            workspace.new_python_environment()?
+        }
         Err(e) => return Err(e),
     };
 
@@ -917,7 +946,7 @@ pub fn update_project_optional_dependencies(
 }
 
 pub fn use_python(version: &str, config: &mut Config) -> HuakResult<()> {
-    if let Some(path) = python_paths()
+    let path = match python_paths()
         .filter_map(|item| {
             if let Some(version) = item.0 {
                 Some((version, item.1))
@@ -928,22 +957,27 @@ pub fn use_python(version: &str, config: &mut Config) -> HuakResult<()> {
         .find(|item| item.0.to_string() == version)
         .map(|item| item.1)
     {
-        // match find_venv_root(&config.cwd, &config.workspace_root) {
-        //     Ok(it) => std::fs::remove_dir_all(it)?,
-        //     Err(Error::PythonEnvironmentNotFoundError) => (),
-        //     Err(e) => return Err(e),
-        // };
-        let mut cmd = Command::new(path);
-        cmd.args(["-m", "venv", default_virtual_environment_name()])
-            .current_dir(&config.workspace_root);
-        config.terminal.run_command(&mut cmd)
-    } else {
-        Err(Error::PythonNotFoundError)
+        Some(it) => it,
+        None => return Err(Error::PythonNotFoundError),
+    };
+
+    if let Ok(workspace) = config.workspace().as_mut() {
+        match workspace.current_python_environment() {
+            Ok(it) => std::fs::remove_dir_all(it.root)?,
+            Err(Error::PythonEnvironmentNotFoundError) => (),
+            Err(e) => return Err(e),
+        };
     }
+
+    let mut cmd = Command::new(path);
+    cmd.args(["-m", "venv", default_virtual_environment_name()])
+        .current_dir(&config.workspace_root);
+    config.terminal.run_command(&mut cmd)
 }
 
 pub fn display_project_version(config: &mut Config) -> HuakResult<()> {
-    let project = Project::new(&config.workspace_root)?;
+    let workspace = config.workspace()?;
+    let project = Project::new(workspace.root)?;
 
     config.terminal.print_custom(
         "version",
@@ -978,56 +1012,41 @@ fn make_venv_command(
     Ok(())
 }
 
-fn create_workspace(
+fn create_workspace<T: AsRef<Path>>(
+    path: T,
     config: &Config,
     options: Option<WorkspaceOptions>,
 ) -> HuakResult<()> {
-    if (config.workspace_root.exists() && config.workspace_root != config.cwd)
-        || (config.workspace_root == config.cwd
-            && config.workspace_root.read_dir()?.count() > 0)
+    let root = path.as_ref();
+
+    if (root.exists() && root != config.cwd)
+        || (root == config.cwd && root.read_dir()?.count() > 0)
     {
-        return Err(Error::DirectoryExists(
-            config.workspace_root.to_path_buf(),
-        ));
+        return Err(Error::DirectoryExists(root.to_path_buf()));
     }
-    std::fs::create_dir(&config.workspace_root)?;
-    init_git(config, options)
+
+    std::fs::create_dir(root)?;
+
+    init_git(root, options)
 }
 
-fn init_git(
-    config: &Config,
+fn init_git<T: AsRef<Path>>(
+    path: T,
     options: Option<WorkspaceOptions>,
 ) -> HuakResult<()> {
+    let root = path.as_ref();
     if let Some(o) = options.as_ref() {
         if o.uses_git {
-            if !config.workspace_root.join(".git").exists() {
-                git::init(&config.workspace_root)?;
+            if !root.join(".git").exists() {
+                git::init(root)?;
             }
-            let gitignore_path = config.workspace_root.join(".gitignore");
+            let gitignore_path = root.join(".gitignore");
             if !gitignore_path.exists() {
                 std::fs::write(gitignore_path, default_python_gitignore())?;
             }
         }
     }
     Ok(())
-}
-
-/// Create a new Python environment at the workspace root.
-/// found on the PATH environment variable.
-/// TODO: Allow version selection.
-fn create_venv(config: &mut Config) -> HuakResult<PythonEnvironment> {
-    let python_path = match python_paths().next() {
-        Some(it) => it.1,
-        None => return Err(Error::PythonNotFoundError),
-    };
-    let name = default_virtual_environment_name();
-    let args = ["-m", "venv", name];
-    let mut cmd = Command::new(python_path);
-    cmd.args(args).current_dir(&config.workspace_root);
-    let terminal = &mut config.terminal;
-    terminal.run_command(&mut cmd)?;
-    let path = config.workspace_root.join(name);
-    PythonEnvironment::new(path)
 }
 
 fn parse_installer_options(

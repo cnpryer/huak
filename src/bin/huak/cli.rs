@@ -2,7 +2,6 @@ use crate::error::{CliResult, Error};
 use clap::{Command, CommandFactory, Parser, Subcommand};
 use clap_complete::{self, Shell};
 use huak::{
-    find_workspace_root,
     ops::{
         self, AddOptions, BuildOptions, CleanOptions, FormatOptions,
         InstallOptions, LintOptions, PublishOptions, RemoveOptions,
@@ -201,8 +200,6 @@ enum Python {
 impl Cli {
     pub fn run(self) -> CliResult<()> {
         let cwd = std::env::current_dir()?;
-        let workspace_root =
-            find_workspace_root(&cwd).unwrap_or(std::env::current_dir()?);
         let verbosity = match self.quiet {
             true => Verbosity::Quiet,
             false => Verbosity::Normal,
@@ -210,9 +207,9 @@ impl Cli {
         let mut terminal = Terminal::new();
         terminal.set_verbosity(verbosity);
         let mut config = Config {
-            workspace_root,
             cwd,
             terminal,
+            workspace_root: PathBuf::new(),
         };
         match self.command {
             Commands::Activate => activate(&mut config),
