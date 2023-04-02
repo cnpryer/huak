@@ -289,33 +289,33 @@ pub fn format_project(
         Dependency::from_str("black")?,
         Dependency::from_str("ruff")?,
     ];
-    let format_deps = format_deps
-        .into_iter()
+    let new_format_deps = format_deps
+        .iter()
         .filter(|item| {
             !python_env.contains_module(&item.name).unwrap_or_default()
         })
-        .collect::<Vec<Dependency>>();
-    if !format_deps.is_empty() {
+        .collect::<Vec<&Dependency>>();
+    if !new_format_deps.is_empty() {
         let installer_options = match options.as_ref() {
             Some(it) => parse_installer_options(it.install_options.as_ref()),
             None => None,
         };
         python_env.install_packages(
-            &format_deps,
+            &new_format_deps,
             installer_options.as_ref(),
             &mut config.terminal,
         )?;
     }
 
-    let format_deps = format_deps
+    let new_format_deps = format_deps
         .into_iter()
         .filter(|item| {
             !project.contains_dependency(item).unwrap_or_default()
                 && !project.contains_dependency_any(item).unwrap_or_default()
         })
         .collect::<Vec<Dependency>>();
-    if !format_deps.is_empty() {
-        for dep in format_deps {
+    if !new_format_deps.is_empty() {
+        for dep in new_format_deps {
             {
                 project.add_optional_dependency(dep, "dev")?;
             }
