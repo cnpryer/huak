@@ -819,7 +819,7 @@ pub fn update_project_dependencies(
     options: Option<UpdateOptions>,
 ) -> HuakResult<()> {
     let mut workspace = config.workspace()?;
-    let project = Project::new(&workspace.root)?;
+    let mut project = Project::new(&workspace.root)?;
 
     let python_env = match workspace.current_python_environment() {
         Ok(it) => it,
@@ -851,20 +851,33 @@ pub fn update_project_dependencies(
             installer_options.as_ref(),
             &mut config.terminal,
         )?;
-        return Ok(());
-    }
-
-    if let Some(deps) = project.dependencies() {
+    } else if let Some(deps) = project.dependencies() {
         let installer_options = match options {
             Some(it) => parse_installer_options(it.install_options.as_ref()),
             None => None,
         };
         python_env.update_packages(
-            deps,
+            &deps.iter().map(|item| &item.name).collect::<Vec<_>>(),
             installer_options.as_ref(),
             &mut config.terminal,
         )?;
     }
+
+    let mut write = false;
+    let packages = python_env.installed_packages()?;
+    for pkg in packages {
+        let dep = Dependency::from_str(&pkg.to_string())?;
+        if project.contains_dependency(&dep)? {
+            project.remove_dependency(&dep)?;
+            project.add_dependency(dep)?;
+            write = true;
+        }
+
+        if write {
+            project.write_manifest()?;
+        }
+    }
+
     Ok(())
 }
 
@@ -875,7 +888,7 @@ pub fn update_project_optional_dependencies(
     options: Option<UpdateOptions>,
 ) -> HuakResult<()> {
     let mut workspace = config.workspace()?;
-    let project = Project::new(&workspace.root)?;
+    let mut project = Project::new(&workspace.root)?;
 
     let python_env = match workspace.current_python_environment() {
         Ok(it) => it,
@@ -910,39 +923,61 @@ pub fn update_project_optional_dependencies(
             installer_options.as_ref(),
             &mut config.terminal,
         )?;
-        return Ok(());
-    }
-
-    let mut deps = Vec::new();
-    let binding = Vec::new(); // TODO
-                              // If the group "all" is passed and isn't a valid optional dependency group
-                              // then install everything, disregarding other groups passed.
-    if project.optional_dependencey_group("all").is_none() && group == "all" {
-        if let Some(it) = project.optional_dependencies() {
-            for (_, vals) in it {
-                deps.extend(vals);
-            }
-        }
     } else {
-        project
-            .optional_dependencey_group(group)
-            .unwrap_or(&binding)
-            .iter()
-            .for_each(|item| {
-                deps.push(item);
-            });
+        let mut deps = Vec::new();
+        let binding = Vec::new(); // TODO
+
+        // If the group "all" is passed and isn't a valid optional dependency group
+        // then install everything, disregarding other groups passed.
+        if project.optional_dependencey_group("all").is_none() && group == "all"
+        {
+            if let Some(it) = project.optional_dependencies() {
+                for (_, vals) in it {
+                    deps.extend(vals);
+                }
+            }
+        } else {
+            project
+                .optional_dependencey_group(group)
+                .unwrap_or(&binding)
+                .iter()
+                .for_each(|item| {
+                    deps.push(item);
+                });
+        }
+
+        deps.dedup();
+        let installer_options = match options {
+            Some(it) => parse_installer_options(it.install_options.as_ref()),
+            None => None,
+        };
+        python_env.update_packages(
+            &deps,
+            installer_options.as_ref(),
+            &mut config.terminal,
+        )?;
     }
 
-    deps.dedup();
-    let installer_options = match options {
-        Some(it) => parse_installer_options(it.install_options.as_ref()),
-        None => None,
-    };
-    python_env.update_packages(
-        &deps,
-        installer_options.as_ref(),
-        &mut config.terminal,
-    )
+    let mut write = false;
+    let packages = python_env.installed_packages()?;
+    for pkg in packages {
+        let dep = Dependency::from_str(&pkg.to_string())?;
+        if project.contains_dependency(&dep)? && group == "all" {
+            project.remove_dependency(&dep)?;
+            project.add_dependency(dep)?;
+            write = true;
+        } else if project.contains_optional_dependency(&dep, group)? {
+            project.remove_optional_dependency(&dep, group)?;
+            project.add_optional_dependency(dep, group)?;
+            write = true;
+        }
+
+        if write {
+            project.write_manifest()?;
+        }
+    }
+
+    Ok(())
 }
 
 pub fn use_python(version: &str, config: &mut Config) -> HuakResult<()> {

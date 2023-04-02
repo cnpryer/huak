@@ -604,6 +604,17 @@ impl PartialEq for Dependency {
 
 impl Eq for Dependency {}
 
+/// Collect and return an iterator over `Dependency`s.
+fn dependency_iter<I>(strings: I) -> impl Iterator<Item = Dependency>
+where
+    I: IntoIterator,
+    I::Item: AsRef<str>,
+{
+    strings
+        .into_iter()
+        .filter_map(|item| Dependency::from_str(item.as_ref()).ok())
+}
+
 /// A pyproject.toml as specified in PEP 517
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
@@ -1119,31 +1130,23 @@ impl PythonEnvironment {
             )
             .exists()
     }
-}
 
-/// Get a `Version` from a Python interpreter using its path.
-///
-/// 1. Attempt to parse the version number from the path.
-/// 2. Run `{path} --version` and parse from the output.
-fn parse_python_interpreter_version<T: AsRef<Path>>(
-    path: T,
-) -> HuakResult<Option<Version>> {
-    let version = match path
-        .as_ref()
-        .file_name()
-        .and_then(|raw_file_name| raw_file_name.to_str())
-    {
-        Some(file_name) => {
-            version_from_python_interpreter_file_name(file_name).ok()
+    /// Get all of the packages installed to the environment.
+    fn installed_packages(&self) -> HuakResult<Vec<Package>> {
+        let mut cmd = Command::new(&self.python_path);
+        cmd.args(["-m", "pip", "freeze"]);
+
+        let output = cmd.output()?;
+        let output = sys::parse_command_output(output)?;
+        let mut packages = Vec::new();
+        for line in output.split('\n') {
+            if !line.is_empty() {
+                packages.push(Package::from_str(line)?);
+            }
         }
-        None => {
-            let mut cmd = Command::new(path.as_ref());
-            cmd.args(["--version"]);
-            let output = cmd.output()?;
-            Version::from_str(&sys::parse_command_output(output)?).ok()
-        }
-    };
-    Ok(version)
+
+        Ok(packages)
+    }
 }
 
 /// Kinds of Python environments.
@@ -1461,15 +1464,46 @@ impl PartialEq for Package {
 
 impl Eq for Package {}
 
-/// Collect and return an iterator over `Dependency`s.
-fn dependency_iter<I>(strings: I) -> impl Iterator<Item = Dependency>
-where
-    I: IntoIterator,
-    I::Item: AsRef<str>,
-{
-    strings
-        .into_iter()
-        .filter_map(|item| Dependency::from_str(item.as_ref()).ok())
+impl FromStr for Package {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let found = s
+            .chars()
+            .enumerate()
+            .find(|x| VERSION_OPERATOR_CHARACTERS.contains(&x.1));
+
+        let spec = match found {
+            Some(it) => &s[it.0..],
+            None => {
+                return Err(Error::InvalidVersionString(format!(
+                    "{} must contain a valid version",
+                    s
+                )))
+            }
+        };
+
+        let name = s.strip_suffix(&spec).unwrap_or(s).to_string();
+        let specs = parse_version_specifiers(spec)
+            .map_err(|e| Error::DependencyFromStringError(e.to_string()))?;
+
+        let package = Package {
+            name: name.to_string(),
+            canonical_name: canonical_package_name(name.as_ref())?,
+            version: Version440::from_str(
+                specs[0].version().to_string().as_str(),
+            )
+            .unwrap(),
+        };
+
+        Ok(package)
+    }
+}
+
+impl Display for Package {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}=={}", self.canonical_name, self.version)
+    }
 }
 
 /// A client used to interact with a package index.
@@ -1628,6 +1662,31 @@ pub fn active_conda_env_path() -> Option<PathBuf> {
         return Some(PathBuf::from(path));
     }
     None
+}
+
+/// Get a `Version` from a Python interpreter using its path.
+///
+/// 1. Attempt to parse the version number from the path.
+/// 2. Run `{path} --version` and parse from the output.
+fn parse_python_interpreter_version<T: AsRef<Path>>(
+    path: T,
+) -> HuakResult<Option<Version>> {
+    let version = match path
+        .as_ref()
+        .file_name()
+        .and_then(|raw_file_name| raw_file_name.to_str())
+    {
+        Some(file_name) => {
+            version_from_python_interpreter_file_name(file_name).ok()
+        }
+        None => {
+            let mut cmd = Command::new(path.as_ref());
+            cmd.args(["--version"]);
+            let output = cmd.output()?;
+            Version::from_str(&sys::parse_command_output(output)?).ok()
+        }
+    };
+    Ok(version)
 }
 
 #[cfg(test)]
