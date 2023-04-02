@@ -1296,8 +1296,8 @@ pub enum PackageInstallerOptions {
 ///
 /// This is a generic version abstraction.
 pub struct Version {
-    release: Vec<usize>,
-    semver: Option<SemVerVersion>,
+    pub release: Vec<usize>,
+    pub semver: Option<SemVerVersion>,
 }
 
 impl Display for Version {
@@ -1396,7 +1396,7 @@ pub fn compare_release(this: &[usize], other: &[usize]) -> Ordering {
 /// A `SemVerVersion` struct for Semantic Version numbers.
 ///
 /// Example `SemVerVersion { major: 3, minor: 11, patch: 0}
-struct SemVerVersion {
+pub struct SemVerVersion {
     major: usize,
     minor: usize,
     patch: usize,

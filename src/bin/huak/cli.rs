@@ -7,10 +7,9 @@ use huak::{
         InstallOptions, LintOptions, PublishOptions, RemoveOptions,
         TestOptions, UpdateOptions,
     },
-    Config, Error as HuakError, HuakResult, Terminal, Verbosity,
+    Config, Error as HuakError, HuakResult, Terminal, Verbosity, Version,
     WorkspaceOptions,
 };
-use pep440_rs::Version;
 use std::{
     fs::File,
     io::Write,
@@ -207,9 +206,9 @@ impl Cli {
         let mut terminal = Terminal::new();
         terminal.set_verbosity(verbosity);
         let mut config = Config {
+            workspace_root: cwd.to_path_buf(),
             cwd,
             terminal,
-            workspace_root: PathBuf::new(),
         };
         match self.command {
             Commands::Activate => activate(&mut config),
@@ -680,14 +679,7 @@ impl FromStr for PythonVersion {
                 ExitCode::FAILURE,
             )
         })?;
-        if version.release.len() > 2 {
-            return Err(Error::new(
-                HuakError::InternalError(format!(
-                    "{s} is invalid, use major.minor"
-                )),
-                ExitCode::FAILURE,
-            ));
-        }
+
         Ok(Self(version.to_string()))
     }
 }
