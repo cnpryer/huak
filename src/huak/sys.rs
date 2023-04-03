@@ -1,12 +1,10 @@
 use crate::error::HuakResult;
 use crate::Error;
-use std::io::Write;
-use std::path::Path;
-use std::process::Command;
-use termcolor::{self, Color, ColorSpec, StandardStream, WriteColor};
+use std::{fmt::Display, io::Write, path::Path, process::Command};
 use termcolor::{
+    self, Color,
     Color::{Cyan, Green, Red, Yellow},
-    ColorChoice,
+    ColorChoice, ColorSpec, StandardStream, WriteColor,
 };
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
@@ -42,15 +40,15 @@ impl Terminal {
     /// Shortcut to right-align and color green a status message.
     pub fn status<T, U>(&mut self, status: T, message: U) -> HuakResult<()>
     where
-        T: std::fmt::Display,
-        U: std::fmt::Display,
+        T: Display,
+        U: Display,
     {
         self.print(&status, Some(&message), Green, true)
     }
 
     pub fn status_header<T>(&mut self, status: T) -> HuakResult<()>
     where
-        T: std::fmt::Display,
+        T: Display,
     {
         self.print(&status, None, Cyan, true)
     }
@@ -63,26 +61,20 @@ impl Terminal {
         color: Color,
     ) -> HuakResult<()>
     where
-        T: std::fmt::Display,
-        U: std::fmt::Display,
+        T: Display,
+        U: Display,
     {
         self.print(&status, Some(&message), color, true)
     }
 
     /// Print an error message.
-    pub fn print_error<T: std::fmt::Display>(
-        &mut self,
-        message: T,
-    ) -> HuakResult<()> {
+    pub fn print_error<T: Display>(&mut self, message: T) -> HuakResult<()> {
         self.output
             .message_stderr(&"error", Some(&message), Red, false)
     }
 
     /// Prints a warning message.
-    pub fn print_warning<T: std::fmt::Display>(
-        &mut self,
-        message: T,
-    ) -> HuakResult<()> {
+    pub fn print_warning<T: Display>(&mut self, message: T) -> HuakResult<()> {
         match self.verbosity {
             Verbosity::Quiet => Ok(()),
             _ => self.print(&"warning", Some(&message), Yellow, false),
@@ -90,10 +82,7 @@ impl Terminal {
     }
 
     /// Prints a note message.
-    pub fn print_note<T: std::fmt::Display>(
-        &mut self,
-        message: T,
-    ) -> HuakResult<()> {
+    pub fn print_note<T: Display>(&mut self, message: T) -> HuakResult<()> {
         self.print(&"note", Some(&message), Cyan, false)
     }
 
@@ -106,8 +95,8 @@ impl Terminal {
         justified: bool,
     ) -> HuakResult<()>
     where
-        T: std::fmt::Display,
-        U: std::fmt::Display,
+        T: Display,
+        U: Display,
     {
         self.print(&title, Some(&message), color, justified)
     }
@@ -118,8 +107,8 @@ impl Terminal {
     /// avoid poluting stdout for end users. See https://github.com/rust-lang/cargo/issues/1473
     fn print(
         &mut self,
-        status: &dyn std::fmt::Display,
-        message: Option<&dyn std::fmt::Display>,
+        status: &dyn Display,
+        message: Option<&dyn Display>,
         color: Color,
         justified: bool,
     ) -> HuakResult<()> {
@@ -201,6 +190,10 @@ impl Terminal {
     }
 }
 
+pub struct TerminalOptions {
+    verbosity: Verbosity,
+}
+
 pub fn parse_command_output(
     output: std::process::Output,
 ) -> HuakResult<String> {
@@ -238,8 +231,8 @@ impl TerminalOut {
     /// will right align is DEFAULT_MESSAGE_JUSTIFIED_CHARS chars.
     fn message_stderr(
         &mut self,
-        status: &dyn std::fmt::Display,
-        message: Option<&dyn std::fmt::Display>,
+        status: &dyn Display,
+        message: Option<&dyn Display>,
         color: Color,
         justified: bool,
     ) -> HuakResult<()> {

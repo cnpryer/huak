@@ -32,6 +32,8 @@ pub enum Error {
     IOError(#[from] io::Error),
     #[error("a problem occurred initializing a dependency from a string")]
     DependencyFromStringError(String),
+    #[error("a problem occurred with PEP440 parsing: {0}")]
+    PEP440Error(#[from] pep440_rs::Pep440Error),
     #[error("a manifest file could not be found")]
     ProjectManifestNotFoundError,
     #[error("a manifest file already exists")]
@@ -48,8 +50,6 @@ pub enum Error {
     PythonEnvironmentNotFoundError,
     #[error("a regex error occurred: {0}")]
     RegexError(#[from] regex::Error),
-    #[error("a http request failed: {0}")]
-    ReqwestError(#[from] reqwest::Error),
     #[error("a problem with toml deserialization occurred: {0}")]
     TOMLDeserializationError(#[from] toml::de::Error),
     #[error("a problem with toml serialization occurred {0}")]
