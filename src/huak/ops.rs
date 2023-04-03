@@ -2,7 +2,10 @@
 ///! existing on a system.
 ///
 use indexmap::IndexMap;
-use std::{env::consts::OS, path::Path, process::Command, str::FromStr};
+use std::{
+    collections::HashMap, env::consts::OS, path::Path, process::Command,
+    str::FromStr,
+};
 use termcolor::Color;
 
 use crate::{
@@ -13,8 +16,9 @@ use crate::{
     git::{self, default_python_gitignore},
     python_paths,
     sys::shell_name,
-    Config, Dependency, Error, HuakResult, PackageInstallerOptions, Project,
-    ProjectKind, PyProjectToml, PythonEnvironment, WorkspaceOptions,
+    Config, Dependency, Error, HuakResult, Manifest, PackageInstallerOptions,
+    PinStrategy, Project, ProjectKind, PyProjectToml, PythonEnvironment,
+    WorkspaceOptions,
 };
 
 pub struct AddOptions {
@@ -104,54 +108,47 @@ pub fn activate_python_environment(config: &mut Config) -> HuakResult<()> {
 pub fn add_project_dependencies(
     dependencies: &[String],
     config: &mut Config,
-    options: Option<AddOptions>,
+    options: AddOptions,
 ) -> HuakResult<()> {
     let mut workspace = config.workspace()?;
     let mut project = workspace.current_project()?;
 
-    let deps = dependency_iter(dependencies)
-        .filter(|dep| !project.contains_dependency(dep).unwrap_or_default())
-        .collect::<Vec<Dependency>>();
-    if deps.is_empty() {
-        return Ok(());
-    }
+    // Collect all of the provided dependency `String`s as `Dependency`s.
+    let mut deps = dependency_iter(dependencies).collect::<Vec<_>>();
 
-    let python_env = match workspace.current_python_environment() {
-        Ok(it) => it,
-        Err(Error::PythonEnvironmentNotFoundError) => {
-            workspace.new_python_environment()?
-        }
-        Err(e) => return Err(e),
-    };
-    let installer_options = match options.as_ref() {
-        Some(it) => parse_installer_options(it.install_options.as_ref()),
-        None => None,
-    };
+    // Get `PythonEnvironment` or create one for the operation.
+    let python_env = workspace.resolve_python_environment()?;
+
+    // Install any dependencies missing from the Python environment.
+    let install_options =
+        parse_installer_options(options.install_options.as_ref());
     python_env.install_packages(
-        dependencies,
-        installer_options.as_ref(),
-        &mut config.terminal,
+        &deps,
+        &install_options.unwrap_or_default(),
+        config,
     )?;
 
-    let packages = python_env.installed_packages()?;
-    for pkg in packages.iter().filter(|pkg| {
-        deps.iter().any(|dep| {
-            pkg.canonical_name == dep.canonical_name
-                && dep.version_specifiers.is_none()
-        })
-    }) {
-        let dep = Dependency::from_str(&pkg.to_string())?;
-        project.add_dependency(dep)?;
+    // Keep track of the original `Manifest` data to determine if we need to write the project's
+    // manifest file later on.
+    let original_manifest = Manifest::new(&project.manifest_path)?;
+
+    // Collect all the dependencies with a version to add to the project.
+    // If a dependecny is missing a specifer then attempt to get one from the Python environment.
+    deps.iter().map(|dep| {
+        if dep.version_specifiers.is_none() {
+            if let Some(pkg) = python_env.package(&dep.canonical_name) {
+                project.add_dependency(Dependency::from(pkg));
+            }
+        }
+        project.add_dependency(*dep);
+    });
+
+    // Only write the manifest if its dependencies have changed.
+    if original_manifest.dependencies.as_ref() != project.dependencies() {
+        project.write_manifest()?;
     }
 
-    for dep in deps
-        .into_iter()
-        .filter(|dep| dep.version_specifiers.is_some())
-    {
-        project.add_dependency(dep)?;
-    }
-
-    project.write_manifest()
+    Ok(())
 }
 
 pub fn add_project_optional_dependencies(

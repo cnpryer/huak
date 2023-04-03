@@ -36,7 +36,7 @@ const DEFAULT_PROJECT_VERSION_STR: &str = "0.0.1";
 const DEFAULT_MANIFEST_FILE_NAME: &str = "pyproject.toml";
 
 /// Configuration for Huak.
-pub struct Config {
+struct Config {
     /// The configured workspace root.
     pub workspace_root: PathBuf,
     /// The current working directory.
@@ -47,7 +47,7 @@ pub struct Config {
 
 impl Config {
     /// Establish the workspace.
-    pub fn workspace(&self) -> HuakResult<Workspace> {
+    fn workspace(&self) -> HuakResult<Workspace> {
         let stop_after = match OS {
             "windows" => std::env::var_os("SYSTEMROOT")
                 .map(PathBuf::from)
@@ -85,18 +85,30 @@ impl Config {
     }
 }
 
-pub struct Workspace {
+struct Workspace {
     root: PathBuf,
     config: Config,
 }
 
 impl Workspace {
-    /// Resolve the current project.
+    /// Get the current project.
     fn current_project(&self) -> HuakResult<Project> {
         Project::new(&self.root)
     }
 
-    /// Resolve the current Python environment.
+    /// Resolve the current `PythonEnvironment` for the `Workspace`. If none is found then
+    /// we can create one for the workspace for the add operation.
+    fn resolve_python_environment(&mut self) -> HuakResult<PythonEnvironment> {
+        match self.current_python_environment() {
+            Ok(it) => Ok(it),
+            Err(Error::PythonEnvironmentNotFoundError) => {
+                self.new_python_environment()
+            }
+            Err(e) => return Err(e),
+        }
+    }
+
+    /// Get the current Python environment.
     fn current_python_environment(&mut self) -> HuakResult<PythonEnvironment> {
         let path = find_venv_root(&self.config.cwd, &self.root)?;
         let env = PythonEnvironment::new(path)?;
@@ -128,7 +140,7 @@ impl Workspace {
 /// 1. If VIRTUAL_ENV exists then a venv is active; use it.
 /// 2. Walk from configured cwd up searching for dir containing the Python environment config file.
 /// 3. Stop after searching `stop_after`.
-pub fn find_venv_root<T: AsRef<Path>>(
+fn find_venv_root<T: AsRef<Path>>(
     from: T,
     stop_after: T,
 ) -> HuakResult<PathBuf> {
@@ -158,7 +170,7 @@ pub fn find_venv_root<T: AsRef<Path>>(
 /// standardization and Huak leverages them to do many things such as identify your
 /// project. See PEP 621.
 #[derive(Default, Debug)]
-pub struct Project {
+struct Project {
     /// A value to indicate the kind of the project (app, library, etc.).
     kind: ProjectKind,
     /// The project's manifest data.
@@ -169,7 +181,7 @@ pub struct Project {
 
 impl Project {
     /// Initialize a `Project` from its root path.
-    pub fn new<T: AsRef<Path>>(path: T) -> HuakResult<Project> {
+    fn new<T: AsRef<Path>>(path: T) -> HuakResult<Project> {
         let root = std::fs::canonicalize(path)?;
 
         let manifest_path = root.join(DEFAULT_MANIFEST_FILE_NAME);
@@ -196,49 +208,49 @@ impl Project {
     }
 
     /// Get the absolute path to the root directory of the project.
-    pub fn root(&self) -> Option<&Path> {
+    fn root(&self) -> Option<&Path> {
         self.manifest_path.parent()
     }
 
     /// Get the name of the project.
-    pub fn name(&self) -> &String {
+    fn name(&self) -> &String {
         &self.manifest.name
     }
 
     /// Get the version of the project.
-    pub fn version(&self) -> Option<&String> {
+    fn version(&self) -> Option<&String> {
         self.manifest.version.as_ref()
     }
 
     /// Get the path to the manifest file.
-    pub fn manifest_path(&self) -> &PathBuf {
+    fn manifest_path(&self) -> &PathBuf {
         &self.manifest_path
     }
 
     /// Get the project type.
-    pub fn kind(&self) -> &ProjectKind {
+    fn kind(&self) -> &ProjectKind {
         &self.kind
     }
 
     /// Get the Python project's pyproject.toml file.
-    pub fn manifest(&self) -> &Manifest {
+    fn manifest(&self) -> &Manifest {
         &self.manifest
     }
 
     /// Get the Python project's main dependencies listed in the manifest.
-    pub fn dependencies(&self) -> Option<&Vec<Dependency>> {
+    fn dependencies(&self) -> Option<&Vec<Dependency>> {
         self.manifest.dependencies.as_ref()
     }
 
     /// Get the Python project's optional dependencies listed in the manifest.
-    pub fn optional_dependencies(
+    fn optional_dependencies(
         &self,
     ) -> Option<&IndexMap<String, Vec<Dependency>>> {
         self.manifest.optional_dependencies.as_ref()
     }
 
     /// Get a group of optional dependencies from the Python project's manifest.
-    pub fn optional_dependencey_group(
+    fn optional_dependencey_group(
         &self,
         group: &str,
     ) -> Option<&Vec<Dependency>> {
@@ -249,8 +261,8 @@ impl Project {
     }
 
     /// Add a Python package as a dependency to the project's manifest.
-    pub fn add_dependency(&mut self, dependency: Dependency) -> HuakResult<()> {
-        if self.contains_dependency(&dependency)? {
+    fn add_dependency(&mut self, dependency: Dependency) -> HuakResult<()> {
+        if self.contains_dependency(&dependency) {
             return Ok(());
         }
         self.manifest
@@ -262,7 +274,7 @@ impl Project {
     }
 
     /// Add a Python package as a dependency to the project' manifest.
-    pub fn add_optional_dependency(
+    fn add_optional_dependency(
         &mut self,
         dependency: Dependency,
         group: &str,
@@ -282,10 +294,7 @@ impl Project {
     }
 
     /// Remove a dependency from the project's manifest.
-    pub fn remove_dependency(
-        &mut self,
-        dependency: &Dependency,
-    ) -> HuakResult<()> {
+    fn remove_dependency(&mut self, dependency: &Dependency) -> HuakResult<()> {
         if !self.contains_dependency(dependency)? {
             return Ok(());
         }
@@ -298,7 +307,7 @@ impl Project {
     }
 
     /// Remove an optional dependency from the project's manifest.
-    pub fn remove_optional_dependency(
+    fn remove_optional_dependency(
         &mut self,
         dependency: &Dependency,
         group: &str,
@@ -317,22 +326,19 @@ impl Project {
     }
 
     /// Check if the project has a dependency listed in its manifest.
-    pub fn contains_dependency(
-        &self,
-        dependency: &Dependency,
-    ) -> HuakResult<bool> {
+    fn contains_dependency(&self, dependency: &Dependency) -> bool {
         if let Some(deps) = self.dependencies() {
             for d in deps {
                 if d.eq(dependency) {
-                    return Ok(true);
+                    return true;
                 }
             }
         }
-        Ok(false)
+        false
     }
 
     /// Check if the project has an optional dependency listed in its manifest.
-    pub fn contains_optional_dependency(
+    fn contains_optional_dependency(
         &self,
         dependency: &Dependency,
         group: &str,
@@ -353,7 +359,7 @@ impl Project {
     }
 
     /// Check if the project has a dependency listed in its manifest as part of any group.
-    pub fn contains_dependency_any(
+    fn contains_dependency_any(
         &self,
         dependency: &Dependency,
     ) -> HuakResult<bool> {
@@ -376,7 +382,7 @@ impl Project {
 
     /// Write the manifest file.
     /// Note that this method currently only supports writing a pyproject.toml.
-    pub fn write_manifest(&self) -> HuakResult<()> {
+    fn write_manifest(&self) -> HuakResult<()> {
         // If the manifest file isn't a pyproject.toml then fail. (TODO: other manifests)
         if self
             .manifest_path
@@ -468,7 +474,7 @@ pub enum ProjectKind {
 /// The manifest contains information about the project including its name, version,
 /// dependencies, etc.
 #[derive(Default, Debug)]
-pub struct Manifest {
+struct Manifest {
     authors: Option<Vec<Contact>>,
     dependencies: Option<Vec<Dependency>>,
     description: Option<String>,
@@ -478,6 +484,23 @@ pub struct Manifest {
     optional_dependencies: Option<IndexMap<String, Vec<Dependency>>>,
     readme: Option<ReadMe>,
     version: Option<String>,
+}
+
+impl Manifest {
+    fn new<T: AsRef<Path>>(path: T) -> HuakResult<Manifest> {
+        if path.as_ref().file_name()
+            != Some(OsStr::new(DEFAULT_MANIFEST_FILE_NAME))
+        {
+            return Err(Error::UnimplementedError(format!(
+                "{} is not supported",
+                path.as_ref().display()
+            )));
+        }
+
+        let manifest = Manifest::from(PyProjectToml::new(path)?);
+
+        Ok(manifest)
+    }
 }
 
 /// Initialize a `Manifest` from `PyProjectToml`.
@@ -511,7 +534,7 @@ impl From<PyProjectToml> for Manifest {
 
 #[derive(Debug)]
 /// A Python `Dependency` struct.
-pub struct Dependency {
+struct Dependency {
     /// The dependency's name unmodified.
     name: String,
     /// The canonical dependency name.
@@ -522,7 +545,7 @@ pub struct Dependency {
 
 impl Dependency {
     /// Get the dependency name with its version specifiers as a &str.
-    pub fn dependency_string(&self) -> String {
+    fn dependency_string(&self) -> String {
         let specs = match self.version_specifiers.as_ref() {
             Some(it) => it,
             None => {
@@ -547,6 +570,12 @@ impl Dependency {
 
     fn importable_name(&self) -> HuakResult<String> {
         importable_package_name(&self.canonical_name)
+    }
+}
+
+impl From<Package> for Dependency {
+    fn from(value: Package) -> Self {
+        todo!()
     }
 }
 
@@ -608,20 +637,26 @@ impl PartialEq for Dependency {
 impl Eq for Dependency {}
 
 /// Collect and return an iterator over `Dependency`s.
-fn dependency_iter<I>(strings: I) -> impl Iterator<Item = Dependency>
+fn dependency_iter<I>(iter: I) -> impl Iterator<Item = Dependency>
 where
     I: IntoIterator,
     I::Item: AsRef<str>,
 {
-    strings
-        .into_iter()
+    iter.into_iter()
         .filter_map(|item| Dependency::from_str(item.as_ref()).ok())
+}
+
+// Pinning strategies for dependencies.
+enum PinStrategy {
+    Exact,
+    AllowRelative,
+    None,
 }
 
 /// A pyproject.toml as specified in PEP 517
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
-pub struct PyProjectToml {
+struct PyProjectToml {
     #[serde(flatten)]
     inner: ProjectToml,
     tool: Option<Table>,
@@ -643,61 +678,56 @@ impl std::ops::DerefMut for PyProjectToml {
 
 impl PyProjectToml {
     /// Initilize a `PyProjectToml` from its path.
-    pub fn new<T: AsRef<Path>>(path: T) -> HuakResult<PyProjectToml> {
+    fn new<T: AsRef<Path>>(path: T) -> HuakResult<PyProjectToml> {
         let contents = std::fs::read_to_string(path)?;
         let pyproject_toml: PyProjectToml = toml::from_str(&contents)?;
         Ok(pyproject_toml)
     }
 
-    pub fn project_name(&self) -> Option<&str> {
+    fn project_name(&self) -> Option<&str> {
         self.project.as_ref().map(|project| project.name.as_str())
     }
 
-    pub fn set_project_name(&mut self, name: String) {
+    fn set_project_name(&mut self, name: String) {
         if let Some(project) = self.project.as_mut() {
             project.name = name;
         }
     }
 
-    pub fn project_version(&self) -> Option<&str> {
+    fn project_version(&self) -> Option<&str> {
         if let Some(project) = self.project.as_ref() {
             return project.version.as_deref();
         }
         None
     }
 
-    pub fn set_project_version(&mut self, version: Option<String>) {
+    fn set_project_version(&mut self, version: Option<String>) {
         if let Some(project) = self.project.as_mut() {
             project.version = version;
         }
     }
 
-    pub fn dependencies(&self) -> Option<&Vec<String>> {
+    fn dependencies(&self) -> Option<&Vec<String>> {
         if let Some(project) = self.project.as_ref() {
             return project.dependencies.as_ref();
         }
         None
     }
 
-    pub fn set_project_dependencies(
-        &mut self,
-        dependencies: Option<Vec<String>>,
-    ) {
+    fn set_project_dependencies(&mut self, dependencies: Option<Vec<String>>) {
         if let Some(project) = self.project.as_mut() {
             project.dependencies = dependencies;
         }
     }
 
-    pub fn optional_dependencies(
-        &self,
-    ) -> Option<&IndexMap<String, Vec<String>>> {
+    fn optional_dependencies(&self) -> Option<&IndexMap<String, Vec<String>>> {
         if let Some(project) = self.project.as_ref() {
             return project.optional_dependencies.as_ref();
         }
         None
     }
 
-    pub fn set_project_optional_dependencies(
+    fn set_project_optional_dependencies(
         &mut self,
         optional_dependencies: Option<IndexMap<String, Vec<String>>>,
     ) {
@@ -706,19 +736,19 @@ impl PyProjectToml {
         }
     }
 
-    pub fn set_project_license(&mut self, license: Option<License>) {
+    fn set_project_license(&mut self, license: Option<License>) {
         if let Some(project) = self.project.as_mut() {
             project.license = license;
         }
     }
 
-    pub fn set_project_readme(&mut self, readme: Option<ReadMe>) {
+    fn set_project_readme(&mut self, readme: Option<ReadMe>) {
         if let Some(project) = self.project.as_mut() {
             project.readme = readme;
         }
     }
 
-    pub fn set_project_scripts(
+    fn set_project_scripts(
         &mut self,
         scripts: Option<IndexMap<String, String>>,
     ) {
@@ -727,19 +757,19 @@ impl PyProjectToml {
         }
     }
 
-    pub fn set_project_authors(&mut self, authors: Option<Vec<Contact>>) {
+    fn set_project_authors(&mut self, authors: Option<Vec<Contact>>) {
         if let Some(project) = self.project.as_mut() {
             project.authors = authors;
         }
     }
 
-    pub fn set_project_description(&mut self, description: Option<String>) {
+    fn set_project_description(&mut self, description: Option<String>) {
         if let Some(project) = self.project.as_mut() {
             project.description = description;
         }
     }
 
-    pub fn optional_dependencey_group(
+    fn optional_dependencey_group(
         &self,
         group_name: &str,
     ) -> Option<&Vec<String>> {
@@ -751,7 +781,7 @@ impl PyProjectToml {
         None
     }
 
-    pub fn add_dependency(&mut self, dependency: &str) {
+    fn add_dependency(&mut self, dependency: &str) {
         if let Some(project) = self.project.as_mut() {
             if let Some(dependencies) = project.dependencies.as_mut() {
                 dependencies.push(dependency.to_string());
@@ -759,7 +789,7 @@ impl PyProjectToml {
         };
     }
 
-    pub fn add_optional_dependency(&mut self, dependency: &str, group: &str) {
+    fn add_optional_dependency(&mut self, dependency: &str, group: &str) {
         if let Some(project) = self.project.as_mut() {
             let deps =
                 project.optional_dependencies.get_or_insert(IndexMap::new());
@@ -771,7 +801,7 @@ impl PyProjectToml {
         }
     }
 
-    pub fn remove_dependency(&mut self, package_str: &str) {
+    fn remove_dependency(&mut self, package_str: &str) {
         if let Some(project) = self.project.as_mut() {
             if let Some(dependencies) = project.dependencies.as_mut() {
                 if let Some(i) = dependencies
@@ -784,11 +814,7 @@ impl PyProjectToml {
         };
     }
 
-    pub fn remove_optional_dependency(
-        &mut self,
-        dependency: &str,
-        group: &str,
-    ) {
+    fn remove_optional_dependency(&mut self, dependency: &str, group: &str) {
         if let Some(project) = self.project.as_mut() {
             if let Some(g) = project.optional_dependencies.as_mut() {
                 if let Some(deps) = g.get_mut(group) {
@@ -802,18 +828,14 @@ impl PyProjectToml {
         };
     }
 
-    pub fn scripts(&self) -> Option<&IndexMap<String, String, RandomState>> {
+    fn scripts(&self) -> Option<&IndexMap<String, String, RandomState>> {
         if let Some(project) = self.project.as_ref() {
             return project.scripts.as_ref();
         }
         None
     }
 
-    pub fn add_script(
-        &mut self,
-        name: &str,
-        entrypoint: &str,
-    ) -> HuakResult<()> {
+    fn add_script(&mut self, name: &str, entrypoint: &str) -> HuakResult<()> {
         if let Some(project) = self.project.as_mut() {
             if let Some(scripts) = project.scripts.as_mut() {
                 scripts.insert_full(name.to_string(), entrypoint.to_string());
@@ -827,16 +849,16 @@ impl PyProjectToml {
         Ok(())
     }
 
-    pub fn write_file(&self, path: impl AsRef<Path>) -> HuakResult<()> {
+    fn write_file(&self, path: impl AsRef<Path>) -> HuakResult<()> {
         let string = self.to_string_pretty()?;
         Ok(std::fs::write(path, string)?)
     }
 
-    pub fn to_string_pretty(&self) -> HuakResult<String> {
+    fn to_string_pretty(&self) -> HuakResult<String> {
         Ok(toml_edit::ser::to_string_pretty(&self)?)
     }
 
-    pub fn to_string(&self) -> HuakResult<String> {
+    fn to_string(&self) -> HuakResult<String> {
         Ok(toml_edit::ser::to_string(&self)?)
     }
 }
@@ -937,7 +959,7 @@ struct PythonEnvironment {
 
 impl PythonEnvironment {
     /// Initialize a new `PythonEnvironment`.
-    pub fn new<T: AsRef<Path>>(path: T) -> HuakResult<PythonEnvironment> {
+    fn new<T: AsRef<Path>>(path: T) -> HuakResult<PythonEnvironment> {
         if !path.as_ref().join(VENV_CONFIG_FILE_NAME).exists() {
             return Err(Error::UnimplementedError(format!(
                 "{} is not supported",
@@ -1016,54 +1038,63 @@ impl PythonEnvironment {
     }
 
     /// Get a reference to the absolute path to the python environment.
-    pub fn root(&self) -> &Path {
+    fn root(&self) -> &Path {
         self.root.as_ref()
     }
 
     /// Get the name of the Python environment.
-    pub fn name(&self) -> HuakResult<String> {
+    fn name(&self) -> HuakResult<String> {
         fs::last_path_component(&self.root)
     }
 
     /// The absolute path to the Python environment's python interpreter binary.
-    pub fn python_path(&self) -> &PathBuf {
+    fn python_path(&self) -> &PathBuf {
         &self.python_path
     }
 
     #[allow(dead_code)]
     /// Get the version of the Python environment's Python interpreter.
-    pub fn python_version(&self) -> &Version {
+    fn python_version(&self) -> &Version {
         &self.python_version
     }
 
     /// The absolute path to the Python environment's executables directory.
-    pub fn executables_dir_path(&self) -> &PathBuf {
+    fn executables_dir_path(&self) -> &PathBuf {
         &self.executables_dir_path
     }
 
     /// The absolute path to the Python environment's site-packages directory.
-    pub fn site_packages_dir_path(&self) -> &PathBuf {
+    fn site_packages_dir_path(&self) -> &PathBuf {
         &self.site_packages_path
     }
 
+    // Get an installed Python `Package`.
+    fn package(&self, name: &str) -> Option<Package> {
+        todo!()
+    }
+
     /// Install Python packages to the environment.
-    pub fn install_packages<T>(
+    fn install_packages<T>(
         &self,
         packages: &[T],
-        installer_options: Option<&PackageInstallerOptions>,
-        terminal: &mut Terminal,
+        installer_options: &PackageInstallerOptions,
+        config: &mut Config,
     ) -> HuakResult<()>
     where
         T: Display + AsRef<OsStr>,
     {
         if let Some(installer) = self.installer.as_ref() {
-            installer.install(packages, installer_options, terminal)?;
+            installer.install(
+                packages,
+                installer_options,
+                &mut config.terminal,
+            )?;
         }
         Ok(())
     }
 
     /// Uninstall many Python packages from the environment.
-    pub fn uninstall_packages<T>(
+    fn uninstall_packages<T>(
         &self,
         packages: &[T],
         installer_options: Option<&PackageInstallerOptions>,
@@ -1079,7 +1110,7 @@ impl PythonEnvironment {
     }
 
     /// Update many Python packages in the environment.
-    pub fn update_packages<T>(
+    fn update_packages<T>(
         &self,
         packages: &[T],
         installer_options: Option<&PackageInstallerOptions>,
@@ -1095,7 +1126,7 @@ impl PythonEnvironment {
     }
 
     /// Check if the environment is already activated.
-    pub fn is_active(&self) -> bool {
+    fn is_active(&self) -> bool {
         if let Some(path) = active_virtual_env_path() {
             return self.root == path;
         }
@@ -1106,7 +1137,7 @@ impl PythonEnvironment {
     }
 
     /// Check if the environment has a module installed to the executables directory.
-    pub fn contains_module(&self, module_name: &str) -> HuakResult<bool> {
+    fn contains_module(&self, module_name: &str) -> HuakResult<bool> {
         let dir = self.executables_dir_path();
         #[cfg(unix)]
         return Ok(dir.join(module_name).exists());
@@ -1124,7 +1155,7 @@ impl PythonEnvironment {
 
     #[allow(dead_code)]
     /// Check if the environment has a package already installed.
-    pub fn contains_package(&self, package: &Package) -> bool {
+    fn contains_package(&self, package: &Package) -> bool {
         self.site_packages_dir_path()
             .join(
                 package
@@ -1135,7 +1166,7 @@ impl PythonEnvironment {
     }
 
     /// Get all of the packages installed to the environment.
-    fn installed_packages(&self) -> HuakResult<Vec<Package>> {
+    fn packages(&self) -> HuakResult<Vec<Package>> {
         let mut cmd = Command::new(&self.python_path);
         cmd.args(["-m", "pip", "freeze"]);
 
@@ -1210,10 +1241,10 @@ enum PackageInstaller {
 }
 
 impl PackageInstaller {
-    pub fn install<T>(
+    fn install<T>(
         &self,
         packages: &[T],
-        options: Option<&PackageInstallerOptions>,
+        options: &PackageInstallerOptions,
         terminal: &mut Terminal,
     ) -> HuakResult<()>
     where
@@ -1225,9 +1256,11 @@ impl PackageInstaller {
                 cmd.arg("install")
                     .args(packages.iter().map(|item| item.to_string()));
 
-                if let Some(PackageInstallerOptions::Pip { args }) = options {
-                    if let Some(args) = args.as_ref() {
-                        cmd.args(args.iter().map(|item| item.as_str()));
+                match options {
+                    PackageInstallerOptions::Pip { args } => {
+                        if let Some(args) = args.as_ref() {
+                            cmd.args(args.iter().map(|item| item.as_str()));
+                        }
                     }
                 }
 
@@ -1236,7 +1269,7 @@ impl PackageInstaller {
         }
     }
 
-    pub fn uninstall<T>(
+    fn uninstall<T>(
         &self,
         packages: &[T],
         options: Option<&PackageInstallerOptions>,
@@ -1263,7 +1296,7 @@ impl PackageInstaller {
         }
     }
 
-    pub fn update<T>(
+    fn update<T>(
         &self,
         packages: &[T],
         options: Option<&PackageInstallerOptions>,
@@ -1298,10 +1331,16 @@ pub enum PackageInstallerOptions {
     Pip { args: Option<Vec<String>> },
 }
 
+impl Default for PackageInstallerOptions {
+    fn default() -> Self {
+        PackageInstallerOptions::Pip { args: None }
+    }
+}
+
 /// The Version struct.
 ///
 /// This is a generic version abstraction.
-pub struct Version {
+struct Version {
     pub release: Vec<usize>,
     pub semver: Option<SemVerVersion>,
 }
@@ -1378,7 +1417,7 @@ impl Ord for Version {
     }
 }
 
-pub fn compare_release(this: &[usize], other: &[usize]) -> Ordering {
+fn compare_release(this: &[usize], other: &[usize]) -> Ordering {
     let iterator = if this.len() < other.len() {
         this.iter()
             .chain(std::iter::repeat(&0))
@@ -1402,7 +1441,7 @@ pub fn compare_release(this: &[usize], other: &[usize]) -> Ordering {
 /// A `SemVerVersion` struct for Semantic Version numbers.
 ///
 /// Example `SemVerVersion { major: 3, minor: 11, patch: 0}
-pub struct SemVerVersion {
+struct SemVerVersion {
     major: usize,
     minor: usize,
     patch: usize,
@@ -1417,7 +1456,7 @@ impl Display for SemVerVersion {
 /// The python package compliant with packaging.python.og.
 /// See <https://peps.python.org/pep-0440/>
 #[derive(Clone, Debug)]
-pub struct Package {
+struct Package {
     /// Name designated to the package by the author(s).
     name: String,
     /// Normalized name of the Python package.
@@ -1428,22 +1467,22 @@ pub struct Package {
 
 impl Package {
     /// Get the name of the package.
-    pub fn name(&self) -> &str {
+    fn name(&self) -> &str {
         self.name.as_ref()
     }
 
     /// Get the normalized name of the package.
-    pub fn canonical_name(&self) -> &str {
+    fn canonical_name(&self) -> &str {
         self.canonical_name.as_ref()
     }
 
     /// Get the importable version of the package's name.
-    pub fn importable_name(&self) -> HuakResult<String> {
+    fn importable_name(&self) -> HuakResult<String> {
         importable_package_name(&self.canonical_name)
     }
 
     /// Get the package's PEP440 version.
-    pub fn version(&self) -> &Version440 {
+    fn version(&self) -> &Version440 {
         &self.version
     }
 }
@@ -1511,14 +1550,14 @@ impl Display for Package {
 
 /// A client used to interact with a package index.
 #[derive(Default)]
-pub struct PackageIndexClient;
+struct PackageIndexClient;
 
 impl PackageIndexClient {
-    pub fn new() -> PackageIndexClient {
+    fn new() -> PackageIndexClient {
         PackageIndexClient
     }
 
-    pub fn query(&self, package: &Package) -> HuakResult<PackageIndexData> {
+    fn query(&self, package: &Package) -> HuakResult<PackageIndexData> {
         let url = format!("https://pypi.org/pypi/{}/json", package.name());
         reqwest::blocking::get(url)?
             .json()
@@ -1530,7 +1569,7 @@ impl PackageIndexClient {
 // TODO: Support more than https://pypi.org/pypi/<package name>/json
 //       Ex: See https://peps.python.org/pep-0503/
 #[derive(Serialize, Deserialize, Debug)]
-pub struct PackageIndexData {
+struct PackageIndexData {
     pub info: PackageInfo,
     last_serial: u64,
     releases: serde_json::value::Value,
@@ -1539,7 +1578,7 @@ pub struct PackageIndexData {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct PackageInfo {
+struct PackageInfo {
     pub author: String,
     pub author_email: String,
     pub bugtrack_url: serde_json::value::Value,
@@ -1568,13 +1607,13 @@ pub struct PackageInfo {
     pub yanked_reason: serde_json::value::Value,
 }
 
-pub struct WorkspaceOptions {
+struct WorkspaceOptions {
     pub uses_git: bool,
 }
 
 /// Get an iterator over available Python interpreter paths parsed from PATH.
 /// Inspired by brettcannon/python-launcher
-pub fn python_paths() -> impl Iterator<Item = (Option<Version>, PathBuf)> {
+fn python_paths() -> impl Iterator<Item = (Option<Version>, PathBuf)> {
     let paths =
         fs::flatten_directories(env_path_values().unwrap_or(Vec::new()));
     python_interpreters_in_paths(paths)
@@ -1639,7 +1678,7 @@ fn version_from_python_interpreter_file_name(
 }
 
 /// Get a vector of paths from the system PATH environment variable.
-pub fn env_path_values() -> Option<Vec<PathBuf>> {
+fn env_path_values() -> Option<Vec<PathBuf>> {
     if let Some(val) = env_path_string() {
         return Some(std::env::split_paths(&val).collect());
     }
@@ -1647,12 +1686,12 @@ pub fn env_path_values() -> Option<Vec<PathBuf>> {
 }
 
 /// Get the OsString value of the enrionment variable PATH.
-pub fn env_path_string() -> Option<OsString> {
+fn env_path_string() -> Option<OsString> {
     std::env::var_os("PATH")
 }
 
 /// Get the VIRTUAL_ENV environment path if it exists.
-pub fn active_virtual_env_path() -> Option<PathBuf> {
+fn active_virtual_env_path() -> Option<PathBuf> {
     if let Ok(path) = std::env::var(VIRTUAL_ENV_ENV_VAR) {
         return Some(PathBuf::from(path));
     }
@@ -1660,7 +1699,7 @@ pub fn active_virtual_env_path() -> Option<PathBuf> {
 }
 
 /// Get the CONDA_PREFIX environment path if it exists.
-pub fn active_conda_env_path() -> Option<PathBuf> {
+fn active_conda_env_path() -> Option<PathBuf> {
     if let Ok(path) = std::env::var(CONDA_ENV_ENV_VAR) {
         return Some(PathBuf::from(path));
     }
