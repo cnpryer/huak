@@ -999,16 +999,24 @@ pub fn update_project_optional_dependencies(
 
     let mut write_manifest = false;
     let packages = python_env.installed_packages()?;
+    let mut groups = Vec::new();
+
+    if group == "all" && project.optional_dependencey_group("all").is_none() {
+        if let Some(it) = project.optional_dependencies() {
+            groups.extend(it.keys().map(|key| key.to_string()));
+        }
+    } else {
+        groups.push(group.to_string());
+    }
+
     for pkg in packages {
-        let dep = Dependency::from_str(&pkg.to_string())?;
-        if project.contains_dependency(&dep)? && group == "all" {
-            project.remove_dependency(&dep)?;
-            project.add_dependency(dep)?;
-            write_manifest = true;
-        } else if project.contains_optional_dependency(&dep, group)? {
-            project.remove_optional_dependency(&dep, group)?;
-            project.add_optional_dependency(dep, group)?;
-            write_manifest = true;
+        for g in groups.iter() {
+            let dep = Dependency::from_str(&pkg.to_string())?;
+            if project.contains_optional_dependency(&dep, g)? {
+                project.remove_optional_dependency(&dep, g)?;
+                project.add_optional_dependency(dep, g)?;
+                write_manifest = true;
+            }
         }
 
         if write_manifest {
