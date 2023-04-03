@@ -16,9 +16,9 @@ use crate::{
     git::{self, default_python_gitignore},
     python_paths,
     sys::shell_name,
-    Config, Dependency, Error, HuakResult, Manifest, PackageInstallerOptions,
-    PinStrategy, Project, ProjectKind, PyProjectToml, PythonEnvironment,
-    WorkspaceOptions,
+    Config, Dependency, Error, HuakResult, Manifest, Metadata, PackageAPI,
+    PackageInstallerOptions, PinStrategy, Project, ProjectKind, PyProjectToml,
+    PythonEnvironment, PythonEnvironmentAPI, WorkspaceOptions,
 };
 
 pub struct AddOptions {
@@ -65,11 +65,11 @@ pub struct CleanOptions {
     pub include_compiled_bytecode: bool,
 }
 
-pub fn activate_python_environment(config: &mut Config) -> HuakResult<()> {
-    let mut workspace = config.workspace()?;
-    let python_env = workspace.current_python_environment()?;
+pub fn activate_python_environment(config: &Config) -> HuakResult<()> {
+    let mut workspace = config.workspace();
+    let python_env = workspace.current_python_environment();
 
-    if python_env.is_active() {
+    if python_env.active() {
         return Ok(());
     }
 
@@ -102,50 +102,52 @@ pub fn activate_python_environment(config: &mut Config) -> HuakResult<()> {
         ),
     ]);
 
-    config.terminal.run_command(&mut cmd)
+    let mut terminal = config.terminal();
+    terminal.run_command(&mut cmd)
 }
 
 pub fn add_project_dependencies(
     dependencies: &[String],
-    config: &mut Config,
+    config: &Config,
     options: AddOptions,
 ) -> HuakResult<()> {
-    let mut workspace = config.workspace()?;
-    let mut project = workspace.current_project()?;
+    let mut workspace = config.workspace();
+    let mut package = workspace.current_package();
 
     // Collect all of the provided dependency `String`s as `Dependency`s.
     let mut deps = dependency_iter(dependencies).collect::<Vec<_>>();
 
     // Get `PythonEnvironment` or create one for the operation.
-    let python_env = workspace.resolve_python_environment()?;
+    let python_env = workspace.resolve_python_environment();
 
     // Install any dependencies missing from the Python environment.
     let install_options =
         parse_installer_options(options.install_options.as_ref());
-    python_env.install_packages(
+    python_env.install_many(
         &deps,
         &install_options.unwrap_or_default(),
         config,
     )?;
 
-    // Keep track of the original `Manifest` data to determine if we need to write the project's
-    // manifest file later on.
-    let original_manifest = Manifest::new(&project.manifest_path)?;
+    // Keep track of the original `Metadata` data to determine if we need to write the project's
+    // metadata file later on.
+    let original_metadata =
+        Metadata::new(&package.metadata_path.unwrap_or_default())?;
 
     // Collect all the dependencies with a version to add to the project.
     // If a dependecny is missing a specifer then attempt to get one from the Python environment.
     deps.iter().map(|dep| {
-        if dep.version_specifiers.is_none() {
-            if let Some(pkg) = python_env.package(&dep.canonical_name) {
-                project.add_dependency(Dependency::from(pkg));
+        if dep.2.is_empty() {
+            if let Some(pkg) = python_env.package(&dep.1) {
+                package.add_dependency(Dependency::from(pkg));
             }
         }
-        project.add_dependency(*dep);
+        package.add_dependency(*dep);
     });
 
-    // Only write the manifest if its dependencies have changed.
-    if original_manifest.dependencies.as_ref() != project.dependencies() {
-        project.write_manifest()?;
+    // Only write the metadata if its dependencies have changed.
+    if original_metadata.dependencies.as_ref() != package.dependencies() {
+        pacakge.write_metadata()?;
     }
 
     Ok(())
@@ -190,19 +192,14 @@ pub fn add_project_optional_dependencies(
 
     let packages = python_env.installed_packages()?;
     for pkg in packages.iter().filter(|pkg| {
-        deps.iter().any(|dep| {
-            pkg.canonical_name == dep.canonical_name
-                && dep.version_specifiers.is_none()
-        })
+        deps.iter()
+            .any(|dep| pkg.canonical_name == dep.1 && dep.2.is_none())
     }) {
         let dep = Dependency::from_str(&pkg.to_string())?;
         project.add_optional_dependency(dep, group)?;
     }
 
-    for dep in deps
-        .into_iter()
-        .filter(|dep| dep.version_specifiers.is_some())
-    {
+    for dep in deps.into_iter().filter(|dep| dep.2.is_some()) {
         project.add_optional_dependency(dep, group)?;
     }
 
@@ -224,7 +221,7 @@ pub fn build_project(
         Err(e) => return Err(e),
     };
     let build_dep = Dependency::from_str("build")?;
-    if !python_env.contains_module(&build_dep.name)? {
+    if !python_env.contains_module(&build_dep.0)? {
         let installer_options = match options.as_ref() {
             Some(it) => parse_installer_options(it.install_options.as_ref()),
             None => None,
@@ -318,9 +315,7 @@ pub fn format_project(
     ];
     let new_format_deps = format_deps
         .iter()
-        .filter(|item| {
-            !python_env.contains_module(&item.name).unwrap_or_default()
-        })
+        .filter(|item| !python_env.contains_module(&item.0).unwrap_or_default())
         .collect::<Vec<&Dependency>>();
     if !new_format_deps.is_empty() {
         let installer_options = match options.as_ref() {
@@ -387,12 +382,11 @@ pub fn init_app_project(
     let as_dep = Dependency::from_str(&manifest.name)?;
     let entry_point = default_entrypoint_string(&as_dep.importable_name()?);
     if let Some(scripts) = manifest.scripts.as_mut() {
-        if !scripts.contains_key(&as_dep.canonical_name) {
-            scripts.insert(as_dep.canonical_name, entry_point);
+        if !scripts.contains_key(&as_dep.1) {
+            scripts.insert(as_dep.1, entry_point);
         }
     } else {
-        manifest.scripts =
-            Some(IndexMap::from_iter([(as_dep.canonical_name, entry_point)]));
+        manifest.scripts = Some(IndexMap::from_iter([(as_dep.1, entry_point)]));
     }
 
     project.write_manifest()
@@ -614,12 +608,11 @@ pub fn new_app_project(
     )?;
     let entry_point = default_entrypoint_string(&as_dep.importable_name()?);
     if let Some(scripts) = manifest.scripts.as_mut() {
-        if !scripts.contains_key(&as_dep.canonical_name) {
-            scripts.insert(as_dep.canonical_name, entry_point);
+        if !scripts.contains_key(&as_dep.1) {
+            scripts.insert(as_dep.1, entry_point);
         }
     } else {
-        manifest.scripts =
-            Some(IndexMap::from_iter([(as_dep.canonical_name, entry_point)]));
+        manifest.scripts = Some(IndexMap::from_iter([(as_dep.1, entry_point)]));
     }
 
     project.write_manifest()
@@ -678,7 +671,7 @@ pub fn publish_project(
         Some(it) => parse_installer_options(it.install_options.as_ref()),
         None => None,
     };
-    if !python_env.contains_module(&pub_dep.name)? {
+    if !python_env.contains_module(&pub_dep.0)? {
         python_env.install_packages(
             &[&pub_dep],
             installer_options.as_ref(),
@@ -815,7 +808,7 @@ pub fn test_project(
         Err(e) => return Err(e),
     };
     let test_dep = Dependency::from_str("pytest")?;
-    if !python_env.contains_module(&test_dep.name)? {
+    if !python_env.contains_module(&test_dep.0)? {
         let installer_options = match options.as_ref() {
             Some(it) => parse_installer_options(it.install_options.as_ref()),
             None => None,

@@ -15,6 +15,11 @@ pub enum Verbosity {
     Quiet,
 }
 
+pub trait ToTerminal {
+    /// Get a `Terminal`.
+    fn to_terminal(&self) -> Terminal;
+}
+
 /// An abstraction around terminal output that remembers preferences for output
 /// verbosity and color (inspired by cargo's Shell implementation).
 pub struct Terminal {
@@ -192,6 +197,12 @@ impl Terminal {
 
 pub struct TerminalOptions {
     verbosity: Verbosity,
+}
+
+impl TerminalOptions {
+    pub fn verbosity(&self) -> &Verbosity {
+        &self.verbosity
+    }
 }
 
 pub fn parse_command_output(
