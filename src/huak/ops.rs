@@ -2,24 +2,10 @@
 ///! existing on a system.
 ///
 use indexmap::IndexMap;
-use std::{
-    collections::HashMap, env::consts::OS, path::Path, process::Command,
-    str::FromStr,
-};
+use std::{env::consts::OS, path::Path, process::Command, str::FromStr};
 use termcolor::Color;
 
-use crate::{
-    default_entrypoint_string, default_init_file_contents,
-    default_main_file_contents, default_project_manifest_file_name,
-    default_project_version_str, default_test_file_contents,
-    default_virtual_environment_name, dependency_iter, env_path_values, fs,
-    git::{self, default_python_gitignore},
-    python_paths,
-    sys::shell_name,
-    Config, Dependency, Error, HuakResult, Manifest, Metadata, PackageAPI,
-    PackageInstallerOptions, PinStrategy, Project, ProjectKind, PyProjectToml,
-    PythonEnvironment, PythonEnvironmentAPI, WorkspaceOptions,
-};
+use crate::Config;
 
 pub struct AddOptions {
     pub args: Option<Vec<String>>,
