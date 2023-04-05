@@ -540,11 +540,11 @@ fn run_with_install(shell: Option<Shell>) -> HuakResult<()> {
     let mut cmd = Cli::command();
     match sh {
         Shell::Bash => add_completion_bash(),
-        Shell::Elvish => Err(HuakError::UnimplementedError(
-            "elvish completion".to_string(),
-        )),
+        Shell::Elvish => {
+            Err(HuakError::Unimplemented("elvish completion".to_string()))
+        }
         Shell::Fish => add_completion_fish(&mut cmd),
-        Shell::PowerShell => Err(HuakError::UnimplementedError(
+        Shell::PowerShell => Err(HuakError::Unimplemented(
             "powershell completion".to_string(),
         )),
         Shell::Zsh => add_completion_zsh(&mut cmd),
@@ -565,11 +565,11 @@ fn run_with_uninstall(shell: Option<Shell>) -> HuakResult<()> {
     };
     match sh {
         Shell::Bash => remove_completion_bash(),
-        Shell::Elvish => Err(HuakError::UnimplementedError(
-            "elvish completion".to_string(),
-        )),
+        Shell::Elvish => {
+            Err(HuakError::Unimplemented("elvish completion".to_string()))
+        }
         Shell::Fish => remove_completion_fish(),
-        Shell::PowerShell => Err(HuakError::UnimplementedError(
+        Shell::PowerShell => Err(HuakError::Unimplemented(
             "Powershell completion".to_string(),
         )),
         Shell::Zsh => remove_completion_zsh(),

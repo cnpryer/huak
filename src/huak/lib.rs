@@ -47,8 +47,8 @@
 ///
 use error::{Error, HuakResult};
 use indexmap::IndexMap;
-use ops::InstallOptions;
 use pep440_rs::{Operator, Version as PEP440Version, VersionSpecifiers};
+use pep508_rs::Requirement;
 use pyproject_toml::{Project, PyProjectToml as ProjectToml};
 use regex::{Captures, Regex};
 use serde::{Deserialize, Serialize};
@@ -146,7 +146,7 @@ impl Workspace {
         todo!()
     }
 
-    /// Resolve the current `Environment` for the `Workspace`.
+    /// Get the current `Environment` for the `Workspace`.
     fn environmet(&self) -> Environment {
         Environment::new()
     }
@@ -156,14 +156,19 @@ impl Workspace {
         todo!()
     }
 
-    /// Resolve the current `Package`. The current `Package` is one found by its
+    /// Get the current `Package`. The current `Package` is one found by its
     /// metadata file nearest baseed on `Config` data.
-    fn current_package(&self) -> Package {
+    fn current_package(&self) -> HuakResult<Package> {
         todo!()
     }
 
-    /// Resolve the `Package`s for the `Workspace`.
+    /// Get the `Package`s for the `Workspace`.
     fn packages(&self) -> Vec<Package> {
+        todo!()
+    }
+
+    /// Get the current `LocalMetadata` based on the `Config` data.
+    fn current_local_metadata(&self) -> HuakResult<LocalMetdata> {
         todo!()
     }
 
@@ -172,13 +177,13 @@ impl Workspace {
         todo!()
     }
 
-    /// Resolve the current `PythonEnvironment`. The current `PythonEnvironment` is one
+    /// Get the current `PythonEnvironment`. The current `PythonEnvironment` is one
     /// found by its configuration file or `Interpreter` nearest baseed on `Config` data.
-    fn current_python_environment(&self) -> PythonEnvironment {
+    fn current_python_environment(&self) -> HuakResult<PythonEnvironment> {
         todo!()
     }
 
-    /// Resolve the `PythonEnvironment`s for the `Workspace`.
+    /// Get the `PythonEnvironment`s for the `Workspace`.
     fn python_environments(&self) -> Vec<PythonEnvironment> {
         todo!()
     }
@@ -187,7 +192,7 @@ impl Workspace {
     fn new_python_environment(&self) -> HuakResult<PythonEnvironment> {
         let python_path = match self.env.python_paths().next() {
             Some(it) => it,
-            None => return Err(Error::PythonNotFoundError),
+            None => return Err(Error::PythonNotFound),
         };
 
         let name = DEFAULT_VENV_NAME;
@@ -201,6 +206,10 @@ impl Workspace {
 
         Ok(PythonEnvironment::new(path)?)
     }
+}
+
+struct WorkspaceOptions {
+    uses_git: bool,
 }
 
 /// Search for a Python virtual environment.
@@ -220,8 +229,8 @@ pub fn find_venv_root<T: AsRef<Path>>(
         from,
         stop_after,
     ) {
-        Ok(it) => it.ok_or(Error::PythonEnvironmentNotFoundError)?,
-        Err(_) => return Err(Error::PythonEnvironmentNotFoundError),
+        Ok(it) => it.ok_or(Error::PythonEnvironmentNotFound)?,
+        Err(_) => return Err(Error::PythonEnvironmentNotFound),
     };
 
     let root = file_path.parent().ok_or(Error::InternalError(
@@ -344,7 +353,7 @@ impl PythonEnvironment {
     /// Initialize a new `PythonEnvironment`.
     pub fn new<T: AsRef<Path>>(path: T) -> HuakResult<Self> {
         if !path.as_ref().join(VENV_CONFIG_FILE_NAME).exists() {
-            return Err(Error::UnimplementedError(format!(
+            return Err(Error::Unimplemented(format!(
                 "{} is not supported",
                 path.as_ref().display()
             )));
@@ -391,17 +400,17 @@ impl PythonEnvironment {
         &self,
         packages: PackageIter,
         options: &InstallOptions,
+        config: &Config,
     ) -> HuakResult<()> {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "install"])
-            .args(packages.map(|item| item.to_string()));
+            .args(packages.map(|item| item.to_dep_str()));
 
         if let Some(v) = options.values.as_ref() {
             cmd.args(v.iter().map(|item| item.as_str()));
         }
 
-        let mut terminal = options.terminal();
-        terminal.run_command(&mut cmd)
+        config.terminal().run_command(&mut cmd)
     }
 
     /// Uninstall many Python packages from the environment.
@@ -409,40 +418,40 @@ impl PythonEnvironment {
         &self,
         packages: PackageIter,
         options: &InstallOptions,
+        config: &Config,
     ) -> HuakResult<()> {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "uninstall"])
-            .args(packages.map(|item| item.to_string()))
+            .args(packages.map(|item| item.to_dep_str()))
             .arg("-y");
 
         if let Some(v) = options.values.as_ref() {
             cmd.args(v.iter().map(|item| item.as_str()));
         }
 
-        let mut terminal = options.terminal();
-        terminal.run_command(&mut cmd)
+        config.terminal().run_command(&mut cmd)
     }
 
     /// Update many Python packages in the environment.
     pub fn update_packages<T>(
         &self,
-        packages: &[T],
-        options: &InstallerOptions,
+        packages: PackageIter,
+        options: &InstallOptions,
+        config: &Config,
     ) -> HuakResult<()>
     where
         T: Display + AsRef<OsStr>,
     {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "install", "--upgrade"])
-            .args(packages.map(|item| item.to_string()))
+            .args(packages.map(|item| item.to_dep_str()))
             .arg("-y");
 
         if let Some(v) = options.values.as_ref() {
             cmd.args(v.iter().map(|item| item.as_str()));
         }
 
-        let mut terminal = options.terminal();
-        terminal.run_command(&mut cmd)
+        config.terminal().run_command(&mut cmd)
     }
 
     /// Check if the environment is already activated.
@@ -577,6 +586,11 @@ fn pip_freeze(interpreter: &Interpreter) -> HuakResult<Vec<Package>> {
     Ok(packages)
 }
 
+#[derive(Clone)]
+struct InstallOptions {
+    values: Option<Vec<String>>,
+}
+
 // Data about some environment's Python configuration. This abstraction is modeled after
 /// the pyenv.cfg file used for Python virtual environments.
 struct VenvConfig {
@@ -655,6 +669,8 @@ trait ToDepStr {
 struct Package {
     /// Information used to identify the `Package`.
     id: PackageId,
+    /// The `Package`'s core `Metadata`.
+    metadata: Metadata,
 }
 
 impl Package {
@@ -673,7 +689,7 @@ impl Package {
 
 impl ToDepStr for Package {
     fn to_dep_str(&self) -> &str {
-        self.to_string().as_str()
+        format!("{}=={}", self.name(), self.version()).as_str()
     }
 }
 
@@ -719,15 +735,36 @@ impl FromStr for Package {
             version: version_specifer.version().to_owned(),
         };
 
-        let package = Package { id };
+        let project = Project {
+            name,
+            version: None,
+            description: None,
+            readme: None,
+            requires_python: None,
+            license: None,
+            authors: None,
+            maintainers: None,
+            keywords: None,
+            classifiers: None,
+            urls: None,
+            entry_points: None,
+            scripts: None,
+            gui_scripts: None,
+            dependencies: None,
+            optional_dependencies: None,
+            dynamic: None,
+            license_expression: None,
+            license_files: None,
+        };
+
+        let metadata = Metadata {
+            project,
+            tool: None,
+        };
+
+        let package = Package { id, metadata };
 
         Ok(package)
-    }
-}
-
-impl Display for Package {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}=={}", self.name(), self.version())
     }
 }
 
@@ -745,7 +782,7 @@ struct PackageId {
 }
 
 struct LocalMetdata {
-    metadata: PyProjectToml, // TODO: https://github.com/cnpryer/huak/issues/574
+    metadata: Metadata, // TODO: https://github.com/cnpryer/huak/issues/574
     path: PathBuf,
 }
 
@@ -755,7 +792,7 @@ impl LocalMetdata {
         if path.as_ref().file_name()
             != Some(OsStr::new(DEFAULT_METADATA_FILE_NAME))
         {
-            return Err(Error::UnimplementedError(format!(
+            return Err(Error::Unimplemented(format!(
                 "{} is not supported",
                 path.as_ref().display()
             )));
@@ -766,131 +803,13 @@ impl LocalMetdata {
         Ok(local_metadata)
     }
 
-    pub fn write_file(&self, path: impl AsRef<Path>) -> HuakResult<()> {
+    pub fn write_file(&self) -> HuakResult<()> {
         let string = self.to_string_pretty()?;
-        Ok(std::fs::write(path, string)?)
+        Ok(std::fs::write(self.path, string)?)
     }
 
     pub fn to_string_pretty(&self) -> HuakResult<String> {
         Ok(toml_edit::ser::to_string_pretty(&self.metadata)?)
-    }
-
-    pub fn add_dependency(&mut self, dependency: &str) {
-        self.metadata.project.as_mut().map(|project| {
-            project
-                .dependencies
-                .as_mut()
-                .map(|deps| deps.push(dependency.to_string()))
-        });
-    }
-
-    pub fn project_name(&self) -> Option<&str> {
-        self.metadata
-            .project
-            .as_ref()
-            .map(|project| project.name.as_str())
-    }
-
-    pub fn set_project_name(&mut self, name: String) {
-        self.metadata
-            .project
-            .as_mut()
-            .map(|project| project.name = name);
-    }
-
-    pub fn project_version(&self) -> Option<&str> {
-        self.metadata
-            .project
-            .as_ref()
-            .and_then(|project| project.version.as_deref())
-    }
-
-    pub fn dependencies(&self) -> Option<&[String]> {
-        self.metadata
-            .project
-            .as_ref()
-            .and_then(|project| project.dependencies.as_deref())
-    }
-
-    pub fn optional_dependencies(
-        &self,
-    ) -> Option<&IndexMap<String, Vec<String>>> {
-        self.metadata
-            .project
-            .as_ref()
-            .and_then(|project| project.optional_dependencies.as_ref())
-    }
-
-    pub fn optional_dependencey_group(
-        &self,
-        group: &str,
-    ) -> Option<&Vec<String>> {
-        self.metadata
-            .project
-            .as_ref()
-            .and_then(|p| p.optional_dependencies.as_ref())
-            .and_then(|deps| deps.get(group))
-    }
-
-    pub fn add_optional_dependency(&mut self, dependency: &str, group: &str) {
-        self.metadata.project.as_mut().map(|project| {
-            project
-                .optional_dependencies
-                .as_mut()
-                .get_or_insert(&mut IndexMap::new())
-                .entry(group.to_string())
-                .or_insert_with(Vec::new)
-                .push(dependency.to_string())
-        });
-    }
-
-    pub fn remove_dependency(&mut self, dependency: &str) {
-        self.metadata
-            .project
-            .as_mut()
-            .and_then(|project| project.dependencies.as_mut())
-            .filter(|deps| deps.iter().any(|dep| dep.contains(dependency)))
-            .map(|deps| {
-                let i = deps
-                    .iter()
-                    .position(|dep| dep.contains(dependency))
-                    .unwrap();
-                deps.remove(i);
-            });
-    }
-
-    pub fn remove_optional_dependency(
-        &mut self,
-        dependency: &str,
-        group: &str,
-    ) {
-        self.metadata
-            .project
-            .as_mut()
-            .and_then(|project| project.optional_dependencies.as_mut())
-            .and_then(|g| g.get_mut(group))
-            .and_then(|deps| {
-                deps.iter()
-                    .position(|dep| dep.contains(dependency))
-                    .map(|i| deps.remove(i))
-            });
-    }
-
-    pub fn scripts(&self) -> Option<&IndexMap<String, String, RandomState>> {
-        self.metadata
-            .project
-            .as_ref()
-            .and_then(|project| project.scripts.as_ref())
-    }
-
-    pub fn add_script(&mut self, name: &str, entrypoint: &str) {
-        self.metadata.project.as_mut().map(|project| {
-            project
-                .scripts
-                .get_or_insert(IndexMap::new())
-                .entry(name.to_string())
-                .or_insert(entrypoint.to_string())
-        });
     }
 }
 
@@ -910,21 +829,157 @@ fn local_metadata<T: AsRef<Path>>(path: T) -> HuakResult<LocalMetdata> {
                 path.as_ref().display()
             )))
         }
-    };
+    }
+    .to_owned();
+    let tool = pyproject_toml.tool.to_owned();
+
+    let metadata = Metadata { project, tool };
 
     let local_metadata = LocalMetdata {
-        metadata: pyproject_toml,
+        metadata,
         path: path.as_ref().to_path_buf(),
     };
 
     Ok(local_metadata)
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "kebab-case")]
+/// The core `Metadata` of a `Package`.
+///
+/// See https://peps.python.org/pep-0621/.
+struct Metadata {
+    project: Project,
+    tool: Option<Table>,
+}
+
+impl Metadata {
+    pub fn project_name(&self) -> &str {
+        self.project.name.as_str()
+    }
+
+    pub fn set_project_name(&mut self, name: String) {
+        self.project.name = name
+    }
+
+    pub fn project_version(&self) -> Option<PEP440Version> {
+        self.project.version
+    }
+
+    pub fn dependencies(&self) -> Option<&[Requirement]> {
+        self.project.dependencies.as_deref()
+    }
+
+    pub fn contains_dependency(
+        &self,
+        dependency: &Dependency,
+    ) -> HuakResult<bool> {
+        todo!()
+    }
+
+    pub fn contains_dependency_any(
+        &self,
+        dependency: &Dependency,
+    ) -> HuakResult<bool> {
+        todo!()
+    }
+
+    pub fn add_dependency(&mut self, dependency: Dependency) {
+        self.project
+            .dependencies
+            .as_mut()
+            .map(|deps| deps.push(dependency.requirement));
+    }
+
+    pub fn optional_dependencies(
+        &self,
+    ) -> Option<&IndexMap<String, Vec<Requirement>>> {
+        self.project.optional_dependencies.as_ref()
+    }
+
+    pub fn contains_optional_dependency(
+        &self,
+        dependency: &Dependency,
+        group: &str,
+    ) -> HuakResult<bool> {
+        todo!()
+    }
+
+    pub fn optional_dependencey_group(
+        &self,
+        group: &str,
+    ) -> Option<&Vec<Requirement>> {
+        self.project
+            .optional_dependencies
+            .as_ref()
+            .and_then(|deps| deps.get(group))
+    }
+
+    pub fn add_optional_dependency(
+        &mut self,
+        dependency: Dependency,
+        group: &str,
+    ) {
+        self.project
+            .optional_dependencies
+            .as_mut()
+            .get_or_insert(&mut IndexMap::new())
+            .entry(group.to_string())
+            .or_insert_with(Vec::new)
+            .push(dependency.requirement);
+    }
+
+    pub fn remove_dependency(&mut self, dependency: &Dependency) {
+        self.project
+            .dependencies
+            .as_mut()
+            .filter(|deps| deps.contains(&dependency.requirement))
+            .map(|deps| {
+                let i = deps
+                    .iter()
+                    .position(|dep| *dep == dependency.requirement)
+                    .unwrap();
+                deps.remove(i);
+            });
+    }
+
+    pub fn remove_optional_dependency(
+        &mut self,
+        dependency: &Dependency,
+        group: &str,
+    ) {
+        self.project
+            .optional_dependencies
+            .as_mut()
+            .and_then(|g| g.get_mut(group))
+            .and_then(|deps| {
+                deps.iter()
+                    .position(|dep| *dep == dependency.requirement)
+                    .map(|i| deps.remove(i))
+            });
+    }
+
+    pub fn scripts(&self) -> Option<&IndexMap<String, String, RandomState>> {
+        self.project.scripts.as_ref()
+    }
+
+    pub fn add_script(&mut self, name: &str, entrypoint: &str) {
+        self.project
+            .scripts
+            .get_or_insert(IndexMap::new())
+            .entry(name.to_string())
+            .or_insert(entrypoint.to_string());
+    }
+}
+
 fn parse_toml_depenencies(project: &Project) -> Option<Vec<Dependency>> {
     project.dependencies.as_ref().map(|items| {
         items
             .iter()
-            .map(|item| Dependency::from_str(item).expect("toml dependencies"))
+            .map(|item| {
+                Dependency::from_str(&item.to_string())
+                    .expect("toml dependencies")
+            })
             .collect::<Vec<Dependency>>()
     })
 }
@@ -938,7 +993,7 @@ fn parse_toml_optional_dependencies(
                 group.clone(),
                 deps.iter()
                     .map(|dep| {
-                        Dependency::from_str(dep)
+                        Dependency::from_str(&dep.to_string())
                             .expect("toml optional dependencies")
                     })
                     .collect(),
@@ -946,6 +1001,14 @@ fn parse_toml_optional_dependencies(
         }))
     })
 }
+
+impl PartialEq for Metadata {
+    fn eq(&self, other: &Self) -> bool {
+        self.project == other.project && self.tool == other.tool
+    }
+}
+
+impl Eq for Metadata {}
 
 /// A pyproject.toml as specified in PEP 517
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -1015,21 +1078,15 @@ dependencies = []
 /// let dependency = Dependency::from_str("my-dependency>=0.1.0,<0.2.0").unwrap();
 /// ```
 struct Dependency {
-    /// The `Dependency` name.
-    name: String,
-    /// The canonical name of the `Dependency`.
-    canonical_name: String,
+    /// PEP 508 dependency (called `Requirement` in pep508_rs).
+    requirement: Requirement,
     /// The PEP440-compliant `VersionSpecifiers`. See https://peps.python.org/pep-0440/.
     version_specifiers: VersionSpecifiers,
 }
 
 impl Dependency {
     fn name(&self) -> &str {
-        &self.name
-    }
-
-    fn canonical_name(&self) -> &str {
-        &self.canonical_name
+        &self.requirement.name
     }
 
     fn version_specifiers(&self) -> &VersionSpecifiers {
@@ -1040,9 +1097,27 @@ impl Dependency {
 impl ToPkgId for Dependency {
     fn to_pkg(mut self) -> PackageId {
         PackageId {
-            name: self.name,
+            name: self.requirement.name,
             version: *self.version_specifiers.first().unwrap().version(),
-        } // TODO
+        } // TODO: Handle multiple version specs
+    }
+}
+
+impl ToDepStr for Dependency {
+    fn to_dep_str(&self) -> &str {
+        let version_specifiers = self.version_specifiers.iter().map(|spec| {
+            spec.to_string()
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .join("")
+        });
+
+        format!(
+            "{}{}",
+            self.name(),
+            version_specifiers.collect::<Vec<_>>().join(",")
+        )
+        .as_str()
     }
 }
 
@@ -1062,31 +1137,16 @@ impl FromStr for Dependency {
         let version_specifiers = VersionSpecifiers::from_str(spec_str)?;
 
         let dependency = Dependency {
-            name: name.to_string(),
-            canonical_name: canonical_package_name(name.as_ref())?,
+            requirement: Requirement {
+                name,
+                extras: None,
+                version_or_url: None,
+                marker: None,
+            },
             version_specifiers,
         };
 
         Ok(dependency)
-    }
-}
-
-impl Display for Dependency {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // Remove any whitespace from the version specifiers.
-        let version_specifiers = self.version_specifiers.iter().map(|spec| {
-            spec.to_string()
-                .split_whitespace()
-                .collect::<Vec<_>>()
-                .join("")
-        });
-
-        write!(
-            f,
-            "{}{}",
-            self.name,
-            version_specifiers.collect::<Vec<_>>().join(","),
-        )
     }
 }
 
@@ -1098,7 +1158,7 @@ impl AsRef<OsStr> for Dependency {
 
 impl PartialEq for Dependency {
     fn eq(&self, other: &Self) -> bool {
-        self.canonical_name == other.canonical_name
+        self.requirement == other.requirement
     }
 }
 
@@ -1478,9 +1538,12 @@ mod tests {
             .join("pyproject.toml");
         let local_metdata = LocalMetdata::new(path).unwrap();
 
-        assert_eq!(local_metdata.project_name().unwrap(), "mock_project");
-        assert_eq!(local_metdata.project_version().unwrap(), "0.0.1");
-        assert!(local_metdata.dependencies().is_some())
+        assert_eq!(local_metdata.metadata.project_name(), "mock_project");
+        assert_eq!(
+            local_metdata.metadata.project_version().unwrap(),
+            PEP440Version::from_str("0.0.1").unwrap()
+        );
+        assert!(local_metdata.metadata.dependencies().is_some())
     }
 
     #[test]
@@ -1524,8 +1587,8 @@ dev = [
         let local_metdata = LocalMetdata::new(path).unwrap();
 
         assert_eq!(
-            local_metdata.dependencies().unwrap().deref(),
-            vec!["click==8.1.3"]
+            local_metdata.metadata.dependencies().unwrap().deref(),
+            vec![Requirement::from_str("click==8.1.3").unwrap()]
         );
     }
 
@@ -1538,10 +1601,15 @@ dev = [
 
         assert_eq!(
             local_metdata
+                .metadata
                 .optional_dependencey_group("dev")
                 .unwrap()
                 .deref(),
-            vec!["pytest>=6", "black==22.8.0", "isort==5.12.0",]
+            vec![
+                Requirement::from_str("pytest>=6").unwrap(),
+                Requirement::from_str("black==22.8.0").unwrap(),
+                Requirement::from_str("isort==5.12.0").unwrap()
+            ]
         );
     }
 
@@ -1551,8 +1619,17 @@ dev = [
             .join("mock-project")
             .join("pyproject.toml");
         let mut local_metdata = LocalMetdata::new(path).unwrap();
+        let dep = Dependency {
+            requirement: Requirement {
+                name: "test".to_string(),
+                extras: None,
+                version_or_url: None,
+                marker: None,
+            },
+            version_specifiers: VersionSpecifiers::from_str("==0.0.0").unwrap(),
+        };
+        local_metdata.metadata.add_dependency(dep);
 
-        local_metdata.add_dependency("test");
         assert_eq!(
             local_metdata.to_string_pretty().unwrap(),
             r#"[build-system]
@@ -1589,8 +1666,14 @@ dev = [
             .join("pyproject.toml");
         let mut local_metadata = LocalMetdata::new(path).unwrap();
 
-        local_metadata.add_optional_dependency("test1", "dev");
-        local_metadata.add_optional_dependency("test2", "new-group");
+        local_metadata.metadata.add_optional_dependency(
+            Dependency::from_str("test1").unwrap(),
+            "dev",
+        );
+        local_metadata.metadata.add_optional_dependency(
+            Dependency::from_str("test2").unwrap(),
+            "new-group",
+        );
         assert_eq!(
             local_metadata.to_string_pretty().unwrap(),
             r#"[build-system]
@@ -1626,7 +1709,9 @@ new-group = ["test2"]
             .join("pyproject.toml");
         let mut local_metadata = LocalMetdata::new(path).unwrap();
 
-        local_metadata.remove_dependency("click");
+        local_metadata
+            .metadata
+            .remove_dependency(&Dependency::from_str("click").unwrap());
         assert_eq!(
             local_metadata.to_string_pretty().unwrap(),
             r#"[build-system]
@@ -1660,7 +1745,10 @@ dev = [
             .join("pyproject.toml");
         let mut local_metadata = LocalMetdata::new(path).unwrap();
 
-        local_metadata.remove_optional_dependency("isort", "dev");
+        local_metadata.metadata.remove_optional_dependency(
+            &Dependency::from_str("isort").unwrap(),
+            "dev",
+        );
         assert_eq!(
             local_metadata.to_string_pretty().unwrap(),
             r#"[build-system]
@@ -1702,11 +1790,10 @@ dev = [
 
     #[test]
     fn dependency_from_str() {
-        let dep = Dependency::from_str("package_name==0.0.0").unwrap();
+        let dep = Dependency::from_str("package-name==0.0.0").unwrap();
 
-        assert_eq!(dep.to_string(), "package_name==0.0.0");
-        assert_eq!(dep.name, "package_name");
-        assert_eq!(dep.canonical_name, "package-name");
+        assert_eq!(dep.to_dep_str(), "package-name==0.0.0");
+        assert_eq!(dep.requirement.name, "package-name");
         assert_eq!(
             *dep.version_specifiers,
             vec![pep440_rs::VersionSpecifier::from_str("==0.0.0").unwrap()]

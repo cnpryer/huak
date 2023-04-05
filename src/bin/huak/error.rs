@@ -49,12 +49,6 @@ impl From<std::io::ErrorKind> for Error {
     }
 }
 
-impl From<std::str::Utf8Error> for Error {
-    fn from(e: std::str::Utf8Error) -> Error {
-        Error::new(huak::Error::Utf8Error(e), ExitCode::FAILURE)
-    }
-}
-
 impl From<std::env::VarError> for Error {
     fn from(e: std::env::VarError) -> Error {
         Error::new(huak::Error::EnvVarError(e), ExitCode::FAILURE)

@@ -28,7 +28,8 @@ indexmap = "1.9.2"
 # included to build PyPi Wheels (see .github/workflow/README.md)
 openssl = { version = "0.10.48", features = ["vendored"], optional = true }
 pep440_rs = "0.3.3"
-pyproject-toml = "0.4.0"
+pep508_rs = "0.1.2"
+pyproject-toml = "0.5.1"
 regex = "1.7.1"
 serde = { version = "1.0.156", features = ["derive"] }
 serde_json = "1.0.94"
