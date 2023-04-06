@@ -48,7 +48,7 @@
 use error::{Error, HuakResult};
 use indexmap::IndexMap;
 use pep440_rs::{Operator, Version as PEP440Version, VersionSpecifiers};
-use pep508_rs::Requirement;
+use pep508_rs::{Requirement, VersionOrUrl};
 use pyproject_toml::{Project, PyProjectToml as ProjectToml};
 use regex::{Captures, Regex};
 use serde::{Deserialize, Serialize};
@@ -389,15 +389,19 @@ impl PythonEnvironment {
     }
 
     /// Install Python `Package`s to the `PythonEnvironment`.
-    pub fn install_packages(
+    pub fn install_packages<T>(
         &self,
-        packages: PackageIter,
+        packages: T,
         options: &InstallOptions,
         config: &Config,
-    ) -> HuakResult<()> {
+    ) -> HuakResult<()>
+    where
+        T: IntoIterator,
+        T::Item: ToDepStr,
+    {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "install"])
-            .args(packages.map(|item| item.to_dep_str()));
+            .args(packages.into_iter().map(|item| item.to_dep_str()));
 
         if let Some(v) = options.values.as_ref() {
             cmd.args(v.iter().map(|item| item.as_str()));
@@ -407,15 +411,19 @@ impl PythonEnvironment {
     }
 
     /// Uninstall Python `Package`s from the `PythonEnvironment`.
-    pub fn uninstall_packages(
+    pub fn uninstall_packages<T>(
         &self,
-        packages: PackageIter,
+        packages: T,
         options: &InstallOptions,
         config: &Config,
-    ) -> HuakResult<()> {
+    ) -> HuakResult<()>
+    where
+        T: IntoIterator,
+        T::Item: ToDepStr,
+    {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "uninstall"])
-            .args(packages.map(|item| item.to_dep_str()))
+            .args(packages.into_iter().map(|item| item.to_dep_str()))
             .arg("-y");
 
         if let Some(v) = options.values.as_ref() {
@@ -428,16 +436,17 @@ impl PythonEnvironment {
     /// Update Python `Package`s installed in the `PythonEnvironment`.
     pub fn update_packages<T>(
         &self,
-        packages: PackageIter,
+        packages: T,
         options: &InstallOptions,
         config: &Config,
     ) -> HuakResult<()>
     where
-        T: Display + AsRef<OsStr>,
+        T: IntoIterator,
+        T::Item: ToDepStr,
     {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "install", "--upgrade"])
-            .args(packages.map(|item| item.to_dep_str()))
+            .args(packages.into_iter().map(|item| item.to_dep_str()))
             .arg("-y");
 
         if let Some(v) = options.values.as_ref() {
@@ -1109,7 +1118,7 @@ struct Dependency {
     /// PEP 508 dependency (called `Requirement` in pep508_rs).
     requirement: Requirement, // TODO
     /// The PEP440-compliant `VersionSpecifiers`. See https://peps.python.org/pep-0440/.
-    version_specifiers: VersionSpecifiers,
+    version_specifiers: Option<VersionSpecifiers>,
 }
 
 impl Dependency {
@@ -1119,16 +1128,23 @@ impl Dependency {
     }
 
     /// Get a reference to the `Dependency`'s `VersionSpecifiers`.
-    fn version_specifiers(&self) -> &VersionSpecifiers {
-        &self.version_specifiers
+    fn version_specifiers(&self) -> Option<&VersionSpecifiers> {
+        self.version_specifiers.as_ref()
     }
 }
 
 impl ToPkgId for Dependency {
     fn to_pkg(mut self) -> PackageId {
+        let version_specifiers = self
+            .version_specifiers
+            .expect("`VersionSpecifiers` for `PacakgeId`");
+        let version = version_specifiers
+            .first()
+            .expect("a `Version` for `PackageId`")
+            .version();
         PackageId {
             name: self.requirement.name,
-            version: *self.version_specifiers.first().unwrap().version(),
+            version: *version,
         } // TODO: If a dependency has multiple `VersionSpecifier`s a `Version` needs to be resolved.
     }
 }
@@ -1176,10 +1192,24 @@ impl FromStr for Dependency {
                 version_or_url: None,
                 marker: None,
             },
-            version_specifiers,
+            version_specifiers: Some(version_specifiers),
         };
 
         Ok(dependency)
+    }
+}
+
+impl From<&Requirement> for Dependency {
+    fn from(value: &Requirement) -> Self {
+        let version_specifiers = match value.version_or_url {
+            Some(VersionOrUrl::VersionSpecifier(specs)) => Some(specs),
+            _ => None,
+        };
+
+        Dependency {
+            requirement: value.clone(),
+            version_specifiers,
+        }
     }
 }
 
@@ -1692,7 +1722,9 @@ dev = [
                 version_or_url: None,
                 marker: None,
             },
-            version_specifiers: VersionSpecifiers::from_str("==0.0.0").unwrap(),
+            version_specifiers: Some(
+                VersionSpecifiers::from_str("==0.0.0").unwrap(),
+            ),
         };
         local_metdata.metadata.add_dependency(dep);
 
@@ -1861,7 +1893,7 @@ dev = [
         assert_eq!(dep.to_dep_str(), "package-name==0.0.0");
         assert_eq!(dep.requirement.name, "package-name");
         assert_eq!(
-            *dep.version_specifiers,
+            *dep.version_specifiers.unwrap(),
             vec![pep440_rs::VersionSpecifier::from_str("==0.0.0").unwrap()]
         );
     }
