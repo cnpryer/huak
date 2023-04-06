@@ -14,39 +14,41 @@ use crate::{
 };
 
 pub struct AddOptions {
-    pub args: Option<Vec<String>>,
     pub install_options: InstallOptions,
 }
 pub struct BuildOptions {
-    pub args: Option<Vec<String>>,
+    /// An values vector of build options typically used for passing on arguments.
+    pub values: Option<Vec<String>>,
     pub install_options: InstallOptions,
 }
 pub struct FormatOptions {
-    pub args: Option<Vec<String>>,
+    /// An values vector of format options typically used for passing on arguments.
+    pub values: Option<Vec<String>>,
     pub install_options: InstallOptions,
 }
 
 pub struct LintOptions {
-    pub args: Option<Vec<String>>,
+    /// An values vector of lint options typically used for passing on arguments.
+    pub values: Option<Vec<String>>,
     pub include_types: bool,
     pub install_options: InstallOptions,
 }
 
 pub struct RemoveOptions {
-    pub args: Option<Vec<String>>,
     pub install_options: InstallOptions,
 }
 pub struct PublishOptions {
-    pub args: Option<Vec<String>>,
+    /// An values vector of publish options typically used for passing on arguments.
+    pub values: Option<Vec<String>>,
     pub install_options: InstallOptions,
 }
 pub struct TestOptions {
-    pub args: Option<Vec<String>>,
+    /// An values vector of test options typically used for passing on arguments.
+    pub values: Option<Vec<String>>,
     pub install_options: InstallOptions,
 }
 #[derive(Clone)]
 pub struct UpdateOptions {
-    pub args: Option<Vec<String>>,
     pub install_options: InstallOptions,
 }
 pub struct CleanOptions {
@@ -233,7 +235,7 @@ pub fn build_project(
 
     let mut cmd = Command::new(python_env.python_path());
     let mut args = vec!["-m", "build"];
-    if let Some(it) = options.install_options.values.as_ref() {
+    if let Some(it) = options.values.as_ref() {
         args.extend(it.iter().map(|item| item.as_str()));
     }
     make_venv_command(&mut cmd, &python_env)?;
@@ -243,8 +245,8 @@ pub fn build_project(
 }
 
 pub fn clean_project(
-    config: &mut Config,
-    options: Option<CleanOptions>,
+    config: &Config,
+    options: &CleanOptions,
 ) -> HuakResult<()> {
     let workspace = config.workspace()?;
 
@@ -259,29 +261,25 @@ pub fn clean_project(
                 }
             });
     }
-    if let Some(o) = options.as_ref() {
-        if o.include_pycache {
-            let pattern = format!(
-                "{}",
-                workspace.root.join("**").join("__pycache__").display()
-            );
-            glob::glob(&pattern)?.for_each(|item| {
-                if let Ok(it) = item {
-                    std::fs::remove_dir_all(it).ok();
-                }
-            })
-        }
-        if o.include_compiled_bytecode {
-            let pattern = format!(
-                "{}",
-                workspace.root.join("**").join("*.pyc").display()
-            );
-            glob::glob(&pattern)?.for_each(|item| {
-                if let Ok(it) = item {
-                    std::fs::remove_file(it).ok();
-                }
-            })
-        }
+    if options.include_pycache {
+        let pattern = format!(
+            "{}",
+            workspace.root.join("**").join("__pycache__").display()
+        );
+        glob::glob(&pattern)?.for_each(|item| {
+            if let Ok(it) = item {
+                std::fs::remove_dir_all(it).ok();
+            }
+        })
+    }
+    if options.include_compiled_bytecode {
+        let pattern =
+            format!("{}", workspace.root.join("**").join("*.pyc").display());
+        glob::glob(&pattern)?.for_each(|item| {
+            if let Ok(it) = item {
+                std::fs::remove_file(it).ok();
+            }
+        })
     }
     Ok(())
 }
@@ -351,7 +349,7 @@ pub fn format_project(
     make_venv_command(&mut cmd, &python_env)?;
     make_venv_command(&mut ruff_cmd, &python_env)?;
     let mut args = vec!["-m", "black", "."];
-    if let Some(v) = options.install_options.values.as_ref() {
+    if let Some(v) = options.values.as_ref() {
         args.extend(v.iter().map(|item| item.as_str()));
         if v.contains(&"--check".to_string()) {
             terminal.print_warning(
@@ -443,7 +441,7 @@ pub fn install_project_dependencies(
 pub fn install_project_optional_dependencies(
     groups: &[String],
     config: &Config,
-    options: Option<InstallOptions>,
+    options: &InstallOptions,
 ) -> HuakResult<()> {
     let workspace = config.workspace()?;
     let package = workspace.current_local_metadata()?;
@@ -517,7 +515,7 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
     let mut terminal = config.terminal();
     let mut cmd = Command::new(python_env.python_path());
     let mut args = vec!["-m", "ruff", "check", "."];
-    if let Some(v) = options.install_options.values.as_ref() {
+    if let Some(v) = options.values.as_ref() {
         args.extend(v.iter().map(|item| item.as_str()));
     }
     if options.include_types {
@@ -558,10 +556,10 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
 
 pub fn list_python(config: &Config) -> HuakResult<()> {
     let env = Environment::new();
-    env.python_paths().enumerate().for_each(|(i, item)| {
+    env.python_paths().enumerate().for_each(|(i, path)| {
         config
             .terminal()
-            .print_custom(i + 1, item.1.display(), Color::Blue, false)
+            .print_custom(i + 1, path.display(), Color::Blue, false)
             .ok();
     });
 
@@ -662,7 +660,7 @@ pub fn publish_project(
 
     let mut cmd = Command::new(python_env.python_path());
     let mut args = vec!["-m", "twine", "upload", "dist/*"];
-    if let Some(v) = options.install_options.values.as_ref() {
+    if let Some(v) = options.values.as_ref() {
         args.extend(v.iter().map(|item| item.as_str()));
     }
     make_venv_command(&mut cmd, &python_env)?;
@@ -711,7 +709,7 @@ pub fn remove_project_optional_dependencies(
     dependencies: &[String],
     group: &str,
     config: &Config,
-    options: RemoveOptions,
+    options: &RemoveOptions,
 ) -> HuakResult<()> {
     let workspace = config.workspace()?;
     let package = workspace.current_package()?;
@@ -800,7 +798,7 @@ pub fn test_project(config: &Config, options: &TestOptions) -> HuakResult<()> {
         workspace.root.clone()
     };
     let mut args = vec!["-m", "pytest"];
-    if let Some(v) = options.install_options.values.as_ref() {
+    if let Some(v) = options.values.as_ref() {
         args.extend(v.iter().map(|item| item.as_str()));
     }
     cmd.args(args).env("PYTHONPATH", python_path);
@@ -934,7 +932,6 @@ pub fn update_project_optional_dependencies(
         python_env.update_packages(&deps, &options.install_options, config)?;
     }
 
-    let mut write_manifest = false;
     let packages = python_env.installed_packages()?;
     let mut groups = Vec::new();
 
@@ -957,13 +954,12 @@ pub fn update_project_optional_dependencies(
             if metadata.metadata.contains_optional_dependency(&dep, g)? {
                 metadata.metadata.remove_optional_dependency(&dep, g);
                 metadata.metadata.add_optional_dependency(dep, g);
-                write_manifest = true;
             }
         }
+    }
 
-        if package.metadata != metadata.metadata {
-            metadata.write_file()?;
-        }
+    if package.metadata != metadata.metadata {
+        metadata.write_file()?;
     }
 
     Ok(())
@@ -1069,10 +1065,10 @@ mod tests {
 
     use super::*;
     use crate::{
-        fs, sys::Terminal, test_resources_dir_path, Package, PyProjectToml,
-        Verbosity,
+        fs,
+        sys::{TerminalOptions, Verbosity},
+        test_resources_dir_path, Package, PyProjectToml,
     };
-    use pep440_rs::Version as Version440;
     use tempfile::tempdir;
 
     #[test]
@@ -1084,33 +1080,29 @@ mod tests {
         )
         .unwrap();
         let deps = ["ruff".to_string()];
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let ws = config.workspace().unwrap();
+        let package = ws.current_package().unwrap();
+        let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
+        let options = AddOptions {
+            args: None,
+            install_options: InstallOptions { values: None },
         };
-        let venv = PythonEnvironment::new(
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".venv"),
-        )
-        .unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
         venv.uninstall_packages(
             &deps.iter().map(|item| item.as_str()).collect::<Vec<&str>>(),
-            None,
-            &mut terminal,
+            &options.install_options,
+            &config,
         )
         .unwrap();
 
-        add_project_dependencies(&deps, &mut config, None).unwrap();
+        add_project_dependencies(&deps, &config, &options).unwrap();
 
-        let project = Project::new(config.workspace_root).unwrap();
         let dep = Dependency::from_str("ruff").unwrap();
 
         assert!(venv.contains_module("ruff").unwrap());
-        assert!(project.contains_dependency(&dep).unwrap());
+        assert!(package.metadata.contains_dependency(&dep).unwrap());
     }
 
     #[test]
@@ -1123,34 +1115,33 @@ mod tests {
         .unwrap();
         let deps = ["ruff".to_string()];
         let group = "dev";
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let ws = config.workspace().unwrap();
+        let package = ws.current_package().unwrap();
+        let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
+        let options = AddOptions {
+            args: None,
+            install_options: InstallOptions { values: None },
         };
-        let venv = PythonEnvironment::new(
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".venv"),
-        )
-        .unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
         venv.uninstall_packages(
             &deps.iter().map(|item| item.as_str()).collect::<Vec<&str>>(),
-            None,
-            &mut terminal,
+            &options.install_options,
+            &config,
         )
         .unwrap();
 
-        add_project_optional_dependencies(&deps, group, &mut config, None)
+        add_project_optional_dependencies(&deps, group, &config, &options)
             .unwrap();
 
-        let project = Project::new(config.workspace_root).unwrap();
         let dep = Dependency::from_str("ruff").unwrap();
 
         assert!(venv.contains_module("ruff").unwrap());
-        assert!(project.contains_optional_dependency(&dep, "dev").unwrap());
+        assert!(package
+            .metadata
+            .contains_optional_dependency(&dep, "dev")
+            .unwrap());
     }
 
     #[test]
@@ -1161,15 +1152,15 @@ mod tests {
             &dir.join("mock-project"),
         )
         .unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let options = BuildOptions {
+            args: None,
+            install_options: InstallOptions { values: None },
         };
 
-        build_project(&mut config, None).unwrap();
+        build_project(&config, &options).unwrap();
     }
 
     #[test]
@@ -1180,19 +1171,15 @@ mod tests {
             dir.join("mock-project"),
         )
         .unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
-        };
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
         let options = Some(CleanOptions {
             include_pycache: true,
             include_compiled_bytecode: true,
         });
 
-        clean_project(&mut config, options).unwrap();
+        clean_project(&config, options).unwrap();
 
         let dist = glob::glob(&format!(
             "{}",
@@ -1233,16 +1220,14 @@ mod tests {
             &dir.join("mock-project"),
         )
         .unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
-        };
-        let project = Project::new(&config.workspace_root).unwrap();
-        let fmt_filepath = project
-            .root()
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let ws = config.workspace().unwrap();
+        let metadata = ws.current_local_metadata().unwrap();
+        let fmt_filepath = metadata
+            .path
+            .parent()
             .unwrap()
             .join("src")
             .join("mock_project")
@@ -1251,8 +1236,16 @@ mod tests {
 def fn( ):
     pass"#;
         std::fs::write(&fmt_filepath, pre_fmt_str).unwrap();
+        let options = FormatOptions {
+            args: None,
+            install_options: InstallOptions { values: None },
+        };
+        let options = FormatOptions {
+            args: None,
+            install_options: InstallOptions { values: None },
+        };
 
-        format_project(&mut config, None).unwrap();
+        format_project(&config, &options).unwrap();
 
         let post_fmt_str = std::fs::read_to_string(&fmt_filepath).unwrap();
 
@@ -1268,27 +1261,21 @@ def fn( ):
     fn test_init_lib_project() {
         let dir = tempdir().unwrap().into_path();
         std::fs::create_dir(dir.join("mock-project")).unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
-        };
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let options = WorkspaceOptions { uses_git: false };
 
-        init_lib_project(&mut config, None).unwrap();
+        init_lib_project(&config, &options).unwrap();
 
-        let ser_toml =
-            PyProjectToml::new(config.workspace_root.join("pyproject.toml"))
-                .unwrap();
-        let mut pyproject_toml =
-            PyProjectToml::new(config.workspace_root.join("pyproject.toml"))
-                .unwrap();
-        pyproject_toml.set_project_name("mock-project".to_string());
+        let ws = config.workspace().unwrap();
+        let metadata = ws.current_local_metadata().unwrap();
+        let mut pyproject_toml = PyProjectToml::default();
+        pyproject_toml.project.unwrap().name = String::from("mock-project");
 
         assert_eq!(
-            ser_toml.to_string_pretty().unwrap(),
-            pyproject_toml.to_string_pretty().unwrap()
+            metadata.to_string_pretty().unwrap(),
+            toml::ser::to_string_pretty(&pyproject_toml).unwrap()
         );
     }
 
@@ -1296,24 +1283,20 @@ def fn( ):
     fn test_init_app_project() {
         let dir = tempdir().unwrap().into_path();
         std::fs::create_dir(dir.join("mock-project")).unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
-        };
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let options = WorkspaceOptions { uses_git: false };
 
-        init_app_project(&mut config, None).unwrap();
+        init_app_project(&config, &options).unwrap();
 
-        let ser_toml =
-            PyProjectToml::new(config.workspace_root.join("pyproject.toml"))
-                .unwrap();
+        let ws = config.workspace().unwrap();
+        let metadata = ws.current_local_metadata().unwrap();
         let mut pyproject_toml = PyProjectToml::default();
-        pyproject_toml.set_project_name("mock-project".to_string());
+        pyproject_toml.project.unwrap().name = String::from("mock-project");
 
         assert_eq!(
-            ser_toml.to_string_pretty().unwrap(),
+            metadata.to_string_pretty().unwrap(),
             r#"[build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -1338,30 +1321,20 @@ mock-project = "mock_project.main:main"
             &dir.join("mock-project"),
         )
         .unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
-        };
-        let venv = PythonEnvironment::new(
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".venv"),
-        )
-        .unwrap();
-        venv.uninstall_packages(&["click"], None, &mut config.terminal)
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let options = InstallOptions { values: None };
+        let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
+        let test_package = Package::from_str("click").unwrap();
+        venv.uninstall_packages(&[&test_package], &options, &config)
             .unwrap();
-        let package = Package {
-            name: String::from("click"),
-            canonical_name: String::from("click"),
-            version: Version440::from_str("0.0.0").unwrap(),
-        };
-        let had_package = venv.contains_package(&package);
+        let had_package = venv.contains_package(&test_package);
 
-        install_project_dependencies(&mut config, None).unwrap();
+        install_project_dependencies(&config, &options).unwrap();
 
         assert!(!had_package);
-        assert!(venv.contains_package(&package));
+        assert!(venv.contains_package(&test_package));
     }
 
     #[test]
@@ -1372,25 +1345,20 @@ mock-project = "mock_project.main:main"
             &dir.join("mock-project"),
         )
         .unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
-        };
-        let venv = PythonEnvironment::new(
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".venv"),
-        )
-        .unwrap();
-        venv.uninstall_packages(&["pytest"], None, &mut config.terminal)
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let options = InstallOptions { values: None };
+        let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
+        let test_package = Package::from_str("pytest").unwrap();
+        venv.uninstall_packages(&[&test_package], &options, &config)
             .unwrap();
         let had_package = venv.contains_module("pytest").unwrap();
 
         install_project_optional_dependencies(
-            &["dev".to_string()],
-            &mut config,
-            None,
+            &[String::from("dev")],
+            &config,
+            &options,
         )
         .unwrap();
 
@@ -1406,20 +1374,16 @@ mock-project = "mock_project.main:main"
             &dir.join("mock-project"),
         )
         .unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
-        };
-        let options = Some(LintOptions {
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let options = LintOptions {
             args: None,
             include_types: true,
-            install_options: None,
-        });
+            install_options: InstallOptions { values: None },
+        };
 
-        lint_project(&mut config, options).unwrap();
+        lint_project(&config, &options).unwrap();
     }
 
     #[test]
@@ -1430,21 +1394,19 @@ mock-project = "mock_project.main:main"
             &dir.join("mock-project"),
         )
         .unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let ws = config.workspace().unwrap();
+        let options = LintOptions {
+            args: None,
+            include_types: true,
+            install_options: InstallOptions { values: None },
         };
-        let options = Some(LintOptions {
-            args: Some(vec!["--fix".to_string()]),
-            include_types: false,
-            install_options: None,
-        });
-        let project = Project::new(&config.workspace_root).unwrap();
-        let lint_fix_filepath = project
-            .root()
+        let metadata = ws.current_local_metadata().unwrap();
+        let lint_fix_filepath = metadata
+            .path
+            .parent()
             .unwrap()
             .join("src")
             .join("mock_project")
@@ -1464,7 +1426,7 @@ def fn():
 "#;
         std::fs::write(&lint_fix_filepath, pre_fix_str).unwrap();
 
-        lint_project(&mut config, options).unwrap();
+        lint_project(&config, &options).unwrap();
 
         let post_fix_str = std::fs::read_to_string(&lint_fix_filepath).unwrap();
 
@@ -1474,19 +1436,18 @@ def fn():
     #[test]
     fn test_new_lib_project() {
         let dir = tempdir().unwrap().into_path();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
-        };
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let options = WorkspaceOptions { uses_git: false };
 
-        new_lib_project(&mut config, None).unwrap();
+        new_lib_project(&config, &options).unwrap();
 
-        let project = Project::new(config.workspace_root).unwrap();
-        let test_file_filepath = project
-            .root()
+        let ws = config.workspace().unwrap();
+        let metadata = ws.current_local_metadata().unwrap();
+        let test_file_filepath = metadata
+            .path
+            .parent()
             .unwrap()
             .join("tests")
             .join("test_version.py");
@@ -1497,8 +1458,9 @@ def fn():
 def test_version():
     __version__
 "#;
-        let init_file_filepath = project
-            .root()
+        let init_file_filepath = metadata
+            .path
+            .parent()
             .unwrap()
             .join("src")
             .join("mock_project")
@@ -1507,7 +1469,7 @@ def test_version():
         let expected_init_file = "__version__ = \"0.0.1\"
 ";
 
-        assert!(project.manifest.scripts.is_none());
+        assert!(metadata.metadata.project.scripts.is_none());
         assert_eq!(test_file, expected_test_file);
         assert_eq!(init_file, expected_init_file);
     }
@@ -1515,19 +1477,18 @@ def test_version():
     #[test]
     fn test_new_app_project() {
         let dir = tempdir().unwrap().into_path();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
-        };
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let options = WorkspaceOptions { uses_git: false };
 
-        new_app_project(&mut config, None).unwrap();
+        new_app_project(&config, &options).unwrap();
 
-        let project = Project::new(config.workspace_root).unwrap();
-        let main_file_filepath = project
-            .root()
+        let ws = config.workspace().unwrap();
+        let metadata = ws.current_local_metadata().unwrap();
+        let main_file_filepath = metadata
+            .path
+            .parent()
             .unwrap()
             .join("src")
             .join("mock_project")
@@ -1542,7 +1503,7 @@ if __name__ == "__main__":
 "#;
 
         assert_eq!(
-            project.manifest.scripts.as_ref().unwrap()["mock-project"],
+            metadata.metadata.project.scripts.as_ref().unwrap()["mock-project"],
             format!("{}.main:main", "mock_project")
         );
         assert_eq!(main_file, expected_main_file);
@@ -1556,37 +1517,36 @@ if __name__ == "__main__":
             &dir.join("mock-project"),
         )
         .unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let options = RemoveOptions {
+            args: None,
+            install_options: InstallOptions { values: None },
         };
-        let project = Project::new(&config.workspace_root).unwrap();
-        let venv = PythonEnvironment::new(
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".venv"),
-        )
-        .unwrap();
-        let package = Package {
-            name: "click".to_string(),
-            canonical_name: String::from("click"),
-            version: Version440::from_str("8.1.3").unwrap(),
-        };
-        let dep = Dependency::from_str("click==8.1.3").unwrap();
-        venv.install_packages(&[&dep], None, &mut config.terminal)
+        let ws = config.workspace().unwrap();
+        let metadata = ws.current_local_metadata().unwrap();
+        let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
+        let test_package = Package::from_str("click==8.1.3").unwrap();
+        let test_dep = Dependency::from_str("click==8.1.3").unwrap();
+        venv.install_packages(&[&test_dep], &options.install_options, &config)
             .unwrap();
-        let venv_had_package = venv.contains_package(&package);
-        let toml_had_package = project.dependencies().unwrap().contains(&dep);
+        let venv_had_package = venv.contains_package(&test_package);
+        let toml_had_package = metadata
+            .metadata
+            .dependencies()
+            .unwrap()
+            .contains(&test_dep);
 
         remove_project_dependencies(&["click".to_string()], &mut config, None)
             .unwrap();
 
-        let project = Project::new(&config.workspace_root).unwrap();
-        let venv_contains_package = venv.contains_package(&package);
+        let ws = config.workspace().unwrap();
+        let metadata = ws.current_local_metadata().unwrap();
+        let venv_contains_package = venv.contains_package(&test_package);
         let toml_contains_package =
-            project.dependencies().unwrap().contains(&dep);
-        venv.install_packages(&[&dep], None, &mut config.terminal)
+            metadata.metadata.dependencies().unwrap().contains(&dep);
+        venv.install_packages(&[&test_dep], &options.install_options, &config)
             .unwrap();
 
         assert!(venv_had_package);
@@ -1603,49 +1563,58 @@ if __name__ == "__main__":
             &dir.join("mock-project"),
         )
         .unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let options = RemoveOptions {
+            args: None,
+            install_options: InstallOptions { values: None },
         };
-        let project = Project::new(&config.workspace_root).unwrap();
-        let venv = PythonEnvironment::new(
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".venv"),
+        let ws = config.workspace().unwrap();
+        let metadata = ws.current_local_metadata().unwrap();
+        let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
+        let test_package = Package::from_str("black==22.8.0").unwrap();
+        let test_dep = Dependency::from_str("black==22.8.0").unwrap();
+        venv.uninstall_packages(
+            &[test_package],
+            &options.install_options,
+            &config,
         )
         .unwrap();
-        let package = Package {
-            name: "black".to_string(),
-            canonical_name: String::from("black"),
-            version: Version440::from_str("22.8.0").unwrap(),
-        };
-        let dep = Dependency::from_str("black==22.8.0").unwrap();
-        venv.uninstall_packages(&[package.name()], None, &mut config.terminal)
+        venv.install_packages(&[&test_dep], &options.install_options, &config)
             .unwrap();
-        venv.install_packages(&[&dep], None, &mut config.terminal)
-            .unwrap();
-        let venv_had_package = venv.contains_module(package.name()).unwrap();
-        let toml_had_package = project
+        let venv_had_package =
+            venv.contains_module(test_package.name()).unwrap();
+        let toml_had_package = metadata
+            .metadata
             .optional_dependencey_group("dev")
             .unwrap()
-            .contains(&dep);
+            .contains(&test_dep.requirement);
 
         remove_project_optional_dependencies(
             &["black".to_string()],
             "dev",
-            &mut config,
-            None,
+            &config,
+            &options,
         )
         .unwrap();
 
-        let project = Project::new(&config.workspace_root).unwrap();
-        let venv_contains_package =
-            venv.contains_module(package.name()).unwrap();
-        let toml_contains_package =
-            project.dependencies().unwrap().contains(&dep);
-        venv.uninstall_packages(&[package.name()], None, &mut config.terminal)
+        let ws = config.workspace().unwrap();
+        let metadata = ws.current_local_metadata().unwrap();
+        let venv_contains_package = venv
+            .contains_module(metadata.metadata.project_name())
             .unwrap();
+        let toml_contains_package = metadata
+            .metadata
+            .dependencies()
+            .unwrap()
+            .contains(&test_dep.requirement);
+        venv.uninstall_packages(
+            &[&test_package],
+            &options.install_options,
+            &config,
+        )
+        .unwrap();
 
         assert!(venv_had_package);
         assert!(toml_had_package);
@@ -1661,25 +1630,20 @@ if __name__ == "__main__":
             &dir.join("mock-project"),
         )
         .unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
-        };
-        let venv = PythonEnvironment::new(
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".venv"),
-        )
-        .unwrap();
-        venv.uninstall_packages(&["black"], None, &mut config.terminal)
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let options = InstallOptions { values: None };
+        let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
+        let test_package = Package::from_str("black").unwrap();
+        venv.uninstall_packages(&[&test_package], &options, &config)
             .unwrap();
         let venv_had_package = venv.contains_module("black").unwrap();
 
         run_command_str("pip install black", &mut config).unwrap();
 
         let venv_contains_package = venv.contains_module("black").unwrap();
-        venv.uninstall_packages(&["black"], None, &mut config.terminal)
+        venv.uninstall_packages(&[&test_package], &options, &config)
             .unwrap();
 
         assert!(!venv_had_package);
@@ -1694,15 +1658,15 @@ if __name__ == "__main__":
             &dir.join("mock-project"),
         )
         .unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let options = UpdateOptions {
+            args: None,
+            install_options: InstallOptions { values: None },
         };
 
-        update_project_dependencies(None, &mut config, None).unwrap();
+        update_project_dependencies(None, &config, &options).unwrap();
     }
 
     #[test]
@@ -1713,15 +1677,15 @@ if __name__ == "__main__":
             &dir.join("mock-project"),
         )
         .unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let options = UpdateOptions {
+            args: None,
+            install_options: InstallOptions { values: None },
         };
 
-        update_project_optional_dependencies(None, "dev", &mut config, None)
+        update_project_optional_dependencies(None, "dev", &config, &options)
             .unwrap();
     }
 
@@ -1729,14 +1693,12 @@ if __name__ == "__main__":
     #[test]
     fn test_use_python() {
         let dir = tempdir().unwrap().into_path();
-        let version = python_paths().max().unwrap().0.unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.to_path_buf(),
-            cwd: dir,
-            terminal,
-        };
+        let env = Environment::new();
+        let version = env.resolve_interpreters().latest().unwrap().version;
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+
         use_python(&version.to_string(), &mut config).unwrap();
     }
 
@@ -1748,14 +1710,28 @@ if __name__ == "__main__":
             &dir.join("mock-project"),
         )
         .unwrap();
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(Verbosity::Quiet);
-        let mut config = Config {
-            workspace_root: dir.join("mock-project"),
-            cwd: std::env::current_dir().unwrap(),
-            terminal,
+        let root = dir.join("mock-project");
+        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config = test_config(root, cwd, Verbosity::Quiet);
+        let options = TestOptions {
+            args: None,
+            install_options: InstallOptions { values: None },
         };
 
-        test_project(&mut config, None).unwrap();
+        test_project(&config, &options).unwrap();
+    }
+
+    fn test_config<T: AsRef<Path>>(
+        root: T,
+        cwd: T,
+        verbosity: Verbosity,
+    ) -> Config {
+        let config = Config {
+            workspace_root: root.as_ref().to_path_buf(),
+            cwd: cwd.as_ref().to_path_buf(),
+            terminal_options: TerminalOptions { verbosity },
+        };
+
+        config
     }
 }
