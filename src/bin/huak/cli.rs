@@ -4,11 +4,10 @@ use clap_complete::{self, Shell};
 use huak::{
     ops::{
         self, AddOptions, BuildOptions, CleanOptions, FormatOptions,
-        InstallOptions, LintOptions, PublishOptions, RemoveOptions,
-        TestOptions, UpdateOptions,
+        LintOptions, PublishOptions, RemoveOptions, TestOptions, UpdateOptions,
     },
-    Config, Error as HuakError, HuakResult, Terminal, Verbosity, Version,
-    WorkspaceOptions,
+    Config, Error as HuakError, HuakResult, InstallOptions, TerminalOptions,
+    Verbosity, Version, WorkspaceOptions,
 };
 use std::{
     fs::File,
@@ -203,42 +202,39 @@ impl Cli {
             true => Verbosity::Quiet,
             false => Verbosity::Normal,
         };
-        let mut terminal = Terminal::new();
-        terminal.set_verbosity(verbosity);
         let mut config = Config {
             workspace_root: cwd.to_path_buf(),
             cwd,
-            terminal,
+            terminal_options: TerminalOptions { verbosity },
         };
         match self.command {
-            Commands::Activate => activate(&mut config),
+            Commands::Activate => activate(&config),
             Commands::Add {
                 dependencies,
                 group,
                 trailing,
             } => {
-                let options = Some(AddOptions {
-                    install_options: Some(InstallOptions { args: trailing }),
-                    args: None,
-                });
-                add(dependencies, group, &mut config, options)
+                let options = AddOptions {
+                    install_options: InstallOptions { values: trailing },
+                };
+                add(dependencies, group, &config, &options)
             }
             Commands::Build { trailing } => {
-                let options = Some(BuildOptions {
-                    args: trailing,
-                    install_options: None,
-                });
-                build(&mut config, options)
+                let options = BuildOptions {
+                    values: trailing,
+                    install_options: InstallOptions { values: None },
+                };
+                build(&config, &options)
             }
             Commands::Clean {
                 include_pyc,
                 include_pycache,
             } => {
-                let options = Some(CleanOptions {
+                let options = CleanOptions {
                     include_pycache,
                     include_compiled_bytecode: include_pyc,
-                });
-                clean(&mut config, options)
+                };
+                clean(&config, &options)
             }
             Commands::Completion {
                 shell,
@@ -259,12 +255,12 @@ impl Cli {
                 }
             }
             Commands::Fix { trailing } => {
-                let options = Some(LintOptions {
-                    args: trailing,
+                let options = LintOptions {
+                    values: trailing,
                     include_types: false,
-                    install_options: None,
-                });
-                fix(&mut config, options)
+                    install_options: InstallOptions { values: None },
+                };
+                fix(&config, &options)
             }
             Commands::Fmt { check, trailing } => {
                 let mut args = if check {
@@ -275,20 +271,20 @@ impl Cli {
                 if let Some(it) = trailing {
                     args.extend(it);
                 }
-                let options = Some(FormatOptions {
-                    args: Some(args),
-                    install_options: None,
-                });
-                fmt(&mut config, options)
+                let options = FormatOptions {
+                    values: Some(args),
+                    install_options: InstallOptions { values: None },
+                };
+                fmt(&config, &options)
             }
             Commands::Init { app, lib, no_vcs } => {
                 config.workspace_root = config.cwd.clone();
-                let options = Some(WorkspaceOptions { uses_git: !no_vcs });
-                init(app, lib, &mut config, options)
+                let options = WorkspaceOptions { uses_git: !no_vcs };
+                init(app, lib, &config, &options)
             }
             Commands::Install { groups, trailing } => {
-                let options = Some(InstallOptions { args: trailing });
-                install(groups, &mut config, options)
+                let options = InstallOptions { values: trailing };
+                install(groups, &config, &options)
             }
             Commands::Lint {
                 fix,
@@ -303,12 +299,12 @@ impl Cli {
                 if let Some(it) = trailing {
                     args.extend(it);
                 }
-                let options = Some(LintOptions {
-                    args: Some(args),
+                let options = LintOptions {
+                    values: Some(args),
                     include_types: !no_types,
-                    install_options: None,
-                });
-                lint(&mut config, options)
+                    install_options: InstallOptions { values: None },
+                };
+                lint(&config, &options)
             }
             Commands::New {
                 path,
@@ -317,62 +313,60 @@ impl Cli {
                 no_vcs,
             } => {
                 config.workspace_root = PathBuf::from(path);
-                let options = Some(WorkspaceOptions { uses_git: !no_vcs });
-                new(app, lib, &mut config, options)
+                let options = WorkspaceOptions { uses_git: !no_vcs };
+                new(app, lib, &config, &options)
             }
             Commands::Publish { trailing } => {
-                let options = Some(PublishOptions {
-                    args: trailing,
-                    install_options: None,
-                });
-                publish(&mut config, options)
+                let options = PublishOptions {
+                    values: trailing,
+                    install_options: InstallOptions { values: None },
+                };
+                publish(&config, &options)
             }
-            Commands::Python { command } => python(command, &mut config),
+            Commands::Python { command } => python(command, &config),
             Commands::Remove {
                 dependencies,
                 group,
                 trailing,
             } => {
-                let options = Some(RemoveOptions {
-                    install_options: Some(InstallOptions { args: trailing }),
-                    args: None,
-                });
-                remove(dependencies, group, &mut config, options)
+                let options = RemoveOptions {
+                    install_options: InstallOptions { values: trailing },
+                };
+                remove(dependencies, group, &config, &options)
             }
-            Commands::Run { command } => run(command, &mut config),
+            Commands::Run { command } => run(command, &config),
             Commands::Test { trailing } => {
-                let options = Some(TestOptions {
-                    args: trailing,
-                    install_options: None,
-                });
-                test(&mut config, options)
+                let options = TestOptions {
+                    values: trailing,
+                    install_options: InstallOptions { values: None },
+                };
+                test(&config, &options)
             }
             Commands::Update {
                 dependencies,
                 group,
                 trailing,
             } => {
-                let options = Some(UpdateOptions {
-                    install_options: Some(InstallOptions { args: trailing }),
-                    args: None,
-                });
-                update(dependencies, group, &mut config, options)
+                let options = UpdateOptions {
+                    install_options: InstallOptions { values: trailing },
+                };
+                update(dependencies, group, &config, &options)
             }
-            Commands::Version => version(&mut config),
+            Commands::Version => version(&config),
         }
         .map_err(|e| Error::new(e, ExitCode::FAILURE))
     }
 }
 
-fn activate(config: &mut Config) -> HuakResult<()> {
+fn activate(config: &Config) -> HuakResult<()> {
     ops::activate_python_environment(config)
 }
 
 fn add(
     dependencies: Vec<Dependency>,
     group: Option<String>,
-    config: &mut Config,
-    options: Option<AddOptions>,
+    config: &Config,
+    options: &AddOptions,
 ) -> HuakResult<()> {
     let deps = dependencies
         .iter()
@@ -386,27 +380,27 @@ fn add(
     }
 }
 
-fn build(config: &mut Config, options: Option<BuildOptions>) -> HuakResult<()> {
+fn build(config: &Config, options: &BuildOptions) -> HuakResult<()> {
     ops::build_project(config, options)
 }
 
-fn clean(config: &mut Config, options: Option<CleanOptions>) -> HuakResult<()> {
+fn clean(config: &Config, options: &CleanOptions) -> HuakResult<()> {
     ops::clean_project(config, options)
 }
 
-fn fix(config: &mut Config, options: Option<LintOptions>) -> HuakResult<()> {
+fn fix(config: &Config, options: &LintOptions) -> HuakResult<()> {
     ops::lint_project(config, options)
 }
 
-fn fmt(config: &mut Config, options: Option<FormatOptions>) -> HuakResult<()> {
+fn fmt(config: &Config, options: &FormatOptions) -> HuakResult<()> {
     ops::format_project(config, options)
 }
 
 fn init(
     app: bool,
     _lib: bool,
-    config: &mut Config,
-    options: Option<WorkspaceOptions>,
+    config: &Config,
+    options: &WorkspaceOptions,
 ) -> HuakResult<()> {
     if app {
         ops::init_app_project(config, options)
@@ -417,12 +411,12 @@ fn init(
 
 fn install(
     groups: Option<Vec<String>>,
-    config: &mut Config,
-    options: Option<InstallOptions>,
+    config: &Config,
+    options: &InstallOptions,
 ) -> HuakResult<()> {
     if let Some(it) = groups {
         if it.contains(&"all".to_string()) {
-            ops::install_project_dependencies(config, options.clone())?;
+            ops::install_project_dependencies(config, options)?;
         }
         ops::install_project_optional_dependencies(&it, config, options)
     } else {
@@ -430,15 +424,15 @@ fn install(
     }
 }
 
-fn lint(config: &mut Config, options: Option<LintOptions>) -> HuakResult<()> {
+fn lint(config: &Config, options: &LintOptions) -> HuakResult<()> {
     ops::lint_project(config, options)
 }
 
 fn new(
     app: bool,
     _lib: bool,
-    config: &mut Config,
-    options: Option<WorkspaceOptions>,
+    config: &Config,
+    options: &WorkspaceOptions,
 ) -> HuakResult<()> {
     if app {
         ops::new_app_project(config, options)
@@ -447,14 +441,11 @@ fn new(
     }
 }
 
-fn publish(
-    config: &mut Config,
-    options: Option<PublishOptions>,
-) -> HuakResult<()> {
+fn publish(config: &Config, options: &PublishOptions) -> HuakResult<()> {
     ops::publish_project(config, options)
 }
 
-fn python(command: Python, config: &mut Config) -> HuakResult<()> {
+fn python(command: Python, config: &Config) -> HuakResult<()> {
     match command {
         Python::List => ops::list_python(config),
         Python::Use { version } => ops::use_python(version.0.as_str(), config),
@@ -464,8 +455,8 @@ fn python(command: Python, config: &mut Config) -> HuakResult<()> {
 fn remove(
     dependencies: Vec<String>,
     group: Option<String>,
-    config: &mut Config,
-    options: Option<RemoveOptions>,
+    config: &Config,
+    options: &RemoveOptions,
 ) -> HuakResult<()> {
     match group.as_ref() {
         Some(it) => ops::remove_project_optional_dependencies(
@@ -480,19 +471,19 @@ fn remove(
     }
 }
 
-fn run(command: Vec<String>, config: &mut Config) -> HuakResult<()> {
+fn run(command: Vec<String>, config: &Config) -> HuakResult<()> {
     ops::run_command_str(&command.join(" "), config)
 }
 
-fn test(config: &mut Config, options: Option<TestOptions>) -> HuakResult<()> {
+fn test(config: &Config, options: &TestOptions) -> HuakResult<()> {
     ops::test_project(config, options)
 }
 
 fn update(
     dependencies: Option<Vec<String>>,
     group: Option<String>,
-    config: &mut Config,
-    options: Option<UpdateOptions>,
+    config: &Config,
+    options: &UpdateOptions,
 ) -> HuakResult<()> {
     match group.as_ref() {
         Some(it) => {
@@ -500,7 +491,7 @@ fn update(
                 ops::update_project_dependencies(
                     dependencies.clone(),
                     config,
-                    options.clone(),
+                    options,
                 )?;
             }
             ops::update_project_optional_dependencies(
@@ -514,7 +505,7 @@ fn update(
     }
 }
 
-fn version(config: &mut Config) -> HuakResult<()> {
+fn version(config: &Config) -> HuakResult<()> {
     ops::display_project_version(config)
 }
 

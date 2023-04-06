@@ -196,7 +196,7 @@ impl Terminal {
 }
 
 pub struct TerminalOptions {
-    verbosity: Verbosity,
+    pub verbosity: Verbosity,
 }
 
 impl TerminalOptions {

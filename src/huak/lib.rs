@@ -45,7 +45,7 @@
 ///!   -h, --help     Print help
 ///!   -V, --version  Print version
 ///
-use error::{Error, HuakResult};
+pub use error::{Error, HuakResult};
 use indexmap::IndexMap;
 use pep440_rs::{Operator, Version as PEP440Version, VersionSpecifiers};
 use pep508_rs::{Requirement, VersionOrUrl};
@@ -66,7 +66,8 @@ use std::{
     process::Command,
     str::FromStr,
 };
-use sys::{Terminal, TerminalOptions};
+use sys::Terminal;
+pub use sys::{TerminalOptions, Verbosity};
 use toml::Table;
 mod error;
 mod fs;
@@ -81,6 +82,15 @@ const VIRTUAL_ENV_ENV_VAR: &str = "VIRUTAL_ENV";
 const CONDA_ENV_ENV_VAR: &str = "CONDA_PREFIX";
 const DEFAULT_PROJECT_VERSION_STR: &str = "0.0.1";
 const DEFAULT_METADATA_FILE_NAME: &str = "pyproject.toml";
+const DEFAULT_PYTHON_INIT_FILE_CONTENTS: &str = r#"__version__ = "0.0.1"
+"#;
+const DEFAULT_PYTHON_MAIN_FILE_CONTENTS: &str = r#"def main():
+    print("Hello, World!")
+
+
+if __name__ == "__main__":
+    main()
+"#;
 
 /// The main `Config` for Huak.
 ///
@@ -101,13 +111,13 @@ const DEFAULT_METADATA_FILE_NAME: &str = "pyproject.toml";
 ///
 /// let workspace = config.workspace();
 /// ```
-struct Config {
+pub struct Config {
     /// The configured `Workspace` root path.
-    workspace_root: PathBuf,
+    pub workspace_root: PathBuf,
     /// The current working directory where Huak was invoked or otherwise requested from.
-    cwd: PathBuf,
+    pub cwd: PathBuf,
     /// `Terminal` options to use.
-    terminal_options: TerminalOptions,
+    pub terminal_options: TerminalOptions,
 }
 
 impl Config {
@@ -207,9 +217,9 @@ impl Workspace {
 }
 
 /// A struct used to configure options for `Workspace`s.
-struct WorkspaceOptions {
+pub struct WorkspaceOptions {
     /// Inidcate the `Workspace` should use git.
-    uses_git: bool,
+    pub uses_git: bool,
 }
 
 /// Search for a Python virtual environment.
@@ -391,17 +401,16 @@ impl PythonEnvironment {
     /// Install Python `Package`s to the `PythonEnvironment`.
     pub fn install_packages<T>(
         &self,
-        packages: T,
+        packages: &[T],
         options: &InstallOptions,
         config: &Config,
     ) -> HuakResult<()>
     where
-        T: IntoIterator,
-        T::Item: ToDepStr,
+        T: ToDepString,
     {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "install"])
-            .args(packages.into_iter().map(|item| item.to_dep_str()));
+            .args(packages.iter().map(|item| item.to_dep_string()));
 
         if let Some(v) = options.values.as_ref() {
             cmd.args(v.iter().map(|item| item.as_str()));
@@ -413,17 +422,16 @@ impl PythonEnvironment {
     /// Uninstall Python `Package`s from the `PythonEnvironment`.
     pub fn uninstall_packages<T>(
         &self,
-        packages: T,
+        packages: &[T],
         options: &InstallOptions,
         config: &Config,
     ) -> HuakResult<()>
     where
-        T: IntoIterator,
-        T::Item: ToDepStr,
+        T: ToDepString,
     {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "uninstall"])
-            .args(packages.into_iter().map(|item| item.to_dep_str()))
+            .args(packages.iter().map(|item| item.to_dep_string()))
             .arg("-y");
 
         if let Some(v) = options.values.as_ref() {
@@ -436,17 +444,16 @@ impl PythonEnvironment {
     /// Update Python `Package`s installed in the `PythonEnvironment`.
     pub fn update_packages<T>(
         &self,
-        packages: T,
+        packages: &[T],
         options: &InstallOptions,
         config: &Config,
     ) -> HuakResult<()>
     where
-        T: IntoIterator,
-        T::Item: ToDepStr,
+        T: ToDepString,
     {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "install", "--upgrade"])
-            .args(packages.into_iter().map(|item| item.to_dep_str()))
+            .args(packages.iter().map(|item| item.to_dep_string()))
             .arg("-y");
 
         if let Some(v) = options.values.as_ref() {
@@ -503,16 +510,16 @@ impl PythonEnvironment {
 
     /// Check if the `PythonEnvironment` is already activated.
     fn active(&self) -> bool {
-        Some(self.root) == active_virtual_env_path().or(active_conda_env_path())
+        Some(&self.root)
+            == active_virtual_env_path()
+                .or(active_conda_env_path())
+                .as_ref()
     }
 }
 
 /// Helper function for creating a new virtual environment as a `PythonEnvironment`.
 fn new_venv<T: AsRef<Path>>(path: T) -> HuakResult<PythonEnvironment> {
     let root = path.as_ref();
-
-    let config = VenvConfig::new(&root.join(VENV_CONFIG_FILE_NAME))?;
-    let python_version = config.version;
 
     // Establishing paths differs between Windows and Unix systems.
     #[cfg(unix)]
@@ -524,11 +531,8 @@ fn new_venv<T: AsRef<Path>>(path: T) -> HuakResult<PythonEnvironment> {
     #[cfg(windows)]
     let python_path = executables_dir_path.join("python.exe");
 
+    let config = VenvConfig::new(&root.join(VENV_CONFIG_FILE_NAME))?;
     let version = config.version;
-    let interpreter = Interpreter {
-        version,
-        path: python_path.to_path_buf(),
-    };
 
     // On Unix systems the Venv's site-package directory depends on the Python version.
     // The path is root/lib/pythonX.X/site-packages.
@@ -543,12 +547,19 @@ fn new_venv<T: AsRef<Path>>(path: T) -> HuakResult<PythonEnvironment> {
     #[cfg(windows)]
     let site_packages_path = root.join("Lib").join("site-packages");
 
+    let interpreter = Interpreter {
+        version,
+        path: python_path.to_path_buf(),
+    };
+
+    let packages = pip_freeze(&interpreter)?;
+
     let venv = PythonEnvironment {
         root: root.to_path_buf(),
         interpreter,
         executables_dir_path,
         site_packages_path,
-        packages: pip_freeze(&interpreter)?,
+        packages,
     };
 
     Ok(venv)
@@ -573,9 +584,9 @@ fn pip_freeze(interpreter: &Interpreter) -> HuakResult<Vec<Package>> {
 
 #[derive(Clone)]
 /// A struct used to configure Python `Package` installations.
-struct InstallOptions {
+pub struct InstallOptions {
     /// An values vector of install options typically used for passing on arguments.
-    values: Option<Vec<String>>,
+    pub values: Option<Vec<String>>,
 }
 
 /// Python virtual environment configuration data (pyvenv.cfg).
@@ -590,7 +601,7 @@ impl VenvConfig {
     /// Initialize a new `VenvConfig` from the pvenv.cfg path.
     fn new<T: AsRef<Path>>(value: T) -> HuakResult<Self> {
         // Read the file and flatten the lines for parsing.
-        let file = File::open(value).unwrap_or_else(|_| {
+        let file = File::open(&value).unwrap_or_else(|_| {
             panic!("failed to open {}", value.as_ref().display())
         });
         let buff_reader = BufReader::new(file);
@@ -653,11 +664,12 @@ trait ToPkgId {
 }
 
 /// A trait used to convert structs into dependency `&str`s.
-trait ToDepStr {
+trait ToDepString {
     /// Convert to dependency `&str` ("{name}{specifiers}").
-    fn to_dep_str(&self) -> &str;
+    fn to_dep_string(&self) -> String;
 }
 
+#[derive(Clone)]
 /// The `Package` contains data about a Python `Package`.
 ///
 /// A `Package` contains information like the project's name, its version, authors,
@@ -695,10 +707,16 @@ impl Package {
     }
 }
 
-impl ToDepStr for Package {
-    fn to_dep_str(&self) -> &str {
+impl ToDepString for Package {
+    fn to_dep_string(&self) -> String {
         // Note a `Package` should always have a `Version` (0.0.1 by default).
-        format!("{}=={}", self.name(), self.version()).as_str()
+        format!("{}=={}", self.name(), self.version())
+    }
+}
+
+impl ToDepString for &Package {
+    fn to_dep_string(&self) -> String {
+        (*self).to_dep_string()
     }
 }
 
@@ -799,6 +817,7 @@ impl PartialEq for Package {
 
 impl Eq for Package {}
 
+#[derive(Clone)]
 /// The `PackageId` struct is used to contain `Package`-identifying data.
 struct PackageId {
     /// The `Package` name.
@@ -837,7 +856,7 @@ impl LocalMetdata {
     /// Write the `LocalMetadata` file to its path.
     pub fn write_file(&self) -> HuakResult<()> {
         let string = self.to_string_pretty()?;
-        Ok(std::fs::write(self.path, string)?)
+        Ok(std::fs::write(&self.path, string)?)
     }
 
     /// Serialize the `Metadata` to a formatted string.
@@ -899,8 +918,8 @@ impl Metadata {
         self.project.name = name
     }
 
-    pub fn project_version(&self) -> Option<PEP440Version> {
-        self.project.version
+    pub fn project_version(&self) -> Option<&PEP440Version> {
+        self.project.version.as_ref()
     }
 
     pub fn dependencies(&self) -> Option<&[Requirement]> {
@@ -1102,6 +1121,22 @@ dependencies = []
 "#
 }
 
+fn default_entrypoint_string(importable_name: &str) -> String {
+    format!("{importable_name}.main:main")
+}
+
+fn default_test_file_contents(importable_name: &str) -> String {
+    format!(
+        r#"from {importable_name} import __version__
+
+
+def test_version():
+    __version__
+"#
+    )
+}
+
+#[derive(Clone)]
 /// The `Dependency` is an abstraction for `Package` data used as a cheap alternative
 /// for operations on lots of `Package` information.
 ///
@@ -1134,7 +1169,7 @@ impl Dependency {
 }
 
 impl ToPkgId for Dependency {
-    fn to_pkg(mut self) -> PackageId {
+    fn to_pkg(self) -> PackageId {
         let version_specifiers = self
             .version_specifiers
             .expect("`VersionSpecifiers` for `PacakgeId`");
@@ -1144,13 +1179,13 @@ impl ToPkgId for Dependency {
             .version();
         PackageId {
             name: self.requirement.name,
-            version: *version,
+            version: version.clone(),
         } // TODO: If a dependency has multiple `VersionSpecifier`s a `Version` needs to be resolved.
     }
 }
 
-impl ToDepStr for Dependency {
-    fn to_dep_str(&self) -> &str {
+impl ToDepString for Dependency {
+    fn to_dep_string(&self) -> String {
         let version_specifiers = self.version_specifiers.iter().map(|spec| {
             spec.to_string()
                 .split_whitespace()
@@ -1163,7 +1198,12 @@ impl ToDepStr for Dependency {
             self.name(),
             version_specifiers.collect::<Vec<_>>().join(",")
         )
-        .as_str()
+    }
+}
+
+impl ToDepString for &Dependency {
+    fn to_dep_string(&self) -> String {
+        (*self).to_dep_string()
     }
 }
 
@@ -1201,8 +1241,8 @@ impl FromStr for Dependency {
 
 impl From<&Requirement> for Dependency {
     fn from(value: &Requirement) -> Self {
-        let version_specifiers = match value.version_or_url {
-            Some(VersionOrUrl::VersionSpecifier(specs)) => Some(specs),
+        let version_specifiers = match value.version_or_url.as_ref() {
+            Some(VersionOrUrl::VersionSpecifier(specs)) => Some(specs.clone()),
             _ => None,
         };
 
@@ -1359,7 +1399,7 @@ trait ToSemVer {
 /// A generic `Version` struct.
 ///
 /// This struct is mainly used for the Python `Interpreter`.
-struct Version {
+pub struct Version {
     release: Vec<usize>,
 }
 
@@ -1376,6 +1416,16 @@ impl ToSemVer for Version {
             minor: self.release[1],
             patch: self.release[2],
         }
+    }
+}
+
+impl Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}.{}.{}",
+            self.release[0], self.release[1], self.release[1]
+        ) // TODO
     }
 }
 
@@ -1636,7 +1686,7 @@ mod tests {
 
         assert_eq!(local_metdata.metadata.project_name(), "mock_project");
         assert_eq!(
-            local_metdata.metadata.project_version().unwrap(),
+            *local_metdata.metadata.project_version().unwrap(),
             PEP440Version::from_str("0.0.1").unwrap()
         );
         assert!(local_metdata.metadata.dependencies().is_some())
@@ -1890,7 +1940,7 @@ dev = [
     fn dependency_from_str() {
         let dep = Dependency::from_str("package-name==0.0.0").unwrap();
 
-        assert_eq!(dep.to_dep_str(), "package-name==0.0.0");
+        assert_eq!(dep.to_dep_string(), "package-name==0.0.0");
         assert_eq!(dep.requirement.name, "package-name");
         assert_eq!(
             *dep.version_specifiers.unwrap(),
