@@ -967,7 +967,7 @@ pub fn update_project_optional_dependencies(
 
 pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
     let env = Environment::new();
-    let interpreters = env.resolve_interpreters();
+    let interpreters = env.resolve_python_interpreters();
 
     let path = match interpreters
         .interpreters
@@ -1011,7 +1011,7 @@ fn make_venv_command(
     cmd: &Command,
     venv: &PythonEnvironment,
 ) -> HuakResult<()> {
-    let mut paths = sys::env_path_values()?;
+    let mut paths = crate::env_path_values().unwrap_or(Vec::new());
 
     paths.insert(0, venv.executables_dir_path().clone());
     cmd.env(
@@ -1087,7 +1087,6 @@ mod tests {
         let package = ws.current_package().unwrap();
         let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
         let options = AddOptions {
-            args: None,
             install_options: InstallOptions { values: None },
         };
         venv.uninstall_packages(
@@ -1122,7 +1121,6 @@ mod tests {
         let package = ws.current_package().unwrap();
         let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
         let options = AddOptions {
-            args: None,
             install_options: InstallOptions { values: None },
         };
         venv.uninstall_packages(
@@ -1156,7 +1154,7 @@ mod tests {
         let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = BuildOptions {
-            args: None,
+            values: None,
             install_options: InstallOptions { values: None },
         };
 
@@ -1174,12 +1172,12 @@ mod tests {
         let root = dir.join("mock-project");
         let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let config = test_config(root, cwd, Verbosity::Quiet);
-        let options = Some(CleanOptions {
+        let options = CleanOptions {
             include_pycache: true,
             include_compiled_bytecode: true,
-        });
+        };
 
-        clean_project(&config, options).unwrap();
+        clean_project(&config, &options).unwrap();
 
         let dist = glob::glob(&format!(
             "{}",
@@ -1237,11 +1235,11 @@ def fn( ):
     pass"#;
         std::fs::write(&fmt_filepath, pre_fmt_str).unwrap();
         let options = FormatOptions {
-            args: None,
+            values: None,
             install_options: InstallOptions { values: None },
         };
         let options = FormatOptions {
-            args: None,
+            values: None,
             install_options: InstallOptions { values: None },
         };
 
@@ -1378,7 +1376,7 @@ mock-project = "mock_project.main:main"
         let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = LintOptions {
-            args: None,
+            values: None,
             include_types: true,
             install_options: InstallOptions { values: None },
         };
@@ -1399,7 +1397,7 @@ mock-project = "mock_project.main:main"
         let config = test_config(root, cwd, Verbosity::Quiet);
         let ws = config.workspace().unwrap();
         let options = LintOptions {
-            args: None,
+            values: None,
             include_types: true,
             install_options: InstallOptions { values: None },
         };
@@ -1521,7 +1519,6 @@ if __name__ == "__main__":
         let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = RemoveOptions {
-            args: None,
             install_options: InstallOptions { values: None },
         };
         let ws = config.workspace().unwrap();
@@ -1567,7 +1564,6 @@ if __name__ == "__main__":
         let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = RemoveOptions {
-            args: None,
             install_options: InstallOptions { values: None },
         };
         let ws = config.workspace().unwrap();
@@ -1662,7 +1658,6 @@ if __name__ == "__main__":
         let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = UpdateOptions {
-            args: None,
             install_options: InstallOptions { values: None },
         };
 
@@ -1681,7 +1676,6 @@ if __name__ == "__main__":
         let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = UpdateOptions {
-            args: None,
             install_options: InstallOptions { values: None },
         };
 
@@ -1694,7 +1688,8 @@ if __name__ == "__main__":
     fn test_use_python() {
         let dir = tempdir().unwrap().into_path();
         let env = Environment::new();
-        let version = env.resolve_interpreters().latest().unwrap().version;
+        let version =
+            env.resolve_python_interpreters().latest().unwrap().version;
         let root = dir.join("mock-project");
         let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let config = test_config(root, cwd, Verbosity::Quiet);
@@ -1714,7 +1709,7 @@ if __name__ == "__main__":
         let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = TestOptions {
-            args: None,
+            values: None,
             install_options: InstallOptions { values: None },
         };
 

@@ -84,17 +84,20 @@ const DEFAULT_METADATA_FILE_NAME: &str = "pyproject.toml";
 
 /// The main `Config` for Huak.
 ///
-/// The `Config` contains data telling Huak what to do during certain operations.
+/// The `Config` contains data telling Huak what to do during at times.
 /// An example would be indicating what the initial `Workspace` root should be or
-/// what the current working directory was at the time the operation was requested.
+/// what the current working directory was at the time an operation was requested.
 ///
 /// ```
-/// use huak::Config;
+/// use huak::{Config, sys::{TerminalOptions, Verbosity};
 ///
 /// let config = Config {
 ///     workspace_root: PathBuf::from("."),
 ///     cwd: PathBuf::from("."),
-/// }
+///     terminal_options: TerminalOptions {
+///         verbosity: Verbosity::Normal,
+///     }
+/// };
 ///
 /// let workspace = config.workspace();
 /// ```
@@ -112,32 +115,32 @@ impl Config {
     fn workspace(&self) -> HuakResult<Workspace> {
         Workspace::new(&self.workspace_root)
     }
+
     /// Get a `Terminal` based on the `Config` data.
     fn terminal(&self) -> Terminal {
         let mut terminal = Terminal::new();
-        terminal.set_verbosity(self.terminal_options.verbosity().clone());
+        let verbosity = self.terminal_options.verbosity().clone();
+        terminal.set_verbosity(verbosity);
 
         terminal
     }
 }
 
 /// The `Workspace` is a useful struct for reolving things like the current `Package`
-/// or the `Environment` itself.
+/// or the current `PythonEnvironment`. It can also provide a snapshot of the `Environment`,
+/// a more general struct containing information like environment variables, Python
+/// `Interpreters` found, and more.
 ///
 /// ```
 /// use huak::Workspace;
 ///
 /// let workspace = Workspace::new(".");
-///
-/// // Get the `Workspace`'s `Environment`.
 /// let env = workspace.environment();
 /// ```
 struct Workspace {
-    /// The absolute path to the `Workspace` root.
+    /// The established `Workspace` root path.
     root: PathBuf,
-    /// The `Environment associated with the `Workspace`.
-    env: Environment,
-    /// Huak's `Config`.
+    /// The `Config` associated with the `Workspace`.
     config: Config,
 }
 
@@ -146,24 +149,14 @@ impl Workspace {
         todo!()
     }
 
-    /// Get the current `Environment` for the `Workspace`.
+    /// Get an `Environment` associated with the `Workspace`.
     fn environmet(&self) -> Environment {
         Environment::new()
     }
 
-    /// Resolve a `Package` pulling the current or creating one if none is found.
-    fn resolve_package(&self) -> Package {
-        todo!()
-    }
-
     /// Get the current `Package`. The current `Package` is one found by its
-    /// metadata file nearest baseed on `Config` data.
+    /// metadata file nearest based on the `Workspace`'s `Config` data.
     fn current_package(&self) -> HuakResult<Package> {
-        todo!()
-    }
-
-    /// Get the `Package`s for the `Workspace`.
-    fn packages(&self) -> Vec<Package> {
         todo!()
     }
 
@@ -183,45 +176,58 @@ impl Workspace {
         todo!()
     }
 
-    /// Get the `PythonEnvironment`s for the `Workspace`.
-    fn python_environments(&self) -> Vec<PythonEnvironment> {
-        todo!()
-    }
-
     /// Create a `PythonEnvironment` for the `Workspace`.
     fn new_python_environment(&self) -> HuakResult<PythonEnvironment> {
-        let python_path = match self.env.python_paths().next() {
+        // Get a snapshot of the environment.
+        let env = self.environmet();
+
+        // Get the first Python `Interpreter` path found from the `PATH`
+        // environment variable.
+        let python_path = match env.python_paths().next() {
             Some(it) => it,
             None => return Err(Error::PythonNotFound),
         };
 
+        // Set the name and path of the `PythonEnvironment. Note that we currently only
+        // support virtual environments.
         let name = DEFAULT_VENV_NAME;
         let path = self.root.join(name);
 
+        // Create the `PythonEnvironment`. This uses the `venv` module distributed with Python.
+        // Note that this will fail on systems with minimal Python distributions.
         let args = ["-m", "venv", name];
         let mut cmd = Command::new(python_path);
         cmd.args(args).current_dir(&self.root);
-
         self.config.terminal().run_command(&mut cmd)?;
 
-        Ok(PythonEnvironment::new(path)?)
+        let python_env = PythonEnvironment::new(path)?;
+
+        Ok(python_env)
     }
 }
 
+/// A struct used to configure options for `Workspace`s.
 struct WorkspaceOptions {
+    /// Inidcate the `Workspace` should use git.
     uses_git: bool,
 }
 
 /// Search for a Python virtual environment.
 /// 1. If VIRTUAL_ENV exists then a venv is active; use it.
-/// 2. Walk from configured cwd up searching for dir containing the Python environment config file.
-/// 3. Stop after searching `stop_after`.
+/// 2. Walk from the `from` dir upwards, searching for dir containing the pyvenv.cfg file.
+/// 3. Stop after searching the `stop_after` dir.
 pub fn find_venv_root<T: AsRef<Path>>(
     from: T,
     stop_after: T,
 ) -> HuakResult<PathBuf> {
     if let Ok(path) = std::env::var("VIRTUAL_ENV") {
         return Ok(PathBuf::from(path));
+    }
+
+    if !from.as_ref().is_dir() || !stop_after.as_ref().is_dir() {
+        return Err(Error::InternalError(
+            "`from` and `stop_after` must be directoreis".to_string(),
+        ));
     }
 
     let file_path = match fs::find_root_file_bottom_up(
@@ -233,32 +239,33 @@ pub fn find_venv_root<T: AsRef<Path>>(
         Err(_) => return Err(Error::PythonEnvironmentNotFound),
     };
 
-    let root = file_path.parent().ok_or(Error::InternalError(
-        "failed to establish parent directory".to_string(),
-    ))?;
+    // The root of the venv is always the parent dir to the pyvenv.cfg file.
+    let root = file_path
+        .parent()
+        .ok_or(Error::InternalError(
+            "failed to establish parent directory".to_string(),
+        ))?
+        .to_path_buf();
 
-    Ok(root.to_path_buf())
+    Ok(root)
 }
 
-/// The `Environment` manages interacting with the system, installed Python
-/// interpreters, and more useful features Huak utilizes.
+/// The `Environment` is a snapshot of the environment at the time it is initialized.
 ///
 /// `Environment`s would be used for resolving environment variables, the
-/// the paths to Python interpreters, executing commands and relaying information
-/// to a terminal for the user, and much more.
+/// the paths to Python `Interpreters`, and more.
 ///
 /// ```
 /// use huak::Environment;
 ///
 /// let env = Environment::new();
-/// let python_path = env.python_paths().max()
+/// let interpreters = env.resolve_interpreters();
+/// let python_path = interpreters.latest();
 /// ```
 struct Environment {
-    /// Python `Interpreter`s installed on the system.
+    /// Python `Interpreters` installed on the system.
     interpreters: Interpreters,
-    /// `PythonEnvironment`s found on the system.
-    python_envs: PythonEnvironments,
-    /// Original environment variables.
+    /// Environment variables found at the time of the `Environment`'s initialization.
     env: Env,
 }
 
@@ -277,21 +284,7 @@ impl Environment {
     }
 
     /// Resolve `Interpreters` for the `Environment`.
-    fn resolve_interpreters(&self) -> Interpreters {
-        todo!()
-    }
-}
-
-struct PythonEnvironments {
-    envs: Vec<PythonEnvironment>,
-}
-
-impl PythonEnvironments {
-    fn get<T: AsRef<Path>>(&self, k: T) -> Option<PythonEnvironment> {
-        todo!()
-    }
-
-    fn insert(&mut self, env: PythonEnvironment) {
+    fn resolve_python_interpreters(&self) -> Interpreters {
         todo!()
     }
 }
@@ -325,13 +318,13 @@ impl PythonEnvironments {
 /// Note that on Windows site-packages is under Lib but elsewhere it's under
 /// lib/python{version-major.version-minor}. `pyvenv.cfg` is the `PythonEnvironment`'s
 /// config file and contains information like the version of the Python
-/// interpreter, *potentially* the "home" path to the Python interpreter that
-/// created the `PythonEnvironment`, etc.
+/// `Interpreter`, *potentially* the "home" path to the Python `Interpreter` that
+/// generated the `PythonEnvironment`, etc.
 ///
 /// ```
 /// use huak::PythonEnvironment;
 ///
-/// let venv = PythonEnvironment::from(".venv");
+/// let venv = PythonEnvironment::new(".venv");
 /// ```
 struct PythonEnvironment {
     /// The absolute path to the `PythonEnvironment`'s root.
@@ -352,6 +345,7 @@ struct PythonEnvironment {
 impl PythonEnvironment {
     /// Initialize a new `PythonEnvironment`.
     pub fn new<T: AsRef<Path>>(path: T) -> HuakResult<Self> {
+        // Note that only virtual environments are supported at this time.
         if !path.as_ref().join(VENV_CONFIG_FILE_NAME).exists() {
             return Err(Error::Unimplemented(format!(
                 "{} is not supported",
@@ -364,38 +358,37 @@ impl PythonEnvironment {
         Ok(env)
     }
 
-    /// Get a reference to the absolute path to the python environment.
+    /// Get a reference to the path to the `PythonEnvironment`.
     pub fn root(&self) -> &Path {
         self.root.as_ref()
     }
 
-    /// Get the name of the Python environment.
+    /// Get the name of the `PythonEnvironment`.
     pub fn name(&self) -> HuakResult<String> {
         fs::last_path_component(&self.root)
     }
 
-    /// The absolute path to the Python environment's Python interpreter binary.
+    /// Get a reference to the Python `Interpeter`'s path that's used by the `PythonEnvironment`.
     pub fn python_path(&self) -> &PathBuf {
         &self.interpreter.path
     }
 
-    #[allow(dead_code)]
-    /// Get the version of the Python environment's Python interpreter.
+    /// Get a reference to the Python `Interpeter`'s `Version` that's used by the `PythonEnvironment`.
     pub fn python_version(&self) -> &Version {
         &self.interpreter.version
     }
 
-    /// The absolute path to the Python environment's executables directory.
+    /// Get a reference to the `PythonEnvironment`'s executables directory path.
     pub fn executables_dir_path(&self) -> &PathBuf {
         &self.executables_dir_path
     }
 
-    /// The absolute path to the Python environment's site-packages directory.
+    /// Get a reference to the `PythonEnvironment`'s site-packages directory path.
     pub fn site_packages_dir_path(&self) -> &PathBuf {
         &self.site_packages_path
     }
 
-    /// Install Python packages to the environment.
+    /// Install Python `Package`s to the `PythonEnvironment`.
     pub fn install_packages(
         &self,
         packages: PackageIter,
@@ -413,7 +406,7 @@ impl PythonEnvironment {
         config.terminal().run_command(&mut cmd)
     }
 
-    /// Uninstall many Python packages from the environment.
+    /// Uninstall Python `Package`s from the `PythonEnvironment`.
     pub fn uninstall_packages(
         &self,
         packages: PackageIter,
@@ -432,7 +425,7 @@ impl PythonEnvironment {
         config.terminal().run_command(&mut cmd)
     }
 
-    /// Update many Python packages in the environment.
+    /// Update Python `Package`s installed in the `PythonEnvironment`.
     pub fn update_packages<T>(
         &self,
         packages: PackageIter,
@@ -454,18 +447,7 @@ impl PythonEnvironment {
         config.terminal().run_command(&mut cmd)
     }
 
-    /// Check if the environment is already activated.
-    pub fn is_active(&self) -> bool {
-        if let Some(path) = active_virtual_env_path() {
-            return self.root == path;
-        }
-        if let Some(path) = active_conda_env_path() {
-            return self.root == path;
-        }
-        false
-    }
-
-    /// Check if the environment has a module installed to the executables directory.
+    /// Check if the `PythonEnvironment` has a module installed in the executables directory.
     pub fn contains_module(&self, module_name: &str) -> HuakResult<bool> {
         let dir = self.executables_dir_path();
         #[cfg(unix)]
@@ -482,8 +464,7 @@ impl PythonEnvironment {
         }
     }
 
-    #[allow(dead_code)]
-    /// Check if the environment has a package already installed.
+    /// Check if the `PythonEnvironment` has a `Package` already installed.
     pub fn contains_package(&self, package: &Package) -> bool {
         self.site_packages_dir_path()
             .join(
@@ -494,7 +475,7 @@ impl PythonEnvironment {
             .exists()
     }
 
-    /// Get all of the packages installed to the environment.
+    /// Get all of the `Package`s installed in the `PythonEnvironment`.
     fn installed_packages(&self) -> HuakResult<Vec<Package>> {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "freeze"]);
@@ -511,18 +492,13 @@ impl PythonEnvironment {
         Ok(packages)
     }
 
-    /// Check if the environment is already activated.
+    /// Check if the `PythonEnvironment` is already activated.
     fn active(&self) -> bool {
-        if let Some(path) = active_virtual_env_path() {
-            return self.root == path;
-        }
-        if let Some(path) = active_conda_env_path() {
-            return self.root == path;
-        }
-        false
+        Some(self.root) == active_virtual_env_path().or(active_conda_env_path())
     }
 }
 
+/// Helper function for creating a new virtual environment as a `PythonEnvironment`.
 fn new_venv<T: AsRef<Path>>(path: T) -> HuakResult<PythonEnvironment> {
     let root = path.as_ref();
 
@@ -587,25 +563,29 @@ fn pip_freeze(interpreter: &Interpreter) -> HuakResult<Vec<Package>> {
 }
 
 #[derive(Clone)]
+/// A struct used to configure Python `Package` installations.
 struct InstallOptions {
+    /// An values vector of install options typically used for passing on arguments.
     values: Option<Vec<String>>,
 }
 
-// Data about some environment's Python configuration. This abstraction is modeled after
-/// the pyenv.cfg file used for Python virtual environments.
+/// Python virtual environment configuration data (pyvenv.cfg).
+///
+/// See https://docs.python.org/3/library/venv.html.
 struct VenvConfig {
-    /// The version of the environment's Python interpreter.
+    /// The `Version` of the virtual environment's Python `Interpreter`.
     version: Version,
 }
 
 impl VenvConfig {
+    /// Initialize a new `VenvConfig` from the pvenv.cfg path.
     fn new<T: AsRef<Path>>(value: T) -> HuakResult<Self> {
         // Read the file and flatten the lines for parsing.
         let file = File::open(value).unwrap_or_else(|_| {
             panic!("failed to open {}", value.as_ref().display())
         });
         let buff_reader = BufReader::new(file);
-        let lines: Vec<String> = buff_reader.lines().flatten().collect();
+        let lines = buff_reader.lines().flatten().collect::<Vec<String>>();
 
         // Search for version = "X.X.X"
         let mut version = Version::from_str("0.0.0");
@@ -625,44 +605,60 @@ impl VenvConfig {
     }
 }
 
+/// A wrapper for a collection of `Interpreter`s.
+///
+/// Use `Interpreters` to access latest and exact Python `Interpreter`s by `Version.
+/// You can also get an `Interpreter` by its path.
+///
+/// ```
+/// use huak::Environment;
+///
+/// let interpreters = Environment::new().resolve_python_interpreters();
+/// let python_path = interpreters.latest();
+/// ```
 struct Interpreters {
     interpreters: Vec<Interpreter>,
 }
 
 impl Interpreters {
+    /// Get the latest Python `Interpreter` by `Version`.
     fn latest(&self) -> Option<Interpreter> {
         todo!()
     }
 
+    /// Get a Python `Interpreter` by its `Version`.
     fn exact(&self, version: &Version) -> Option<Interpreter> {
         todo!()
     }
 
+    /// Get a Python `Interpreter` by its path.
     fn get<T: AsRef<Path>>(&self, path: T) -> Option<Interpreter> {
         todo!()
     }
 }
 
+/// A trait used to convert structs into `PackageId`s.
 trait ToPkgId {
+    /// Convert to `PackageId`.
     fn to_pkg(self) -> PackageId;
 }
 
+/// A trait used to convert structs into dependency `&str`s.
 trait ToDepStr {
+    /// Convert to dependency `&str` ("{name}{specifiers}").
     fn to_dep_str(&self) -> &str;
 }
 
-/// The `Package` manages interacting with Python packages or Python projects.
+/// The `Package` contains data about a Python `Package`.
 ///
-/// `Package` contains information like the project's name, its version, authors
-/// dependencies (other `Package`s), and more. This data is stored in its
-/// `Metadata`.
+/// A `Package` contains information like the project's name, its version, authors,
+/// its dependencies, and more.
 ///
 /// ```
 /// use huak::Package;
 /// use pep440_rs::Version;
 ///
-/// let mut package = Package::new("my-project");
-/// package.set_version(Version::from_str("0.0.1").unwrap()));
+/// let mut package = Package::from_str("my-project==0.0.1").unwrap();
 ///
 /// assert_eq!(package.version, Version::from_str("0.0.1").unwrap()));
 /// ```
@@ -674,14 +670,17 @@ struct Package {
 }
 
 impl Package {
+    /// Get a reference to the `Package`'s name.
     fn name(&self) -> &str {
         &self.id.name
     }
 
+    /// Get an importable version of the `Package` name.
     fn importable_name(&self) -> HuakResult<String> {
         importable_package_name(&self.id.name)
     }
 
+    /// Get a reference to the PEP 440 `Version` of the `Package`.
     fn version(&self) -> &PEP440Version {
         &self.id.version
     }
@@ -689,10 +688,12 @@ impl Package {
 
 impl ToDepStr for Package {
     fn to_dep_str(&self) -> &str {
+        // Note a `Package` should always have a `Version` (0.0.1 by default).
         format!("{}=={}", self.name(), self.version()).as_str()
     }
 }
 
+/// A wrapper for implementing iterables on `Package`s.
 struct PackageIter<'a> {
     iter: std::slice::Iter<'a, Package>,
 }
@@ -705,23 +706,33 @@ impl<'a> Iterator for PackageIter<'a> {
     }
 }
 
+/// Initialize a `Package` from a `&str`.
+///
+/// ```
+/// use huak::Package;
+///
+/// let package = Package::from_str("my-package==0.0.1").unwrap();
+/// ```
 impl FromStr for Package {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // A naive approach to parsing the name and `VersionSpecifiers` from the `&str`.
+        // Find the first character of the `VersionSpecifiers`. Everythin prior is considered
+        // the name.
         let spec_str = parse_version_specifiers_str(s)?;
         let name = s.strip_suffix(spec_str).unwrap_or(s).to_string();
         let version_specifiers = VersionSpecifiers::from_str(spec_str)?;
 
+        // Since we only want to define `Package`s as having a specific `Version`,
+        // a `Package` cannot be initialized with multiple `VersionSpecifier`s.
         if version_specifiers.len() > 1 {
             return Err(Error::InvalidVersionString(format!(
                 "{} can only contain one version specifier",
                 s
             )));
         }
-
         let version_specifer = version_specifiers.first().unwrap();
-
         if version_specifer.operator() != &Operator::Equal {
             return Err(Error::InvalidVersionString(format!(
                 "{} must contain {} specifier",
@@ -735,6 +746,8 @@ impl FromStr for Package {
             version: version_specifer.version().to_owned(),
         };
 
+        // Initializing a `Package` from a `&str` would not include any additional
+        // `Metadata` besides the name.
         let project = Project {
             name,
             version: None,
@@ -756,7 +769,6 @@ impl FromStr for Package {
             license_expression: None,
             license_files: None,
         };
-
         let metadata = Metadata {
             project,
             tool: None,
@@ -768,6 +780,8 @@ impl FromStr for Package {
     }
 }
 
+/// Two `Package`s are currently considered partially equal if their names are the same.
+/// NOTE: This may change in the future.
 impl PartialEq for Package {
     fn eq(&self, other: &Self) -> bool {
         self.name() == other.name()
@@ -776,19 +790,28 @@ impl PartialEq for Package {
 
 impl Eq for Package {}
 
+/// The `PackageId` struct is used to contain `Package`-identifying data.
 struct PackageId {
+    /// The `Package` name.
     name: String,
+    /// The `Package` PEP 440 `Version`.
     version: PEP440Version,
 }
 
+/// A `LocalMetadata` struct used to manage local `Metadata` files such as
+/// the pyproject.toml (https://peps.python.org/pep-0621/).
 struct LocalMetdata {
+    /// The core `Metadata`.
+    /// See https://packaging.python.org/en/latest/specifications/core-metadata/.
     metadata: Metadata, // TODO: https://github.com/cnpryer/huak/issues/574
+    /// The path to the `LocalMetadata` file.
     path: PathBuf,
 }
 
 impl LocalMetdata {
-    /// Initialize `LocalMetdata` from a `Path`.
+    /// Initialize `LocalMetdata` from a path.
     fn new<T: AsRef<Path>>(path: T) -> HuakResult<LocalMetdata> {
+        // Currently only pyproject.toml files are supported.
         if path.as_ref().file_name()
             != Some(OsStr::new(DEFAULT_METADATA_FILE_NAME))
         {
@@ -797,17 +820,18 @@ impl LocalMetdata {
                 path.as_ref().display()
             )));
         }
-
-        let local_metadata = local_metadata(path)?;
+        let local_metadata = pyproject_toml_metadata(path)?;
 
         Ok(local_metadata)
     }
 
+    /// Write the `LocalMetadata` file to its path.
     pub fn write_file(&self) -> HuakResult<()> {
         let string = self.to_string_pretty()?;
         Ok(std::fs::write(self.path, string)?)
     }
 
+    /// Serialize the `Metadata` to a formatted string.
     pub fn to_string_pretty(&self) -> HuakResult<String> {
         Ok(toml_edit::ser::to_string_pretty(&self.metadata)?)
     }
@@ -819,7 +843,10 @@ impl Display for LocalMetdata {
     }
 }
 
-fn local_metadata<T: AsRef<Path>>(path: T) -> HuakResult<LocalMetdata> {
+/// Create `LocalMetadata` from a pyproject.toml file.
+fn pyproject_toml_metadata<T: AsRef<Path>>(
+    path: T,
+) -> HuakResult<LocalMetdata> {
     let pyproject_toml = PyProjectToml::new(path.as_ref())?;
     let project = match pyproject_toml.project.as_ref() {
         Some(it) => it,
@@ -834,7 +861,6 @@ fn local_metadata<T: AsRef<Path>>(path: T) -> HuakResult<LocalMetdata> {
     let tool = pyproject_toml.tool.to_owned();
 
     let metadata = Metadata { project, tool };
-
     let local_metadata = LocalMetdata {
         metadata,
         path: path.as_ref().to_path_buf(),
@@ -849,7 +875,9 @@ fn local_metadata<T: AsRef<Path>>(path: T) -> HuakResult<LocalMetdata> {
 ///
 /// See https://peps.python.org/pep-0621/.
 struct Metadata {
+    /// The `Project` table.
     project: Project,
+    /// The `Tool` table.
     tool: Option<Table>,
 }
 
@@ -1010,7 +1038,7 @@ impl PartialEq for Metadata {
 
 impl Eq for Metadata {}
 
-/// A pyproject.toml as specified in PEP 517
+/// A pyproject.toml as specified in PEP 621.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct PyProjectToml {
@@ -1079,16 +1107,18 @@ dependencies = []
 /// ```
 struct Dependency {
     /// PEP 508 dependency (called `Requirement` in pep508_rs).
-    requirement: Requirement,
+    requirement: Requirement, // TODO
     /// The PEP440-compliant `VersionSpecifiers`. See https://peps.python.org/pep-0440/.
     version_specifiers: VersionSpecifiers,
 }
 
 impl Dependency {
+    /// Get the `Dependency` name.
     fn name(&self) -> &str {
         &self.requirement.name
     }
 
+    /// Get a reference to the `Dependency`'s `VersionSpecifiers`.
     fn version_specifiers(&self) -> &VersionSpecifiers {
         &self.version_specifiers
     }
@@ -1099,7 +1129,7 @@ impl ToPkgId for Dependency {
         PackageId {
             name: self.requirement.name,
             version: *self.version_specifiers.first().unwrap().version(),
-        } // TODO: Handle multiple version specs
+        } // TODO: If a dependency has multiple `VersionSpecifier`s a `Version` needs to be resolved.
     }
 }
 
@@ -1132,6 +1162,9 @@ impl FromStr for Dependency {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // A naive approach to parsing the name and `VersionSpecifiers` from the `&str`.
+        // Find the first character of the `VersionSpecifiers`. Everythin prior is considered
+        // the name.
         let spec_str = parse_version_specifiers_str(s)?;
         let name = s.strip_suffix(spec_str).unwrap_or(s).to_string();
         let version_specifiers = VersionSpecifiers::from_str(spec_str)?;
@@ -1179,6 +1212,10 @@ where
         .filter_map(|item| Dependency::from_str(item.as_ref()).ok())
 }
 
+/// Parse the version specifiers component of a `Package` `&str`.
+///
+/// The first character of the version specififers component indicates the end of
+/// the `Package` name.
 fn parse_version_specifiers_str(s: &str) -> HuakResult<&str> {
     let found = s
         .chars()
@@ -1198,11 +1235,13 @@ fn parse_version_specifiers_str(s: &str) -> HuakResult<&str> {
     Ok(spec)
 }
 
+/// Convert a name to an importable version of the name.
 fn importable_package_name(name: &str) -> HuakResult<String> {
     let canonical_name = canonical_package_name(name)?;
     Ok(canonical_name.replace('-', "_"))
 }
 
+/// Normalize a name to a distributable and packagable name.
 fn canonical_package_name(name: &str) -> HuakResult<String> {
     let re = Regex::new("[-_. ]+")?;
     let res = re.replace_all(name, "-");
@@ -1281,11 +1320,13 @@ struct Env {
     env: HashMap<String, String>,
 }
 
+/// A trait used to convert a struct to `SemVer`.
 trait ToSemVer {
+    /// Convert to `SemVer` (MAJOR.MINOR.PATCH).
     fn to_semver(self) -> SemVer;
 }
 
-/// A generic `Version` struct implemnted Semantic-version-compliant `Version`s.
+/// A generic `Version` struct.
 ///
 /// This struct is mainly used for the Python `Interpreter`.
 struct Version {
@@ -1322,6 +1363,7 @@ impl FromStr for Version {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // Get potential `Version` parts from a `&str` (N.N.N).
         let captures = captures_version_str(s)?;
         let release = parse_semver_from_captures(&captures)?;
 
@@ -1338,6 +1380,7 @@ impl FromStr for Version {
     }
 }
 
+/// Use regex to capture potential `Version` numbers from a `&str`.
 fn captures_version_str(s: &str) -> HuakResult<Captures> {
     let re = Regex::new(r"^(\d+)(?:\.(\d+))?(?:\.(\d+))?$")?;
     let captures = match re.captures(s) {
@@ -1347,6 +1390,9 @@ fn captures_version_str(s: &str) -> HuakResult<Captures> {
     Ok(captures)
 }
 
+/// A naive parsing of semantic version parts from `Regex::Captures`.
+///
+/// Expects three parts (MAJOR.MINOR.PATCH) and defaults each part to 0.
 fn parse_semver_from_captures(captures: &Captures) -> HuakResult<Vec<usize>> {
     let mut parts = vec![0, 0, 0];
     for i in [0, 1, 2].into_iter() {
@@ -1357,6 +1403,7 @@ fn parse_semver_from_captures(captures: &Captures) -> HuakResult<Vec<usize>> {
                 .map_err(|e| Error::InternalError(e.to_string()))?
         }
     }
+
     Ok(parts)
 }
 
@@ -1384,9 +1431,11 @@ impl Ord for Version {
     }
 }
 
+/// A naive comparison of `Version` release parts.
+///
+/// Expects three parts [N,N,N] in `this.release` and `other.release`.
 fn compare_release(this: &Version, other: &Version) -> Ordering {
     for (a, b) in [
-        // TODO
         (this.release[0], other.release[0]),
         (this.release[1], this.release[1]),
         (this.release[2], other.release[2]),
@@ -1399,15 +1448,17 @@ fn compare_release(this: &Version, other: &Version) -> Ordering {
     Ordering::Equal
 }
 
-/// Get an iterator over available Python interpreter paths parsed from PATH.
-/// Inspired by brettcannon/python-launcher
+/// Get an `Iterator` over available Python `Interpreter` paths parsed from the `PATH`
+/// environment variable (inspired by brettcannon/python-launcher).
 pub fn python_paths() -> impl Iterator<Item = (Option<Version>, PathBuf)> {
     let paths =
         fs::flatten_directories(env_path_values().unwrap_or(Vec::new()));
+
     python_interpreters_in_paths(paths)
 }
 
-/// Get an iterator over all found python interpreter paths with their version.
+/// Get an `Iterator` over all found Python `Interpreter` paths with their `Version` if
+/// one is found.
 fn python_interpreters_in_paths(
     paths: impl IntoIterator<Item = PathBuf>,
 ) -> impl Iterator<Item = (Option<Version>, PathBuf)> {
@@ -1441,15 +1492,27 @@ fn python_interpreters_in_paths(
 }
 
 #[cfg(unix)]
+/// A function for checking if a Python `Interpreter`'s file name is valid.
+///
+/// On Unix its considered valid if it has sufficient length for MAJOR.MINOR
+/// and starts with "python".
 fn valid_python_interpreter_file_name(file_name: &str) -> bool {
     file_name.len() >= "python3.0".len() && file_name.starts_with("python")
 }
 
 #[cfg(windows)]
+/// A function for checking if a Python `Interpreter`'s file name is valid.
+///
+/// On Windows its considered valid if it has the .exe extension and starts with
+/// "python".
 fn valid_python_interpreter_file_name(file_name: &str) -> bool {
     file_name.starts_with("python") && file_name.ends_with(".exe")
 }
 
+/// Parse the `Version` from a Python `Interpreter`'s file name.
+///
+/// On Windows we strip the .exe extension and attempt the parse.
+/// On Unix we just attempt the parse immediately.
 fn version_from_python_interpreter_file_name(
     file_name: &str,
 ) -> HuakResult<Version> {
@@ -1465,15 +1528,16 @@ fn version_from_python_interpreter_file_name(
     })
 }
 
-/// Get a vector of paths from the system PATH environment variable.
+/// Get a vector of paths from the system `PATH` environment variable.
 pub fn env_path_values() -> Option<Vec<PathBuf>> {
     if let Some(val) = env_path_string() {
         return Some(std::env::split_paths(&val).collect());
     }
+
     None
 }
 
-/// Get the OsString value of the enrionment variable PATH.
+/// Get the OsString value of the enrionment variable `PATH`.
 pub fn env_path_string() -> Option<OsString> {
     std::env::var_os("PATH")
 }
@@ -1483,6 +1547,7 @@ pub fn active_virtual_env_path() -> Option<PathBuf> {
     if let Ok(path) = std::env::var(VIRTUAL_ENV_ENV_VAR) {
         return Some(PathBuf::from(path));
     }
+
     None
 }
 
@@ -1491,12 +1556,13 @@ pub fn active_conda_env_path() -> Option<PathBuf> {
     if let Ok(path) = std::env::var(CONDA_ENV_ENV_VAR) {
         return Some(PathBuf::from(path));
     }
+
     None
 }
 
-/// Get a `Version` from a Python interpreter using its path.
+/// Get a `Version` from a Python `Interpreter` using a path to the actual binary.
 ///
-/// 1. Attempt to parse the version number from the path.
+/// 1. Attempt to parse the version number from the path itself.
 /// 2. Run `{path} --version` and parse from the output.
 fn parse_python_interpreter_version<T: AsRef<Path>>(
     path: T,
