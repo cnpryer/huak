@@ -3,7 +3,7 @@ use crate::Error;
 use std::{fmt::Display, io::Write, path::Path, process::Command};
 use termcolor::{
     self, Color,
-    Color::{Cyan, Green, Red, Yellow},
+    Color::{Red, Yellow},
     ColorChoice, ColorSpec, StandardStream, WriteColor,
 };
 
@@ -37,39 +37,8 @@ impl Terminal {
             output: TerminalOut::Stream {
                 stdout: StandardStream::stdout(ColorChoice::Auto),
                 stderr: StandardStream::stderr(ColorChoice::Auto),
-                color_choice: ColorChoice::Auto,
             },
         }
-    }
-
-    /// Shortcut to right-align and color green a status message.
-    pub fn status<T, U>(&mut self, status: T, message: U) -> HuakResult<()>
-    where
-        T: Display,
-        U: Display,
-    {
-        self.print(&status, Some(&message), Green, true)
-    }
-
-    pub fn status_header<T>(&mut self, status: T) -> HuakResult<()>
-    where
-        T: Display,
-    {
-        self.print(&status, None, Cyan, true)
-    }
-
-    /// Shortcut to right-align a status message.
-    pub fn status_with_color<T, U>(
-        &mut self,
-        status: T,
-        message: U,
-        color: Color,
-    ) -> HuakResult<()>
-    where
-        T: Display,
-        U: Display,
-    {
-        self.print(&status, Some(&message), color, true)
     }
 
     /// Print an error message.
@@ -84,11 +53,6 @@ impl Terminal {
             Verbosity::Quiet => Ok(()),
             _ => self.print(&"warning", Some(&message), Yellow, false),
         }
-    }
-
-    /// Prints a note message.
-    pub fn print_note<T: Display>(&mut self, message: T) -> HuakResult<()> {
-        self.print(&"note", Some(&message), Cyan, false)
     }
 
     /// Prints a custom message.
@@ -125,34 +89,9 @@ impl Terminal {
         }
     }
 
-    /// Gets a reference to the underlying stdout writer.
-    pub fn stdout(&mut self) -> &mut dyn Write {
-        self.output.stdout()
-    }
-
-    /// Gets a reference to the underlying stderr writer.
-    pub fn stderr(&mut self) -> &mut dyn Write {
-        self.output.stderr()
-    }
-
     /// Set the verbosity level.
     pub fn set_verbosity(&mut self, verbosity: Verbosity) {
         self.verbosity = verbosity;
-    }
-
-    /// Get a reference to the verbosity level.
-    pub fn verbosity(&self) -> &Verbosity {
-        &self.verbosity
-    }
-
-    /// Gets the current color choice.
-    ///
-    /// If we are not using a color stream, this will always return `Never`, even if the color
-    /// choice has been set to something else.
-    pub fn color_choice(&self) -> ColorChoice {
-        match self.output {
-            TerminalOut::Stream { color_choice, .. } => color_choice,
-        }
     }
 
     /// Run a command from the terminal's context.
@@ -231,9 +170,9 @@ fn trim_error_prefix(msg: &str) -> &str {
 enum TerminalOut {
     /// Color-enabled stdio with information on whether color should be used
     Stream {
+        #[allow(dead_code)]
         stdout: StandardStream,
         stderr: StandardStream,
-        color_choice: ColorChoice,
     },
 }
 
@@ -269,20 +208,6 @@ impl TerminalOut {
             }
         }
         Ok(())
-    }
-
-    /// Get a mutable reference to the stdout writer.
-    pub fn stdout(&mut self) -> &mut dyn Write {
-        match *self {
-            TerminalOut::Stream { ref mut stdout, .. } => stdout,
-        }
-    }
-
-    /// Get a mutable reference to the stderr writer.
-    pub fn stderr(&mut self) -> &mut dyn Write {
-        match *self {
-            TerminalOut::Stream { ref mut stderr, .. } => stderr,
-        }
     }
 }
 

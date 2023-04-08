@@ -14,8 +14,8 @@ categories = [
 [lib]
 name = "huak"
 path = "./src/huak/lib.rs"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# We currently don't run doctest while the library is private.
+doctest = false
 
 [dependencies]
 clap = { version = "4.1.14", features = ["cargo", "derive"] }

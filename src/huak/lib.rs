@@ -54,7 +54,6 @@ use regex::{Captures, Regex};
 use serde::{Deserialize, Serialize};
 use std::{
     cmp::Ordering,
-    collections::hash_map::RandomState,
     env::consts::OS,
     ffi::OsStr,
     ffi::OsString,
@@ -79,7 +78,6 @@ const VENV_CONFIG_FILE_NAME: &str = "pyvenv.cfg";
 const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
 const VIRTUAL_ENV_ENV_VAR: &str = "VIRUTAL_ENV";
 const CONDA_ENV_ENV_VAR: &str = "CONDA_PREFIX";
-const DEFAULT_PROJECT_VERSION_STR: &str = "0.0.1";
 const DEFAULT_METADATA_FILE_NAME: &str = "pyproject.toml";
 const DEFAULT_PYTHON_INIT_FILE_CONTENTS: &str = r#"__version__ = "0.0.1"
 "#;
@@ -123,13 +121,13 @@ pub struct Config {
 impl Config {
     /// Resolve the current workspace based on the `Config` data.
     fn workspace(&self) -> Workspace {
-        Workspace::new(&self.workspace_root, &self)
+        Workspace::new(&self.workspace_root, self)
     }
 
     /// Get a `Terminal` based on the `Config` data.
     fn terminal(&self) -> Terminal {
         let mut terminal = Terminal::new();
-        let verbosity = self.terminal_options.verbosity().clone();
+        let verbosity = *self.terminal_options.verbosity();
         terminal.set_verbosity(verbosity);
 
         terminal
@@ -276,7 +274,7 @@ pub fn find_venv_root<T: AsRef<Path>>(
 
     if !from.as_ref().is_dir() || !stop_after.as_ref().is_dir() {
         return Err(Error::InternalError(
-            "`from` and `stop_after` must be directoreis".to_string(),
+            "`from` and `stop_after` must be directories".to_string(),
         ));
     }
 
@@ -355,9 +353,8 @@ impl Environment {
     /// Initialize an `Environment`.
     fn new() -> Environment {
         let interpreters = Environment::resolve_python_interpreters();
-        let env = Environment { interpreters };
 
-        env
+        Environment { interpreters }
     }
 
     /// Get an `Iterator` over the Python `Interpreter` `PathBuf`s found.
@@ -365,14 +362,19 @@ impl Environment {
         self.interpreters
             .interpreters
             .iter()
-            .map(|interpreter| &interpreter.path)
+            .map(|interpreter| interpreter.path())
     }
 
     /// Resolve `Interpreters` for the `Environment`.
     fn resolve_python_interpreters() -> Interpreters {
         // Note that we filter out any interpreters we can't establish a `Version` for.
         let interpreters = python_paths().filter_map(|(version, path)| {
-            if let Ok(Some(version)) = parse_python_interpreter_version(&path) {
+            if let Some(v) = version {
+                let interpreter = Interpreter { version: v, path };
+                Some(interpreter)
+            } else if let Ok(Some(version)) =
+                parse_python_interpreter_version(&path)
+            {
                 let interpreter = Interpreter { version, path };
                 Some(interpreter)
             } else {
@@ -433,8 +435,6 @@ struct PythonEnvironment {
     executables_dir_path: PathBuf,
     /// The site-packages directory contains all of the `PythonEnvironment`'s installed Python packages.
     site_packages_path: PathBuf,
-    /// The `PythonEnvironment`'s installed `Package`s.
-    packages: Vec<Package>,
 }
 
 impl PythonEnvironment {
@@ -465,12 +465,7 @@ impl PythonEnvironment {
 
     /// Get a reference to the Python `Interpeter`'s path that's used by the `PythonEnvironment`.
     pub fn python_path(&self) -> &PathBuf {
-        &self.interpreter.path
-    }
-
-    /// Get a reference to the Python `Interpeter`'s `Version` that's used by the `PythonEnvironment`.
-    pub fn python_version(&self) -> &Version {
-        &self.interpreter.version
+        self.interpreter.path()
     }
 
     /// Get a reference to the `PythonEnvironment`'s executables directory path.
@@ -538,8 +533,7 @@ impl PythonEnvironment {
     {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "install", "--upgrade"])
-            .args(packages.iter().map(|item| item.to_dep_string()))
-            .arg("-y");
+            .args(packages.iter().map(|item| item.to_dep_string()));
 
         if let Some(v) = options.values.as_ref() {
             cmd.args(v.iter().map(|item| item.as_str()));
@@ -565,15 +559,10 @@ impl PythonEnvironment {
         }
     }
 
+    #[allow(dead_code)]
     /// Check if the `PythonEnvironment` has a `Package` already installed.
     pub fn contains_package(&self, package: &Package) -> bool {
-        self.site_packages_dir_path()
-            .join(
-                package
-                    .importable_name()
-                    .unwrap_or(package.name().to_string()),
-            )
-            .exists()
+        self.site_packages_dir_path().join(package.name()).exists()
     }
 
     /// Get all of the `Package`s installed in the `PythonEnvironment`.
@@ -616,7 +605,7 @@ fn new_venv<T: AsRef<Path>>(path: T) -> HuakResult<PythonEnvironment> {
     #[cfg(windows)]
     let python_path = executables_dir_path.join("python.exe");
 
-    let config = VenvConfig::new(&root.join(VENV_CONFIG_FILE_NAME))?;
+    let config = VenvConfig::new(root.join(VENV_CONFIG_FILE_NAME))?;
     let version = config.version;
 
     // On Unix systems the Venv's site-package directory depends on the Python version.
@@ -634,37 +623,17 @@ fn new_venv<T: AsRef<Path>>(path: T) -> HuakResult<PythonEnvironment> {
 
     let interpreter = Interpreter {
         version,
-        path: python_path.to_path_buf(),
+        path: python_path,
     };
-
-    let packages = pip_freeze(&interpreter)?;
 
     let venv = PythonEnvironment {
         root: root.to_path_buf(),
         interpreter,
         executables_dir_path,
         site_packages_path,
-        packages,
     };
 
     Ok(venv)
-}
-
-/// Execute and parse a `pip freeze` command with an `Interpreter`.
-fn pip_freeze(interpreter: &Interpreter) -> HuakResult<Vec<Package>> {
-    let mut cmd = Command::new(interpreter.path());
-    cmd.args(["-m", "pip", "freeze"]);
-
-    let output = cmd.output()?;
-    let output = sys::parse_command_output(output)?;
-    let mut packages = Vec::new();
-    for line in output.split('\n') {
-        if !line.is_empty() {
-            packages.push(Package::from_str(line)?);
-        }
-    }
-
-    Ok(packages)
 }
 
 #[derive(Clone)]
@@ -732,16 +701,17 @@ impl Interpreters {
         T: Iterator<Item = Interpreter>,
     {
         let interpreters = interpreters.collect::<Vec<_>>();
-        let interpreters = Interpreters { interpreters };
 
-        interpreters
+        Interpreters { interpreters }
     }
 
+    #[allow(dead_code)]
     /// Get the latest Python `Interpreter` by `Version`.
     fn latest(&self) -> Option<&Interpreter> {
         self.interpreters.iter().max()
     }
 
+    #[allow(dead_code)]
     /// Get a Python `Interpreter` by its `Version`.
     fn exact(&self, version: &Version) -> Option<&Interpreter> {
         self.interpreters
@@ -787,11 +757,6 @@ impl Package {
     /// Get a reference to the `Package`'s name.
     fn name(&self) -> &str {
         &self.id.name
-    }
-
-    /// Get an importable version of the `Package` name.
-    fn importable_name(&self) -> HuakResult<String> {
-        importable_package_name(&self.id.name)
     }
 
     /// Get a reference to the PEP 440 `Version` of the `Package`.
@@ -988,7 +953,7 @@ fn pyproject_toml_metadata<T: AsRef<Path>>(
     }
     .to_owned();
     let build_system = pyproject_toml.build_system.to_owned();
-    let tool = pyproject_toml.tool.to_owned();
+    let tool = pyproject_toml.tool;
 
     let metadata = Metadata {
         build_system,
@@ -1040,7 +1005,7 @@ impl Metadata {
     ) -> HuakResult<bool> {
         if let Some(deps) = self.dependencies() {
             for d in deps {
-                if d.eq(&dependency.requirement) {
+                if d.name == dependency.name() {
                     return Ok(true);
                 }
             }
@@ -1061,7 +1026,7 @@ impl Metadata {
                 return Ok(false);
             }
             for d in deps.values().flatten() {
-                if d.eq(&dependency.requirement) {
+                if d.name == dependency.name() {
                     return Ok(true);
                 }
             }
@@ -1071,10 +1036,9 @@ impl Metadata {
     }
 
     pub fn add_dependency(&mut self, dependency: Dependency) {
-        self.project
-            .dependencies
-            .as_mut()
-            .map(|deps| deps.push(dependency.requirement));
+        if let Some(deps) = self.project.dependencies.as_mut() {
+            deps.push(dependency.requirement)
+        }
     }
 
     pub fn optional_dependencies(
@@ -1094,7 +1058,7 @@ impl Metadata {
                     return Ok(false);
                 }
                 for d in g {
-                    if d.eq(&dependency.requirement) {
+                    if d.name == dependency.name() {
                         return Ok(true);
                     }
                 }
@@ -1129,17 +1093,11 @@ impl Metadata {
     }
 
     pub fn remove_dependency(&mut self, dependency: &Dependency) {
-        self.project
-            .dependencies
-            .as_mut()
-            .filter(|deps| deps.contains(&dependency.requirement))
-            .map(|deps| {
-                let i = deps
-                    .iter()
-                    .position(|dep| *dep == dependency.requirement)
-                    .unwrap();
-                deps.remove(i);
-            });
+        self.project.dependencies.as_mut().and_then(|deps| {
+            deps.iter()
+                .position(|dep| dep.name == dependency.name())
+                .map(|i| deps.remove(i))
+        });
     }
 
     pub fn remove_optional_dependency(
@@ -1153,13 +1111,9 @@ impl Metadata {
             .and_then(|g| g.get_mut(group))
             .and_then(|deps| {
                 deps.iter()
-                    .position(|dep| *dep == dependency.requirement)
+                    .position(|dep| dep.name == dependency.name())
                     .map(|i| deps.remove(i))
             });
-    }
-
-    pub fn scripts(&self) -> Option<&IndexMap<String, String, RandomState>> {
-        self.project.scripts.as_ref()
     }
 
     pub fn add_script(&mut self, name: &str, entrypoint: &str) {
@@ -1169,36 +1123,6 @@ impl Metadata {
             .entry(name.to_string())
             .or_insert(entrypoint.to_string());
     }
-}
-
-fn parse_toml_depenencies(project: &Project) -> Option<Vec<Dependency>> {
-    project.dependencies.as_ref().map(|items| {
-        items
-            .iter()
-            .map(|item| {
-                Dependency::from_str(&item.to_string())
-                    .expect("toml dependencies")
-            })
-            .collect::<Vec<Dependency>>()
-    })
-}
-
-fn parse_toml_optional_dependencies(
-    project: &Project,
-) -> Option<IndexMap<String, Vec<Dependency>>> {
-    project.optional_dependencies.as_ref().map(|groups| {
-        IndexMap::from_iter(groups.iter().map(|(group, deps)| {
-            (
-                group.clone(),
-                deps.iter()
-                    .map(|dep| {
-                        Dependency::from_str(&dep.to_string())
-                            .expect("toml optional dependencies")
-                    })
-                    .collect(),
-            )
-        }))
-    })
 }
 
 impl PartialEq for Metadata {
@@ -1332,7 +1256,8 @@ impl ToPkgId for Dependency {
 
 impl ToDepString for Dependency {
     fn to_dep_string(&self) -> String {
-        let version_specifiers = self.version_specifiers.iter().map(|spec| {
+        let version_specifiers = self.version_specifiers();
+        let version_specifiers = version_specifiers.iter().map(|spec| {
             spec.to_string()
                 .split_whitespace()
                 .collect::<Vec<_>>()
@@ -1463,6 +1388,7 @@ fn canonical_package_name(name: &str) -> HuakResult<String> {
     Ok(res.into_owned())
 }
 
+#[derive(Debug)]
 /// The Python `Interpreter` is used to interact with installed Python `Interpreter`s.
 ///
 /// `Interpreter` contains information like the `Interpreter`'s path, `Version`, etc.
@@ -1489,6 +1415,12 @@ impl Interpreter {
     }
 }
 
+impl Display for Interpreter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}) {}", self.version(), self.path().display())
+    }
+}
+
 impl PartialEq<Self> for Interpreter {
     fn eq(&self, other: &Self) -> bool {
         self.cmp(other) == Ordering::Equal
@@ -1505,7 +1437,7 @@ impl PartialOrd<Self> for Interpreter {
 
 impl Ord for Interpreter {
     fn cmp(&self, other: &Self) -> Ordering {
-        match compare_interpreters(&self, &other) {
+        match compare_interpreters(self, other) {
             Ordering::Less => Ordering::Less,
             Ordering::Equal => Ordering::Equal,
             Ordering::Greater => Ordering::Greater,
@@ -1527,11 +1459,22 @@ trait ToSemVer {
     fn to_semver(self) -> SemVer;
 }
 
+#[derive(Debug)]
 /// A generic `Version` struct.
 ///
 /// This struct is mainly used for the Python `Interpreter`.
 pub struct Version {
     release: Vec<usize>,
+}
+
+impl Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}.{}.{}",
+            self.release[0], self.release[1], self.release[1]
+        ) // TODO
+    }
 }
 
 struct SemVer {
@@ -1550,13 +1493,9 @@ impl ToSemVer for Version {
     }
 }
 
-impl Display for Version {
+impl Display for SemVer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}.{}.{}",
-            self.release[0], self.release[1], self.release[1]
-        ) // TODO
+        write!(f, "{}.{}.{}", self.major, self.minor, self.patch) // TODO
     }
 }
 
@@ -1634,7 +1573,7 @@ impl PartialOrd<Self> for Version {
 
 impl Ord for Version {
     fn cmp(&self, other: &Self) -> Ordering {
-        match compare_release(&self, &other) {
+        match compare_release(self, other) {
             Ordering::Less => Ordering::Less,
             Ordering::Equal => Ordering::Equal,
             Ordering::Greater => Ordering::Greater,
@@ -1840,7 +1779,7 @@ build-backend = "hatchling.build"
 name = "mock_project"
 version = "0.0.1"
 description = ""
-dependencies = ["click==8.1.3"]
+dependencies = ["click == 8.1.3"]
 
 [[project.authors]]
 name = "Chris Pryer"
@@ -1848,9 +1787,9 @@ email = "cnpryer@gmail.com"
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=6",
-    "black==22.8.0",
-    "isort==5.12.0",
+    "pytest >= 6",
+    "black == 22.8.0",
+    "isort == 5.12.0",
 ]
 "#
         );
@@ -1920,7 +1859,7 @@ name = "mock_project"
 version = "0.0.1"
 description = ""
 dependencies = [
-    "click==8.1.3",
+    "click == 8.1.3",
     "test",
 ]
 
@@ -1930,9 +1869,9 @@ email = "cnpryer@gmail.com"
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=6",
-    "black==22.8.0",
-    "isort==5.12.0",
+    "pytest >= 6",
+    "black == 22.8.0",
+    "isort == 5.12.0",
 ]
 "#
         )
@@ -1963,7 +1902,7 @@ build-backend = "hatchling.build"
 name = "mock_project"
 version = "0.0.1"
 description = ""
-dependencies = ["click==8.1.3"]
+dependencies = ["click == 8.1.3"]
 
 [[project.authors]]
 name = "Chris Pryer"
@@ -1971,9 +1910,9 @@ email = "cnpryer@gmail.com"
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=6",
-    "black==22.8.0",
-    "isort==5.12.0",
+    "pytest >= 6",
+    "black == 22.8.0",
+    "isort == 5.12.0",
     "test1",
 ]
 new-group = ["test2"]
@@ -1987,10 +1926,10 @@ new-group = ["test2"]
             .join("mock-project")
             .join("pyproject.toml");
         let mut local_metadata = LocalMetdata::new(path).unwrap();
-
         local_metadata
             .metadata
             .remove_dependency(&Dependency::from_str("click").unwrap());
+
         assert_eq!(
             local_metadata.to_string_pretty().unwrap(),
             r#"[build-system]
@@ -2009,9 +1948,9 @@ email = "cnpryer@gmail.com"
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=6",
-    "black==22.8.0",
-    "isort==5.12.0",
+    "pytest >= 6",
+    "black == 22.8.0",
+    "isort == 5.12.0",
 ]
 "#
         )
@@ -2038,7 +1977,7 @@ build-backend = "hatchling.build"
 name = "mock_project"
 version = "0.0.1"
 description = ""
-dependencies = ["click==8.1.3"]
+dependencies = ["click == 8.1.3"]
 
 [[project.authors]]
 name = "Chris Pryer"
@@ -2046,8 +1985,8 @@ email = "cnpryer@gmail.com"
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=6",
-    "black==22.8.0",
+    "pytest >= 6",
+    "black == 22.8.0",
 ]
 "#
         )
@@ -2089,19 +2028,22 @@ dev = [
     #[cfg(unix)]
     #[test]
     fn python_search() {
-        let dir = tempdir().unwrap().into_path();
-        std::fs::write(dir.join("python3.11"), "").unwrap();
-        let path_vals = vec![dir.to_str().unwrap().to_string()];
+        let dir = tempdir().unwrap();
+        std::fs::write(dir.path().join("python3.11"), "").unwrap();
+        let path_vals = vec![dir.path().to_str().unwrap().to_string()];
         std::env::set_var("PATH", path_vals.join(":"));
         let mut interpreter_paths = python_paths();
 
-        assert_eq!(interpreter_paths.next().unwrap().1, dir.join("python3.11"));
+        assert_eq!(
+            interpreter_paths.next().unwrap().1,
+            dir.path().join("python3.11")
+        );
     }
 
     #[cfg(windows)]
     #[test]
     fn python_search() {
-        let dir = tempdir().unwrap().into_path();
+        let dir = tempdir().unwrap();
         std::fs::write(dir.join("python.exe"), "").unwrap();
         let path_vals = vec![dir.to_str().unwrap().to_string()];
         std::env::set_var("PATH", path_vals.join(":"));
