@@ -124,18 +124,18 @@ pub fn add_project_dependencies(
     let packages = python_env.installed_packages()?;
     for pkg in packages.iter().filter(|pkg| {
         deps.iter().any(|dep| {
-            pkg.name() == dep.name() && dep.version_specifiers().is_none()
+            pkg.name() == dep.name()
+                && dep.requirement().version_or_url.is_none()
         })
     }) {
         let dep = Dependency::from_str(&pkg.to_string())?;
         metadata.metadata.add_dependency(dep);
     }
 
-    for dep in deps
-        .into_iter()
-        .filter(|dep| dep.version_specifiers().is_none())
-    {
-        metadata.metadata.add_dependency(dep);
+    for dep in deps {
+        if !metadata.metadata.contains_dependency(&dep)? {
+            metadata.metadata.add_dependency(dep);
+        }
     }
 
     if package.metadata != metadata.metadata {
@@ -173,18 +173,21 @@ pub fn add_project_optional_dependencies(
     let packages = python_env.installed_packages()?;
     for pkg in packages.iter().filter(|pkg| {
         deps.iter().any(|dep| {
-            pkg.name() == dep.name() && dep.version_specifiers().is_none()
+            pkg.name() == dep.name()
+                && dep.requirement().version_or_url.is_none()
         })
     }) {
         let dep = Dependency::from_str(&pkg.to_string())?;
         metadata.metadata.add_optional_dependency(dep, group);
     }
 
-    for dep in deps
-        .into_iter()
-        .filter(|dep| dep.version_specifiers().is_none())
-    {
-        metadata.metadata.add_optional_dependency(dep, group);
+    for dep in deps {
+        if !metadata
+            .metadata
+            .contains_optional_dependency(&dep, group)?
+        {
+            metadata.metadata.add_optional_dependency(dep, group);
+        }
     }
 
     if package.metadata != metadata.metadata {

@@ -1214,6 +1214,7 @@ impl Dependency {
     }
 
     /// Get a reference to the `Dependency`'s `VersionSpecifiers`.
+    #[allow(dead_code)]
     fn version_specifiers(&self) -> Option<&VersionSpecifiers> {
         match self.0.version_or_url.as_ref() {
             Some(VersionOrUrl::VersionSpecifier(it)) => Some(it),

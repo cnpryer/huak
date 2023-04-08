@@ -127,9 +127,11 @@ impl Terminal {
                 status.code().unwrap_or_default()
             }
         };
+
         if code > 0 {
             std::process::exit(code)
         }
+
         Ok(())
     }
 }
