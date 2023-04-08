@@ -49,7 +49,7 @@ pub use error::{Error, HuakResult};
 use indexmap::IndexMap;
 use pep440_rs::{Operator, Version as PEP440Version, VersionSpecifiers};
 use pep508_rs::{Requirement, VersionOrUrl};
-use pyproject_toml::{Project, PyProjectToml as ProjectToml};
+use pyproject_toml::{BuildSystem, Project, PyProjectToml as ProjectToml};
 use regex::{Captures, Regex};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -869,6 +869,11 @@ impl FromStr for Package {
 
         // Initializing a `Package` from a `&str` would not include any additional
         // `Metadata` besides the name.
+        let build_system = BuildSystem {
+            requires: vec![Requirement::from_str("hatchling").unwrap()],
+            build_backend: Some(String::from("hatchling.build")),
+            backend_path: None,
+        };
         let project = Project {
             name,
             version: None,
@@ -891,6 +896,7 @@ impl FromStr for Package {
             license_files: None,
         };
         let metadata = Metadata {
+            build_system,
             project,
             tool: None,
         };
@@ -920,6 +926,7 @@ struct PackageId {
     version: PEP440Version,
 }
 
+#[derive(Debug)]
 /// A `LocalMetadata` struct used to manage local `Metadata` files such as
 /// the pyproject.toml (https://peps.python.org/pep-0621/).
 struct LocalMetdata {
@@ -980,9 +987,14 @@ fn pyproject_toml_metadata<T: AsRef<Path>>(
         }
     }
     .to_owned();
+    let build_system = pyproject_toml.build_system.to_owned();
     let tool = pyproject_toml.tool.to_owned();
 
-    let metadata = Metadata { project, tool };
+    let metadata = Metadata {
+        build_system,
+        project,
+        tool,
+    };
     let local_metadata = LocalMetdata {
         metadata,
         path: path.as_ref().to_path_buf(),
@@ -997,6 +1009,8 @@ fn pyproject_toml_metadata<T: AsRef<Path>>(
 ///
 /// See https://peps.python.org/pep-0621/.
 struct Metadata {
+    /// The build system used for the `Package`.
+    build_system: BuildSystem,
     /// The `Project` table.
     project: Project,
     /// The `Tool` table.
@@ -1231,23 +1245,26 @@ impl PyProjectToml {
 impl Default for PyProjectToml {
     fn default() -> Self {
         Self {
-            inner: ProjectToml::new(&default_pyproject_toml_contents())
+            inner: ProjectToml::new(&default_pyproject_toml_contents(""))
                 .expect("valid pyproject.toml contents"),
             tool: None,
         }
     }
 }
 
-fn default_pyproject_toml_contents() -> &'static str {
-    r#"[build-system]
+fn default_pyproject_toml_contents(name: &str) -> String {
+    format!(
+        r#"[build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
 [project]
-name = "{project_name}"
+name = "{name}"
 version = "0.0.1"
 description = ""
 dependencies = []
 "#
+    )
 }
 
 fn default_entrypoint_string(importable_name: &str) -> String {
@@ -1265,7 +1282,7 @@ def test_version():
     )
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 /// The `Dependency` is an abstraction for `Package` data used as a cheap alternative
 /// for operations on lots of `Package` information.
 ///

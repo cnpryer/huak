@@ -2,6 +2,8 @@
 ///! existing on a system.
 ///
 use indexmap::IndexMap;
+use pep508_rs::Requirement;
+use pyproject_toml::BuildSystem;
 use std::{env::consts::OS, path::Path, process::Command, str::FromStr};
 use termcolor::Color;
 
@@ -400,6 +402,11 @@ pub fn init_lib_project(
         Ok(_) => return Err(Error::MetadataFileFound),
         Err(_) => LocalMetdata {
             metadata: Metadata {
+                build_system: BuildSystem {
+                    requires: vec![Requirement::from_str("hatchling").unwrap()],
+                    build_backend: Some(String::from("hatchling.build")),
+                    backend_path: None,
+                },
                 project: PyProjectToml::default().project.clone().unwrap(),
                 tool: None,
             },
@@ -614,6 +621,11 @@ pub fn new_lib_project(
         Ok(_) => return Err(Error::ProjectFound),
         Err(_) => LocalMetdata {
             metadata: Metadata {
+                build_system: BuildSystem {
+                    requires: vec![Requirement::from_str("hatchling").unwrap()],
+                    build_backend: Some(String::from("hatchling.build")),
+                    backend_path: None,
+                },
                 project: PyProjectToml::default().project.clone().unwrap(),
                 tool: None,
             },
@@ -621,7 +633,7 @@ pub fn new_lib_project(
         },
     };
 
-    create_workspace(&config.workspace_root, config, options)?;
+    create_workspace(&workspace.root, options)?;
 
     let name = &fs::last_path_component(&config.workspace_root)?;
     metadata.metadata.set_project_name(name.to_string());
@@ -1040,18 +1052,15 @@ fn make_venv_command(
 
 fn create_workspace<T: AsRef<Path>>(
     path: T,
-    config: &Config,
     options: &WorkspaceOptions,
 ) -> HuakResult<()> {
     let root = path.as_ref();
 
-    if (root.exists() && root != config.cwd)
-        || (root == config.cwd && root.read_dir()?.count() > 0)
-    {
+    if !root.exists() {
+        std::fs::create_dir(root)?;
+    } else {
         return Err(Error::DirectoryExists(root.to_path_buf()));
     }
-
-    std::fs::create_dir(root)?;
 
     init_git(root, options)
 }
@@ -1075,11 +1084,9 @@ fn init_git<T: AsRef<Path>>(
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
-
     use super::*;
     use crate::{
-        fs,
+        default_pyproject_toml_contents, fs,
         sys::{TerminalOptions, Verbosity},
         test_resources_dir_path, Package, PyProjectToml,
     };
@@ -1095,11 +1102,10 @@ mod tests {
         .unwrap();
         let deps = [Dependency::from_str("ruff").unwrap()];
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(&root, &cwd, Verbosity::Quiet);
         let ws = config.workspace();
-        let package = ws.current_package().unwrap();
-        let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
+        let venv = ws.current_python_environment().unwrap();
         let options = AddOptions {
             install_options: InstallOptions { values: None },
         };
@@ -1110,9 +1116,10 @@ mod tests {
             .unwrap();
 
         let dep = Dependency::from_str("ruff").unwrap();
+        let metadata = ws.current_local_metadata().unwrap();
 
         assert!(venv.contains_module("ruff").unwrap());
-        assert!(package.metadata.contains_dependency(&dep).unwrap());
+        assert!(metadata.metadata.contains_dependency(&dep).unwrap());
     }
 
     #[test]
@@ -1126,11 +1133,10 @@ mod tests {
         let deps = [Dependency::from_str("ruff").unwrap()];
         let group = "dev";
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(&root, &cwd, Verbosity::Quiet);
         let ws = config.workspace();
-        let package = ws.current_package().unwrap();
-        let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
+        let venv = ws.current_python_environment().unwrap();
         let options = AddOptions {
             install_options: InstallOptions { values: None },
         };
@@ -1146,9 +1152,10 @@ mod tests {
         .unwrap();
 
         let dep = Dependency::from_str("ruff").unwrap();
+        let metadata = ws.current_local_metadata().unwrap();
 
         assert!(venv.contains_module("ruff").unwrap());
-        assert!(package
+        assert!(metadata
             .metadata
             .contains_optional_dependency(&dep, "dev")
             .unwrap());
@@ -1163,7 +1170,7 @@ mod tests {
         )
         .unwrap();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = dir.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = BuildOptions {
             values: None,
@@ -1182,7 +1189,7 @@ mod tests {
         )
         .unwrap();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = CleanOptions {
             include_pycache: true,
@@ -1231,7 +1238,7 @@ mod tests {
         )
         .unwrap();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
         let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
@@ -1268,21 +1275,17 @@ def fn( ):
         let dir = tempdir().unwrap().into_path();
         std::fs::create_dir(dir.join("mock-project")).unwrap();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = WorkspaceOptions { uses_git: false };
-
         init_lib_project(&config, &options).unwrap();
 
         let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
-        let pyproject_toml = PyProjectToml::default();
-        pyproject_toml.project.clone().unwrap().name =
-            String::from("mock-project");
 
         assert_eq!(
             metadata.to_string_pretty().unwrap(),
-            toml::ser::to_string_pretty(&pyproject_toml).unwrap()
+            default_pyproject_toml_contents("mock-project")
         );
     }
 
@@ -1291,7 +1294,7 @@ def fn( ):
         let dir = tempdir().unwrap().into_path();
         std::fs::create_dir(dir.join("mock-project")).unwrap();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = WorkspaceOptions { uses_git: false };
 
@@ -1330,11 +1333,12 @@ mock-project = "mock_project.main:main"
         )
         .unwrap();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(&root, &cwd, Verbosity::Quiet);
+        let ws = config.workspace();
         let options = InstallOptions { values: None };
-        let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
-        let test_package = Package::from_str("click").unwrap();
+        let venv = ws.current_python_environment().unwrap();
+        let test_package = Package::from_str("click==8.1.3").unwrap();
         venv.uninstall_packages(&[&test_package], &options, &config)
             .unwrap();
         let had_package = venv.contains_package(&test_package);
@@ -1354,11 +1358,12 @@ mock-project = "mock_project.main:main"
         )
         .unwrap();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(&root, &cwd, Verbosity::Quiet);
+        let ws = config.workspace();
         let options = InstallOptions { values: None };
-        let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
-        let test_package = Package::from_str("pytest").unwrap();
+        let venv = ws.current_python_environment().unwrap();
+        let test_package = Dependency::from_str("pytest").unwrap();
         venv.uninstall_packages(&[test_package], &options, &config)
             .unwrap();
         let had_package = venv.contains_module("pytest").unwrap();
@@ -1383,7 +1388,7 @@ mock-project = "mock_project.main:main"
         )
         .unwrap();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = LintOptions {
             values: None,
@@ -1403,11 +1408,11 @@ mock-project = "mock_project.main:main"
         )
         .unwrap();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
         let ws = config.workspace();
         let options = LintOptions {
-            values: None,
+            values: Some(vec![String::from("--fix")]),
             include_types: true,
             install_options: InstallOptions { values: None },
         };
@@ -1445,7 +1450,7 @@ def fn():
     fn test_new_lib_project() {
         let dir = tempdir().unwrap().into_path();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = WorkspaceOptions { uses_git: false };
 
@@ -1486,7 +1491,7 @@ def test_version():
     fn test_new_app_project() {
         let dir = tempdir().unwrap().into_path();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = WorkspaceOptions { uses_git: false };
 
@@ -1526,24 +1531,21 @@ if __name__ == "__main__":
         )
         .unwrap();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(&root, &cwd, Verbosity::Quiet);
         let options = RemoveOptions {
             install_options: InstallOptions { values: None },
         };
         let ws = config.workspace();
-        let metadata = ws.current_local_metadata().unwrap();
-        let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
+        let venv = ws.current_python_environment().unwrap();
         let test_package = Package::from_str("click==8.1.3").unwrap();
         let test_dep = Dependency::from_str("click==8.1.3").unwrap();
         venv.install_packages(&[&test_dep], &options.install_options, &config)
             .unwrap();
+        let metadata = ws.current_local_metadata().unwrap();
         let venv_had_package = venv.contains_package(&test_package);
-        let toml_had_package = metadata
-            .metadata
-            .dependencies()
-            .unwrap()
-            .contains(&test_dep.requirement);
+        let toml_had_package =
+            metadata.metadata.contains_dependency(&test_dep).unwrap();
 
         remove_project_dependencies(&["click".to_string()], &config, &options)
             .unwrap();
@@ -1551,11 +1553,8 @@ if __name__ == "__main__":
         let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
         let venv_contains_package = venv.contains_package(&test_package);
-        let toml_contains_package = metadata
-            .metadata
-            .dependencies()
-            .unwrap()
-            .contains(&test_dep.requirement);
+        let toml_contains_package =
+            metadata.metadata.contains_dependency(&test_dep).unwrap();
         venv.install_packages(&[test_dep], &options.install_options, &config)
             .unwrap();
 
@@ -1574,14 +1573,14 @@ if __name__ == "__main__":
         )
         .unwrap();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(&root, &cwd, Verbosity::Quiet);
         let options = RemoveOptions {
             install_options: InstallOptions { values: None },
         };
         let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
-        let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
+        let venv = ws.current_python_environment().unwrap();
         let test_package = Package::from_str("black==22.8.0").unwrap();
         let test_dep = Dependency::from_str("black==22.8.0").unwrap();
         venv.uninstall_packages(
@@ -1640,10 +1639,11 @@ if __name__ == "__main__":
         )
         .unwrap();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(&root, &cwd, Verbosity::Quiet);
+        let ws = config.workspace();
         let options = InstallOptions { values: None };
-        let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
+        let venv = ws.current_python_environment().unwrap();
         let test_package = Package::from_str("black").unwrap();
         venv.uninstall_packages(&[&test_package], &options, &config)
             .unwrap();
@@ -1668,7 +1668,7 @@ if __name__ == "__main__":
         )
         .unwrap();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = UpdateOptions {
             install_options: InstallOptions { values: None },
@@ -1686,7 +1686,7 @@ if __name__ == "__main__":
         )
         .unwrap();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = UpdateOptions {
             install_options: InstallOptions { values: None },
@@ -1703,7 +1703,7 @@ if __name__ == "__main__":
         let interpreters = Environment::resolve_python_interpreters();
         let version = &interpreters.latest().unwrap().version;
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
 
         use_python(&version.to_string(), &config).unwrap();
@@ -1718,7 +1718,7 @@ if __name__ == "__main__":
         )
         .unwrap();
         let root = dir.join("mock-project");
-        let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let cwd = root.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
         let options = TestOptions {
             values: None,
