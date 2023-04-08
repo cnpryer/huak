@@ -2044,11 +2044,14 @@ dev = [
     #[test]
     fn python_search() {
         let dir = tempdir().unwrap();
-        std::fs::write(dir.join("python.exe"), "").unwrap();
-        let path_vals = vec![dir.to_str().unwrap().to_string()];
+        std::fs::write(dir.path().join("python.exe"), "").unwrap();
+        let path_vals = vec![dir.path().to_str().unwrap().to_string()];
         std::env::set_var("PATH", path_vals.join(":"));
         let mut interpreter_paths = python_paths();
 
-        assert_eq!(interpreter_paths.next().unwrap().1, dir.join("python.exe"));
+        assert_eq!(
+            interpreter_paths.next().unwrap().1,
+            dir.path().join("python.exe")
+        );
     }
 }
