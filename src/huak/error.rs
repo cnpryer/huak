@@ -30,6 +30,8 @@ pub enum Error {
     IOError(#[from] io::Error),
     #[error("a problem occurred with PEP440 parsing: {0}")]
     PEP440Error(#[from] pep440_rs::Pep440Error),
+    #[error("a problem occurred with PEP508 parsing: {0}")]
+    PEP508Error(#[from] pep508_rs::Pep508Error),
     #[error("a metadata file already exists")]
     MetadataFileFound,
     #[error("a metadata file could not be found")]

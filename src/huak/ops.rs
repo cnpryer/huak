@@ -11,7 +11,7 @@ use crate::{
     error::{Error, HuakResult},
     fs, git, importable_package_name, sys, Config, Dependency, Environment,
     InstallOptions, LocalMetdata, Metadata, PyProjectToml, PythonEnvironment,
-    ToDepString, WorkspaceOptions,
+    WorkspaceOptions,
 };
 
 pub struct AddOptions {
@@ -124,16 +124,16 @@ pub fn add_project_dependencies(
     let packages = python_env.installed_packages()?;
     for pkg in packages.iter().filter(|pkg| {
         deps.iter().any(|dep| {
-            pkg.name() == dep.name() && dep.version_specifiers.is_none()
+            pkg.name() == dep.name() && dep.version_specifiers().is_none()
         })
     }) {
-        let dep = Dependency::from_str(&pkg.to_dep_string())?;
+        let dep = Dependency::from_str(&pkg.to_string())?;
         metadata.metadata.add_dependency(dep);
     }
 
     for dep in deps
         .into_iter()
-        .filter(|dep| dep.version_specifiers.is_none())
+        .filter(|dep| dep.version_specifiers().is_none())
     {
         metadata.metadata.add_dependency(dep);
     }
@@ -173,16 +173,16 @@ pub fn add_project_optional_dependencies(
     let packages = python_env.installed_packages()?;
     for pkg in packages.iter().filter(|pkg| {
         deps.iter().any(|dep| {
-            pkg.name() == dep.name() && dep.version_specifiers.is_none()
+            pkg.name() == dep.name() && dep.version_specifiers().is_none()
         })
     }) {
-        let dep = Dependency::from_str(&pkg.to_dep_string())?;
+        let dep = Dependency::from_str(&pkg.to_string())?;
         metadata.metadata.add_optional_dependency(dep, group);
     }
 
     for dep in deps
         .into_iter()
-        .filter(|dep| dep.version_specifiers.is_none())
+        .filter(|dep| dep.version_specifiers().is_none())
     {
         metadata.metadata.add_optional_dependency(dep, group);
     }
@@ -798,7 +798,7 @@ pub fn update_project_dependencies(
 
     let packages = python_env.installed_packages()?;
     for pkg in packages {
-        let dep = Dependency::from_str(&pkg.to_dep_string())?;
+        let dep = Dependency::from_str(&pkg.to_string())?;
         if metadata.metadata.contains_dependency(&dep)? {
             metadata.metadata.remove_dependency(&dep);
             metadata.metadata.add_dependency(dep);
@@ -891,7 +891,7 @@ pub fn update_project_optional_dependencies(
 
     for pkg in packages {
         for g in groups.iter() {
-            let dep = Dependency::from_str(&pkg.to_dep_string())?;
+            let dep = Dependency::from_str(&pkg.to_string())?;
             if metadata.metadata.contains_optional_dependency(&dep, g)? {
                 metadata.metadata.remove_optional_dependency(&dep, g);
                 metadata.metadata.add_optional_dependency(dep, g);
@@ -1520,11 +1520,8 @@ if __name__ == "__main__":
         let venv_contains_package = venv
             .contains_module(metadata.metadata.project_name())
             .unwrap();
-        let toml_contains_package = metadata
-            .metadata
-            .dependencies()
-            .unwrap()
-            .contains(&test_dep.requirement);
+        let toml_contains_package =
+            metadata.metadata.contains_dependency(&test_dep).unwrap();
 
         assert!(venv_had_package);
         assert!(toml_had_package);

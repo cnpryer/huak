@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "mock_project"
 version = "0.0.1"
 description = ""
-dependencies = ["click==8.1.3"]
+dependencies = ["click == 8.1.3"]
 
 [[project.authors]]
 name = "Chris Pryer"

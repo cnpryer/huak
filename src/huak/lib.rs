@@ -486,11 +486,11 @@ impl PythonEnvironment {
         config: &Config,
     ) -> HuakResult<()>
     where
-        T: ToDepString,
+        T: Display,
     {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "install"])
-            .args(packages.iter().map(|item| item.to_dep_string()));
+            .args(packages.iter().map(|item| item.to_string()));
 
         if let Some(v) = options.values.as_ref() {
             cmd.args(v.iter().map(|item| item.as_str()));
@@ -507,11 +507,11 @@ impl PythonEnvironment {
         config: &Config,
     ) -> HuakResult<()>
     where
-        T: ToDepString,
+        T: Display,
     {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "uninstall"])
-            .args(packages.iter().map(|item| item.to_dep_string()))
+            .args(packages.iter().map(|item| item.to_string()))
             .arg("-y");
 
         if let Some(v) = options.values.as_ref() {
@@ -529,11 +529,11 @@ impl PythonEnvironment {
         config: &Config,
     ) -> HuakResult<()>
     where
-        T: ToDepString,
+        T: Display,
     {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "install", "--upgrade"])
-            .args(packages.iter().map(|item| item.to_dep_string()));
+            .args(packages.iter().map(|item| item.to_string()));
 
         if let Some(v) = options.values.as_ref() {
             cmd.args(v.iter().map(|item| item.as_str()));
@@ -720,18 +720,6 @@ impl Interpreters {
     }
 }
 
-/// A trait used to convert structs into `PackageId`s.
-trait ToPkgId {
-    /// Convert to `PackageId`.
-    fn to_pkg(self) -> PackageId;
-}
-
-/// A trait used to convert structs into dependency `&str`s.
-trait ToDepString {
-    /// Convert to dependency `&str` ("{name}{specifiers}").
-    fn to_dep_string(&self) -> String;
-}
-
 #[derive(Clone)]
 /// The `Package` contains data about a Python `Package`.
 ///
@@ -765,16 +753,9 @@ impl Package {
     }
 }
 
-impl ToDepString for Package {
-    fn to_dep_string(&self) -> String {
-        // Note a `Package` should always have a `Version` (0.0.1 by default).
-        format!("{}=={}", self.name(), self.version())
-    }
-}
-
-impl ToDepString for &Package {
-    fn to_dep_string(&self) -> String {
-        (*self).to_dep_string()
+impl Display for Package {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}=={}", self.name(), self.version())
     }
 }
 
@@ -1037,7 +1018,7 @@ impl Metadata {
 
     pub fn add_dependency(&mut self, dependency: Dependency) {
         if let Some(deps) = self.project.dependencies.as_mut() {
-            deps.push(dependency.requirement)
+            deps.push(dependency.requirement().to_owned())
         }
     }
 
@@ -1089,7 +1070,7 @@ impl Metadata {
             .get_or_insert(&mut IndexMap::new())
             .entry(group.to_string())
             .or_insert_with(Vec::new)
-            .push(dependency.requirement);
+            .push(dependency.requirement().to_owned());
     }
 
     pub fn remove_dependency(&mut self, dependency: &Dependency) {
@@ -1219,62 +1200,25 @@ def test_version():
 ///
 /// let dependency = Dependency::from_str("my-dependency>=0.1.0,<0.2.0").unwrap();
 /// ```
-struct Dependency {
-    /// PEP 508 dependency (called `Requirement` in pep508_rs).
-    requirement: Requirement, // TODO
-    /// The PEP440-compliant `VersionSpecifiers`. See https://peps.python.org/pep-0440/.
-    version_specifiers: Option<VersionSpecifiers>,
-}
+struct Dependency(Requirement);
 
 impl Dependency {
+    /// Get a reference to the wrapped `Requirement`.
+    fn requirement(&self) -> &Requirement {
+        &self.0
+    }
+
     /// Get the `Dependency` name.
     fn name(&self) -> &str {
-        &self.requirement.name
+        &self.requirement().name
     }
 
     /// Get a reference to the `Dependency`'s `VersionSpecifiers`.
     fn version_specifiers(&self) -> Option<&VersionSpecifiers> {
-        self.version_specifiers.as_ref()
-    }
-}
-
-impl ToPkgId for Dependency {
-    fn to_pkg(self) -> PackageId {
-        let version_specifiers = self
-            .version_specifiers
-            .expect("`VersionSpecifiers` for `PacakgeId`");
-        let version = version_specifiers
-            .first()
-            .expect("a `Version` for `PackageId`")
-            .version();
-        PackageId {
-            name: self.requirement.name,
-            version: version.clone(),
-        } // TODO: If a dependency has multiple `VersionSpecifier`s a `Version` needs to be resolved.
-    }
-}
-
-impl ToDepString for Dependency {
-    fn to_dep_string(&self) -> String {
-        let version_specifiers = self.version_specifiers();
-        let version_specifiers = version_specifiers.iter().map(|spec| {
-            spec.to_string()
-                .split_whitespace()
-                .collect::<Vec<_>>()
-                .join("")
-        });
-
-        format!(
-            "{}{}",
-            self.name(),
-            version_specifiers.collect::<Vec<_>>().join(",")
-        )
-    }
-}
-
-impl ToDepString for &Dependency {
-    fn to_dep_string(&self) -> String {
-        (*self).to_dep_string()
+        match self.0.version_or_url.as_ref() {
+            Some(VersionOrUrl::VersionSpecifier(it)) => Some(it),
+            _ => None,
+        }
     }
 }
 
@@ -1289,42 +1233,22 @@ impl FromStr for Dependency {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // A naive approach to parsing the name and `VersionSpecifiers` from the `&str`.
-        // Find the first character of the `VersionSpecifiers`. Everythin prior is considered
-        // the name.
-        let spec_str = parse_version_specifiers_str(s).unwrap_or("");
-        let name = s.strip_suffix(spec_str).unwrap_or(s).to_string();
-        let version_specifiers = if spec_str.is_empty() {
-            None
-        } else {
-            Some(VersionSpecifiers::from_str(spec_str)?)
-        };
-
-        let dependency = Dependency {
-            requirement: Requirement {
-                name,
-                extras: None,
-                version_or_url: None,
-                marker: None,
-            },
-            version_specifiers,
-        };
+        let requirement = Requirement::from_str(s)?;
+        let dependency = Dependency(requirement);
 
         Ok(dependency)
     }
 }
 
+impl Display for Dependency {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.requirement())
+    }
+}
+
 impl From<&Requirement> for Dependency {
     fn from(value: &Requirement) -> Self {
-        let version_specifiers = match value.version_or_url.as_ref() {
-            Some(VersionOrUrl::VersionSpecifier(specs)) => Some(specs.clone()),
-            _ => None,
-        };
-
-        Dependency {
-            requirement: value.clone(),
-            version_specifiers,
-        }
+        Dependency(value.clone())
     }
 }
 
@@ -1336,7 +1260,7 @@ impl AsRef<OsStr> for Dependency {
 
 impl PartialEq for Dependency {
     fn eq(&self, other: &Self) -> bool {
-        self.requirement == other.requirement
+        self.name() == other.name()
     }
 }
 
@@ -1835,17 +1759,12 @@ dev = [
             .join("mock-project")
             .join("pyproject.toml");
         let mut local_metdata = LocalMetdata::new(path).unwrap();
-        let dep = Dependency {
-            requirement: Requirement {
-                name: "test".to_string(),
-                extras: None,
-                version_or_url: None,
-                marker: None,
-            },
-            version_specifiers: Some(
-                VersionSpecifiers::from_str("==0.0.0").unwrap(),
-            ),
-        };
+        let dep = Dependency(Requirement {
+            name: "test".to_string(),
+            extras: None,
+            version_or_url: None,
+            marker: None,
+        });
         local_metdata.metadata.add_dependency(dep);
 
         assert_eq!(
@@ -2010,11 +1929,11 @@ dev = [
     fn dependency_from_str() {
         let dep = Dependency::from_str("package-name==0.0.0").unwrap();
 
-        assert_eq!(dep.to_dep_string(), "package-name==0.0.0");
-        assert_eq!(dep.requirement.name, "package-name");
+        assert_eq!(dep.to_string(), "package-name == 0.0.0");
+        assert_eq!(dep.name(), "package-name");
         assert_eq!(
-            *dep.version_specifiers.unwrap(),
-            vec![pep440_rs::VersionSpecifier::from_str("==0.0.0").unwrap()]
+            *dep.version_specifiers().unwrap(),
+            pep440_rs::VersionSpecifiers::from_str("== 0.0.0").unwrap()
         );
     }
 
