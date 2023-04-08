@@ -57,7 +57,7 @@ pub struct CleanOptions {
 }
 
 pub fn activate_python_environment(config: &Config) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let python_env = workspace.current_python_environment()?;
 
     if python_env.active() {
@@ -101,7 +101,7 @@ pub fn add_project_dependencies(
     config: &Config,
     options: &AddOptions,
 ) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
 
@@ -156,7 +156,7 @@ pub fn add_project_optional_dependencies(
     config: &Config,
     options: &AddOptions,
 ) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
 
@@ -209,7 +209,7 @@ pub fn build_project(
     config: &Config,
     options: &BuildOptions,
 ) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let mut metadata = workspace.current_local_metadata()?;
 
     let python_env = match workspace.current_python_environment() {
@@ -248,7 +248,7 @@ pub fn clean_project(
     config: &Config,
     options: &CleanOptions,
 ) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
 
     if workspace.root.join("dist").exists() {
         std::fs::read_dir(workspace.root.join("dist"))?
@@ -288,7 +288,7 @@ pub fn format_project(
     config: &Config,
     options: &FormatOptions,
 ) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
 
@@ -370,7 +370,7 @@ pub fn init_app_project(
 ) -> HuakResult<()> {
     init_lib_project(config, options)?;
 
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let mut metadata = workspace.current_local_metadata()?;
 
     let as_dep = Dependency::from_str(&metadata.metadata.project_name())?;
@@ -395,7 +395,7 @@ pub fn init_lib_project(
     config: &Config,
     options: &WorkspaceOptions,
 ) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let mut metadata = match workspace.current_local_metadata() {
         Ok(_) => return Err(Error::MetadataFileFound),
         Err(_) => LocalMetdata {
@@ -418,7 +418,7 @@ pub fn install_project_dependencies(
     config: &Config,
     options: &InstallOptions,
 ) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let package = workspace.current_package()?;
 
     let python_env = match workspace.current_python_environment() {
@@ -453,7 +453,7 @@ pub fn install_project_optional_dependencies(
     config: &Config,
     options: &InstallOptions,
 ) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let package = workspace.current_local_metadata()?;
 
     let binding = Vec::new(); // TODO
@@ -498,7 +498,7 @@ pub fn install_project_optional_dependencies(
 }
 
 pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let project = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
 
@@ -583,7 +583,7 @@ pub fn new_app_project(
 ) -> HuakResult<()> {
     new_lib_project(config, options)?;
 
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let mut metadata = workspace.current_local_metadata()?;
 
     let name = fs::last_path_component(workspace.root.as_path())?;
@@ -609,7 +609,7 @@ pub fn new_lib_project(
     config: &Config,
     options: &WorkspaceOptions,
 ) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let mut metadata = match workspace.current_local_metadata() {
         Ok(_) => return Err(Error::ProjectFound),
         Err(_) => LocalMetdata {
@@ -647,7 +647,7 @@ pub fn publish_project(
     config: &Config,
     options: &PublishOptions,
 ) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let mut metadata = workspace.current_local_metadata()?;
 
     let python_env = match workspace.current_python_environment() {
@@ -686,7 +686,7 @@ pub fn remove_project_dependencies(
     config: &Config,
     options: &RemoveOptions,
 ) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
 
@@ -724,7 +724,7 @@ pub fn remove_project_optional_dependencies(
     config: &Config,
     options: &RemoveOptions,
 ) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
 
@@ -765,7 +765,7 @@ pub fn remove_project_optional_dependencies(
 }
 
 pub fn run_command_str(command: &str, config: &Config) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let python_env = workspace.current_python_environment()?;
 
     let mut cmd = Command::new(sys::shell_name()?);
@@ -779,7 +779,7 @@ pub fn run_command_str(command: &str, config: &Config) -> HuakResult<()> {
 }
 
 pub fn test_project(config: &Config, options: &TestOptions) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let mut metadata = workspace.current_local_metadata()?;
 
     let python_env = match workspace.current_python_environment() {
@@ -823,7 +823,7 @@ pub fn update_project_dependencies(
     config: &Config,
     options: &UpdateOptions,
 ) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
 
@@ -886,7 +886,7 @@ pub fn update_project_optional_dependencies(
     config: &Config,
     options: &UpdateOptions,
 ) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
 
@@ -982,8 +982,7 @@ pub fn update_project_optional_dependencies(
 }
 
 pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
-    let env = Environment::new();
-    let interpreters = env.resolve_python_interpreters();
+    let interpreters = Environment::resolve_python_interpreters();
 
     let path = match interpreters
         .interpreters
@@ -995,13 +994,12 @@ pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
         None => return Err(Error::PythonNotFound),
     };
 
-    if let Ok(workspace) = config.workspace() {
-        match workspace.current_python_environment() {
-            Ok(it) => std::fs::remove_dir_all(it.root)?,
-            Err(Error::PythonEnvironmentNotFound) => (),
-            Err(e) => return Err(e),
-        };
-    }
+    let workspace = config.workspace();
+    match workspace.current_python_environment() {
+        Ok(it) => std::fs::remove_dir_all(it.root)?,
+        Err(Error::PythonEnvironmentNotFound) => (),
+        Err(e) => return Err(e),
+    };
 
     let mut cmd = Command::new(path);
     cmd.args(["-m", "venv", ".venv"])
@@ -1010,7 +1008,7 @@ pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
 }
 
 pub fn display_project_version(config: &Config) -> HuakResult<()> {
-    let workspace = config.workspace()?;
+    let workspace = config.workspace();
     let package = workspace.current_package()?;
 
     let version = match package.metadata.project_version() {
@@ -1099,7 +1097,7 @@ mod tests {
         let root = dir.join("mock-project");
         let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let config = test_config(&root, &cwd, Verbosity::Quiet);
-        let ws = config.workspace().unwrap();
+        let ws = config.workspace();
         let package = ws.current_package().unwrap();
         let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
         let options = AddOptions {
@@ -1130,7 +1128,7 @@ mod tests {
         let root = dir.join("mock-project");
         let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let config = test_config(&root, &cwd, Verbosity::Quiet);
-        let ws = config.workspace().unwrap();
+        let ws = config.workspace();
         let package = ws.current_package().unwrap();
         let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
         let options = AddOptions {
@@ -1235,7 +1233,7 @@ mod tests {
         let root = dir.join("mock-project");
         let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let config = test_config(root, cwd, Verbosity::Quiet);
-        let ws = config.workspace().unwrap();
+        let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
         let fmt_filepath = metadata
             .path
@@ -1276,7 +1274,7 @@ def fn( ):
 
         init_lib_project(&config, &options).unwrap();
 
-        let ws = config.workspace().unwrap();
+        let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
         let pyproject_toml = PyProjectToml::default();
         pyproject_toml.project.clone().unwrap().name =
@@ -1299,7 +1297,7 @@ def fn( ):
 
         init_app_project(&config, &options).unwrap();
 
-        let ws = config.workspace().unwrap();
+        let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
         let pyproject_toml = PyProjectToml::default();
         pyproject_toml.project.clone().unwrap().name =
@@ -1407,7 +1405,7 @@ mock-project = "mock_project.main:main"
         let root = dir.join("mock-project");
         let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let config = test_config(root, cwd, Verbosity::Quiet);
-        let ws = config.workspace().unwrap();
+        let ws = config.workspace();
         let options = LintOptions {
             values: None,
             include_types: true,
@@ -1453,7 +1451,7 @@ def fn():
 
         new_lib_project(&config, &options).unwrap();
 
-        let ws = config.workspace().unwrap();
+        let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
         let test_file_filepath = metadata
             .path
@@ -1494,7 +1492,7 @@ def test_version():
 
         new_app_project(&config, &options).unwrap();
 
-        let ws = config.workspace().unwrap();
+        let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
         let main_file_filepath = metadata
             .path
@@ -1533,7 +1531,7 @@ if __name__ == "__main__":
         let options = RemoveOptions {
             install_options: InstallOptions { values: None },
         };
-        let ws = config.workspace().unwrap();
+        let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
         let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
         let test_package = Package::from_str("click==8.1.3").unwrap();
@@ -1550,7 +1548,7 @@ if __name__ == "__main__":
         remove_project_dependencies(&["click".to_string()], &config, &options)
             .unwrap();
 
-        let ws = config.workspace().unwrap();
+        let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
         let venv_contains_package = venv.contains_package(&test_package);
         let toml_contains_package = metadata
@@ -1581,7 +1579,7 @@ if __name__ == "__main__":
         let options = RemoveOptions {
             install_options: InstallOptions { values: None },
         };
-        let ws = config.workspace().unwrap();
+        let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
         let venv = PythonEnvironment::new(cwd.join(".venv")).unwrap();
         let test_package = Package::from_str("black==22.8.0").unwrap();
@@ -1610,7 +1608,7 @@ if __name__ == "__main__":
         )
         .unwrap();
 
-        let ws = config.workspace().unwrap();
+        let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
         let venv_contains_package = venv
             .contains_module(metadata.metadata.project_name())
@@ -1702,9 +1700,8 @@ if __name__ == "__main__":
     #[test]
     fn test_use_python() {
         let dir = tempdir().unwrap().into_path();
-        let env = Environment::new();
-        let version =
-            env.resolve_python_interpreters().latest().unwrap().version;
+        let interpreters = Environment::resolve_python_interpreters();
+        let version = &interpreters.latest().unwrap().version;
         let root = dir.join("mock-project");
         let cwd = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let config = test_config(root, cwd, Verbosity::Quiet);

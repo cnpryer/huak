@@ -55,7 +55,6 @@ use serde::{Deserialize, Serialize};
 use std::{
     cmp::Ordering,
     collections::hash_map::RandomState,
-    collections::HashMap,
     env::consts::OS,
     ffi::OsStr,
     ffi::OsString,
@@ -92,6 +91,7 @@ if __name__ == "__main__":
     main()
 "#;
 
+#[derive(Clone)]
 /// The main `Config` for Huak.
 ///
 /// The `Config` contains data telling Huak what to do during at times.
@@ -122,8 +122,8 @@ pub struct Config {
 
 impl Config {
     /// Resolve the current workspace based on the `Config` data.
-    fn workspace(&self) -> HuakResult<Workspace> {
-        Workspace::new(&self.workspace_root)
+    fn workspace(&self) -> Workspace {
+        Workspace::new(&self.workspace_root, &self)
     }
 
     /// Get a `Terminal` based on the `Config` data.
@@ -155,8 +155,13 @@ struct Workspace {
 }
 
 impl Workspace {
-    fn new<T: AsRef<Path>>(path: T) -> HuakResult<Self> {
-        todo!()
+    fn new<T: AsRef<Path>>(path: T, config: &Config) -> Self {
+        let workspace = Workspace {
+            root: path.as_ref().to_path_buf(),
+            config: config.clone(),
+        };
+
+        workspace
     }
 
     /// Get an `Environment` associated with the `Workspace`.
@@ -167,23 +172,58 @@ impl Workspace {
     /// Get the current `Package`. The current `Package` is one found by its
     /// metadata file nearest based on the `Workspace`'s `Config` data.
     fn current_package(&self) -> HuakResult<Package> {
-        todo!()
+        // Currently only pyproject.toml `LocalMetadata` file is supported.
+        let metadata = self.current_local_metadata()?;
+
+        let package = Package {
+            id: PackageId {
+                name: metadata.metadata.project_name().to_string(),
+                version: metadata
+                    .metadata
+                    .project_version()
+                    .unwrap_or(&PEP440Version::from_str("0.0.1").unwrap())
+                    .clone(),
+            },
+            metadata: metadata.metadata,
+        };
+
+        Ok(package)
     }
 
     /// Get the current `LocalMetadata` based on the `Config` data.
     fn current_local_metadata(&self) -> HuakResult<LocalMetdata> {
-        todo!()
+        let package_root = find_package_root(&self.config.cwd, &self.root)?;
+
+        // Currently only pyproject.toml is supported.
+        let path = package_root.join("pyproject.toml");
+        let metadata = LocalMetdata::new(path)?;
+
+        Ok(metadata)
     }
 
     /// Resolve a `PythonEnvironment` pulling the current or creating one if none is found.
-    fn resolve_python_environment(&self) -> PythonEnvironment {
-        todo!()
+    fn resolve_python_environment(&self) -> HuakResult<PythonEnvironment> {
+        // Currently only virtual environments are supported. We search for them, stopping
+        // at the configured workspace root. If none is found we create a new one at the
+        // workspace root.
+        let env = match self.current_python_environment() {
+            Ok(it) => it,
+            Err(Error::PythonEnvironmentNotFound) => {
+                self.new_python_environment()?
+            }
+            Err(e) => return Err(e),
+        };
+
+        Ok(env)
     }
 
     /// Get the current `PythonEnvironment`. The current `PythonEnvironment` is one
     /// found by its configuration file or `Interpreter` nearest baseed on `Config` data.
     fn current_python_environment(&self) -> HuakResult<PythonEnvironment> {
-        todo!()
+        let path = find_venv_root(&self.config.cwd, &self.root)?;
+        let env = PythonEnvironment::new(path)?;
+
+        Ok(env)
     }
 
     /// Create a `PythonEnvironment` for the `Workspace`.
@@ -260,6 +300,40 @@ pub fn find_venv_root<T: AsRef<Path>>(
     Ok(root)
 }
 
+/// Search for a Python `Package` root.
+/// 1. Walk from the `from` dir upwards, searching for dir containing the `LocalMetadata` file.
+/// 2. Stop after searching the `stop_after` dir.
+pub fn find_package_root<T: AsRef<Path>>(
+    from: T,
+    stop_after: T,
+) -> HuakResult<PathBuf> {
+    if !from.as_ref().is_dir() || !stop_after.as_ref().is_dir() {
+        return Err(Error::InternalError(
+            "`from` and `stop_after` must be directoreis".to_string(),
+        ));
+    }
+
+    // Currently only pyproject.toml is supported
+    let file_path = match fs::find_root_file_bottom_up(
+        "pyproject.toml",
+        from,
+        stop_after,
+    ) {
+        Ok(it) => it.ok_or(Error::MetadataFileNotFound)?,
+        Err(_) => return Err(Error::MetadataFileNotFound),
+    };
+
+    // The root of the venv is always the parent dir to the pyvenv.cfg file.
+    let root = file_path
+        .parent()
+        .ok_or(Error::InternalError(
+            "failed to establish parent directory".to_string(),
+        ))?
+        .to_path_buf();
+
+    Ok(root)
+}
+
 /// The `Environment` is a snapshot of the environment at the time it is initialized.
 ///
 /// `Environment`s would be used for resolving environment variables, the
@@ -275,14 +349,15 @@ pub fn find_venv_root<T: AsRef<Path>>(
 struct Environment {
     /// Python `Interpreters` installed on the system.
     interpreters: Interpreters,
-    /// Environment variables found at the time of the `Environment`'s initialization.
-    env: Env,
 }
 
 impl Environment {
     /// Initialize an `Environment`.
     fn new() -> Environment {
-        todo!()
+        let interpreters = Environment::resolve_python_interpreters();
+        let env = Environment { interpreters };
+
+        env
     }
 
     /// Get an `Iterator` over the Python `Interpreter` `PathBuf`s found.
@@ -294,8 +369,18 @@ impl Environment {
     }
 
     /// Resolve `Interpreters` for the `Environment`.
-    fn resolve_python_interpreters(&self) -> Interpreters {
-        todo!()
+    fn resolve_python_interpreters() -> Interpreters {
+        // Note that we filter out any interpreters we can't establish a `Version` for.
+        let interpreters = python_paths().filter_map(|(version, path)| {
+            if let Ok(Some(version)) = parse_python_interpreter_version(&path) {
+                let interpreter = Interpreter { version, path };
+                Some(interpreter)
+            } else {
+                None
+            }
+        });
+
+        Interpreters::new(interpreters)
     }
 }
 
@@ -641,19 +726,27 @@ struct Interpreters {
 }
 
 impl Interpreters {
+    /// Initialize a new `Interpreters` wrapper.
+    fn new<T>(interpreters: T) -> Interpreters
+    where
+        T: Iterator<Item = Interpreter>,
+    {
+        let interpreters = interpreters.collect::<Vec<_>>();
+        let interpreters = Interpreters { interpreters };
+
+        interpreters
+    }
+
     /// Get the latest Python `Interpreter` by `Version`.
-    fn latest(&self) -> Option<Interpreter> {
-        todo!()
+    fn latest(&self) -> Option<&Interpreter> {
+        self.interpreters.iter().max()
     }
 
     /// Get a Python `Interpreter` by its `Version`.
-    fn exact(&self, version: &Version) -> Option<Interpreter> {
-        todo!()
-    }
-
-    /// Get a Python `Interpreter` by its path.
-    fn get<T: AsRef<Path>>(&self, path: T) -> Option<Interpreter> {
-        todo!()
+    fn exact(&self, version: &Version) -> Option<&Interpreter> {
+        self.interpreters
+            .iter()
+            .find(|iterpreter| &iterpreter.version == version)
     }
 }
 
@@ -747,7 +840,8 @@ impl FromStr for Package {
         // A naive approach to parsing the name and `VersionSpecifiers` from the `&str`.
         // Find the first character of the `VersionSpecifiers`. Everythin prior is considered
         // the name.
-        let spec_str = parse_version_specifiers_str(s)?;
+        let spec_str = parse_version_specifiers_str(s)
+            .expect("package version specifier(s)");
         let name = s.strip_suffix(spec_str).unwrap_or(s).to_string();
         let version_specifiers = VersionSpecifiers::from_str(spec_str)?;
 
@@ -930,14 +1024,36 @@ impl Metadata {
         &self,
         dependency: &Dependency,
     ) -> HuakResult<bool> {
-        todo!()
+        if let Some(deps) = self.dependencies() {
+            for d in deps {
+                if d.eq(&dependency.requirement) {
+                    return Ok(true);
+                }
+            }
+        }
+        Ok(false)
     }
 
     pub fn contains_dependency_any(
         &self,
         dependency: &Dependency,
     ) -> HuakResult<bool> {
-        todo!()
+        if self.contains_dependency(dependency).unwrap_or_default() {
+            return Ok(true);
+        }
+
+        if let Some(deps) = self.optional_dependencies().as_ref() {
+            if deps.is_empty() {
+                return Ok(false);
+            }
+            for d in deps.values().flatten() {
+                if d.eq(&dependency.requirement) {
+                    return Ok(true);
+                }
+            }
+        }
+
+        Ok(false)
     }
 
     pub fn add_dependency(&mut self, dependency: Dependency) {
@@ -958,7 +1074,20 @@ impl Metadata {
         dependency: &Dependency,
         group: &str,
     ) -> HuakResult<bool> {
-        todo!()
+        if let Some(deps) = self.optional_dependencies().as_ref() {
+            if let Some(g) = deps.get(group) {
+                if deps.is_empty() {
+                    return Ok(false);
+                }
+                for d in g {
+                    if d.eq(&dependency.requirement) {
+                        return Ok(true);
+                    }
+                }
+            }
+        }
+
+        Ok(false)
     }
 
     pub fn optional_dependencey_group(
@@ -1221,9 +1350,13 @@ impl FromStr for Dependency {
         // A naive approach to parsing the name and `VersionSpecifiers` from the `&str`.
         // Find the first character of the `VersionSpecifiers`. Everythin prior is considered
         // the name.
-        let spec_str = parse_version_specifiers_str(s)?;
+        let spec_str = parse_version_specifiers_str(s).unwrap_or("");
         let name = s.strip_suffix(spec_str).unwrap_or(s).to_string();
-        let version_specifiers = VersionSpecifiers::from_str(spec_str)?;
+        let version_specifiers = if spec_str.is_empty() {
+            None
+        } else {
+            Some(VersionSpecifiers::from_str(spec_str)?)
+        };
 
         let dependency = Dependency {
             requirement: Requirement {
@@ -1232,7 +1365,7 @@ impl FromStr for Dependency {
                 version_or_url: None,
                 marker: None,
             },
-            version_specifiers: Some(version_specifiers),
+            version_specifiers,
         };
 
         Ok(dependency)
@@ -1286,7 +1419,7 @@ where
 ///
 /// The first character of the version specififers component indicates the end of
 /// the `Package` name.
-fn parse_version_specifiers_str(s: &str) -> HuakResult<&str> {
+fn parse_version_specifiers_str(s: &str) -> Option<&str> {
     let found = s
         .chars()
         .enumerate()
@@ -1294,15 +1427,10 @@ fn parse_version_specifiers_str(s: &str) -> HuakResult<&str> {
 
     let spec = match found {
         Some(it) => &s[it.0..],
-        None => {
-            return Err(Error::InvalidVersionString(format!(
-                "{} is missing a version specifier",
-                s
-            )))
-        }
+        None => return None,
     };
 
-    Ok(spec)
+    Some(spec)
 }
 
 /// Convert a name to an importable version of the name.
@@ -1374,20 +1502,6 @@ fn compare_interpreters(this: &Interpreter, other: &Interpreter) -> Ordering {
     }
 
     Ordering::Equal
-}
-
-/// The `Env` struct is a lighter abstraction than `Environmnet` used to manage
-/// environment variables.
-///
-/// ```
-/// use huak::Env;
-///
-/// let env = Env::new();
-/// let path = env.get("PATH");
-/// let paths = env.paths();
-/// ```
-struct Env {
-    env: HashMap<String, String>,
 }
 
 /// A trait used to convert a struct to `SemVer`.

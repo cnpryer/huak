@@ -195,6 +195,7 @@ impl Terminal {
     }
 }
 
+#[derive(Clone)]
 pub struct TerminalOptions {
     pub verbosity: Verbosity,
 }
