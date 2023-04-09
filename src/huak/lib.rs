@@ -374,10 +374,9 @@ impl Environment {
             if let Some(v) = version {
                 let interpreter = Interpreter { version: v, path };
                 Some(interpreter)
-            } else if let Ok(Some(version)) =
-                parse_python_interpreter_version(&path)
+            } else if let Ok(Some(v)) = parse_python_version_from_command(&path)
             {
-                let interpreter = Interpreter { version, path };
+                let interpreter = Interpreter { version: v, path };
                 Some(interpreter)
             } else {
                 None
@@ -1583,7 +1582,9 @@ fn valid_python_interpreter_file_name(file_name: &str) -> bool {
 /// On Windows its considered valid if it has the .exe extension and starts with
 /// "python".
 fn valid_python_interpreter_file_name(file_name: &str) -> bool {
-    file_name.starts_with("python") && file_name.ends_with(".exe")
+    file_name.starts_with("python")
+        && file_name.ends_with(".exe")
+        && !file_name.starts_with("pythonw")
 }
 
 /// Parse the `Version` from a Python `Interpreter`'s file name.
@@ -1637,28 +1638,23 @@ pub fn active_conda_env_path() -> Option<PathBuf> {
     None
 }
 
-/// Get a `Version` from a Python `Interpreter` using a path to the actual binary.
-///
-/// 1. Attempt to parse the version number from the path itself.
-/// 2. Run `{path} --version` and parse from the output.
-fn parse_python_interpreter_version<T: AsRef<Path>>(
+/// Get the version of a Python `Interpreter` using a `{path} --version` command.
+fn parse_python_version_from_command<T: AsRef<Path>>(
     path: T,
 ) -> HuakResult<Option<Version>> {
-    let version = match path
-        .as_ref()
-        .file_name()
-        .and_then(|raw_file_name| raw_file_name.to_str())
-    {
-        Some(file_name) => {
-            version_from_python_interpreter_file_name(file_name).ok()
-        }
-        None => {
-            let mut cmd = Command::new(path.as_ref());
-            cmd.args(["--version"]);
-            let output = cmd.output()?;
-            Version::from_str(&sys::parse_command_output(output)?).ok()
-        }
-    };
+    let mut cmd = Command::new(path.as_ref());
+    cmd.args(["--version"]);
+    let output = sys::parse_command_output(cmd.output()?)?;
+    let mut output =
+        output.trim_start_matches("Python").trim_start().to_string();
+    if output.ends_with('\n') {
+        output.pop();
+    }
+    if output.ends_with('\r') {
+        output.pop();
+    }
+    let version = Version::from_str(&output).ok();
+
     Ok(version)
 }
 
