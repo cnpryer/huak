@@ -6,8 +6,6 @@ pub type HuakResult<T> = Result<T, Error>;
 
 #[derive(ThisError, Debug)]
 pub enum Error {
-    #[error("a problem occurred with resolving build options")]
-    BuildOptionsMissingError,
     #[error("a problem with argument parsing occurred: {0}")]
     ClapError(#[from] clap::Error),
     #[error("a directory already exists: {0}")]
@@ -30,26 +28,26 @@ pub enum Error {
     JSONSerdeError(#[from] serde_json::Error),
     #[error("a problem with io occurred: {0}")]
     IOError(#[from] io::Error),
-    #[error("a problem occurred initializing a dependency from a string")]
-    DependencyFromStringError(String),
-    #[error("a manifest file could not be found")]
-    ProjectManifestNotFoundError,
-    #[error("a manifest file already exists")]
-    ProjectManifestExistsError,
+    #[error("a problem occurred with PEP440 parsing: {0}")]
+    PEP440Error(#[from] pep440_rs::Pep440Error),
+    #[error("a problem occurred with PEP508 parsing: {0}")]
+    PEP508Error(#[from] pep508_rs::Pep508Error),
+    #[error("a metadata file already exists")]
+    MetadataFileFound,
+    #[error("a metadata file could not be found")]
+    MetadataFileNotFound,
+    #[error("a package version could not be found")]
+    PackageVersionNotFound,
+    #[error("a project already exists")]
+    ProjectFound,
     #[error("a python interpreter could not be found")]
-    PythonNotFoundError,
-    #[error("a feature is unimplemented: {0}")]
-    UnimplementedError(String),
-    #[error(
-        "a problem occurred parsing the virtual environment's config file: {0}"
-    )]
-    VenvInvalidConfigFileError(String),
+    PythonNotFound,
     #[error("a python environment could not be found")]
-    PythonEnvironmentNotFoundError,
+    PythonEnvironmentNotFound,
+    #[error("a feature is unimplemented: {0}")]
+    Unimplemented(String),
     #[error("a regex error occurred: {0}")]
     RegexError(#[from] regex::Error),
-    #[error("a http request failed: {0}")]
-    ReqwestError(#[from] reqwest::Error),
     #[error("a problem with toml deserialization occurred: {0}")]
     TOMLDeserializationError(#[from] toml::de::Error),
     #[error("a problem with toml serialization occurred {0}")]
@@ -60,6 +58,4 @@ pub enum Error {
     TOMLEditSerializationError(#[from] toml_edit::ser::Error),
     #[error("a problem with utf-8 parsing occurred: {0}")]
     Utf8Error(#[from] std::str::Utf8Error),
-    #[error("a workspace could not be found")]
-    WorkspaceNotFoundError,
 }

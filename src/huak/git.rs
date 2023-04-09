@@ -98,8 +98,8 @@ mod tests {
 
     #[test]
     fn test_init() {
-        let dir = tempdir().unwrap().into_path();
+        let dir = tempdir().unwrap();
         init(&dir).unwrap();
-        assert!(dir.join(".git").is_dir());
+        assert!(dir.path().join(".git").is_dir());
     }
 }

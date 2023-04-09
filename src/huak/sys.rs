@@ -1,12 +1,10 @@
 use crate::error::HuakResult;
 use crate::Error;
-use std::io::Write;
-use std::path::Path;
-use std::process::Command;
-use termcolor::{self, Color, ColorSpec, StandardStream, WriteColor};
+use std::{fmt::Display, io::Write, path::Path, process::Command};
 use termcolor::{
-    Color::{Cyan, Green, Red, Yellow},
-    ColorChoice,
+    self, Color,
+    Color::{Red, Yellow},
+    ColorChoice, ColorSpec, StandardStream, WriteColor,
 };
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
@@ -15,6 +13,11 @@ pub enum Verbosity {
     Verbose,
     Normal,
     Quiet,
+}
+
+pub trait ToTerminal {
+    /// Get a `Terminal`.
+    fn to_terminal(&self) -> Terminal;
 }
 
 /// An abstraction around terminal output that remembers preferences for output
@@ -34,67 +37,22 @@ impl Terminal {
             output: TerminalOut::Stream {
                 stdout: StandardStream::stdout(ColorChoice::Auto),
                 stderr: StandardStream::stderr(ColorChoice::Auto),
-                color_choice: ColorChoice::Auto,
             },
         }
     }
 
-    /// Shortcut to right-align and color green a status message.
-    pub fn status<T, U>(&mut self, status: T, message: U) -> HuakResult<()>
-    where
-        T: std::fmt::Display,
-        U: std::fmt::Display,
-    {
-        self.print(&status, Some(&message), Green, true)
-    }
-
-    pub fn status_header<T>(&mut self, status: T) -> HuakResult<()>
-    where
-        T: std::fmt::Display,
-    {
-        self.print(&status, None, Cyan, true)
-    }
-
-    /// Shortcut to right-align a status message.
-    pub fn status_with_color<T, U>(
-        &mut self,
-        status: T,
-        message: U,
-        color: Color,
-    ) -> HuakResult<()>
-    where
-        T: std::fmt::Display,
-        U: std::fmt::Display,
-    {
-        self.print(&status, Some(&message), color, true)
-    }
-
     /// Print an error message.
-    pub fn print_error<T: std::fmt::Display>(
-        &mut self,
-        message: T,
-    ) -> HuakResult<()> {
+    pub fn print_error<T: Display>(&mut self, message: T) -> HuakResult<()> {
         self.output
             .message_stderr(&"error", Some(&message), Red, false)
     }
 
     /// Prints a warning message.
-    pub fn print_warning<T: std::fmt::Display>(
-        &mut self,
-        message: T,
-    ) -> HuakResult<()> {
+    pub fn print_warning<T: Display>(&mut self, message: T) -> HuakResult<()> {
         match self.verbosity {
             Verbosity::Quiet => Ok(()),
             _ => self.print(&"warning", Some(&message), Yellow, false),
         }
-    }
-
-    /// Prints a note message.
-    pub fn print_note<T: std::fmt::Display>(
-        &mut self,
-        message: T,
-    ) -> HuakResult<()> {
-        self.print(&"note", Some(&message), Cyan, false)
     }
 
     /// Prints a custom message.
@@ -106,8 +64,8 @@ impl Terminal {
         justified: bool,
     ) -> HuakResult<()>
     where
-        T: std::fmt::Display,
-        U: std::fmt::Display,
+        T: Display,
+        U: Display,
     {
         self.print(&title, Some(&message), color, justified)
     }
@@ -118,8 +76,8 @@ impl Terminal {
     /// avoid poluting stdout for end users. See https://github.com/rust-lang/cargo/issues/1473
     fn print(
         &mut self,
-        status: &dyn std::fmt::Display,
-        message: Option<&dyn std::fmt::Display>,
+        status: &dyn Display,
+        message: Option<&dyn Display>,
         color: Color,
         justified: bool,
     ) -> HuakResult<()> {
@@ -131,34 +89,9 @@ impl Terminal {
         }
     }
 
-    /// Gets a reference to the underlying stdout writer.
-    pub fn stdout(&mut self) -> &mut dyn Write {
-        self.output.stdout()
-    }
-
-    /// Gets a reference to the underlying stderr writer.
-    pub fn stderr(&mut self) -> &mut dyn Write {
-        self.output.stderr()
-    }
-
     /// Set the verbosity level.
     pub fn set_verbosity(&mut self, verbosity: Verbosity) {
         self.verbosity = verbosity;
-    }
-
-    /// Get a reference to the verbosity level.
-    pub fn verbosity(&self) -> &Verbosity {
-        &self.verbosity
-    }
-
-    /// Gets the current color choice.
-    ///
-    /// If we are not using a color stream, this will always return `Never`, even if the color
-    /// choice has been set to something else.
-    pub fn color_choice(&self) -> ColorChoice {
-        match self.output {
-            TerminalOut::Stream { color_choice, .. } => color_choice,
-        }
     }
 
     /// Run a command from the terminal's context.
@@ -194,10 +127,23 @@ impl Terminal {
                 status.code().unwrap_or_default()
             }
         };
+
         if code > 0 {
             std::process::exit(code)
         }
+
         Ok(())
+    }
+}
+
+#[derive(Clone)]
+pub struct TerminalOptions {
+    pub verbosity: Verbosity,
+}
+
+impl TerminalOptions {
+    pub fn verbosity(&self) -> &Verbosity {
+        &self.verbosity
     }
 }
 
@@ -226,9 +172,9 @@ fn trim_error_prefix(msg: &str) -> &str {
 enum TerminalOut {
     /// Color-enabled stdio with information on whether color should be used
     Stream {
+        #[allow(dead_code)]
         stdout: StandardStream,
         stderr: StandardStream,
-        color_choice: ColorChoice,
     },
 }
 
@@ -238,8 +184,8 @@ impl TerminalOut {
     /// will right align is DEFAULT_MESSAGE_JUSTIFIED_CHARS chars.
     fn message_stderr(
         &mut self,
-        status: &dyn std::fmt::Display,
-        message: Option<&dyn std::fmt::Display>,
+        status: &dyn Display,
+        message: Option<&dyn Display>,
         color: Color,
         justified: bool,
     ) -> HuakResult<()> {
@@ -264,20 +210,6 @@ impl TerminalOut {
             }
         }
         Ok(())
-    }
-
-    /// Get a mutable reference to the stdout writer.
-    pub fn stdout(&mut self) -> &mut dyn Write {
-        match *self {
-            TerminalOut::Stream { ref mut stdout, .. } => stdout,
-        }
-    }
-
-    /// Get a mutable reference to the stderr writer.
-    pub fn stderr(&mut self) -> &mut dyn Write {
-        match *self {
-            TerminalOut::Stream { ref mut stderr, .. } => stderr,
-        }
     }
 }
 
