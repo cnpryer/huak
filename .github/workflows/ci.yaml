@@ -33,9 +33,7 @@ jobs:
       - uses: Swatinem/rust-cache@v1
       - uses: actions/setup-python@v1
       - name: Test
-        run: |
-          python -m venv .venv
-          cargo test --all-features -- --test-threads=1
+        run: cargo test --all-features
       - name: Build
         run: cargo build --release
 
