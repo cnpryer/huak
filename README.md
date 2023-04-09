@@ -1,6 +1,6 @@
 
 [![pypi-release](https://img.shields.io/pypi/v/huak.svg)](https://pypi.org/project/huak/)
-[![ci-rust](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci-rust.yaml)
+[![ci](https://github.com/cnpryer/huak/actions/workflows/ci.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci.yaml)
 [![discord](https://img.shields.io/discord/1022879330470199347?color=7289DA&logo=discord)](https://discord.gg/St3menxFZT)
 
 # huak
@@ -47,7 +47,7 @@ A Python package manager written in Rust inspired by Cargo.
 Usage: huak [OPTIONS] <COMMAND>
 
 Commands:
-  activate    Activate the virtual envionrment
+  activate    Activate the virtual environment
   add         Add dependencies to the project
   build       Build tarball and wheel for the project
   completion  Generates a shell completion script for supported shells

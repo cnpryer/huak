@@ -10,7 +10,7 @@ use crate::{
     dependency_iter,
     error::{Error, HuakResult},
     fs, git, importable_package_name, sys, Config, Dependency, Environment,
-    InstallOptions, LocalMetdata, Metadata, PyProjectToml, PythonEnvironment,
+    InstallOptions, LocalMetadata, Metadata, PyProjectToml, PythonEnvironment,
     WorkspaceOptions,
 };
 
@@ -19,19 +19,19 @@ pub struct AddOptions {
 }
 
 pub struct BuildOptions {
-    /// An values vector of build options typically used for passing on arguments.
+    /// A values vector of build options typically used for passing on arguments.
     pub values: Option<Vec<String>>,
     pub install_options: InstallOptions,
 }
 
 pub struct FormatOptions {
-    /// An values vector of format options typically used for passing on arguments.
+    /// A values vector of format options typically used for passing on arguments.
     pub values: Option<Vec<String>>,
     pub install_options: InstallOptions,
 }
 
 pub struct LintOptions {
-    /// An values vector of lint options typically used for passing on arguments.
+    /// A values vector of lint options typically used for passing on arguments.
     pub values: Option<Vec<String>>,
     pub include_types: bool,
     pub install_options: InstallOptions,
@@ -42,13 +42,13 @@ pub struct RemoveOptions {
 }
 
 pub struct PublishOptions {
-    /// An values vector of publish options typically used for passing on arguments.
+    /// A values vector of publish options typically used for passing on arguments.
     pub values: Option<Vec<String>>,
     pub install_options: InstallOptions,
 }
 
 pub struct TestOptions {
-    /// An values vector of test options typically used for passing on arguments.
+    /// A values vector of test options typically used for passing on arguments.
     pub values: Option<Vec<String>>,
     pub install_options: InstallOptions,
 }
@@ -413,7 +413,7 @@ pub fn init_lib_project(
     // Create a metadata file or error if one already exists.
     let mut metadata = match workspace.current_local_metadata() {
         Ok(_) => return Err(Error::MetadataFileFound),
-        Err(_) => LocalMetdata {
+        Err(_) => LocalMetadata {
             metadata: Metadata {
                 build_system: BuildSystem {
                     requires: vec![Requirement::from_str("hatchling").unwrap()],
@@ -475,7 +475,7 @@ pub fn install_project_optional_dependencies(
     let mut dependencies = Vec::new();
     // If the group "all" is passed and isn't a valid optional dependency group
     // then install everything, disregarding other groups passed.
-    if package.metadata.optional_dependencey_group("all").is_none()
+    if package.metadata.optional_dependency_group("all").is_none()
         && groups.contains(&"all".to_string())
     {
         if let Some(deps) = package.metadata.optional_dependencies() {
@@ -487,7 +487,7 @@ pub fn install_project_optional_dependencies(
         groups.iter().for_each(|item| {
             package
                 .metadata
-                .optional_dependencey_group(item)
+                .optional_dependency_group(item)
                 .unwrap_or(&binding)
                 .iter()
                 .for_each(|req| {
@@ -643,7 +643,7 @@ pub fn new_lib_project(
     // Create a new metadata file or error if one exists.
     let mut metadata = match workspace.current_local_metadata() {
         Ok(_) => return Err(Error::ProjectFound),
-        Err(_) => LocalMetdata {
+        Err(_) => LocalMetadata {
             metadata: Metadata {
                 build_system: BuildSystem {
                     requires: vec![Requirement::from_str("hatchling").unwrap()],
@@ -783,11 +783,7 @@ pub fn remove_project_optional_dependencies(
     let mut metadata = workspace.current_local_metadata()?;
 
     // Don't do anything if the group doesn't even exist.
-    if metadata
-        .metadata
-        .optional_dependencey_group(group)
-        .is_none()
-    {
+    if metadata.metadata.optional_dependency_group(group).is_none() {
         return Ok(());
     }
 
@@ -982,10 +978,7 @@ pub fn update_project_optional_dependencies(
 
         // If the group "all" is passed and isn't a valid optional dependency group
         // then install everything, disregarding other groups passed.
-        if metadata
-            .metadata
-            .optional_dependencey_group("all")
-            .is_none()
+        if metadata.metadata.optional_dependency_group("all").is_none()
             && group == "all"
         {
             if let Some(it) = metadata.metadata.optional_dependencies() {
@@ -996,7 +989,7 @@ pub fn update_project_optional_dependencies(
         } else {
             metadata
                 .metadata
-                .optional_dependencey_group(group)
+                .optional_dependency_group(group)
                 .unwrap_or(&binding)
                 .iter()
                 .for_each(|dep| {
@@ -1011,10 +1004,7 @@ pub fn update_project_optional_dependencies(
     // Track the groups to update.
     let mut groups = Vec::new();
     if group == "all"
-        && metadata
-            .metadata
-            .optional_dependencey_group("all")
-            .is_none()
+        && metadata.metadata.optional_dependency_group("all").is_none()
     {
         if let Some(it) = metadata.metadata.optional_dependencies() {
             groups.extend(it.keys().map(|key| key.to_string()));

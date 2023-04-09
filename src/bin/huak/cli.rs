@@ -31,7 +31,7 @@ pub struct Cli {
 #[derive(Subcommand)]
 #[clap(rename_all = "kebab-case")]
 enum Commands {
-    /// Activate the virtual envionrment.
+    /// Activate the virtual environment.
     Activate,
     /// Add dependencies to the project.
     Add {

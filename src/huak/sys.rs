@@ -73,7 +73,7 @@ impl Terminal {
     /// Prints a message, where the status will have `color` color, and can be justified.
     /// The messages follows without color.
     /// NOTE: Messages are printed to stderr. This is behavior cargo implements as well to
-    /// avoid poluting stdout for end users. See https://github.com/rust-lang/cargo/issues/1473
+    /// avoid polluting stdout for end users. See https://github.com/rust-lang/cargo/issues/1473
     fn print(
         &mut self,
         status: &dyn Display,
