@@ -1017,9 +1017,10 @@ impl Metadata {
     }
 
     pub fn add_dependency(&mut self, dependency: Dependency) {
-        if let Some(deps) = self.project.dependencies.as_mut() {
-            deps.push(dependency.requirement().to_owned())
-        }
+        self.project
+            .dependencies
+            .get_or_insert_with(Vec::new)
+            .push(dependency.requirement().to_owned())
     }
 
     pub fn optional_dependencies(
@@ -1066,8 +1067,7 @@ impl Metadata {
     ) {
         self.project
             .optional_dependencies
-            .as_mut()
-            .get_or_insert(&mut IndexMap::new())
+            .get_or_insert_with(IndexMap::new)
             .entry(group.to_string())
             .or_insert_with(Vec::new)
             .push(dependency.requirement().to_owned());
@@ -1100,7 +1100,7 @@ impl Metadata {
     pub fn add_script(&mut self, name: &str, entrypoint: &str) {
         self.project
             .scripts
-            .get_or_insert(IndexMap::new())
+            .get_or_insert_with(IndexMap::new)
             .entry(name.to_string())
             .or_insert(entrypoint.to_string());
     }

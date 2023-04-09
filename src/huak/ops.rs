@@ -285,8 +285,8 @@ pub fn format_project(
     ];
     let new_format_deps = format_deps
         .iter()
-        .filter(|item| {
-            !python_env.contains_module(item.name()).unwrap_or_default()
+        .filter(|dep| {
+            !python_env.contains_module(dep.name()).unwrap_or_default()
         })
         .collect::<Vec<_>>();
     if !new_format_deps.is_empty() {
@@ -298,25 +298,28 @@ pub fn format_project(
     }
 
     let new_format_deps = format_deps
-        .into_iter()
-        .filter(|item| {
+        .iter()
+        .filter(|dep| {
             !metadata
                 .metadata
-                .contains_dependency(item)
+                .contains_dependency_any(dep)
                 .unwrap_or_default()
-                && !metadata
-                    .metadata
-                    .contains_dependency_any(item)
-                    .unwrap_or_default()
         })
-        .collect::<Vec<Dependency>>();
+        .map(|dep| dep.name())
+        .collect::<Vec<_>>();
     if !new_format_deps.is_empty() {
-        for dep in new_format_deps {
-            {
-                metadata.metadata.add_optional_dependency(dep, "dev");
-            }
+        for pkg in python_env
+            .installed_packages()?
+            .iter()
+            .filter(|pkg| new_format_deps.contains(&pkg.name()))
+        {
+            metadata.metadata.add_optional_dependency(
+                Dependency::from_str(&pkg.to_string())?,
+                "dev",
+            );
         }
     }
+
     if package.metadata != metadata.metadata {
         metadata.write_file()?;
     }
