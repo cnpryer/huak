@@ -639,6 +639,7 @@ pub fn publish_project(
     options: &PublishOptions,
 ) -> HuakResult<()> {
     let workspace = config.workspace();
+    let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
     let python_env = workspace.resolve_python_environment()?;
 
@@ -652,7 +653,19 @@ pub fn publish_project(
     }
 
     if !metadata.metadata.contains_dependency_any(&pub_dep)? {
-        metadata.metadata.add_optional_dependency(pub_dep, "dev");
+        for pkg in python_env
+            .installed_packages()?
+            .iter()
+            .filter(|pkg| pkg.name() == pub_dep.name())
+        {
+            metadata.metadata.add_optional_dependency(
+                Dependency::from_str(&pkg.to_string())?,
+                "dev",
+            );
+        }
+    }
+
+    if package.metadata != metadata.metadata {
         metadata.write_file()?;
     }
 
