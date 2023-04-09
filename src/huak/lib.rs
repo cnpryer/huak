@@ -136,7 +136,7 @@ impl Config {
     }
 }
 
-/// The `Workspace` is a useful struct for reolving things like the current `Package`
+/// The `Workspace` is a useful struct for resolving things like the current `Package`
 /// or the current `PythonEnvironment`. It can also provide a snapshot of the `Environment`,
 /// a more general struct containing information like environment variables, Python
 /// `Interpreters` found, and more.
