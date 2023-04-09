@@ -1,6 +1,6 @@
 ///! # Huak
 ///!
-///! A Python package manager writen in Rust inspired by Cargo.
+///! A Python package manager written in Rust inspired by Cargo.
 ///!
 ///! ## About
 ///!
@@ -21,7 +21,7 @@
 ///! Usage: huak [OPTIONS] <COMMAND>
 ///!
 ///! Commands:
-///!   activate    Activate the virtual envionrment
+///!   activate    Activate the virtual environment
 ///!   add         Add dependencies to the project
 ///!   build       Build tarball and wheel for the project
 ///!   completion  Generates a shell completion script for supported shells
@@ -78,7 +78,7 @@ use toml::Table;
 const DEFAULT_VENV_NAME: &str = ".venv";
 const VENV_CONFIG_FILE_NAME: &str = "pyvenv.cfg";
 const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
-const VIRTUAL_ENV_ENV_VAR: &str = "VIRUTAL_ENV";
+const VIRTUAL_ENV_ENV_VAR: &str = "VIRTUAL_ENV";
 const CONDA_ENV_ENV_VAR: &str = "CONDA_PREFIX";
 const DEFAULT_METADATA_FILE_NAME: &str = "pyproject.toml";
 const DEFAULT_PYTHON_INIT_FILE_CONTENTS: &str = r#"__version__ = "0.0.1"
@@ -165,7 +165,7 @@ impl Workspace {
     }
 
     /// Get an `Environment` associated with the `Workspace`.
-    fn environmet(&self) -> Environment {
+    fn environment(&self) -> Environment {
         Environment::new()
     }
 
@@ -191,12 +191,12 @@ impl Workspace {
     }
 
     /// Get the current `LocalMetadata` based on the `Config` data.
-    fn current_local_metadata(&self) -> HuakResult<LocalMetdata> {
+    fn current_local_metadata(&self) -> HuakResult<LocalMetadata> {
         let package_root = find_package_root(&self.config.cwd, &self.root)?;
 
         // Currently only pyproject.toml is supported.
         let path = package_root.join("pyproject.toml");
-        let metadata = LocalMetdata::new(path)?;
+        let metadata = LocalMetadata::new(path)?;
 
         Ok(metadata)
     }
@@ -229,7 +229,7 @@ impl Workspace {
     /// Create a `PythonEnvironment` for the `Workspace`.
     fn new_python_environment(&self) -> HuakResult<PythonEnvironment> {
         // Get a snapshot of the environment.
-        let env = self.environmet();
+        let env = self.environment();
 
         // Get the first Python `Interpreter` path found from the `PATH`
         // environment variable.
@@ -430,7 +430,7 @@ struct PythonEnvironment {
     root: PathBuf,
     /// The `PythonEnvironment`'s Python `Interpreter`.
     interpreter: Interpreter,
-    /// The abolute path to the `PythonEnvironment`'s executables directory. This directory contains
+    /// The absolute path to the `PythonEnvironment`'s executables directory. This directory contains
     /// installed Python modules and the `Interpreter` the `Venv` uses. On Windows this
     /// is located at `PythonEnvironment.root\Scripts\`, otherwise it's located at
     /// `PythonEnvironment.root/bin/`
@@ -465,7 +465,7 @@ impl PythonEnvironment {
         fs::last_path_component(&self.root)
     }
 
-    /// Get a reference to the Python `Interpeter`'s path that's used by the `PythonEnvironment`.
+    /// Get a reference to the Python `Interpreter`'s path that's used by the `PythonEnvironment`.
     pub fn python_path(&self) -> &PathBuf {
         self.interpreter.path()
     }
@@ -718,7 +718,7 @@ impl Interpreters {
     fn exact(&self, version: &Version) -> Option<&Interpreter> {
         self.interpreters
             .iter()
-            .find(|iterpreter| &iterpreter.version == version)
+            .find(|interpreter| &interpreter.version == version)
     }
 }
 
@@ -786,7 +786,7 @@ impl FromStr for Package {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // A naive approach to parsing the name and `VersionSpecifiers` from the `&str`.
-        // Find the first character of the `VersionSpecifiers`. Everythin prior is considered
+        // Find the first character of the `VersionSpecifiers`. Everything prior is considered
         // the name.
         let spec_str = parse_version_specifiers_str(s)
             .expect("package version specifier(s)");
@@ -877,7 +877,7 @@ struct PackageId {
 #[derive(Debug)]
 /// A `LocalMetadata` struct used to manage local `Metadata` files such as
 /// the pyproject.toml (https://peps.python.org/pep-0621/).
-struct LocalMetdata {
+struct LocalMetadata {
     /// The core `Metadata`.
     /// See https://packaging.python.org/en/latest/specifications/core-metadata/.
     metadata: Metadata, // TODO: https://github.com/cnpryer/huak/issues/574
@@ -885,9 +885,9 @@ struct LocalMetdata {
     path: PathBuf,
 }
 
-impl LocalMetdata {
-    /// Initialize `LocalMetdata` from a path.
-    fn new<T: AsRef<Path>>(path: T) -> HuakResult<LocalMetdata> {
+impl LocalMetadata {
+    /// Initialize `LocalMetadata` from a path.
+    fn new<T: AsRef<Path>>(path: T) -> HuakResult<LocalMetadata> {
         // Currently only pyproject.toml files are supported.
         if path.as_ref().file_name()
             != Some(OsStr::new(DEFAULT_METADATA_FILE_NAME))
@@ -914,7 +914,7 @@ impl LocalMetdata {
     }
 }
 
-impl Display for LocalMetdata {
+impl Display for LocalMetadata {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.metadata)
     }
@@ -923,7 +923,7 @@ impl Display for LocalMetdata {
 /// Create `LocalMetadata` from a pyproject.toml file.
 fn pyproject_toml_metadata<T: AsRef<Path>>(
     path: T,
-) -> HuakResult<LocalMetdata> {
+) -> HuakResult<LocalMetadata> {
     let pyproject_toml = PyProjectToml::new(path.as_ref())?;
     let project = match pyproject_toml.project.as_ref() {
         Some(it) => it,
@@ -943,7 +943,7 @@ fn pyproject_toml_metadata<T: AsRef<Path>>(
         project,
         tool,
     };
-    let local_metadata = LocalMetdata {
+    let local_metadata = LocalMetadata {
         metadata,
         path: path.as_ref().to_path_buf(),
     };
@@ -1052,7 +1052,7 @@ impl Metadata {
         Ok(false)
     }
 
-    pub fn optional_dependencey_group(
+    pub fn optional_dependency_group(
         &self,
         group: &str,
     ) -> Option<&Vec<Requirement>> {
@@ -1446,7 +1446,7 @@ impl FromStr for Version {
 
         if release.len() != 3 {
             return Err(Error::InvalidVersionString(format!(
-                "{} must be SemVer-compatiable",
+                "{} must be SemVer-compatible",
                 s
             )));
         }
@@ -1679,14 +1679,14 @@ mod tests {
         let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
-        let local_metdata = LocalMetdata::new(path).unwrap();
+        let local_metadata = LocalMetadata::new(path).unwrap();
 
-        assert_eq!(local_metdata.metadata.project_name(), "mock_project");
+        assert_eq!(local_metadata.metadata.project_name(), "mock_project");
         assert_eq!(
-            *local_metdata.metadata.project_version().unwrap(),
+            *local_metadata.metadata.project_version().unwrap(),
             PEP440Version::from_str("0.0.1").unwrap()
         );
-        assert!(local_metdata.metadata.dependencies().is_some())
+        assert!(local_metadata.metadata.dependencies().is_some())
     }
 
     #[test]
@@ -1694,10 +1694,10 @@ mod tests {
         let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
-        let local_metdata = LocalMetdata::new(path).unwrap();
+        let local_metadata = LocalMetadata::new(path).unwrap();
 
         assert_eq!(
-            local_metdata.to_string_pretty().unwrap(),
+            local_metadata.to_string_pretty().unwrap(),
             r#"[build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -1727,10 +1727,10 @@ dev = [
         let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
-        let local_metdata = LocalMetdata::new(path).unwrap();
+        let local_metadata = LocalMetadata::new(path).unwrap();
 
         assert_eq!(
-            local_metdata.metadata.dependencies().unwrap().deref(),
+            local_metadata.metadata.dependencies().unwrap().deref(),
             vec![Requirement::from_str("click==8.1.3").unwrap()]
         );
     }
@@ -1740,12 +1740,12 @@ dev = [
         let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
-        let local_metdata = LocalMetdata::new(path).unwrap();
+        let local_metadata = LocalMetadata::new(path).unwrap();
 
         assert_eq!(
-            local_metdata
+            local_metadata
                 .metadata
-                .optional_dependencey_group("dev")
+                .optional_dependency_group("dev")
                 .unwrap()
                 .deref(),
             vec![
@@ -1761,17 +1761,17 @@ dev = [
         let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
-        let mut local_metdata = LocalMetdata::new(path).unwrap();
+        let mut local_metadata = LocalMetadata::new(path).unwrap();
         let dep = Dependency(Requirement {
             name: "test".to_string(),
             extras: None,
             version_or_url: None,
             marker: None,
         });
-        local_metdata.metadata.add_dependency(dep);
+        local_metadata.metadata.add_dependency(dep);
 
         assert_eq!(
-            local_metdata.to_string_pretty().unwrap(),
+            local_metadata.to_string_pretty().unwrap(),
             r#"[build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -1804,7 +1804,7 @@ dev = [
         let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
-        let mut local_metadata = LocalMetdata::new(path).unwrap();
+        let mut local_metadata = LocalMetadata::new(path).unwrap();
 
         local_metadata.metadata.add_optional_dependency(
             Dependency::from_str("test1").unwrap(),
@@ -1847,7 +1847,7 @@ new-group = ["test2"]
         let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
-        let mut local_metadata = LocalMetdata::new(path).unwrap();
+        let mut local_metadata = LocalMetadata::new(path).unwrap();
         local_metadata
             .metadata
             .remove_dependency(&Dependency::from_str("click").unwrap());
@@ -1883,7 +1883,7 @@ dev = [
         let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
-        let mut local_metadata = LocalMetdata::new(path).unwrap();
+        let mut local_metadata = LocalMetadata::new(path).unwrap();
 
         local_metadata.metadata.remove_optional_dependency(
             &Dependency::from_str("isort").unwrap(),

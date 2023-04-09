@@ -47,7 +47,7 @@ A Python package manager written in Rust inspired by Cargo.
 Usage: huak [OPTIONS] <COMMAND>
 
 Commands:
-  activate    Activate the virtual envionrment
+  activate    Activate the virtual environment
   add         Add dependencies to the project
   build       Build tarball and wheel for the project
   completion  Generates a shell completion script for supported shells
