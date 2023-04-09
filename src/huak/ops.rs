@@ -469,16 +469,13 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
     let python_env = workspace.resolve_python_environment()?;
 
     let ruff_dep = Dependency::from_str("ruff")?;
+    let mut lint_deps = vec![ruff_dep.clone()];
     if !python_env.contains_module("ruff")? {
         python_env.install_packages(
             &[&ruff_dep],
             &options.install_options,
             config,
         )?;
-    }
-
-    if !metadata.metadata.contains_dependency_any(&ruff_dep)? {
-        metadata.metadata.add_optional_dependency(ruff_dep, "dev");
     }
 
     let mut terminal = config.terminal();
@@ -496,9 +493,7 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
                 config,
             )?;
         }
-        if !metadata.metadata.contains_dependency_any(&mypy_dep)? {
-            metadata.metadata.add_optional_dependency(mypy_dep, "dev");
-        }
+        lint_deps.push(mypy_dep);
         let mut mypy_cmd = Command::new(python_env.python_path());
         make_venv_command(&mut mypy_cmd, &python_env)?;
         mypy_cmd
@@ -515,6 +510,29 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
     make_venv_command(&mut cmd, &python_env)?;
     cmd.args(args).current_dir(&workspace.root);
     terminal.run_command(&mut cmd)?;
+
+    let new_lint_deps = lint_deps
+        .iter()
+        .filter(|dep| {
+            !metadata
+                .metadata
+                .contains_dependency_any(dep)
+                .unwrap_or_default()
+        })
+        .map(|dep| dep.name())
+        .collect::<Vec<_>>();
+    if !new_lint_deps.is_empty() {
+        for pkg in python_env
+            .installed_packages()?
+            .iter()
+            .filter(|pkg| new_lint_deps.contains(&pkg.name()))
+        {
+            metadata.metadata.add_optional_dependency(
+                Dependency::from_str(&pkg.to_string())?,
+                "dev",
+            );
+        }
+    }
 
     if project.metadata != metadata.metadata {
         metadata.write_file()?;
