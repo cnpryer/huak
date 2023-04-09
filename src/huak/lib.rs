@@ -1911,11 +1911,17 @@ dev = [
     }
 
     #[test]
-    fn python_environment_executable_dir_name() {
-        let venv = PythonEnvironment::new(
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".venv"),
-        )
-        .unwrap();
+    fn python_environment_executables_dir_name() {
+        let dir = tempdir().unwrap();
+        let config = Config {
+            workspace_root: dir.path().to_path_buf(),
+            cwd: dir.path().to_path_buf(),
+            terminal_options: TerminalOptions {
+                verbosity: sys::Verbosity::Quiet,
+            },
+        };
+        let ws = config.workspace();
+        let venv = ws.resolve_python_environment().unwrap();
 
         assert!(venv.executables_dir_path.exists());
         #[cfg(unix)]
