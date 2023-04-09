@@ -835,13 +835,13 @@ pub fn update_project_dependencies(
 
     if let Some(it) = dependencies.as_ref() {
         let deps = dependency_iter(it)
-            .filter_map(|item| {
+            .filter_map(|dep| {
                 if metadata
                     .metadata
-                    .contains_dependency(&item)
+                    .contains_dependency(&dep)
                     .unwrap_or_default()
                 {
-                    Some(item)
+                    Some(dep)
                 } else {
                     None
                 }
@@ -853,7 +853,7 @@ pub fn update_project_dependencies(
         python_env.update_packages(&deps, &options.install_options, config)?;
     } else if let Some(deps) = metadata.metadata.dependencies() {
         python_env.update_packages(
-            &deps.iter().map(Dependency::from).collect::<Vec<_>>(),
+            &deps.iter().map(|dep| &dep.name).collect::<Vec<_>>(),
             &options.install_options,
             config,
         )?;
@@ -918,7 +918,7 @@ pub fn update_project_optional_dependencies(
         {
             if let Some(it) = metadata.metadata.optional_dependencies() {
                 for (_, vals) in it {
-                    deps.extend(vals.iter().map(Dependency::from));
+                    deps.extend(vals.iter().map(|dep| &dep.name));
                 }
             }
         } else {
@@ -927,8 +927,8 @@ pub fn update_project_optional_dependencies(
                 .optional_dependencey_group(group)
                 .unwrap_or(&binding)
                 .iter()
-                .for_each(|req| {
-                    deps.push(Dependency::from(req));
+                .for_each(|dep| {
+                    deps.push(&dep.name);
                 });
         }
 
