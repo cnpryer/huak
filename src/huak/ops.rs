@@ -19,19 +19,19 @@ pub struct AddOptions {
 }
 
 pub struct BuildOptions {
-    /// An values vector of build options typically used for passing on arguments.
+    /// A values vector of build options typically used for passing on arguments.
     pub values: Option<Vec<String>>,
     pub install_options: InstallOptions,
 }
 
 pub struct FormatOptions {
-    /// An values vector of format options typically used for passing on arguments.
+    /// A values vector of format options typically used for passing on arguments.
     pub values: Option<Vec<String>>,
     pub install_options: InstallOptions,
 }
 
 pub struct LintOptions {
-    /// An values vector of lint options typically used for passing on arguments.
+    /// A values vector of lint options typically used for passing on arguments.
     pub values: Option<Vec<String>>,
     pub include_types: bool,
     pub install_options: InstallOptions,
@@ -42,13 +42,13 @@ pub struct RemoveOptions {
 }
 
 pub struct PublishOptions {
-    /// An values vector of publish options typically used for passing on arguments.
+    /// A values vector of publish options typically used for passing on arguments.
     pub values: Option<Vec<String>>,
     pub install_options: InstallOptions,
 }
 
 pub struct TestOptions {
-    /// An values vector of test options typically used for passing on arguments.
+    /// A values vector of test options typically used for passing on arguments.
     pub values: Option<Vec<String>>,
     pub install_options: InstallOptions,
 }

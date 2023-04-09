@@ -641,7 +641,7 @@ fn new_venv<T: AsRef<Path>>(path: T) -> HuakResult<PythonEnvironment> {
 #[derive(Clone)]
 /// A struct used to configure Python `Package` installations.
 pub struct InstallOptions {
-    /// An values vector of install options typically used for passing on arguments.
+    /// A values vector of install options typically used for passing on arguments.
     pub values: Option<Vec<String>>,
 }
 
