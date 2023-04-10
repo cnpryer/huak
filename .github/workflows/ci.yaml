@@ -37,16 +37,6 @@ jobs:
       - name: Build
         run: cargo build --release
 
-  typos:
-      name: "Spell check"
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v3
-        - uses: crate-ci/typos@master
-          with:
-            files: .
-
-
   lint-and-fmt:
     name: Lint and check fmt
     runs-on: ubuntu-latest
