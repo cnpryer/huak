@@ -1653,16 +1653,13 @@ fn parse_python_version_from_command<T: AsRef<Path>>(
     path: T,
 ) -> HuakResult<Option<Version>> {
     let mut cmd = Command::new(path.as_ref());
-    cmd.args(["-c", "import sys; print(sys.version)"]);
-    let output = sys::parse_command_output(cmd.output()?)?;
-    let mut output =
-        output.trim_start_matches("Python").trim_start().to_string();
-    if output.ends_with('\n') {
-        output.pop();
-    }
-    if output.ends_with('\r') {
-        output.pop();
-    }
+    cmd.args([
+        "-c",
+        "import sys;v=sys.version_info;print(v.major,v.minor,v.micro)",
+    ]);
+    let output = sys::parse_command_output(cmd.output()?)?
+        .replace(' ', ".")
+        .replace(['\r', '\n'], "");
     let version = Version::from_str(&output).ok();
 
     Ok(version)
