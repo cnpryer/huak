@@ -437,64 +437,56 @@ pub fn init_lib_project(
 }
 
 pub fn install_project_dependencies(
-    config: &Config,
-    options: &InstallOptions,
-) -> HuakResult<()> {
-    let workspace = config.workspace();
-    let package = workspace.current_package()?;
-    let python_env = workspace.resolve_python_environment()?;
-
-    let dependencies = match package.metadata.dependencies() {
-        Some(it) => it,
-        None => return Ok(()),
-    };
-
-    if dependencies.is_empty() {
-        return Ok(());
-    }
-
-    python_env.install_packages(
-        &dependencies
-            .iter()
-            .map(Dependency::from)
-            .collect::<Vec<_>>(),
-        options,
-        config,
-    )
-}
-
-pub fn install_project_optional_dependencies(
-    groups: &[String],
+    groups: Option<&Vec<String>>,
     config: &Config,
     options: &InstallOptions,
 ) -> HuakResult<()> {
     let workspace = config.workspace();
     let package = workspace.current_local_metadata()?;
+    let metadata = workspace.current_local_metadata()?;
 
     let binding = Vec::new(); // TODO
     let mut dependencies = Vec::new();
-    // If the group "all" is passed and isn't a valid optional dependency group
-    // then install everything, disregarding other groups passed.
-    if package.metadata.optional_dependency_group("all").is_none()
-        && groups.contains(&"all".to_string())
-    {
-        if let Some(deps) = package.metadata.optional_dependencies() {
-            for (_, vals) in deps {
-                dependencies.extend(vals.iter().map(Dependency::from));
+
+    if let Some(gs) = groups {
+        // If the group "required" is passed and isn't a valid optional dependency group
+        // then install just the required dependencies.
+        if package
+            .metadata
+            .optional_dependency_group("required")
+            .is_none()
+            && gs.contains(&"required".to_string())
+        {
+            if let Some(reqs) = package.metadata.dependencies() {
+                dependencies.extend(reqs.iter().map(Dependency::from));
             }
+        } else {
+            gs.iter().for_each(|g| {
+                package
+                    .metadata
+                    .optional_dependency_group(g)
+                    .unwrap_or(&binding)
+                    .iter()
+                    .for_each(|req| {
+                        dependencies.push(Dependency::from(req));
+                    });
+            })
         }
     } else {
-        groups.iter().for_each(|item| {
-            package
-                .metadata
-                .optional_dependency_group(item)
-                .unwrap_or(&binding)
-                .iter()
-                .for_each(|req| {
-                    dependencies.push(Dependency::from(req));
-                });
-        })
+        // If no groups are passed then install all dependencies listed in the metadata file
+        // including the optional dependencies.
+        if let Some(reqs) = package.metadata.dependencies() {
+            dependencies.extend(reqs.iter().map(Dependency::from));
+        }
+        if let Some(deps) = metadata.metadata.optional_dependencies() {
+            deps.values().for_each(|reqs| {
+                dependencies.extend(
+                    reqs.iter().map(Dependency::from).collect::<Vec<_>>(),
+                )
+            });
+        }
     }
+
     dependencies.dedup();
 
     if dependencies.is_empty() {
@@ -742,10 +734,10 @@ pub fn remove_project_dependencies(
 
     // Collect any dependencies to remove from the metadata file.
     let deps = dependency_iter(dependencies)
-        .filter(|item| {
+        .filter(|dep| {
             metadata
                 .metadata
-                .contains_dependency(item)
+                .contains_dependency_any(dep)
                 .unwrap_or_default()
         })
         .collect::<Vec<_>>();
@@ -754,55 +746,16 @@ pub fn remove_project_dependencies(
         return Ok(());
     }
 
+    // Get all groups from the metadata file to include in the removal process.
+    let mut groups = Vec::new();
+    if let Some(deps) = metadata.metadata.optional_dependencies() {
+        groups.extend(deps.keys().map(|key| key.to_string()));
+    }
     for dep in &deps {
         metadata.metadata.remove_dependency(dep);
-    }
-
-    if package.metadata != metadata.metadata {
-        metadata.write_file()?;
-    }
-
-    // Uninstall the dependencies from the Python environment if an environment is found.
-    match workspace.current_python_environment() {
-        Ok(it) => {
-            it.uninstall_packages(&deps, &options.install_options, config)
+        for group in &groups {
+            metadata.metadata.remove_optional_dependency(dep, group);
         }
-        Err(Error::PythonEnvironmentNotFound) => Ok(()),
-        Err(e) => Err(e),
-    }
-}
-
-pub fn remove_project_optional_dependencies(
-    dependencies: &[String],
-    group: &str,
-    config: &Config,
-    options: &RemoveOptions,
-) -> HuakResult<()> {
-    let workspace = config.workspace();
-    let package = workspace.current_package()?;
-    let mut metadata = workspace.current_local_metadata()?;
-
-    // Don't do anything if the group doesn't even exist.
-    if metadata.metadata.optional_dependency_group(group).is_none() {
-        return Ok(());
-    }
-
-    // Collect all dependencies to remove from the metadata file.
-    let deps = dependency_iter(dependencies)
-        .filter(|item| {
-            metadata
-                .metadata
-                .contains_optional_dependency(item, group)
-                .unwrap_or_default()
-        })
-        .collect::<Vec<_>>();
-
-    if deps.is_empty() {
-        return Ok(());
-    }
-
-    for dep in &deps {
-        metadata.metadata.remove_optional_dependency(dep, group);
     }
 
     if package.metadata != metadata.metadata {
@@ -894,13 +847,12 @@ pub fn update_project_dependencies(
     let python_env = workspace.resolve_python_environment()?;
 
     // Collect dependencies to update if they are listed in the metadata file.
-    // If no dependencies are provided update the required dependencies listed in the metadata file.
     if let Some(it) = dependencies.as_ref() {
         let deps = dependency_iter(it)
             .filter_map(|dep| {
                 if metadata
                     .metadata
-                    .contains_dependency(&dep)
+                    .contains_dependency_any(&dep)
                     .unwrap_or_default()
                 {
                     Some(dep)
@@ -915,110 +867,41 @@ pub fn update_project_dependencies(
         }
 
         python_env.update_packages(&deps, &options.install_options, config)?;
-    } else if let Some(deps) = metadata.metadata.dependencies() {
-        python_env.update_packages(
-            &deps.iter().map(|dep| &dep.name).collect::<Vec<_>>(),
-            &options.install_options,
-            config,
-        )?;
-    }
-
-    // Replace each dependency in the metadata file with the installed updated packages.
-    for pkg in python_env.installed_packages()? {
-        let dep = Dependency::from_str(&pkg.to_string())?;
-        if metadata.metadata.contains_dependency(&dep)? {
-            metadata.metadata.remove_dependency(&dep);
-            metadata.metadata.add_dependency(dep);
-        }
-    }
-
-    if package.metadata != metadata.metadata {
-        metadata.write_file()?;
-    }
-
-    Ok(())
-}
-
-pub fn update_project_optional_dependencies(
-    dependencies: Option<Vec<String>>,
-    group: &str,
-    config: &Config,
-    options: &UpdateOptions,
-) -> HuakResult<()> {
-    let workspace = config.workspace();
-    let package = workspace.current_package()?;
-    let mut metadata = workspace.current_local_metadata()?;
-    let python_env = workspace.resolve_python_environment()?;
-
-    // Collect dependencies to update if they are listed in the metadata file.
-    // If no dependencies are provided update the indicated groups of dependencies in the metadata file.
-    if let Some(it) = dependencies.as_ref() {
-        let deps = dependency_iter(it)
-            .filter_map(|item| {
-                if metadata
-                    .metadata
-                    .contains_optional_dependency(&item, group)
-                    .unwrap_or_default()
-                {
-                    Some(item)
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-
-        if deps.is_empty() {
-            return Ok(());
-        }
-
-        python_env.update_packages(&deps, &options.install_options, config)?;
     } else {
-        let mut deps = Vec::new();
-        let binding = Vec::new(); // TODO
+        let mut deps = metadata
+            .metadata
+            .dependencies()
+            .map(|reqs| reqs.iter().map(Dependency::from).collect::<Vec<_>>())
+            .unwrap_or(Vec::new());
 
-        // If the group "all" is passed and isn't a valid optional dependency group
-        // then install everything, disregarding other groups passed.
-        if metadata.metadata.optional_dependency_group("all").is_none()
-            && group == "all"
-        {
-            if let Some(it) = metadata.metadata.optional_dependencies() {
-                for (_, vals) in it {
-                    deps.extend(vals.iter().map(|dep| &dep.name));
-                }
-            }
-        } else {
-            metadata
-                .metadata
-                .optional_dependency_group(group)
-                .unwrap_or(&binding)
-                .iter()
-                .for_each(|dep| {
-                    deps.push(&dep.name);
-                });
+        if let Some(odeps) = metadata.metadata.optional_dependencies() {
+            odeps.values().for_each(|reqs| {
+                deps.extend(
+                    reqs.iter().map(Dependency::from).collect::<Vec<_>>(),
+                )
+            });
         }
 
         deps.dedup();
         python_env.update_packages(&deps, &options.install_options, config)?;
     }
 
-    // Track the groups to update.
+    // Get all groups from the metadata file to include in the removal process.
     let mut groups = Vec::new();
-    if group == "all"
-        && metadata.metadata.optional_dependency_group("all").is_none()
-    {
-        if let Some(it) = metadata.metadata.optional_dependencies() {
-            groups.extend(it.keys().map(|key| key.to_string()));
-        }
-    } else {
-        groups.push(group.to_string());
+    if let Some(deps) = metadata.metadata.optional_dependencies() {
+        groups.extend(deps.keys().map(|key| key.to_string()));
     }
 
     for pkg in python_env.installed_packages()? {
+        let dep = &Dependency::from_str(&pkg.to_string())?;
+        if metadata.metadata.contains_dependency(dep)? {
+            metadata.metadata.remove_dependency(dep);
+            metadata.metadata.add_dependency(dep.clone())
+        }
         for g in groups.iter() {
-            let dep = Dependency::from_str(&pkg.to_string())?;
-            if metadata.metadata.contains_optional_dependency(&dep, g)? {
-                metadata.metadata.remove_optional_dependency(&dep, g);
-                metadata.metadata.add_optional_dependency(dep, g);
+            if metadata.metadata.contains_optional_dependency(dep, g)? {
+                metadata.metadata.remove_optional_dependency(dep, g);
+                metadata.metadata.add_optional_dependency(dep.clone(), g);
             }
         }
     }
@@ -1388,7 +1271,7 @@ mock-project = "mock_project.main:main"
         let test_package = Package::from_str("click==8.1.3").unwrap();
         let had_package = venv.contains_package(&test_package);
 
-        install_project_dependencies(&config, &options).unwrap();
+        install_project_dependencies(None, &config, &options).unwrap();
 
         assert!(!had_package);
         assert!(venv.contains_package(&test_package));
@@ -1411,8 +1294,8 @@ mock-project = "mock_project.main:main"
         let venv = ws.resolve_python_environment().unwrap();
         let had_package = venv.contains_module("pytest").unwrap();
 
-        install_project_optional_dependencies(
-            &[String::from("dev")],
+        install_project_dependencies(
+            Some(&vec![String::from("dev")]),
             &config,
             &options,
         )
@@ -1639,13 +1522,8 @@ if __name__ == "__main__":
             .contains_optional_dependency(&test_dep, "dev")
             .unwrap();
 
-        remove_project_optional_dependencies(
-            &["black".to_string()],
-            "dev",
-            &config,
-            &options,
-        )
-        .unwrap();
+        remove_project_dependencies(&["black".to_string()], &config, &options)
+            .unwrap();
 
         let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
@@ -1724,8 +1602,7 @@ if __name__ == "__main__":
             install_options: InstallOptions { values: None },
         };
 
-        update_project_optional_dependencies(None, "dev", &config, &options)
-            .unwrap();
+        update_project_dependencies(None, &config, &options).unwrap();
     }
 
     #[cfg(unix)]
