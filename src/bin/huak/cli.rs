@@ -458,7 +458,7 @@ fn update(
     config: &Config,
     options: &UpdateOptions,
 ) -> HuakResult<()> {
-    ops::update_project_dependencies(dependencies.clone(), config, options)
+    ops::update_project_dependencies(dependencies, config, options)
 }
 
 fn version(config: &Config) -> HuakResult<()> {

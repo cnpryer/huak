@@ -457,9 +457,9 @@ pub fn install_project_dependencies(
             .is_none()
             && gs.contains(&"required".to_string())
         {
-            package.metadata.dependencies().map(|reqs| {
-                dependencies.extend(reqs.into_iter().map(Dependency::from));
-            });
+            if let Some(reqs) = package.metadata.dependencies() {
+                dependencies.extend(reqs.iter().map(Dependency::from));
+            }
         } else {
             gs.iter().for_each(|g| {
                 package
@@ -475,16 +475,16 @@ pub fn install_project_dependencies(
     } else {
         // If no groups are passed then install all dependencies listed in the metadata file
         // including the optional dependencies.
-        package.metadata.dependencies().map(|reqs| {
-            dependencies.extend(reqs.into_iter().map(Dependency::from));
-        });
-        metadata.metadata.optional_dependencies().map(|deps| {
+        if let Some(reqs) = package.metadata.dependencies() {
+            dependencies.extend(reqs.iter().map(Dependency::from));
+        }
+        if let Some(deps) = metadata.metadata.optional_dependencies() {
             deps.values().for_each(|reqs| {
                 dependencies.extend(
-                    reqs.into_iter().map(Dependency::from).collect::<Vec<_>>(),
+                    reqs.iter().map(Dependency::from).collect::<Vec<_>>(),
                 )
             });
-        });
+        }
     }
 
     dependencies.dedup();
@@ -748,13 +748,13 @@ pub fn remove_project_dependencies(
 
     // Get all groups from the metadata file to include in the removal process.
     let mut groups = Vec::new();
-    metadata.metadata.optional_dependencies().map(|deps| {
+    if let Some(deps) = metadata.metadata.optional_dependencies() {
         groups.extend(deps.keys().map(|key| key.to_string()));
-    });
+    }
     for dep in &deps {
         metadata.metadata.remove_dependency(dep);
         for group in &groups {
-            metadata.metadata.remove_optional_dependency(dep, &group);
+            metadata.metadata.remove_optional_dependency(dep, group);
         }
     }
 
@@ -871,18 +871,16 @@ pub fn update_project_dependencies(
         let mut deps = metadata
             .metadata
             .dependencies()
-            .map(|reqs| {
-                reqs.into_iter().map(Dependency::from).collect::<Vec<_>>()
-            })
+            .map(|reqs| reqs.iter().map(Dependency::from).collect::<Vec<_>>())
             .unwrap_or(Vec::new());
 
-        metadata.metadata.optional_dependencies().map(|odeps| {
+        if let Some(odeps) = metadata.metadata.optional_dependencies() {
             odeps.values().for_each(|reqs| {
                 deps.extend(
-                    reqs.into_iter().map(Dependency::from).collect::<Vec<_>>(),
+                    reqs.iter().map(Dependency::from).collect::<Vec<_>>(),
                 )
             });
-        });
+        }
 
         deps.dedup();
         python_env.update_packages(&deps, &options.install_options, config)?;
@@ -890,9 +888,9 @@ pub fn update_project_dependencies(
 
     // Get all groups from the metadata file to include in the removal process.
     let mut groups = Vec::new();
-    metadata.metadata.optional_dependencies().map(|deps| {
+    if let Some(deps) = metadata.metadata.optional_dependencies() {
         groups.extend(deps.keys().map(|key| key.to_string()));
-    });
+    }
 
     for pkg in python_env.installed_packages()? {
         let dep = &Dependency::from_str(&pkg.to_string())?;
@@ -901,8 +899,8 @@ pub fn update_project_dependencies(
             metadata.metadata.add_dependency(dep.clone())
         }
         for g in groups.iter() {
-            if metadata.metadata.contains_optional_dependency(&dep, g)? {
-                metadata.metadata.remove_optional_dependency(&dep, g);
+            if metadata.metadata.contains_optional_dependency(dep, g)? {
+                metadata.metadata.remove_optional_dependency(dep, g);
                 metadata.metadata.add_optional_dependency(dep.clone(), g);
             }
         }
