@@ -88,28 +88,14 @@ my-project on master 📦 v0.0.1 via 🐍 v3.11.0
 
 #### Using --groups
 
-To install all dependencies (including optional dependencies) use the group name "all".
+To install just "required" dependencies:
 
 ```zsh
 my-project on master 📦 v0.0.1 via 🐍 v3.11.0 
-❯ huak install --groups all
+❯ huak install --groups required
 ```
 
-If you already have an optional dependency group named "all" then `--groups` will operate as normal and only install the groups provided.
-
-`--groups` can be useful for adding dependencies for specific use-cases (like development), or if you're not using PEP 508 strings and would like to persist installer configuration.
-
-`huak install` would trigger a standard `pip install` on your group's packages. So without PEP 508 you won't install the pytorch.org packages as demonstrated with `huak add` earlier. To do this you could pass the same options given to `huak add`. Use a group to isolate these options to those specific dependencies.
-
-```zsh
-my-project on master 📦 v0.0.1 via 🐍 v3.11.0 
-❯ huak add torch torchvision torchaudio --group torch -- --extra-index-url https://download.pytorch.org/whl/cu117
-
-my-project on master 📦 v0.0.1 via 🐍 v3.11.0 
-❯ huak install --groups torch -- --extra-index-url https://download.pytorch.org/whl/cu117
-```
-
-In the future `huak` will manage translating installer options to PEP 508 strings for you.
+If you already have an optional dependency group named "required" then `--groups` will operate as normal and only install the groups provided.
 
 ### Update dependencies
 
@@ -120,18 +106,11 @@ my-project on master 📦 v0.0.1 via 🐍 v3.11.0
 ❯ huak update xlcsv
 ```
 
-You can also update a group of dependencies using `--group`.
+Or everything.
 
 ```zsh
 my-project on master 📦 v0.0.1 via 🐍 v3.11.0 
-❯ huak update --group dev
-```
-
-Or everything with "all".
-
-```zsh
-my-project on master 📦 v0.0.1 via 🐍 v3.11.0 
-❯ huak update --group all
+❯ huak update
 ```
 
 ### Remove dependencies
@@ -296,5 +275,7 @@ Any bugs or suggestions can be submitted as issues [here](https://github.com/cnp
 ```zsh
 my-project on master 📦 v0.0.1 via 🐍 v3.11.0 
 ❯ huak --version
-huak 0.0.16
+huak 0.0.19
 ```
+
+*Use the [0.0.16 User Guide](https://github.com/cnpryer/huak/blob/9b2bee0ac3425898394b3d9273105f554c45a744/docs/user_guide.md) for `huak` versions prior to `v0.0.19`.*
