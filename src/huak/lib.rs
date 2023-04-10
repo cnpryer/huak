@@ -1569,22 +1569,33 @@ fn python_interpreters_in_paths(
 
 #[cfg(unix)]
 /// A function for checking if a Python `Interpreter`'s file name is valid.
-///
-/// On Unix its considered valid if it has sufficient length for MAJOR.MINOR
-/// and starts with "python".
 fn valid_python_interpreter_file_name(file_name: &str) -> bool {
-    file_name.len() >= "python3.0".len() && file_name.starts_with("python")
+    if file_name == "python" {
+        return true;
+    }
+
+    if !file_name.starts_with("python") {
+        return false;
+    }
+
+    file_name.len() >= "python3.0".len()
+        && file_name["python".len()..].parse::<f32>().is_ok()
 }
 
 #[cfg(windows)]
 /// A function for checking if a Python `Interpreter`'s file name is valid.
-///
-/// On Windows its considered valid if it has the .exe extension and starts with
-/// "python".
 fn valid_python_interpreter_file_name(file_name: &str) -> bool {
-    file_name.starts_with("python")
-        && file_name.ends_with(".exe")
-        && !file_name.starts_with("pythonw")
+    if file_name == "python.exe" || file_name == "python" {
+        return true;
+    }
+
+    if !file_name.starts_with("python") {
+        return false;
+    }
+
+    let name = file_name.strip_suffix(".exe").unwrap_or(file_name);
+
+    name.len() > "python".len() && name["python".len()..].parse::<f32>().is_ok()
 }
 
 /// Parse the `Version` from a Python `Interpreter`'s file name.
@@ -1638,7 +1649,6 @@ pub fn active_conda_env_path() -> Option<PathBuf> {
     None
 }
 
-/// Get the version of a Python `Interpreter` using a `{path} --version` command.
 fn parse_python_version_from_command<T: AsRef<Path>>(
     path: T,
 ) -> HuakResult<Option<Version>> {
