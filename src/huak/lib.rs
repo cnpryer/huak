@@ -374,10 +374,10 @@ impl Environment {
             if let Some(v) = version {
                 let interpreter = Interpreter { version: v, path };
                 Some(interpreter)
-            } else if let Ok(Some(v)) = parse_python_version_from_command(&path)
-            {
-                let interpreter = Interpreter { version: v, path };
-                Some(interpreter)
+            // } else if let Ok(Some(v)) = parse_python_version_from_command(&path)
+            // {
+            //     let interpreter = Interpreter { version: v, path };
+            //     Some(interpreter)
             } else {
                 None
             }
