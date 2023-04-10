@@ -369,6 +369,9 @@ impl Environment {
 
     /// Resolve `Interpreters` for the `Environment`.
     fn resolve_python_interpreters() -> Interpreters {
+        dbg!(python_paths().collect::<Vec<_>>());
+        panic!();
+
         // Note that we filter out any interpreters we can't establish a `Version` for.
         let interpreters = python_paths().filter_map(|(version, path)| {
             if let Some(v) = version {
