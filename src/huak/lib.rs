@@ -374,10 +374,10 @@ impl Environment {
             if let Some(v) = version {
                 let interpreter = Interpreter { version: v, path };
                 Some(interpreter)
-            // } else if let Ok(Some(v)) = parse_python_version_from_command(&path)
-            // {
-            //     let interpreter = Interpreter { version: v, path };
-            //     Some(interpreter)
+            } else if let Ok(Some(v)) = parse_python_version_from_command(&path)
+            {
+                let interpreter = Interpreter { version: v, path };
+                Some(interpreter)
             } else {
                 None
             }
@@ -1643,7 +1643,7 @@ fn parse_python_version_from_command<T: AsRef<Path>>(
     path: T,
 ) -> HuakResult<Option<Version>> {
     let mut cmd = Command::new(path.as_ref());
-    cmd.args(["--version"]);
+    cmd.args(["-c", "import sys; print(sys.version)"]);
     let output = sys::parse_command_output(cmd.output()?)?;
     let mut output =
         output.trim_start_matches("Python").trim_start().to_string();
