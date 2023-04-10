@@ -149,9 +149,6 @@ enum Commands {
     Remove {
         #[arg(num_args = 1.., required = true)]
         dependencies: Vec<String>,
-        /// Remove from optional dependency group
-        #[arg(long, num_args = 1)]
-        group: Option<String>,
         /// Pass trailing arguments with `--`.
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
@@ -171,9 +168,6 @@ enum Commands {
     Update {
         #[arg(num_args = 0..)]
         dependencies: Option<Vec<String>>,
-        /// Update an optional dependency group
-        #[arg(long)]
-        group: Option<String>,
         /// Pass trailing arguments with `--`.
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
@@ -326,13 +320,12 @@ impl Cli {
             Commands::Python { command } => python(command, &config),
             Commands::Remove {
                 dependencies,
-                group,
                 trailing,
             } => {
                 let options = RemoveOptions {
                     install_options: InstallOptions { values: trailing },
                 };
-                remove(dependencies, group, &config, &options)
+                remove(dependencies, &config, &options)
             }
             Commands::Run { command } => run(command, &config),
             Commands::Test { trailing } => {
@@ -344,13 +337,12 @@ impl Cli {
             }
             Commands::Update {
                 dependencies,
-                group,
                 trailing,
             } => {
                 let options = UpdateOptions {
                     install_options: InstallOptions { values: trailing },
                 };
-                update(dependencies, group, &config, &options)
+                update(dependencies, &config, &options)
             }
             Commands::Version => version(&config),
         }
@@ -414,14 +406,7 @@ fn install(
     config: &Config,
     options: &InstallOptions,
 ) -> HuakResult<()> {
-    if let Some(it) = groups {
-        if it.contains(&"all".to_string()) {
-            ops::install_project_dependencies(config, options)?;
-        }
-        ops::install_project_optional_dependencies(&it, config, options)
-    } else {
-        ops::install_project_dependencies(config, options)
-    }
+    ops::install_project_dependencies(groups.as_ref(), config, options)
 }
 
 fn lint(config: &Config, options: &LintOptions) -> HuakResult<()> {
@@ -454,21 +439,10 @@ fn python(command: Python, config: &Config) -> HuakResult<()> {
 
 fn remove(
     dependencies: Vec<String>,
-    group: Option<String>,
     config: &Config,
     options: &RemoveOptions,
 ) -> HuakResult<()> {
-    match group.as_ref() {
-        Some(it) => ops::remove_project_optional_dependencies(
-            &dependencies,
-            it,
-            config,
-            options,
-        ),
-        None => {
-            ops::remove_project_dependencies(&dependencies, config, options)
-        }
-    }
+    ops::remove_project_dependencies(&dependencies, config, options)
 }
 
 fn run(command: Vec<String>, config: &Config) -> HuakResult<()> {
@@ -481,28 +455,10 @@ fn test(config: &Config, options: &TestOptions) -> HuakResult<()> {
 
 fn update(
     dependencies: Option<Vec<String>>,
-    group: Option<String>,
     config: &Config,
     options: &UpdateOptions,
 ) -> HuakResult<()> {
-    match group.as_ref() {
-        Some(it) => {
-            if it == "all" {
-                ops::update_project_dependencies(
-                    dependencies.clone(),
-                    config,
-                    options,
-                )?;
-            }
-            ops::update_project_optional_dependencies(
-                dependencies,
-                it,
-                config,
-                options,
-            )
-        }
-        None => ops::update_project_dependencies(dependencies, config, options),
-    }
+    ops::update_project_dependencies(dependencies.clone(), config, options)
 }
 
 fn version(config: &Config) -> HuakResult<()> {
