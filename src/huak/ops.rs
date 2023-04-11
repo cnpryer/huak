@@ -1,18 +1,30 @@
+use crate::{
+    dependency::{dependency_iter, Dependency},
+    environment::{env_path_values, Environment},
+    error::{Error, HuakResult},
+    fs, git,
+    metadata::LocalMetadata,
+    metadata::{default_entrypoint_string, default_test_file_contents},
+    package::importable_package_name,
+    python_environment::InstallOptions,
+    sys, Config, PythonEnvironment, WorkspaceOptions,
+};
+
+const DEFAULT_PYTHON_INIT_FILE_CONTENTS: &str = r#"__version__ = "0.0.1"
+"#;
+const DEFAULT_PYTHON_MAIN_FILE_CONTENTS: &str = r#"def main():
+    print("Hello, World!")
+
+
+if __name__ == "__main__":
+    main()
+"#;
+
 ///! This module implements various operations to interact with valid workspaces
 ///! existing on a system.
 ///
-use pep508_rs::Requirement;
-use pyproject_toml::BuildSystem;
 use std::{env::consts::OS, path::Path, process::Command, str::FromStr};
 use termcolor::Color;
-
-use crate::{
-    dependency_iter,
-    error::{Error, HuakResult},
-    fs, git, importable_package_name, sys, Config, Dependency, Environment,
-    InstallOptions, LocalMetadata, Metadata, PyProjectToml, PythonEnvironment,
-    WorkspaceOptions,
-};
 
 pub struct AddOptions {
     pub install_options: InstallOptions,
@@ -115,11 +127,11 @@ pub fn add_project_dependencies(
     let deps = dependency_iter(dependencies)
         .filter(|dep| {
             !metadata
-                .metadata
+                .metadata()
                 .contains_dependency(dep)
                 .unwrap_or_default()
         })
-        .collect::<Vec<Dependency>>();
+        .collect::<Vec<_>>();
 
     if deps.is_empty() {
         return Ok(());
@@ -136,17 +148,17 @@ pub fn add_project_dependencies(
         })
     }) {
         let dep = Dependency::from_str(&pkg.to_string())?;
-        metadata.metadata.add_dependency(dep);
+        metadata.metadata_mut().add_dependency(dep);
     }
 
     // Whatever hasn't been added, add as-is.
     for dep in deps {
-        if !metadata.metadata.contains_dependency(&dep)? {
-            metadata.metadata.add_dependency(dep);
+        if !metadata.metadata().contains_dependency(&dep)? {
+            metadata.metadata_mut().add_dependency(dep);
         }
     }
 
-    if package.metadata != metadata.metadata {
+    if package.metadata() != metadata.metadata() {
         metadata.write_file()?;
     }
 
@@ -167,7 +179,7 @@ pub fn add_project_optional_dependencies(
     let deps = dependency_iter(dependencies)
         .filter(|dep| {
             !metadata
-                .metadata
+                .metadata()
                 .contains_optional_dependency(dep, group)
                 .unwrap_or_default()
         })
@@ -188,20 +200,20 @@ pub fn add_project_optional_dependencies(
         })
     }) {
         let dep = Dependency::from_str(&pkg.to_string())?;
-        metadata.metadata.add_optional_dependency(dep, group);
+        metadata.metadata_mut().add_optional_dependency(dep, group);
     }
 
     // Add whatever else as-is.
     for dep in deps {
         if !metadata
-            .metadata
+            .metadata()
             .contains_optional_dependency(&dep, group)?
         {
-            metadata.metadata.add_optional_dependency(dep, group);
+            metadata.metadata_mut().add_optional_dependency(dep, group);
         }
     }
 
-    if package.metadata != metadata.metadata {
+    if package.metadata() != metadata.metadata() {
         metadata.write_file()?;
     }
 
@@ -213,7 +225,7 @@ pub fn build_project(
     options: &BuildOptions,
 ) -> HuakResult<()> {
     let workspace = config.workspace();
-    let package = workspace.current_local_metadata()?;
+    let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
     let python_env = workspace.resolve_python_environment()?;
 
@@ -228,20 +240,20 @@ pub fn build_project(
     }
 
     // Add the installed `build` package to the metadata file.
-    if !metadata.metadata.contains_dependency_any(&build_dep)? {
+    if !metadata.metadata().contains_dependency_any(&build_dep)? {
         for pkg in python_env
             .installed_packages()?
             .iter()
             .filter(|pkg| pkg.name() == build_dep.name())
         {
-            metadata.metadata.add_optional_dependency(
+            metadata.metadata_mut().add_optional_dependency(
                 Dependency::from_str(&pkg.to_string())?,
                 "dev",
             );
         }
     }
 
-    if package.metadata != metadata.metadata {
+    if package.metadata() != metadata.metadata() {
         metadata.write_file()?;
     }
 
@@ -252,7 +264,7 @@ pub fn build_project(
         args.extend(it.iter().map(|item| item.as_str()));
     }
     make_venv_command(&mut cmd, &python_env)?;
-    cmd.args(args).current_dir(&workspace.root);
+    cmd.args(args).current_dir(workspace.root());
 
     config.terminal().run_command(&mut cmd)
 }
@@ -264,8 +276,8 @@ pub fn clean_project(
     let workspace = config.workspace();
 
     // Remove everything from the dist directory if it exists.
-    if workspace.root.join("dist").exists() {
-        std::fs::read_dir(workspace.root.join("dist"))?
+    if workspace.root().join("dist").exists() {
+        std::fs::read_dir(workspace.root().join("dist"))?
             .filter_map(|x| x.ok().map(|item| item.path()))
             .for_each(|item| {
                 if item.is_dir() {
@@ -280,7 +292,7 @@ pub fn clean_project(
     if options.include_pycache {
         let pattern = format!(
             "{}",
-            workspace.root.join("**").join("__pycache__").display()
+            workspace.root().join("**").join("__pycache__").display()
         );
         glob::glob(&pattern)?.for_each(|item| {
             if let Ok(it) = item {
@@ -292,7 +304,7 @@ pub fn clean_project(
     // Remove all .pyc files in the workspace if they exist.
     if options.include_compiled_bytecode {
         let pattern =
-            format!("{}", workspace.root.join("**").join("*.pyc").display());
+            format!("{}", workspace.root().join("**").join("*.pyc").display());
         glob::glob(&pattern)?.for_each(|item| {
             if let Ok(it) = item {
                 std::fs::remove_file(it).ok();
@@ -338,7 +350,7 @@ pub fn format_project(
         .iter()
         .filter(|dep| {
             !metadata
-                .metadata
+                .metadata()
                 .contains_dependency_any(dep)
                 .unwrap_or_default()
         })
@@ -351,14 +363,14 @@ pub fn format_project(
             .iter()
             .filter(|pkg| new_format_deps.contains(&pkg.name()))
         {
-            metadata.metadata.add_optional_dependency(
+            metadata.metadata_mut().add_optional_dependency(
                 Dependency::from_str(&pkg.to_string())?,
                 "dev",
             );
         }
     }
 
-    if package.metadata != metadata.metadata {
+    if package.metadata() != metadata.metadata() {
         metadata.write_file()?;
     }
 
@@ -380,9 +392,9 @@ pub fn format_project(
             ruff_args.retain(|item| *item != "--fix")
         }
     }
-    ruff_cmd.args(ruff_args).current_dir(&workspace.root);
+    ruff_cmd.args(ruff_args).current_dir(workspace.root());
     terminal.run_command(&mut ruff_cmd)?;
-    cmd.args(args).current_dir(&workspace.root);
+    cmd.args(args).current_dir(workspace.root());
     terminal.run_command(&mut cmd)
 }
 
@@ -395,11 +407,13 @@ pub fn init_app_project(
     let workspace = config.workspace();
     let mut metadata = workspace.current_local_metadata()?;
 
-    let as_dep = Dependency::from_str(metadata.metadata.project_name())?;
-    let entry_point = crate::default_entrypoint_string(
+    let as_dep = Dependency::from_str(metadata.metadata().project_name())?;
+    let entry_point = default_entrypoint_string(
         importable_package_name(as_dep.name())?.as_str(),
     );
-    metadata.metadata.add_script(as_dep.name(), &entry_point);
+    metadata
+        .metadata_mut()
+        .add_script(as_dep.name(), &entry_point);
 
     metadata.write_file()
 }
@@ -413,18 +427,9 @@ pub fn init_lib_project(
     // Create a metadata file or error if one already exists.
     let mut metadata = match workspace.current_local_metadata() {
         Ok(_) => return Err(Error::MetadataFileFound),
-        Err(_) => LocalMetadata {
-            metadata: Metadata {
-                build_system: BuildSystem {
-                    requires: vec![Requirement::from_str("hatchling").unwrap()],
-                    build_backend: Some(String::from("hatchling.build")),
-                    backend_path: None,
-                },
-                project: PyProjectToml::default().project.clone().unwrap(),
-                tool: None,
-            },
-            path: workspace.root.join("pyproject.toml"),
-        },
+        Err(_) => {
+            LocalMetadata::template(workspace.root().join("pyproject.toml"))
+        }
     };
 
     if options.uses_git {
@@ -432,7 +437,7 @@ pub fn init_lib_project(
     }
 
     let name = fs::last_path_component(&config.workspace_root)?;
-    metadata.metadata.set_project_name(name);
+    metadata.metadata_mut().set_project_name(name);
     metadata.write_file()
 }
 
@@ -452,18 +457,18 @@ pub fn install_project_dependencies(
         // If the group "required" is passed and isn't a valid optional dependency group
         // then install just the required dependencies.
         if package
-            .metadata
+            .metadata()
             .optional_dependency_group("required")
             .is_none()
             && gs.contains(&"required".to_string())
         {
-            if let Some(reqs) = package.metadata.dependencies() {
+            if let Some(reqs) = package.metadata().dependencies() {
                 dependencies.extend(reqs.iter().map(Dependency::from));
             }
         } else {
             gs.iter().for_each(|g| {
                 package
-                    .metadata
+                    .metadata()
                     .optional_dependency_group(g)
                     .unwrap_or(&binding)
                     .iter()
@@ -475,10 +480,10 @@ pub fn install_project_dependencies(
     } else {
         // If no groups are passed then install all dependencies listed in the metadata file
         // including the optional dependencies.
-        if let Some(reqs) = package.metadata.dependencies() {
+        if let Some(reqs) = package.metadata().dependencies() {
             dependencies.extend(reqs.iter().map(Dependency::from));
         }
-        if let Some(deps) = metadata.metadata.optional_dependencies() {
+        if let Some(deps) = metadata.metadata().optional_dependencies() {
             deps.values().for_each(|reqs| {
                 dependencies.extend(
                     reqs.iter().map(Dependency::from).collect::<Vec<_>>(),
@@ -499,7 +504,7 @@ pub fn install_project_dependencies(
 
 pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
     let workspace = config.workspace();
-    let project = workspace.current_package()?;
+    let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
     let python_env = workspace.resolve_python_environment()?;
 
@@ -541,7 +546,7 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
                 "--exclude",
                 python_env.name()?.as_str(),
             ])
-            .current_dir(&workspace.root);
+            .current_dir(workspace.root());
         terminal.run_command(&mut mypy_cmd)?;
     }
 
@@ -552,7 +557,7 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
         args.extend(v.iter().map(|item| item.as_str()));
     }
     make_venv_command(&mut cmd, &python_env)?;
-    cmd.args(args).current_dir(&workspace.root);
+    cmd.args(args).current_dir(workspace.root());
     terminal.run_command(&mut cmd)?;
 
     // Add installed lint deps (potentially both `mypy` and `ruff`) to metadata file if not already there.
@@ -560,7 +565,7 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
         .iter()
         .filter(|dep| {
             !metadata
-                .metadata
+                .metadata()
                 .contains_dependency_any(dep)
                 .unwrap_or_default()
         })
@@ -573,14 +578,14 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
             .iter()
             .filter(|pkg| new_lint_deps.contains(&pkg.name()))
         {
-            metadata.metadata.add_optional_dependency(
+            metadata.metadata_mut().add_optional_dependency(
                 Dependency::from_str(&pkg.to_string())?,
                 "dev",
             );
         }
     }
 
-    if project.metadata != metadata.metadata {
+    if package.metadata() != metadata.metadata() {
         metadata.write_file()?;
     }
 
@@ -610,18 +615,20 @@ pub fn new_app_project(
     let workspace = config.workspace();
     let mut metadata = workspace.current_local_metadata()?;
 
-    let name = fs::last_path_component(workspace.root.as_path())?;
+    let name = fs::last_path_component(workspace.root().as_path())?;
     let as_dep = Dependency::from_str(&name)?;
-    metadata.metadata.set_project_name(name);
+    metadata.metadata_mut().set_project_name(name);
 
-    let src_path = workspace.root.join("src");
+    let src_path = workspace.root().join("src");
     let importable_name = importable_package_name(as_dep.name())?;
     std::fs::write(
         src_path.join(&importable_name).join("main.py"),
-        crate::DEFAULT_PYTHON_MAIN_FILE_CONTENTS,
+        DEFAULT_PYTHON_MAIN_FILE_CONTENTS,
     )?;
-    let entry_point = crate::default_entrypoint_string(&importable_name);
-    metadata.metadata.add_script(as_dep.name(), &entry_point);
+    let entry_point = default_entrypoint_string(&importable_name);
+    metadata
+        .metadata_mut()
+        .add_script(as_dep.name(), &entry_point);
 
     metadata.write_file()
 }
@@ -635,28 +642,19 @@ pub fn new_lib_project(
     // Create a new metadata file or error if one exists.
     let mut metadata = match workspace.current_local_metadata() {
         Ok(_) => return Err(Error::ProjectFound),
-        Err(_) => LocalMetadata {
-            metadata: Metadata {
-                build_system: BuildSystem {
-                    requires: vec![Requirement::from_str("hatchling").unwrap()],
-                    build_backend: Some(String::from("hatchling.build")),
-                    backend_path: None,
-                },
-                project: PyProjectToml::default().project.clone().unwrap(),
-                tool: None,
-            },
-            path: workspace.root.join("pyproject.toml"),
-        },
+        Err(_) => {
+            LocalMetadata::template(workspace.root().join("pyproject.toml"))
+        }
     };
 
-    create_workspace(&workspace.root)?;
+    create_workspace(workspace.root())?;
 
     if options.uses_git {
-        init_git(&workspace.root)?;
+        init_git(workspace.root())?;
     }
 
     let name = &fs::last_path_component(&config.workspace_root)?;
-    metadata.metadata.set_project_name(name.to_string());
+    metadata.metadata_mut().set_project_name(name.to_string());
     metadata.write_file()?;
 
     let as_dep = Dependency::from_str(name)?;
@@ -666,11 +664,11 @@ pub fn new_lib_project(
     std::fs::create_dir_all(config.workspace_root.join("tests"))?;
     std::fs::write(
         src_path.join(&importable_name).join("__init__.py"),
-        crate::DEFAULT_PYTHON_INIT_FILE_CONTENTS,
+        DEFAULT_PYTHON_INIT_FILE_CONTENTS,
     )?;
     std::fs::write(
         config.workspace_root.join("tests").join("test_version.py"),
-        crate::default_test_file_contents(&importable_name),
+        default_test_file_contents(&importable_name),
     )
     .map_err(Error::IOError)
 }
@@ -695,20 +693,20 @@ pub fn publish_project(
     }
 
     // Add the installed `twine` package to the metadata file if it isn't already there.
-    if !metadata.metadata.contains_dependency_any(&pub_dep)? {
+    if !metadata.metadata().contains_dependency_any(&pub_dep)? {
         for pkg in python_env
             .installed_packages()?
             .iter()
             .filter(|pkg| pkg.name() == pub_dep.name())
         {
-            metadata.metadata.add_optional_dependency(
+            metadata.metadata_mut().add_optional_dependency(
                 Dependency::from_str(&pkg.to_string())?,
                 "dev",
             );
         }
     }
 
-    if package.metadata != metadata.metadata {
+    if package.metadata() != metadata.metadata() {
         metadata.write_file()?;
     }
 
@@ -719,7 +717,7 @@ pub fn publish_project(
         args.extend(v.iter().map(|item| item.as_str()));
     }
     make_venv_command(&mut cmd, &python_env)?;
-    cmd.args(args).current_dir(&workspace.root);
+    cmd.args(args).current_dir(workspace.root());
     config.terminal().run_command(&mut cmd)
 }
 
@@ -736,7 +734,7 @@ pub fn remove_project_dependencies(
     let deps = dependency_iter(dependencies)
         .filter(|dep| {
             metadata
-                .metadata
+                .metadata()
                 .contains_dependency_any(dep)
                 .unwrap_or_default()
         })
@@ -748,17 +746,19 @@ pub fn remove_project_dependencies(
 
     // Get all groups from the metadata file to include in the removal process.
     let mut groups = Vec::new();
-    if let Some(deps) = metadata.metadata.optional_dependencies() {
+    if let Some(deps) = metadata.metadata().optional_dependencies() {
         groups.extend(deps.keys().map(|key| key.to_string()));
     }
     for dep in &deps {
-        metadata.metadata.remove_dependency(dep);
+        metadata.metadata_mut().remove_dependency(dep);
         for group in &groups {
-            metadata.metadata.remove_optional_dependency(dep, group);
+            metadata
+                .metadata_mut()
+                .remove_optional_dependency(dep, group);
         }
     }
 
-    if package.metadata != metadata.metadata {
+    if package.metadata() != metadata.metadata() {
         metadata.write_file()?;
     }
 
@@ -803,30 +803,30 @@ pub fn test_project(config: &Config, options: &TestOptions) -> HuakResult<()> {
     }
 
     // Add the installed `pytest` package to the metadata file if it isn't already there.
-    if !metadata.metadata.contains_dependency_any(&test_dep)? {
+    if !metadata.metadata().contains_dependency_any(&test_dep)? {
         for pkg in python_env
             .installed_packages()?
             .iter()
             .filter(|pkg| pkg.name() == test_dep.name())
         {
-            metadata.metadata.add_optional_dependency(
+            metadata.metadata_mut().add_optional_dependency(
                 Dependency::from_str(&pkg.to_string())?,
                 "dev",
             );
         }
     }
 
-    if package.metadata != metadata.metadata {
+    if package.metadata() != metadata.metadata() {
         metadata.write_file()?;
     }
 
     // Run `pytest` with the package directory added to the command's `PYTHONPATH`.
     let mut cmd = Command::new(python_env.python_path());
     make_venv_command(&mut cmd, &python_env)?;
-    let python_path = if workspace.root.join("src").exists() {
-        workspace.root.join("src")
+    let python_path = if workspace.root().join("src").exists() {
+        workspace.root().join("src")
     } else {
-        workspace.root
+        workspace.root().to_path_buf()
     };
     let mut args = vec!["-m", "pytest"];
     if let Some(v) = options.values.as_ref() {
@@ -851,7 +851,7 @@ pub fn update_project_dependencies(
         let deps = dependency_iter(it)
             .filter_map(|dep| {
                 if metadata
-                    .metadata
+                    .metadata()
                     .contains_dependency_any(&dep)
                     .unwrap_or_default()
                 {
@@ -869,12 +869,12 @@ pub fn update_project_dependencies(
         python_env.update_packages(&deps, &options.install_options, config)?;
     } else {
         let mut deps = metadata
-            .metadata
+            .metadata()
             .dependencies()
             .map(|reqs| reqs.iter().map(Dependency::from).collect::<Vec<_>>())
             .unwrap_or(Vec::new());
 
-        if let Some(odeps) = metadata.metadata.optional_dependencies() {
+        if let Some(odeps) = metadata.metadata().optional_dependencies() {
             odeps.values().for_each(|reqs| {
                 deps.extend(
                     reqs.iter().map(Dependency::from).collect::<Vec<_>>(),
@@ -888,25 +888,27 @@ pub fn update_project_dependencies(
 
     // Get all groups from the metadata file to include in the removal process.
     let mut groups = Vec::new();
-    if let Some(deps) = metadata.metadata.optional_dependencies() {
+    if let Some(deps) = metadata.metadata().optional_dependencies() {
         groups.extend(deps.keys().map(|key| key.to_string()));
     }
 
     for pkg in python_env.installed_packages()? {
         let dep = &Dependency::from_str(&pkg.to_string())?;
-        if metadata.metadata.contains_dependency(dep)? {
-            metadata.metadata.remove_dependency(dep);
-            metadata.metadata.add_dependency(dep.clone())
+        if metadata.metadata().contains_dependency(dep)? {
+            metadata.metadata_mut().remove_dependency(dep);
+            metadata.metadata_mut().add_dependency(dep.clone())
         }
         for g in groups.iter() {
-            if metadata.metadata.contains_optional_dependency(dep, g)? {
-                metadata.metadata.remove_optional_dependency(dep, g);
-                metadata.metadata.add_optional_dependency(dep.clone(), g);
+            if metadata.metadata().contains_optional_dependency(dep, g)? {
+                metadata.metadata_mut().remove_optional_dependency(dep, g);
+                metadata
+                    .metadata_mut()
+                    .add_optional_dependency(dep.clone(), g);
             }
         }
     }
 
-    if package.metadata != metadata.metadata {
+    if package.metadata() != metadata.metadata() {
         metadata.write_file()?;
     }
 
@@ -918,10 +920,10 @@ pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
 
     // Get a path to an interpreter based on the version provided.
     let path = match interpreters
-        .interpreters
+        .interpreters()
         .iter()
-        .find(|py| py.version.to_string() == version)
-        .map(|py| &py.path)
+        .find(|py| py.version().to_string() == version)
+        .map(|py| py.path())
     {
         Some(it) => it,
         None => return Err(Error::PythonNotFound),
@@ -930,7 +932,7 @@ pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
     // Remove the current Python environment if one exists.
     let workspace = config.workspace();
     match workspace.current_python_environment() {
-        Ok(it) => std::fs::remove_dir_all(it.root)?,
+        Ok(it) => std::fs::remove_dir_all(it.root())?,
         Err(Error::PythonEnvironmentNotFound) => (),
         Err(e) => return Err(e),
     };
@@ -946,7 +948,7 @@ pub fn display_project_version(config: &Config) -> HuakResult<()> {
     let workspace = config.workspace();
     let package = workspace.current_package()?;
 
-    let version = match package.metadata.project_version() {
+    let version = match package.metadata().project_version() {
         Some(it) => it,
         None => return Err(Error::PackageVersionNotFound),
     };
@@ -966,7 +968,7 @@ fn make_venv_command(
     cmd: &mut Command,
     venv: &PythonEnvironment,
 ) -> HuakResult<()> {
-    let mut paths = crate::env_path_values().unwrap_or(Vec::new());
+    let mut paths = env_path_values().unwrap_or(Vec::new());
 
     paths.insert(0, venv.executables_dir_path().clone());
     cmd.env(
@@ -1014,9 +1016,12 @@ fn init_git<T: AsRef<Path>>(path: T) -> HuakResult<()> {
 mod tests {
     use super::*;
     use crate::{
-        default_pyproject_toml_contents, fs,
+        environment::env_path_string,
+        fs,
+        metadata::{default_pyproject_toml_contents, PyProjectToml},
+        package::Package,
         sys::{TerminalOptions, Verbosity},
-        test_resources_dir_path, Package, PyProjectToml,
+        test_resources_dir_path,
     };
     use tempfile::tempdir;
 
@@ -1045,7 +1050,7 @@ mod tests {
         let metadata = ws.current_local_metadata().unwrap();
 
         assert!(venv.contains_module("ruff").unwrap());
-        assert!(metadata.metadata.contains_dependency(&dep).unwrap());
+        assert!(metadata.metadata().contains_dependency(&dep).unwrap());
     }
 
     #[test]
@@ -1080,7 +1085,7 @@ mod tests {
 
         assert!(venv.contains_module("ruff").unwrap());
         assert!(metadata
-            .metadata
+            .metadata()
             .contains_optional_dependency(&dep, "dev")
             .unwrap());
     }
@@ -1168,14 +1173,8 @@ mod tests {
         let cwd = root.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
         let ws = config.workspace();
-        let metadata = ws.current_local_metadata().unwrap();
-        let fmt_filepath = metadata
-            .path
-            .parent()
-            .unwrap()
-            .join("src")
-            .join("mock_project")
-            .join("fmt_me.py");
+        let fmt_filepath =
+            ws.root().join("src").join("mock_project").join("fmt_me.py");
         let pre_fmt_str = r#"
 def fn( ):
     pass"#;
@@ -1344,14 +1343,8 @@ mock-project = "mock_project.main:main"
             include_types: true,
             install_options: InstallOptions { values: None },
         };
-        let metadata = ws.current_local_metadata().unwrap();
-        let lint_fix_filepath = metadata
-            .path
-            .parent()
-            .unwrap()
-            .join("src")
-            .join("mock_project")
-            .join("fix_me.py");
+        let lint_fix_filepath =
+            ws.root().join("src").join("mock_project").join("fix_me.py");
         let pre_fix_str = r#"
 import json # this gets removed(autofixed)
 
@@ -1387,12 +1380,8 @@ def fn():
 
         let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
-        let test_file_filepath = metadata
-            .path
-            .parent()
-            .unwrap()
-            .join("tests")
-            .join("test_version.py");
+        let test_file_filepath =
+            ws.root().join("tests").join("test_version.py");
         let test_file = std::fs::read_to_string(test_file_filepath).unwrap();
         let expected_test_file = r#"from mock_project import __version__
 
@@ -1400,10 +1389,8 @@ def fn():
 def test_version():
     __version__
 "#;
-        let init_file_filepath = metadata
-            .path
-            .parent()
-            .unwrap()
+        let init_file_filepath = ws
+            .root()
             .join("src")
             .join("mock_project")
             .join("__init__.py");
@@ -1411,7 +1398,7 @@ def test_version():
         let expected_init_file = "__version__ = \"0.0.1\"
 ";
 
-        assert!(metadata.metadata.project.scripts.is_none());
+        assert!(metadata.metadata().project().scripts.is_none());
         assert_eq!(test_file, expected_test_file);
         assert_eq!(init_file, expected_init_file);
     }
@@ -1429,13 +1416,8 @@ def test_version():
 
         let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
-        let main_file_filepath = metadata
-            .path
-            .parent()
-            .unwrap()
-            .join("src")
-            .join("mock_project")
-            .join("main.py");
+        let main_file_filepath =
+            ws.root().join("src").join("mock_project").join("main.py");
         let main_file = std::fs::read_to_string(main_file_filepath).unwrap();
         let expected_main_file = r#"def main():
     print("Hello, World!")
@@ -1446,7 +1428,8 @@ if __name__ == "__main__":
 "#;
 
         assert_eq!(
-            metadata.metadata.project.scripts.as_ref().unwrap()["mock-project"],
+            metadata.metadata().project().scripts.as_ref().unwrap()
+                ["mock-project"],
             format!("{}.main:main", "mock_project")
         );
         assert_eq!(main_file, expected_main_file);
@@ -1476,7 +1459,7 @@ if __name__ == "__main__":
         let metadata = ws.current_local_metadata().unwrap();
         let venv_had_package = venv.contains_package(&test_package);
         let toml_had_package =
-            metadata.metadata.contains_dependency(&test_dep).unwrap();
+            metadata.metadata().contains_dependency(&test_dep).unwrap();
 
         remove_project_dependencies(&["click".to_string()], &config, &options)
             .unwrap();
@@ -1485,7 +1468,7 @@ if __name__ == "__main__":
         let metadata = ws.current_local_metadata().unwrap();
         let venv_contains_package = venv.contains_package(&test_package);
         let toml_contains_package =
-            metadata.metadata.contains_dependency(&test_dep).unwrap();
+            metadata.metadata().contains_dependency(&test_dep).unwrap();
 
         assert!(venv_had_package);
         assert!(toml_had_package);
@@ -1518,7 +1501,7 @@ if __name__ == "__main__":
         let venv_had_package =
             venv.contains_module(test_package.name()).unwrap();
         let toml_had_package = metadata
-            .metadata
+            .metadata()
             .contains_optional_dependency(&test_dep, "dev")
             .unwrap();
 
@@ -1528,10 +1511,10 @@ if __name__ == "__main__":
         let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
         let venv_contains_package = venv
-            .contains_module(metadata.metadata.project_name())
+            .contains_module(metadata.metadata().project_name())
             .unwrap();
         let toml_contains_package =
-            metadata.metadata.contains_dependency(&test_dep).unwrap();
+            metadata.metadata().contains_dependency(&test_dep).unwrap();
 
         assert!(venv_had_package);
         assert!(toml_had_package);
@@ -1554,7 +1537,7 @@ if __name__ == "__main__":
         // For some reason this test fails with multiple threads used. Workspace.resolve_python_environment()
         // ends up updating the PATH environment variable causing subsequent Python searches using PATH to fail.
         // TODO
-        let env_path = crate::env_path_string().unwrap();
+        let env_path = env_path_string().unwrap();
         let venv = ws.resolve_python_environment().unwrap();
         std::env::set_var("PATH", env_path);
         let venv_had_package = venv.contains_module("black").unwrap();
@@ -1611,7 +1594,7 @@ if __name__ == "__main__":
     fn test_use_python() {
         let dir = tempdir().unwrap();
         let interpreters = Environment::resolve_python_interpreters();
-        let version = &interpreters.latest().unwrap().version;
+        let version = interpreters.latest().unwrap().version();
         let root = dir.path();
         let cwd = root;
         let config = test_config(root, cwd, Verbosity::Quiet);
