@@ -7,16 +7,15 @@ use crate::Error;
 
 #[derive(Clone, Debug)]
 /// The `Dependency` is an abstraction for `Package` data used as a cheap alternative
-/// for operations on lots of `Package` information.
+/// for operations on lots of `Package` data.
 ///
 /// `Dependency`s can contain different information about a `Package` necessary to
-/// use them as `Package` `Dependency`s, such as having multiple `VersionSpecifiers`
-/// or boolean flags indicating they're optional `Dependency`s.
+/// use them as `Package` `Dependency`s, such as having multiple `VersionSpecifiers`.
 ///
 /// ```
 /// use huak::Dependency;
 ///
-/// let dependency = Dependency::from_str("my-dependency>=0.1.0,<0.2.0").unwrap();
+/// let dependency = Dependency::from_str("my-dependency >= 0.1.0, < 0.2.0").unwrap();
 /// ```
 pub struct Dependency(Requirement);
 
@@ -52,7 +51,7 @@ impl From<Requirement> for Dependency {
 /// ```
 /// use huak::Dependency;
 ///
-/// let dependency = Dependency::from_str("my-dependency>=0.1.0,<0.2.0").unwrap();
+/// let dependency = Dependency::from_str("my-dependency >= 0.1.0, < 0.2.0").unwrap();
 /// ```
 impl FromStr for Dependency {
     type Err = Error;
@@ -91,7 +90,7 @@ impl PartialEq for Dependency {
 
 impl Eq for Dependency {}
 
-/// Construct an `Iterator` over a `IntoIterator` of `&str`s.
+/// Construct an `Iterator` over an `IntoIterator` of `&str`s.
 ///
 /// ```
 /// let dependencies = vec!["my-dep", "my-dep==0.0.1"];

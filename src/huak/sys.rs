@@ -21,7 +21,7 @@ pub trait ToTerminal {
 }
 
 /// An abstraction around terminal output that remembers preferences for output
-/// verbosity and color (inspired by cargo's Shell implementation).
+/// verbosity and color (inspired by cargo's `Shell`).
 pub struct Terminal {
     /// A write object for terminal output.
     output: TerminalOut,
@@ -72,6 +72,7 @@ impl Terminal {
 
     /// Prints a message, where the status will have `color` color, and can be justified.
     /// The messages follows without color.
+    ///
     /// NOTE: Messages are printed to stderr. This is behavior cargo implements as well to
     /// avoid polluting stdout for end users. See https://github.com/rust-lang/cargo/issues/1473
     fn print(

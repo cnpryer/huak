@@ -24,6 +24,7 @@ const CONDA_ENV_ENV_VAR: &str = "CONDA_PREFIX";
 ///
 /// An example of a valid `PythonEnvironment` would be a Virtual environment.
 /// See https://peps.python.org/pep-0405/
+///
 /// The structure of a `Venv` on a system depends on if it is Windows or not.
 ///
 /// For Windows:
@@ -45,7 +46,7 @@ const CONDA_ENV_ENV_VAR: &str = "CONDA_PREFIX";
 /// │      └── site-packages
 /// └── pyvenv.cfg
 ///
-/// Note that on Windows site-packages is under Lib but elsewhere it's under
+/// Note that on Windows the site-packages directory is under Lib but elsewhere it's under
 /// lib/python{version-major.version-minor}. `pyvenv.cfg` is the `PythonEnvironment`'s
 /// config file and contains information like the version of the Python
 /// `Interpreter`, *potentially* the "home" path to the Python `Interpreter` that
@@ -356,6 +357,14 @@ impl Interpreters {
         self.interpreters
             .iter()
             .find(|interpreter| &interpreter.version == version)
+    }
+
+    #[allow(dead_code)]
+    /// Get a Python `Interpreter` by its path.
+    fn get<T: AsRef<Path>>(&self, path: T) -> Option<&Interpreter> {
+        self.interpreters
+            .iter()
+            .find(|p| *p.path() == path.as_ref())
     }
 }
 

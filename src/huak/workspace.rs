@@ -11,10 +11,10 @@ use std::{
     process::Command,
 };
 
-/// The `Workspace` is a useful struct for resolving things like the current `Package`
+/// The `Workspace` is a struct for resolving things like the current `Package`
 /// or the current `PythonEnvironment`. It can also provide a snapshot of the `Environment`,
 /// a more general struct containing information like environment variables, Python
-/// `Interpreters` found, and more.
+/// `Interpreters` found, etc.
 ///
 /// ```
 /// use huak::Workspace;
@@ -73,7 +73,7 @@ impl Workspace {
 
     /// Resolve a `PythonEnvironment` pulling the current or creating one if none is found.
     pub fn resolve_python_environment(&self) -> HuakResult<PythonEnvironment> {
-        // Currently only virtual environments are supported. We search for them, stopping
+        // NOTE: Currently only virtual environments are supported. We search for them, stopping
         // at the configured workspace root. If none is found we create a new one at the
         // workspace root.
         let env = match self.current_python_environment() {

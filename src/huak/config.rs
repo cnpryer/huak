@@ -5,9 +5,9 @@ use crate::{sys::Terminal, workspace::Workspace, TerminalOptions};
 #[derive(Clone)]
 /// The main `Config` for Huak.
 ///
-/// The `Config` contains data telling Huak what to do during at times.
-/// An example would be indicating what the initial `Workspace` root should be or
-/// what the current working directory was at the time an operation was requested.
+/// The `Config` contains data telling Huak what to do at times.
+/// An example would be indicating what the initial `Workspace` root should be, or
+/// what it was when it was requested.
 ///
 /// ```
 /// use huak::{Config, sys::{TerminalOptions, Verbosity};
@@ -25,14 +25,14 @@ use crate::{sys::Terminal, workspace::Workspace, TerminalOptions};
 pub struct Config {
     /// The configured `Workspace` root path.
     pub workspace_root: PathBuf,
-    /// The current working directory where Huak was invoked or otherwise requested from.
+    /// The current working directory.
     pub cwd: PathBuf,
     /// `Terminal` options to use.
     pub terminal_options: TerminalOptions,
 }
 
 impl Config {
-    /// Resolve the current workspace based on the `Config` data.
+    /// Resolve the current `Workspace` based on the `Config` data.
     pub fn workspace(&self) -> Workspace {
         Workspace::new(&self.workspace_root, self)
     }

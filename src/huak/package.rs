@@ -9,13 +9,13 @@ const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
 /// The `Package` contains data about a Python `Package`.
 ///
 /// A `Package` contains information like the project's name, its version, authors,
-/// its dependencies, and more.
+/// its dependencies, etc.
 ///
 /// ```
 /// use huak::Package;
 /// use pep440_rs::Version;
 ///
-/// let mut package = Package::from_str("my-project==0.0.1").unwrap();
+/// let mut package = Package::from_str("my-project == 0.0.1").unwrap();
 ///
 /// assert_eq!(package.version, Version::from_str("0.0.1").unwrap()));
 /// ```
@@ -82,7 +82,7 @@ impl From<Metadata> for Package {
 /// ```
 /// use huak::Package;
 ///
-/// let package = Package::from_str("my-package==0.0.1").unwrap();
+/// let package = Package::from_str("my-package == 0.0.1").unwrap();
 /// ```
 impl FromStr for Package {
     type Err = Error;
