@@ -6,7 +6,7 @@ pub fn install_project_dependencies(
     options: &InstallOptions,
 ) -> HuakResult<()> {
     let workspace = config.workspace();
-    let package = workspace.current_local_metadata()?;
+    let package = workspace.current_package()?;
     let metadata = workspace.current_local_metadata()?;
 
     let binding = Vec::new(); // TODO
