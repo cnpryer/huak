@@ -4,10 +4,10 @@ use crate::python_environment::{
     parse_python_version_from_command, python_paths, Interpreter, Interpreters,
 };
 
-/// The `Environment` is a snapshot of the environment at the time it is initialized.
+/// The `Environment` is a snapshot of the environment.
 ///
-/// `Environment`s would be used for resolving environment variables, the
-/// the paths to Python `Interpreters`, and more.
+/// `Environment`s would be used for resolving environment variables, the the paths to
+/// Python `Interpreters`, etc.
 ///
 /// ```
 /// use huak::Environment;

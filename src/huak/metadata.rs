@@ -30,7 +30,7 @@ pub struct LocalMetadata {
 impl LocalMetadata {
     /// Initialize `LocalMetadata` from a path.
     pub fn new<T: AsRef<Path>>(path: T) -> HuakResult<LocalMetadata> {
-        // Currently only pyproject.toml files are supported.
+        // NOTE: Currently only pyproject.toml files are supported.
         if path.as_ref().file_name()
             != Some(OsStr::new(DEFAULT_METADATA_FILE_NAME))
         {
@@ -121,9 +121,9 @@ fn pyproject_toml_metadata<T: AsRef<Path>>(
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
-/// The core `Metadata` of a `Package`.
+/// The `Metadata` of a `Package`.
 ///
-/// See https://peps.python.org/pep-0621/.
+/// See https://peps.python.org/pep-0621/ for more about core metadata.
 pub struct Metadata {
     /// The build system used for the `Package`.
     build_system: BuildSystem,
@@ -309,7 +309,7 @@ impl PartialEq for Metadata {
 
 impl Eq for Metadata {}
 
-/// A pyproject.toml as specified in PEP 621.
+/// A pyproject.toml as specified in PEP 621 with tool table.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct PyProjectToml {
