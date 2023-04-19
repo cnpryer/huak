@@ -420,7 +420,7 @@ build-backend = "hatchling.build"
 name = "mock_project"
 version = "0.0.1"
 description = ""
-dependencies = ["click == 8.1.3"]
+dependencies = ["click ==8.1.3"]
 
 [[project.authors]]
 name = "Chris Pryer"
@@ -428,9 +428,9 @@ email = "cnpryer@gmail.com"
 
 [project.optional-dependencies]
 dev = [
-    "pytest >= 6",
-    "black == 22.8.0",
-    "isort == 5.12.0",
+    "pytest >=6",
+    "black ==22.8.0",
+    "isort ==5.12.0",
 ]
 "#
         );
@@ -495,7 +495,7 @@ name = "mock_project"
 version = "0.0.1"
 description = ""
 dependencies = [
-    "click == 8.1.3",
+    "click ==8.1.3",
     "test",
 ]
 
@@ -505,9 +505,9 @@ email = "cnpryer@gmail.com"
 
 [project.optional-dependencies]
 dev = [
-    "pytest >= 6",
-    "black == 22.8.0",
-    "isort == 5.12.0",
+    "pytest >=6",
+    "black ==22.8.0",
+    "isort ==5.12.0",
 ]
 "#
         )
@@ -538,7 +538,7 @@ build-backend = "hatchling.build"
 name = "mock_project"
 version = "0.0.1"
 description = ""
-dependencies = ["click == 8.1.3"]
+dependencies = ["click ==8.1.3"]
 
 [[project.authors]]
 name = "Chris Pryer"
@@ -546,9 +546,9 @@ email = "cnpryer@gmail.com"
 
 [project.optional-dependencies]
 dev = [
-    "pytest >= 6",
-    "black == 22.8.0",
-    "isort == 5.12.0",
+    "pytest >=6",
+    "black ==22.8.0",
+    "isort ==5.12.0",
     "test1",
 ]
 new-group = ["test2"]
@@ -584,9 +584,9 @@ email = "cnpryer@gmail.com"
 
 [project.optional-dependencies]
 dev = [
-    "pytest >= 6",
-    "black == 22.8.0",
-    "isort == 5.12.0",
+    "pytest >=6",
+    "black ==22.8.0",
+    "isort ==5.12.0",
 ]
 "#
         )
@@ -613,7 +613,7 @@ build-backend = "hatchling.build"
 name = "mock_project"
 version = "0.0.1"
 description = ""
-dependencies = ["click == 8.1.3"]
+dependencies = ["click ==8.1.3"]
 
 [[project.authors]]
 name = "Chris Pryer"
@@ -621,8 +621,8 @@ email = "cnpryer@gmail.com"
 
 [project.optional-dependencies]
 dev = [
-    "pytest >= 6",
-    "black == 22.8.0",
+    "pytest >=6",
+    "black ==22.8.0",
 ]
 "#
         )

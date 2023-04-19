@@ -113,11 +113,11 @@ mod tests {
     fn dependency_from_str() {
         let dep = Dependency::from_str("package-name==0.0.0").unwrap();
 
-        assert_eq!(dep.to_string(), "package-name == 0.0.0");
+        assert_eq!(dep.to_string(), "package-name ==0.0.0");
         assert_eq!(dep.name(), "package-name");
         assert_eq!(
             *dep.version_specifiers().unwrap(),
-            pep440_rs::VersionSpecifiers::from_str("== 0.0.0").unwrap()
+            pep440_rs::VersionSpecifiers::from_str("==0.0.0").unwrap()
         );
     }
 }
