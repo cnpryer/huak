@@ -17,9 +17,9 @@
 
 A Python package manager written in Rust. The [Cargo](https://github.com/rust-lang/cargo) for Python.
 
-> ⚠️ Disclaimer: `huak` is in an experimental state.
+> ⚠️ Disclaimer: `huak` is in an experimental state (see [#602](https://github.com/cnpryer/huak/issues/602)).
 
-Huak aims to support a base workflow for developing Python packages and projects. The process is linear and purpose oriented, establishing better familiarization with the steps.
+Huak ("hwok") aims to support a base workflow for developing Python packages and projects. The process is linear and purpose oriented, establishing better familiarization with the steps.
 
 The goal is to create an opinionated tool to support a reliably inviting onboarding experience for the Python ecosystem, that feels responsive and snappy to use.
 
