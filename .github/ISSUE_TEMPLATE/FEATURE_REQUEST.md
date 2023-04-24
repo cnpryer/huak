@@ -7,4 +7,4 @@ assignees: ''
 
 ---
 
-## Description of request
+## Description
