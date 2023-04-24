@@ -1,7 +1,0 @@
-Closes #
-
-## Summary of changes
-
-    -
-    -
-    -

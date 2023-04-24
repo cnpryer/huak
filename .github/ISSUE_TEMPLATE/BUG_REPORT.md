@@ -7,23 +7,22 @@ assignees: ''
 
 ---
 
-Your issue may already be reported! Please check [issue tracker](../) before creating a new one.
-
 ## Expected Behavior
+
+NA
 
 ## Actual Behavior
 
-## Steps To Reproduce The Problem
+NA
 
-  1.
-  1.
-  1.
+## Steps to Reproduce
+
+NA
   
-## Environment Details
+## Version
 
- -Huak Version:
- -Operating System:
+REQUIRED
 
-### Dev Details
+## System Information
 
- -Rust Version:
+REQUIRED
