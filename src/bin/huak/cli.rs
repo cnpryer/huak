@@ -252,7 +252,7 @@ impl Cli {
                 } else if uninstall {
                     run_with_uninstall(shell)
                 } else {
-                    generate_shell_completion_script();
+                    generate_shell_completion_script(shell);
                     Ok(())
                 }
             }
@@ -473,10 +473,10 @@ fn version(config: &Config) -> HuakResult<()> {
     display_project_version(config)
 }
 
-fn generate_shell_completion_script() {
+fn generate_shell_completion_script(shell: Option<Shell>) {
     let mut cmd = Cli::command();
     clap_complete::generate(
-        Shell::Bash,
+        shell.unwrap_or(Shell::Bash),
         &mut cmd,
         "huak",
         &mut std::io::stdout(),
