@@ -25,6 +25,11 @@ impl Dependency {
         &self.0
     }
 
+    /// Get a mutable reference to the wrapped `Requirement`.
+    pub fn requirement_mut(&mut self) -> &mut Requirement {
+        &mut self.0
+    }
+
     /// Get the `Dependency` name.
     pub fn name(&self) -> &str {
         &self.requirement().name
