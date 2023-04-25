@@ -61,7 +61,11 @@ pub fn test_project(config: &Config, options: &TestOptions) -> HuakResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{fs, ops::test_config, test_resources_dir_path, Verbosity};
+    use crate::{
+        fs,
+        ops::{test_config, test_venv},
+        test_resources_dir_path, Verbosity,
+    };
     use tempfile::tempdir;
 
     #[test]
@@ -75,6 +79,8 @@ mod tests {
         let root = dir.path().join("mock-project");
         let cwd = root.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
+        let ws = config.workspace();
+        test_venv(&ws);
         let options = TestOptions {
             values: None,
             install_options: InstallOptions { values: None },

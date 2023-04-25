@@ -45,7 +45,7 @@ impl Workspace {
     }
 
     /// Get an `Environment` associated with the `Workspace`.
-    fn environment(&self) -> Environment {
+    pub fn environment(&self) -> Environment {
         Environment::new()
     }
 
