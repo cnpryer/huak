@@ -2,6 +2,8 @@ use crate::{
     dependency::{dependency_iter, Dependency},
     Config, HuakResult, InstallOptions,
 };
+use pep440_rs::VersionSpecifiers;
+use pep508_rs::VersionOrUrl;
 use std::str::FromStr;
 
 pub struct AddOptions {
@@ -18,7 +20,7 @@ pub fn add_project_dependencies(
     let mut metadata = workspace.current_local_metadata()?;
 
     // Collect all dependencies that need to be added to the metadata file.
-    let deps = dependency_iter(dependencies)
+    let mut deps: Vec<Dependency> = dependency_iter(dependencies)
         .filter(|dep| {
             !metadata
                 .metadata()
@@ -35,20 +37,25 @@ pub fn add_project_dependencies(
     python_env.install_packages(&deps, &options.install_options, config)?;
 
     // If there's no version data then get the installed version and add to metadata file.
-    for pkg in python_env.installed_packages()?.iter().filter(|pkg| {
-        deps.iter().any(|dep| {
-            pkg.name() == dep.name()
-                && dep.requirement().version_or_url.is_none()
-        })
-    }) {
-        let dep = Dependency::from_str(&pkg.to_string())?;
-        metadata.metadata_mut().add_dependency(dep);
-    }
+    let packages = python_env.installed_packages()?; // TODO: Only run if versions weren't provided.
+    for dep in deps.iter_mut() {
+        if dep.requirement().version_or_url.is_none() {
+            // TODO: Optimize this .find
+            if let Some(pkg) = packages.iter().find(|p| p.name() == dep.name())
+            {
+                dep.requirement_mut().version_or_url =
+                    Some(VersionOrUrl::VersionSpecifier(
+                        VersionSpecifiers::from_str(&format!(
+                            "=={}",
+                            pkg.version()
+                        ))
+                        .expect("package should have a version"),
+                    ));
+            }
+        }
 
-    // Whatever hasn't been added, add as-is.
-    for dep in deps {
-        if !metadata.metadata().contains_dependency(&dep)? {
-            metadata.metadata_mut().add_dependency(dep);
+        if !metadata.metadata().contains_dependency(dep)? {
+            metadata.metadata_mut().add_dependency(dep.clone());
         }
     }
 
@@ -70,7 +77,7 @@ pub fn add_project_optional_dependencies(
     let mut metadata = workspace.current_local_metadata()?;
 
     // Collect all dependencies that need to be added.
-    let deps = dependency_iter(dependencies)
+    let mut deps = dependency_iter(dependencies)
         .filter(|dep| {
             !metadata
                 .metadata()
@@ -87,23 +94,30 @@ pub fn add_project_optional_dependencies(
     python_env.install_packages(&deps, &options.install_options, config)?;
 
     // If there's no version data then get the installed version and add to metadata file.
-    for pkg in python_env.installed_packages()?.iter().filter(|pkg| {
-        deps.iter().any(|dep| {
-            pkg.name() == dep.name()
-                && dep.requirement().version_or_url.is_none()
-        })
-    }) {
-        let dep = Dependency::from_str(&pkg.to_string())?;
-        metadata.metadata_mut().add_optional_dependency(dep, group);
-    }
+    let packages = python_env.installed_packages()?; // TODO: Only run if versions weren't provided.
+    for dep in deps.iter_mut() {
+        if dep.requirement().version_or_url.is_none() {
+            // TODO: Optimize this .find
+            if let Some(pkg) = packages.iter().find(|p| p.name() == dep.name())
+            {
+                dep.requirement_mut().version_or_url =
+                    Some(VersionOrUrl::VersionSpecifier(
+                        VersionSpecifiers::from_str(&format!(
+                            "=={}",
+                            pkg.version()
+                        ))
+                        .expect("package should have a version"),
+                    ));
+            }
+        }
 
-    // Add whatever else as-is.
-    for dep in deps {
         if !metadata
             .metadata()
-            .contains_optional_dependency(&dep, group)?
+            .contains_optional_dependency(dep, group)?
         {
-            metadata.metadata_mut().add_optional_dependency(dep, group);
+            metadata
+                .metadata_mut()
+                .add_optional_dependency(dep.clone(), group);
         }
     }
 
