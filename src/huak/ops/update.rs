@@ -83,7 +83,6 @@ pub fn update_project_dependencies(
     if package.metadata() != metadata.metadata() {
         metadata.write_file()?;
     }
-
     Ok(())
 }
 

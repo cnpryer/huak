@@ -24,7 +24,6 @@ pub fn init_app_project(
     metadata
         .metadata_mut()
         .add_script(as_dep.name(), &entry_point);
-
     metadata.write_file()
 }
 
