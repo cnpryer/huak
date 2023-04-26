@@ -19,6 +19,7 @@ mod version;
 use crate::{
     config::Config,
     sys::{TerminalOptions, Verbosity},
+    workspace::Workspace,
 };
 use crate::{
     environment::env_path_values, git, python_environment::PythonEnvironment,
@@ -121,4 +122,13 @@ fn test_config<T: AsRef<Path>>(
     };
 
     config
+}
+
+#[cfg(test)]
+fn test_venv(ws: &Workspace) {
+    let env = ws.environment();
+    let venv_path = format!("{}", ws.root().join(".venv").display());
+    let python_path = env.interpreters().latest().unwrap().path();
+    let mut cmd = Command::new(python_path);
+    cmd.args(["-m", "venv", &venv_path]);
 }

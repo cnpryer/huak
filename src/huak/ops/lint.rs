@@ -102,7 +102,7 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ops::test_config;
+    use crate::ops::{test_config, test_venv};
     use crate::{fs, test_resources_dir_path, Verbosity};
     use tempfile::tempdir;
 
@@ -138,6 +138,7 @@ mod tests {
         let cwd = root.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
         let ws = config.workspace();
+        test_venv(&ws);
         let options = LintOptions {
             values: Some(vec![String::from("--fix")]),
             include_types: true,

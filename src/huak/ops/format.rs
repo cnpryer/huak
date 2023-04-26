@@ -94,7 +94,11 @@ pub fn format_project(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{fs, ops::test_config, test_resources_dir_path, Verbosity};
+    use crate::{
+        fs,
+        ops::{test_config, test_venv},
+        test_resources_dir_path, Verbosity,
+    };
     use tempfile::tempdir;
 
     #[test]
@@ -109,6 +113,7 @@ mod tests {
         let cwd = root.to_path_buf();
         let config = test_config(root, cwd, Verbosity::Quiet);
         let ws = config.workspace();
+        test_venv(&ws);
         let fmt_filepath =
             ws.root().join("src").join("mock_project").join("fmt_me.py");
         let pre_fmt_str = r#"

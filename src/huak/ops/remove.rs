@@ -61,7 +61,10 @@ pub fn remove_project_dependencies(
 mod tests {
     use super::*;
     use crate::{
-        dependency::Dependency, fs, ops::test_config, package::Package,
+        dependency::Dependency,
+        fs,
+        ops::{test_config, test_venv},
+        package::Package,
         test_resources_dir_path, Verbosity,
     };
     use std::str::FromStr;
@@ -82,6 +85,7 @@ mod tests {
             install_options: InstallOptions { values: None },
         };
         let ws = config.workspace();
+        test_venv(&ws);
         let venv = ws.resolve_python_environment().unwrap();
         let test_package = Package::from_str("click==8.1.3").unwrap();
         let test_dep = Dependency::from_str("click==8.1.3").unwrap();
@@ -122,6 +126,7 @@ mod tests {
             install_options: InstallOptions { values: None },
         };
         let ws = config.workspace();
+        test_venv(&ws);
         let metadata = ws.current_local_metadata().unwrap();
         let venv = ws.resolve_python_environment().unwrap();
         let test_package = Package::from_str("black==22.8.0").unwrap();

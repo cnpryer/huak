@@ -65,8 +65,10 @@ pub fn install_project_dependencies(
 mod tests {
     use super::*;
     use crate::{
-        fs, ops::test_config, package::Package, test_resources_dir_path,
-        Verbosity,
+        fs,
+        ops::{test_config, test_venv},
+        package::Package,
+        test_resources_dir_path, Verbosity,
     };
     use std::str::FromStr;
     use tempfile::tempdir;
@@ -83,6 +85,7 @@ mod tests {
         let cwd = root.to_path_buf();
         let config = test_config(&root, &cwd, Verbosity::Quiet);
         let ws = config.workspace();
+        test_venv(&ws);
         let options = InstallOptions { values: None };
         let venv = ws.resolve_python_environment().unwrap();
         let test_package = Package::from_str("click==8.1.3").unwrap();
@@ -106,6 +109,7 @@ mod tests {
         let cwd = root.to_path_buf();
         let config = test_config(&root, &cwd, Verbosity::Quiet);
         let ws = config.workspace();
+        test_venv(&ws);
         let options = InstallOptions { values: None };
         let venv = ws.resolve_python_environment().unwrap();
         let had_package = venv.contains_module("pytest").unwrap();

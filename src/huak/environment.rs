@@ -55,6 +55,17 @@ impl Environment {
 
         Interpreters::new(interpreters)
     }
+
+    /// Get a reference to the environment's resolved Python interpreters.
+    pub fn interpreters(&self) -> &Interpreters {
+        &self.interpreters
+    }
+}
+
+impl Default for Environment {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// Get a vector of paths from the system `PATH` environment variable.
