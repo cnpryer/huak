@@ -8,16 +8,11 @@ pub struct Error {
     #[source]
     pub error: huak::Error,
     pub exit_code: ExitCode,
-    pub status_code: Option<i32>,
 }
 
 impl Error {
     pub fn new(error: huak::Error, exit_code: ExitCode) -> Error {
-        Error {
-            error,
-            exit_code,
-            status_code: None,
-        }
+        Error { error, exit_code }
     }
 }
 

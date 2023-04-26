@@ -197,7 +197,7 @@ enum Python {
 
 // Command gating for Huak.
 impl Cli {
-    pub fn run(self) -> CliResult<()> {
+    pub fn run(self) -> CliResult<i32> {
         let cwd = std::env::current_dir()?;
         let verbosity = match self.quiet {
             true => Verbosity::Quiet,
@@ -209,7 +209,7 @@ impl Cli {
             terminal_options: TerminalOptions { verbosity },
         };
 
-        match self.command {
+        let res = match self.command {
             Commands::Activate => activate(&config),
             Commands::Add {
                 dependencies,
@@ -243,18 +243,12 @@ impl Cli {
                 install,
                 uninstall,
             } => {
-                if (install || uninstall) && shell.is_none() {
-                    Err(HuakError::HuakConfigurationError(
-                        "no shell provided".to_string(),
-                    ))
-                } else if install {
-                    run_with_install(shell)
-                } else if uninstall {
-                    run_with_uninstall(shell)
-                } else {
-                    generate_shell_completion_script(shell);
-                    Ok(())
-                }
+                let options = CompletionOptions {
+                    shell,
+                    install,
+                    uninstall,
+                };
+                completion(&options)
             }
             Commands::Fix { trailing } => {
                 let options = LintOptions {
@@ -353,8 +347,16 @@ impl Cli {
                 update(dependencies, &config, &options)
             }
             Commands::Version => version(&config),
+        };
+
+        match res {
+            Ok(_) => Ok(0),
+            // TODO: Implement our own ExitCode or status handler.
+            Err(HuakError::SubprocessFailure(e)) => {
+                Ok(e.code().unwrap_or_default())
+            }
+            Err(e) => Err(Error::new(e, ExitCode::FAILURE)),
         }
-        .map_err(|e| Error::new(e, ExitCode::FAILURE))
     }
 }
 
@@ -473,6 +475,27 @@ fn version(config: &Config) -> HuakResult<()> {
     display_project_version(config)
 }
 
+fn completion(options: &CompletionOptions) -> HuakResult<()> {
+    if (options.install || options.uninstall) && options.shell.is_none() {
+        Err(HuakError::HuakConfigurationError(
+            "no shell provided".to_string(),
+        ))
+    } else if options.install {
+        run_with_install(options.shell)
+    } else if options.uninstall {
+        run_with_uninstall(options.shell)
+    } else {
+        generate_shell_completion_script(options.shell);
+        Ok(())
+    }
+}
+
+struct CompletionOptions {
+    shell: Option<Shell>,
+    install: bool,
+    uninstall: bool,
+}
+
 fn generate_shell_completion_script(shell: Option<Shell>) {
     let mut cmd = Cli::command();
     clap_complete::generate(
@@ -480,7 +503,7 @@ fn generate_shell_completion_script(shell: Option<Shell>) {
         &mut cmd,
         "huak",
         &mut std::io::stdout(),
-    )
+    );
 }
 
 fn run_with_install(shell: Option<Shell>) -> HuakResult<()> {

@@ -66,7 +66,7 @@ pub use python_environment::InstallOptions;
 use python_environment::PythonEnvironment;
 #[allow(unused_imports)]
 use std::path::PathBuf;
-pub use sys::{TerminalOptions, Verbosity};
+pub use sys::{SubprocessError, TerminalOptions, Verbosity};
 pub use version::Version;
 pub use workspace::WorkspaceOptions;
 

@@ -1,5 +1,5 @@
+use crate::sys;
 use std::{io, path::PathBuf};
-
 use thiserror::Error as ThisError;
 
 pub type HuakResult<T> = Result<T, Error>;
@@ -44,10 +44,10 @@ pub enum Error {
     PythonNotFound,
     #[error("a python environment could not be found")]
     PythonEnvironmentNotFound,
-    #[error("a feature is unimplemented: {0}")]
-    Unimplemented(String),
     #[error("a regex error occurred: {0}")]
     RegexError(#[from] regex::Error),
+    #[error("a subprocess exited with {0}")]
+    SubprocessFailure(sys::SubprocessError),
     #[error("a problem with toml deserialization occurred: {0}")]
     TOMLDeserializationError(#[from] toml::de::Error),
     #[error("a problem with toml serialization occurred {0}")]
@@ -56,6 +56,8 @@ pub enum Error {
     TOMLEditDeserializationError(#[from] toml_edit::de::Error),
     #[error("a problem with toml serialization occurred {0}")]
     TOMLEditSerializationError(#[from] toml_edit::ser::Error),
+    #[error("a feature is unimplemented: {0}")]
+    Unimplemented(String),
     #[error("a problem with utf-8 parsing occurred: {0}")]
     Utf8Error(#[from] std::str::Utf8Error),
 }

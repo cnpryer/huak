@@ -1,11 +1,37 @@
 use crate::error::HuakResult;
 use crate::Error;
-use std::{fmt::Display, io::Write, path::Path, process::Command};
+use std::{
+    fmt::Display,
+    io::Write,
+    path::Path,
+    process::{Command, ExitStatus},
+};
 use termcolor::{
     self, Color,
     Color::{Red, Yellow},
     ColorChoice, ColorSpec, StandardStream, WriteColor,
 };
+
+#[derive(Debug)]
+pub struct SubprocessError {
+    status: ExitStatus,
+}
+
+impl SubprocessError {
+    pub fn new(status: ExitStatus) -> Self {
+        SubprocessError { status }
+    }
+
+    pub fn code(&self) -> Option<i32> {
+        self.status.code()
+    }
+}
+
+impl Display for SubprocessError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.code())
+    }
+}
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub enum Verbosity {
@@ -97,16 +123,17 @@ impl Terminal {
 
     /// Run a command from the terminal's context.
     pub fn run_command(&mut self, cmd: &mut Command) -> HuakResult<()> {
-        let code = match self.verbosity {
+        let status = match self.verbosity {
             Verbosity::Quiet => {
                 let output = cmd.output()?;
                 let status = output.status;
+
                 let stdout =
                     trim_error_prefix(std::str::from_utf8(&output.stdout)?);
                 let stderr =
                     trim_error_prefix(std::str::from_utf8(&output.stderr)?);
-                let code = status.code().unwrap_or_default();
-                if code > 0 {
+
+                if !status.success() {
                     if !stdout.is_empty() {
                         self.print_error(stdout)?;
                     }
@@ -114,23 +141,24 @@ impl Terminal {
                         self.print_error(stderr)?;
                     }
                 }
-                code
+
+                status
             }
             _ => {
                 let mut child = cmd.spawn()?;
-                let status = match child.try_wait() {
+
+                match child.try_wait() {
                     Ok(Some(s)) => s,
                     Ok(None) => child.wait()?,
                     Err(e) => {
                         return Err(Error::from(e));
                     }
-                };
-                status.code().unwrap_or_default()
+                }
             }
         };
 
-        if code > 0 {
-            std::process::exit(code)
+        if !status.success() {
+            return Err(Error::SubprocessFailure(SubprocessError::new(status)));
         }
 
         Ok(())
