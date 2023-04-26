@@ -144,7 +144,7 @@ impl Ord for Version {
 fn compare_release(this: &Version, other: &Version) -> Ordering {
     for (a, b) in [
         (this.release[0], other.release[0]),
-        (this.release[1], this.release[1]),
+        (this.release[1], other.release[1]),
         (this.release[2], other.release[2]),
     ] {
         if a != b {
@@ -153,4 +153,22 @@ fn compare_release(this: &Version, other: &Version) -> Ordering {
     }
 
     Ordering::Equal
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_version_ord() {
+        let (a, b) = (
+            Version {
+                release: vec![3, 10, 0],
+            },
+            Version {
+                release: vec![3, 11, 0],
+            },
+        );
+        assert!(a < b);
+    }
 }
