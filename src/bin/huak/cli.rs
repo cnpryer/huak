@@ -96,10 +96,10 @@ enum Commands {
     },
     /// Initialize the existing project.
     Init {
-        /// Use a application template [default].
+        /// Use an application template.
         #[arg(long, conflicts_with = "lib")]
         app: bool,
-        /// Use a library template.
+        /// Use a library template [default].
         #[arg(long, conflicts_with = "app")]
         lib: bool,
         /// Don't initialize VCS in the project
@@ -129,10 +129,10 @@ enum Commands {
     },
     /// Create a new project at <path>.
     New {
-        /// Use a application template [default].
+        /// Use an application template.
         #[arg(long, conflicts_with = "lib")]
         app: bool,
-        /// Use a library template.
+        /// Use a library template [default].
         #[arg(long, conflicts_with = "app")]
         lib: bool,
         /// Path and name of the python package
