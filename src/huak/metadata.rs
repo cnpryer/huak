@@ -377,7 +377,7 @@ pub fn default_test_file_contents(importable_name: &str) -> String {
 
 
 def test_version():
-    __version__
+    assert isinstance(__version__, str)
 "#
     )
 }

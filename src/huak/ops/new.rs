@@ -102,7 +102,7 @@ mod tests {
 
 
 def test_version():
-    __version__
+    assert isinstance(__version__, str)
 "#;
         let init_file_filepath = ws
             .root()
