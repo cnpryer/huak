@@ -29,7 +29,7 @@ impl Display for Version {
         write!(
             f,
             "{}.{}.{}",
-            self.release[0], self.release[1], self.release[1]
+            self.release[0], self.release[1], self.release[2]
         ) // TODO
     }
 }
@@ -170,5 +170,13 @@ mod tests {
             },
         );
         assert!(a < b);
+    }
+
+    #[test]
+    fn test_version_display() {
+        let v = Version {
+            release: vec![3, 11, 1],
+        };
+        assert_eq!(v.to_string(), "3.11.1")
     }
 }
