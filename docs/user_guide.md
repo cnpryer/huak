@@ -1,5 +1,8 @@
 # User Guide
 
+!!! Warning
+    `huak` is in an experimental state.
+
 ## Contents
 
 1. [Getting started](#getting-started)
@@ -51,7 +54,8 @@ my-project on master 📦 v0.0.1 via 🐍 v3.11.0
     └── test_version.py
 ```
 
-Note that without `--no-vcs` `huak` generates a `git`-initialized project.
+!!! note
+    Without `--no-vcs` `huak` generates a `git`-initialized project.
 
 ## Manage your dependencies
 
@@ -75,7 +79,8 @@ my-project on master 📦 v0.0.1 via 🐍 v3.11.0
 
 `huak` will add the packages to your pyproject.toml, so passing [PEP 508](https://peps.python.org/pep-0508/) strings would help persist this behavior for future installs.
 
-You can also assign dependencies to a group using `--group`.
+!!! Tip
+    You can also assign dependencies to a group using `--group`.
 
 ### Install dependencies listed in the pyproject.toml
 
@@ -139,7 +144,8 @@ my-project on master 📦 v0.0.1 via 🐍 v3.11.0
 
 Use `--check` if all you want to do is verify your code is already formatted. Note that `huak` currently uses a combination of `black` and `ruff` to format your code. This means that `--` can only pass options to `black`. Use the `[tool.ruff]` approach to configure import sorting.
 
-`huak` will exit prior to running the `black` *check* if your imports are not sorted. See [#510](https://github.com/cnpryer/huak/issues/510) for the status of this issue.
+!!! Warning
+    `huak` will exit prior to running the `black` *check* if your imports are not sorted. See [#510](https://github.com/cnpryer/huak/issues/510) for the status of this issue.
 
 ### Lint your code
 
@@ -166,7 +172,8 @@ my-project on master 📦 v0.0.1 via 🐍 v3.11.0 took 2s
 ❯ huak lint --no-types
 ```
 
-Currently, since `ruff` is the default tool used by `huak lint`, passing additional options with `--` is reserved for `ruff`. To configure `mypy` use the `[tool.mypy]` approach. This limitation will be addressed in future versions of `huak` (see [#505](https://github.com/cnpryer/huak/issues/505)).
+!!! Note
+    Currently, since `ruff` is the default tool used by `huak lint`, passing additional options with `--` is reserved for `ruff`. To configure `mypy` use the `[tool.mypy]` approach. This limitation will be addressed in future versions of `huak` (see [#505](https://github.com/cnpryer/huak/issues/505)).
 
 ### Test your code
 
@@ -198,13 +205,12 @@ my-project on master 📦 v0.0.1 via 🐍 v3.11.0
 (.venv) bash-3.2$
 ```
 
-Note that currently `huak` just runs `bash --init-file` on unix systems and uses `powershell` on Windows.
-
-```powershell
-(.venv) PS C:\Users\chris\github\my-project>
-```
-
-See [#486](https://github.com/cnpryer/huak/issues/486) for the status on the `activate` command.
+!!! Note
+    Currently `huak` just runs `bash --init-file` on unix systems and uses `powershell` on Windows.
+    ```powershell
+    (.venv) PS C:\Users\chris\github\my-project>
+    ```
+    See [#486](https://github.com/cnpryer/huak/issues/486) for the status on the `activate` command.
 
 ## Manage your Python installations
 

@@ -1,0 +1,39 @@
+site_name: Huak
+site_description: A Python package manager written in Rust inspired by Cargo.
+repo_name: cnpryer/huak
+repo_url: https://github.com/cnpryer/huak
+
+nav:
+  - Overview: index.md
+  - User Guide: user_guide.md
+
+theme:
+  name: material
+  logo: assets/img/logo.png
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - content.code.annotate
+    - toc.integrate
+    - toc.follow
+    - navigation.path
+    - navigation.top
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: purple
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: purple
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
