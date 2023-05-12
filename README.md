@@ -75,7 +75,7 @@ Options:
 
 ## Documentation
 
-- [User Guide](./docs/user_guide.md)
+- [User Guide](https://cnpryer.github.io/huak/user_guide/)
 - [Development](/docs/development.md)
 
 ## Goals
