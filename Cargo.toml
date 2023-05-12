@@ -32,7 +32,7 @@ pep508_rs = "0.1.2"
 pyproject-toml = "0.5.1"
 regex = "1.7.1"
 serde = { version = "1.0.162", features = ["derive"] }
-serde_json = "1.0.94"
+serde_json = "1.0.96"
 termcolor = "1.2.0"
 thiserror = "1.0.40"
 toml = { version = "0.7.3", features = ["preserve_order"] }
