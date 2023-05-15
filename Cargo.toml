@@ -18,7 +18,7 @@ path = "./src/huak/lib.rs"
 doctest = false
 
 [dependencies]
-clap = { version = "4.2.2", features = ["cargo", "derive"] }
+clap = { version = "4.2.7", features = ["cargo", "derive"] }
 clap_complete = "4.2.1"
 colored = "2.0.0"
 git2 = "0.17.0"
