@@ -644,9 +644,9 @@ dependencies = [
 
 [[package]]
 name = "pep440_rs"
-version = "0.3.5"
+version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aac177a025c60a4dd25d638bf33e746d1ead5f7123f6650f35b4394c7ce1a104"
+checksum = "fe1d15693a11422cfa7d401b00dc9ae9fb8edbfbcb711a77130663f4ddf67650"
 dependencies = [
  "lazy_static",
  "regex",
