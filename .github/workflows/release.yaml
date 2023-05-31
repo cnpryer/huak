@@ -44,11 +44,7 @@ jobs:
           python-version: '3.10'
           architecture: ${{ matrix.target }}
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          default: true
+        uses: dtolnay/rust-toolchain@stable
       - name: Build wheels
         uses: messense/maturin-action@v1
         with:
@@ -74,11 +70,7 @@ jobs:
         with:
           python-version: '3.10'
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          default: true
+        uses: dtolnay/rust-toolchain@stable
       - name: Build wheels - universal2
         uses: messense/maturin-action@v1
         with:
