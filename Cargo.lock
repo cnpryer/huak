@@ -378,11 +378,21 @@ dependencies = [
  "clap",
  "clap_complete",
  "colored",
+ "huak_ops",
+ "human-panic",
+ "openssl",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
+name = "huak_ops"
+version = "0.1.0"
+dependencies = [
+ "clap",
  "git2",
  "glob",
- "human-panic",
  "indexmap",
- "openssl",
  "pep440_rs",
  "pep508_rs",
  "pyproject-toml",

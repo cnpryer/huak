@@ -18,6 +18,9 @@ on:
       - 'Cargo.lock'
       - '.github/workflows/ci.yaml'
 
+env:
+  PACKAGE_NAME: huak
+
 jobs:
   test-and-build:
     strategy:
@@ -58,16 +61,10 @@ jobs:
   dry-release:
     name: Build with maturin
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target: [x86_64, i686]
     steps:
       - uses: actions/checkout@v3
-      - uses: Swatinem/rust-cache@v1
-      - name: build wheels
-        uses: messense/maturin-action@v1
+      - uses: actions/setup-python@v4
         with:
-          target: ${{ matrix.target }}
-          manylinux: auto
-          args: --release --out dist --features openssl
-
+          architecture: x64
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1

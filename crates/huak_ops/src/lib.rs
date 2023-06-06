@@ -73,5 +73,10 @@ pub use workspace::WorkspaceOptions;
 #[cfg(test)]
 /// The resource directory found in the Huak repo used for testing purposes.
 pub(crate) fn test_resources_dir_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("dev-resources")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("dev-resources")
 }
