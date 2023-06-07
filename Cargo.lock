@@ -386,6 +386,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "huak_fmt"
+version = "0.1.0"
+
+[[package]]
 name = "huak_ops"
 version = "0.1.0"
 dependencies = [
