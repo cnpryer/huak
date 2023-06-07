@@ -54,7 +54,9 @@ pub fn test_project(config: &Config, options: &TestOptions) -> HuakResult<()> {
     if let Some(v) = options.values.as_ref() {
         args.extend(v.iter().map(|item| item.as_str()));
     }
-    cmd.args(args).env("PYTHONPATH", python_path);
+    cmd.args(args)
+        .env("PYTHONPATH", python_path)
+        .current_dir(&config.cwd);
     config.terminal().run_command(&mut cmd)
 }
 
