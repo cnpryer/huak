@@ -1,0 +1,27 @@
+[package]
+name = "huak_ops"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+# We currently don't run doctest while the library is private.
+doctest = false
+
+[dependencies]
+clap = { version = "4.3.2", features = ["cargo", "derive"] }
+git2 = "0.17.2"
+glob = "0.3.1"
+indexmap = "1.9.3"
+pep440_rs = "0.3.9"
+pep508_rs = "0.2.1"
+pyproject-toml = "0.5.1"
+serde = { version = "1.0.163", features = ["derive"] }
+serde_json = "1.0.96"
+termcolor = "1.2.0"
+thiserror = "1.0.40"
+toml = { version = "0.7.3", features = ["preserve_order"] }
+toml_edit = "0.19.4"
+regex = "1.8.1"
+
+[dev-dependencies]
+tempfile = "3.5.0"

@@ -53,7 +53,7 @@ const CONDA_ENV_ENV_VAR: &str = "CONDA_PREFIX";
 /// generated the `PythonEnvironment`, etc.
 ///
 /// ```
-/// use huak::PythonEnvironment;
+/// use huak_ops::PythonEnvironment;
 ///
 /// let venv = PythonEnvironment::new(".venv");
 /// ```
@@ -320,7 +320,7 @@ impl VenvConfig {
 /// You can also get an `Interpreter` by its path.
 ///
 /// ```
-/// use huak::Environment;
+/// use huak_ops::Environment;
 ///
 /// let interpreters = Environment::new().resolve_python_interpreters();
 /// let python_path = interpreters.latest();
@@ -374,7 +374,7 @@ impl Interpreters {
 /// `Interpreter` contains information like the `Interpreter`'s path, `Version`, etc.
 ///
 /// ```
-/// use huak::Interpreter;
+/// use huak_ops::Interpreter;
 ///
 /// let python = Interpreter::new("path/to/python");
 /// ```

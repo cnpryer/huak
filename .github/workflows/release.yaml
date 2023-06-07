@@ -4,6 +4,9 @@ on:
   release:
     types: [published]
 
+env:
+  PACKAGE_NAME: huak
+
 jobs:
   linux:
     runs-on: ubuntu-latest
@@ -74,7 +77,7 @@ jobs:
       - name: Build wheels - universal2
         uses: messense/maturin-action@v1
         with:
-          args: --release --universal2 --out dist --features openssl
+          args: --release --universal2 --out dist --features openssl -- --package huak
       - name: Upload wheels
         uses: actions/upload-artifact@v2
         with:
