@@ -10,7 +10,7 @@ use crate::python_environment::{
 /// Python `Interpreters`, etc.
 ///
 /// ```
-/// use huak::Environment;
+/// use huak_ops::Environment;
 ///
 /// let env = Environment::new();
 /// let interpreters = env.resolve_interpreters();
