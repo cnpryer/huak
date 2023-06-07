@@ -17,7 +17,7 @@ use std::{
 /// `Interpreters` found, etc.
 ///
 /// ```
-/// use huak::Workspace;
+/// use huak_ops::Workspace;
 ///
 /// let workspace = Workspace::new(".");
 /// let env = workspace.environment();
