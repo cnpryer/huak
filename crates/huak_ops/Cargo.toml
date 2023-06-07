@@ -3,6 +3,10 @@ name = "huak_ops"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+# We currently don't run doctest while the library is private.
+doctest = false
+
 [dependencies]
 clap = { version = "4.3.2", features = ["cargo", "derive"] }
 git2 = "0.17.2"
