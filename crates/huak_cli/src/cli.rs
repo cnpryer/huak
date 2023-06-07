@@ -1,7 +1,7 @@
 use crate::error::{CliResult, Error};
 use clap::{Command, CommandFactory, Parser, Subcommand};
 use clap_complete::{self, Shell};
-use huak::{
+use huak_ops::{
     ops::{
         activate_python_environment, add_project_dependencies,
         add_project_optional_dependencies, build_project, clean_project,

@@ -6,12 +6,12 @@ pub type CliResult<T> = Result<T, Error>;
 #[derive(Debug, ThisError)]
 pub struct Error {
     #[source]
-    pub error: huak::Error,
+    pub error: huak_ops::Error,
     pub exit_code: ExitCode,
 }
 
 impl Error {
-    pub fn new(error: huak::Error, exit_code: ExitCode) -> Error {
+    pub fn new(error: huak_ops::Error, exit_code: ExitCode) -> Error {
         Error { error, exit_code }
     }
 }
@@ -28,24 +28,27 @@ impl std::fmt::Display for Error {
 
 impl From<clap::Error> for Error {
     fn from(e: clap::Error) -> Error {
-        Error::new(huak::Error::ClapError(e), ExitCode::FAILURE)
+        Error::new(huak_ops::Error::ClapError(e), ExitCode::FAILURE)
     }
 }
 
 impl From<std::io::Error> for Error {
     fn from(e: std::io::Error) -> Error {
-        Error::new(huak::Error::IOError(e), ExitCode::FAILURE)
+        Error::new(huak_ops::Error::IOError(e), ExitCode::FAILURE)
     }
 }
 
 impl From<std::io::ErrorKind> for Error {
     fn from(e: std::io::ErrorKind) -> Error {
-        Error::new(huak::Error::InternalError(e.to_string()), ExitCode::FAILURE)
+        Error::new(
+            huak_ops::Error::InternalError(e.to_string()),
+            ExitCode::FAILURE,
+        )
     }
 }
 
 impl From<std::env::VarError> for Error {
     fn from(e: std::env::VarError) -> Error {
-        Error::new(huak::Error::EnvVarError(e), ExitCode::FAILURE)
+        Error::new(huak_ops::Error::EnvVarError(e), ExitCode::FAILURE)
     }
 }
