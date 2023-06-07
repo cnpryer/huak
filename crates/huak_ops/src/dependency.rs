@@ -13,7 +13,7 @@ use crate::Error;
 /// use them as `Package` `Dependency`s, such as having multiple `VersionSpecifiers`.
 ///
 /// ```
-/// use huak::Dependency;
+/// use huak_ops::Dependency;
 ///
 /// let dependency = Dependency::from_str("my-dependency >= 0.1.0, < 0.2.0").unwrap();
 /// ```
@@ -54,7 +54,7 @@ impl From<Requirement> for Dependency {
 /// Initialize a `Dependency` from a `&str`.
 ///
 /// ```
-/// use huak::Dependency;
+/// use huak_ops::Dependency;
 ///
 /// let dependency = Dependency::from_str("my-dependency >= 0.1.0, < 0.2.0").unwrap();
 /// ```

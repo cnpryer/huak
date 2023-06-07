@@ -12,7 +12,7 @@ const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
 /// its dependencies, etc.
 ///
 /// ```
-/// use huak::Package;
+/// use huak_ops::Package;
 /// use pep440_rs::Version;
 ///
 /// let mut package = Package::from_str("my-project == 0.0.1").unwrap();
@@ -80,7 +80,7 @@ impl From<Metadata> for Package {
 /// Initialize a `Package` from a `&str`.
 ///
 /// ```
-/// use huak::Package;
+/// use huak_ops::Package;
 ///
 /// let package = Package::from_str("my-package == 0.0.1").unwrap();
 /// ```
