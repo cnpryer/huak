@@ -5,7 +5,7 @@ on:
     branches:
       - "master"
     paths:
-      - 'src/**'
+      - 'crates/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
       - '.github/workflows/ci.yaml'
@@ -13,7 +13,7 @@ on:
     branches:
       - "master"
     paths:
-      - 'src/**'
+      - 'crates/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
       - '.github/workflows/ci.yaml'
