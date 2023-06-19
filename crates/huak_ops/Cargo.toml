@@ -8,7 +8,7 @@ edition = "2021"
 doctest = false
 
 [dependencies]
-clap = { version = "4.3.2", features = ["cargo", "derive"] }
+clap = { version = "4.3.4", features = ["cargo", "derive"] }
 git2 = "0.17.2"
 glob = "0.3.1"
 indexmap = "1.9.3"
