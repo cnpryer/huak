@@ -1,5 +1,5 @@
 use crate::error::{CliResult, Error};
-use clap::{Command, CommandFactory, Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::{self, Shell};
 use huak_ops::{
     ops::{
@@ -16,13 +16,7 @@ use huak_ops::{
     Config, Error as HuakError, HuakResult, InstallOptions, TerminalOptions,
     Verbosity, Version, WorkspaceOptions,
 };
-use std::{
-    fs::File,
-    io::Write,
-    path::{Path, PathBuf},
-    process::ExitCode,
-    str::FromStr,
-};
+use std::{path::PathBuf, process::ExitCode, str::FromStr};
 
 /// A Python package manager written in Rust inspired by Cargo.
 #[derive(Parser)]
@@ -70,14 +64,6 @@ enum Commands {
     Completion {
         #[arg(short, long, value_name = "shell")]
         shell: Option<Shell>,
-        #[arg(short, long)]
-        /// Installs the completion script in your shell init file.
-        /// If this flag is passed the --shell is required
-        install: bool,
-        #[arg(short, long)]
-        /// Uninstalls the completion script from your shell init file.
-        /// If this flag is passed the --shell is required
-        uninstall: bool,
     },
     /// Auto-fix fixable lint conflicts
     Fix {
@@ -238,16 +224,8 @@ impl Cli {
                 };
                 clean(&config, &options)
             }
-            Commands::Completion {
-                shell,
-                install,
-                uninstall,
-            } => {
-                let options = CompletionOptions {
-                    shell,
-                    install,
-                    uninstall,
-                };
+            Commands::Completion { shell } => {
+                let options = CompletionOptions { shell };
                 completion(&options)
             }
             Commands::Fix { trailing } => {
@@ -476,24 +454,12 @@ fn version(config: &Config) -> HuakResult<()> {
 }
 
 fn completion(options: &CompletionOptions) -> HuakResult<()> {
-    if (options.install || options.uninstall) && options.shell.is_none() {
-        Err(HuakError::HuakConfigurationError(
-            "no shell provided".to_string(),
-        ))
-    } else if options.install {
-        run_with_install(options.shell)
-    } else if options.uninstall {
-        run_with_uninstall(options.shell)
-    } else {
-        generate_shell_completion_script(options.shell);
-        Ok(())
-    }
+    generate_shell_completion_script(options.shell);
+    Ok(())
 }
 
 struct CompletionOptions {
     shell: Option<Shell>,
-    install: bool,
-    uninstall: bool,
 }
 
 fn generate_shell_completion_script(shell: Option<Shell>) {
@@ -504,126 +470,6 @@ fn generate_shell_completion_script(shell: Option<Shell>) {
         "huak",
         &mut std::io::stdout(),
     );
-}
-
-fn run_with_install(shell: Option<Shell>) -> HuakResult<()> {
-    let sh = match shell {
-        Some(it) => it,
-        None => {
-            return Err(HuakError::HuakConfigurationError(
-                "no shell provided".to_string(),
-            ))
-        }
-    };
-    let mut cmd = Cli::command();
-    match sh {
-        Shell::Bash => add_completion_bash(),
-        Shell::Elvish => {
-            Err(HuakError::Unimplemented("elvish completion".to_string()))
-        }
-        Shell::Fish => add_completion_fish(&mut cmd),
-        Shell::PowerShell => Err(HuakError::Unimplemented(
-            "powershell completion".to_string(),
-        )),
-        Shell::Zsh => add_completion_zsh(&mut cmd),
-        _ => Err(HuakError::HuakConfigurationError(
-            "invalid shell".to_string(),
-        )),
-    }
-}
-
-fn run_with_uninstall(shell: Option<Shell>) -> HuakResult<()> {
-    let sh = match shell {
-        Some(it) => it,
-        None => {
-            return Err(HuakError::HuakConfigurationError(
-                "no shell provided".to_string(),
-            ))
-        }
-    };
-    match sh {
-        Shell::Bash => remove_completion_bash(),
-        Shell::Elvish => {
-            Err(HuakError::Unimplemented("elvish completion".to_string()))
-        }
-        Shell::Fish => remove_completion_fish(),
-        Shell::PowerShell => Err(HuakError::Unimplemented(
-            "Powershell completion".to_string(),
-        )),
-        Shell::Zsh => remove_completion_zsh(),
-        _ => Err(HuakError::HuakConfigurationError(
-            "invalid shell".to_string(),
-        )),
-    }
-}
-
-/// Bash has a couple of files that can contain the actual completion script.
-/// Only the line `eval "$(huak config completion bash)"` needs to be added
-/// These files are loaded in the following order:
-/// ~/.bash_profile
-/// ~/.bash_login
-/// ~/.profile
-/// ~/.bashrc
-pub fn add_completion_bash() -> HuakResult<()> {
-    let home = std::env::var("HOME")?;
-    let file_path = format!("{home}/.bashrc");
-    // Opening file in append mode
-    let mut file = File::options().append(true).open(file_path)?;
-    // This needs to be a string since there will be a \n prepended if it is
-    file.write_all(
-        format!(r##"{}eval "$(huak config completion)"{}"##, '\n', '\n')
-            .as_bytes(),
-    )
-    .map_err(HuakError::IOError)
-}
-
-/// huak config completion fish > ~/.config/fish/completions/huak.fish
-/// Fish has a completions directory in which all files are loaded on init.
-/// The naming convention is $HOME/.config/fish/completions/huak.fish
-pub fn add_completion_fish(cli: &mut Command) -> HuakResult<()> {
-    let home = std::env::var("HOME")?;
-    let target_file = format!("{home}/.config/fish/completions/huak.fish");
-    generate_target_file(target_file, cli)
-}
-
-/// Zsh and fish are the same in the sense that the use an entire directory to collect shell init
-/// scripts.
-pub fn add_completion_zsh(cli: &mut Command) -> HuakResult<()> {
-    let target_file = "/usr/local/share/zsh/site-functions/_huak".to_string();
-    generate_target_file(target_file, cli)
-}
-
-/// Reads the entire file and removes lines that match exactly with:
-/// \neval "$(huak config completion)
-pub fn remove_completion_bash() -> HuakResult<()> {
-    let home = std::env::var("HOME")?;
-    let file_path = format!("{home}/.bashrc");
-    let file_content = std::fs::read_to_string(&file_path)?;
-    let new_content = file_content.replace(
-        &format!(r##"{}eval "$(huak config completion)"{}"##, '\n', '\n'),
-        "",
-    );
-    std::fs::write(&file_path, new_content).map_err(HuakError::IOError)
-}
-
-pub fn remove_completion_fish() -> HuakResult<()> {
-    let home = std::env::var("HOME")?;
-    let target_file = format!("{home}/.config/fish/completions/huak.fish");
-    std::fs::remove_file(target_file).map_err(HuakError::IOError)
-}
-
-pub fn remove_completion_zsh() -> HuakResult<()> {
-    let target_file = "/usr/local/share/zsh/site-functions/_huak".to_string();
-    std::fs::remove_file(target_file).map_err(HuakError::IOError)
-}
-
-fn generate_target_file<P>(target_file: P, cmd: &mut Command) -> HuakResult<()>
-where
-    P: AsRef<Path>,
-{
-    let mut file = File::create(&target_file)?;
-    clap_complete::generate(Shell::Fish, cmd, "huak", &mut file);
-    Ok(())
 }
 
 #[derive(Debug, Clone)]
