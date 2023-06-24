@@ -269,22 +269,15 @@ Usage: huak completion [OPTIONS]
 
 Options:
   -s, --shell <shell>  [possible values: bash, elvish, fish, powershell, zsh]
-  -i, --install        Installs the completion script in your shell init file. If this flag is passed the --shell is required
   -u, --uninstall      Uninstalls the completion script from your shell init file. If this flag is passed the --shell is required
   -h, --help           Print help
 ```
 
-### Install shell completion in zsh
-The recommended way to install shell completions with zsh shell will look like this (add this to your .zshrc file):
+Add `huak completion --shell <shell>` to your shell's initialization to use this feature.
+
 ```zsh
-eval "$(huak completion --shell zsh)"
+eval "$(huak completion --shell <shell>)"
 ```
-It's possible you might need to add
-```zsh
-autoload -Uz compinit
-compinit
-```
-to your .zshrc file before that. Verify it by running the first command in your shell. If it succeeds, your are good to go, otherwise, if you are seeing an. error related to `comp`, try the autload command.
 
 ## Providing feedback
 
