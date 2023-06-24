@@ -274,6 +274,19 @@ Options:
   -h, --help           Print help
 ```
 
+### Install shell completion in zsh
+The recommended way to install shell completions with zsh shell will look like this:
+```zsh
+eval "$(huak completion --shell zsh)"
+```
+It's possible you might need to add
+```zsh
+autoload -Uz compinit
+compinit
+```
+to your .zshrc file before the installation.
+
+
 ## Providing feedback
 
 Any bugs or suggestions can be submitted as issues [here](https://github.com/cnpryer/huak/issues/new). All feedback is welcome and greatly appreciated ❤️.
