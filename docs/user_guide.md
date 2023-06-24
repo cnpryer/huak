@@ -275,7 +275,7 @@ Options:
 ```
 
 ### Install shell completion in zsh
-The recommended way to install shell completions with zsh shell will look like this:
+The recommended way to install shell completions with zsh shell will look like this (add this to your .zshrc file):
 ```zsh
 eval "$(huak completion --shell zsh)"
 ```
@@ -284,8 +284,7 @@ It's possible you might need to add
 autoload -Uz compinit
 compinit
 ```
-to your .zshrc file before the installation.
-
+to your .zshrc file before that. Verify it by running the first command in your shell. If it succeeds, your are good to go, otherwise, if you are seeing an. error related to `comp`, try the autload command.
 
 ## Providing feedback
 
