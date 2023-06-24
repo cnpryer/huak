@@ -269,9 +269,14 @@ Usage: huak completion [OPTIONS]
 
 Options:
   -s, --shell <shell>  [possible values: bash, elvish, fish, powershell, zsh]
-  -i, --install        Installs the completion script in your shell init file. If this flag is passed the --shell is required
   -u, --uninstall      Uninstalls the completion script from your shell init file. If this flag is passed the --shell is required
   -h, --help           Print help
+```
+
+Add `huak completion --shell <shell>` to your shell's initialization to use this feature.
+
+```zsh
+eval "$(huak completion --shell <shell>)"
 ```
 
 ## Providing feedback
