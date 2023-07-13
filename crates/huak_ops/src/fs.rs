@@ -5,39 +5,41 @@ use std::{
 };
 
 #[allow(dead_code)]
-/// Copy contents from one directory into a new directory at a provided `to` full path.
-/// If the `to` directory doesn't exist this function creates it.
-pub fn copy_dir<T: AsRef<Path>>(from: T, to: T) -> HuakResult<()> {
-    let (from, to) = (from.as_ref(), to.as_ref());
-    let mut stack = Vec::new();
-    stack.push(PathBuf::from(from));
-    let target_root = to.to_path_buf();
-    let from_component_count = from.to_path_buf().components().count();
-    while let Some(working_path) = stack.pop() {
-        // Collects the trailing components of the path
-        let src: PathBuf = working_path
-            .components()
-            .skip(from_component_count)
-            .collect();
-        let dest = if src.components().count() == 0 {
-            target_root.clone()
-        } else {
-            target_root.join(&src)
-        };
-        if !dest.exists() {
-            fs::create_dir_all(&dest)?;
-        }
-        for entry in fs::read_dir(working_path)? {
-            let path = entry?.path();
-            if path.is_dir() {
-                stack.push(path);
-            } else if let Some(filename) = path.file_name() {
-                fs::copy(&path, dest.join(filename))?;
+pub fn copy_dir<T: AsRef<Path>>(
+    from: T,
+    to: T,
+    options: &CopyDirOptions,
+) -> Result<(), Error> {
+    let from = from.as_ref();
+    let to = to.as_ref();
+
+    if !to.exists() {
+        fs::create_dir(to)?;
+    }
+
+    if from.is_dir() {
+        for entry in fs::read_dir(from)?.filter_map(|e| e.ok()) {
+            let entry_path = entry.path();
+            if options.exclude.contains(&entry_path) {
+                continue;
+            }
+
+            let destination = to.join(entry.file_name());
+            if entry.file_type()?.is_dir() {
+                fs::create_dir_all(&destination)?;
+                copy_dir(entry.path(), destination, options)?;
+            } else {
+                fs::copy(entry.path(), &destination)?;
             }
         }
     }
-
     Ok(())
+}
+
+#[derive(Default)]
+pub struct CopyDirOptions {
+    /// Exclude paths
+    pub exclude: Vec<PathBuf>,
 }
 
 /// Get an iterator over all paths found in each directory.
@@ -125,7 +127,8 @@ mod tests {
     fn test_copy_dir() {
         let to = tempdir().unwrap().into_path();
         let from = crate::test_resources_dir_path().join("mock-project");
-        copy_dir(from, to.join("mock-project")).unwrap();
+        copy_dir(from, to.join("mock-project"), &CopyDirOptions::default())
+            .unwrap();
 
         assert!(to.join("mock-project").exists());
         assert!(to.join("mock-project").join("pyproject.toml").exists());
@@ -135,7 +138,8 @@ mod tests {
     fn test_find_root_file_bottom_up() {
         let tmp = tempdir().unwrap().into_path();
         let from = crate::test_resources_dir_path().join("mock-project");
-        copy_dir(&from, &tmp.join("mock-project")).unwrap();
+        copy_dir(&from, &tmp.join("mock-project"), &CopyDirOptions::default())
+            .unwrap();
         let res = find_root_file_bottom_up(
             "pyproject.toml",
             tmp.join("mock-project").as_path(),

@@ -65,7 +65,7 @@ pub fn install_project_dependencies(
 mod tests {
     use super::*;
     use crate::{
-        fs,
+        fs::{self, CopyDirOptions},
         ops::{test_config, test_venv},
         package::Package,
         test_resources_dir_path, Verbosity,
@@ -79,6 +79,7 @@ mod tests {
         fs::copy_dir(
             &test_resources_dir_path().join("mock-project"),
             &dir.path().join("mock-project"),
+            &CopyDirOptions::default(),
         )
         .unwrap();
         let root = dir.path().join("mock-project");
@@ -103,6 +104,7 @@ mod tests {
         fs::copy_dir(
             &test_resources_dir_path().join("mock-project"),
             &dir.path().join("mock-project"),
+            &CopyDirOptions::default(),
         )
         .unwrap();
         let root = dir.path().join("mock-project");
