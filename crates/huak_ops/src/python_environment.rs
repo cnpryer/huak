@@ -73,12 +73,14 @@ pub struct PythonEnvironment {
 
 impl PythonEnvironment {
     /// Initialize a new `PythonEnvironment`.
-    pub fn new<T: AsRef<Path>>(path: T) -> HuakResult<Self> {
+    pub fn new<T: Into<PathBuf>>(path: T) -> HuakResult<Self> {
+        let path = path.into();
+
         // Note that only virtual environments are supported at this time.
-        if !path.as_ref().join(VENV_CONFIG_FILE_NAME).exists() {
+        if !path.join(VENV_CONFIG_FILE_NAME).exists() {
             return Err(Error::Unimplemented(format!(
                 "{} is not supported",
-                path.as_ref().display()
+                path.display()
             )));
         }
 
@@ -226,8 +228,8 @@ impl PythonEnvironment {
 }
 
 /// Helper function for creating a new virtual environment as a `PythonEnvironment`.
-fn new_venv<T: AsRef<Path>>(path: T) -> HuakResult<PythonEnvironment> {
-    let root = path.as_ref();
+fn new_venv<T: Into<PathBuf>>(path: T) -> HuakResult<PythonEnvironment> {
+    let root = path.into();
 
     // Establishing paths differs between Windows and Unix systems.
     #[cfg(unix)]
@@ -262,7 +264,7 @@ fn new_venv<T: AsRef<Path>>(path: T) -> HuakResult<PythonEnvironment> {
     };
 
     let venv = PythonEnvironment {
-        root: root.to_path_buf(),
+        root,
         interpreter,
         executables_dir_path,
         site_packages_path,
@@ -288,11 +290,12 @@ struct VenvConfig {
 
 impl VenvConfig {
     /// Initialize a new `VenvConfig` from the pvenv.cfg path.
-    fn new<T: AsRef<Path>>(value: T) -> HuakResult<Self> {
+    fn new<T: Into<PathBuf>>(path: T) -> HuakResult<Self> {
+        let path = path.into();
+
         // Read the file and flatten the lines for parsing.
-        let file = File::open(&value).unwrap_or_else(|_| {
-            panic!("failed to open {}", value.as_ref().display())
-        });
+        let file = File::open(&path)
+            .unwrap_or_else(|_| panic!("failed to open {}", path.display()));
         let buff_reader = BufReader::new(file);
         let lines = buff_reader.lines().flatten().collect::<Vec<String>>();
 
@@ -361,10 +364,8 @@ impl Interpreters {
 
     #[allow(dead_code)]
     /// Get a Python `Interpreter` by its path.
-    fn get<T: AsRef<Path>>(&self, path: T) -> Option<&Interpreter> {
-        self.interpreters
-            .iter()
-            .find(|p| *p.path() == path.as_ref())
+    fn get(&self, path: &PathBuf) -> Option<&Interpreter> {
+        self.interpreters.iter().find(|p| p.path() == path)
     }
 }
 
@@ -386,13 +387,11 @@ pub struct Interpreter {
 }
 
 impl Interpreter {
-    pub fn new<T: AsRef<Path>>(path: T, version: Version) -> Interpreter {
-        let interpreter = Interpreter {
+    pub fn new<T: Into<PathBuf>>(path: T, version: Version) -> Interpreter {
+        Interpreter {
             version,
-            path: path.as_ref().to_path_buf(),
-        };
-
-        interpreter
+            path: path.into(),
+        }
     }
 
     pub fn path(&self) -> &PathBuf {
@@ -561,10 +560,10 @@ fn version_from_python_interpreter_file_name(
     })
 }
 
-pub fn parse_python_version_from_command<T: AsRef<Path>>(
+pub fn parse_python_version_from_command<T: Into<PathBuf>>(
     path: T,
 ) -> HuakResult<Option<Version>> {
-    let mut cmd = Command::new(path.as_ref());
+    let mut cmd = Command::new(path.into());
     cmd.args([
         "-c",
         "import sys;v=sys.version_info;print(v.major,v.minor,v.micro)",

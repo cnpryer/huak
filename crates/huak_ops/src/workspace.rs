@@ -6,10 +6,7 @@ use crate::{
     python_environment::{default_venv_name, venv_config_file_name},
     Config, Error, HuakResult, PythonEnvironment,
 };
-use std::{
-    path::{Path, PathBuf},
-    process::Command,
-};
+use std::{path::PathBuf, process::Command};
 
 /// The `Workspace` is a struct for resolving things like the current `Package`
 /// or the current `PythonEnvironment`. It can also provide a snapshot of the `Environment`,
@@ -30,13 +27,11 @@ pub struct Workspace {
 }
 
 impl Workspace {
-    pub fn new<T: AsRef<Path>>(path: T, config: &Config) -> Self {
-        let workspace = Workspace {
-            root: path.as_ref().to_path_buf(),
+    pub fn new<T: Into<PathBuf>>(path: T, config: &Config) -> Self {
+        Workspace {
+            root: path.into(),
             config: config.clone(),
-        };
-
-        workspace
+        }
     }
 
     /// Get a reference to the path to the `Workspace` root.
@@ -136,15 +131,18 @@ pub struct WorkspaceOptions {
 /// 1. If VIRTUAL_ENV exists then a venv is active; use it.
 /// 2. Walk from the `from` dir upwards, searching for dir containing the pyvenv.cfg file.
 /// 3. Stop after searching the `stop_after` dir.
-pub fn find_venv_root<T: AsRef<Path>>(
+pub fn find_venv_root<T: Into<PathBuf>>(
     from: T,
     stop_after: T,
 ) -> HuakResult<PathBuf> {
+    let from = from.into();
+    let stop_after = stop_after.into();
+
     if let Ok(path) = std::env::var("VIRTUAL_ENV") {
         return Ok(PathBuf::from(path));
     }
 
-    if !from.as_ref().is_dir() || !stop_after.as_ref().is_dir() {
+    if !from.is_dir() || !stop_after.is_dir() {
         return Err(Error::InternalError(
             "`from` and `stop_after` must be directories".to_string(),
         ));
@@ -173,11 +171,14 @@ pub fn find_venv_root<T: AsRef<Path>>(
 /// Search for a Python `Package` root.
 /// 1. Walk from the `from` dir upwards, searching for dir containing the `LocalMetadata` file.
 /// 2. Stop after searching the `stop_after` dir.
-pub fn find_package_root<T: AsRef<Path>>(
+pub fn find_package_root<T: Into<PathBuf>>(
     from: T,
     stop_after: T,
 ) -> HuakResult<PathBuf> {
-    if !from.as_ref().is_dir() || !stop_after.as_ref().is_dir() {
+    let from = from.into();
+    let stop_after = stop_after.into();
+
+    if !from.is_dir() || !stop_after.is_dir() {
         return Err(Error::InternalError(
             "`from` and `stop_after` must be directoreis".to_string(),
         ));
