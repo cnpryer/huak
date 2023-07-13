@@ -12,7 +12,7 @@ categories = [
 ]
 
 [dependencies]
-clap = { version = "4.3.2", features = ["cargo", "derive"] }
+clap = { version = "4.3.11", features = ["cargo", "derive"] }
 clap_complete = "4.3.2"
 colored = "2.0.0"
 huak_ops = { path = "../huak_ops"}
