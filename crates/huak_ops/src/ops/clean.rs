@@ -54,7 +54,11 @@ pub fn clean_project(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{fs, ops::test_config, test_resources_dir_path, Verbosity};
+    use crate::{
+        fs::{self, CopyDirOptions},
+        ops::test_config,
+        test_resources_dir_path, Verbosity,
+    };
     use tempfile::tempdir;
 
     #[test]
@@ -63,6 +67,7 @@ mod tests {
         fs::copy_dir(
             test_resources_dir_path().join("mock-project"),
             dir.path().join("mock-project"),
+            &CopyDirOptions::default(),
         )
         .unwrap();
         let root = dir.path().join("mock-project");

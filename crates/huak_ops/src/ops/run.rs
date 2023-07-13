@@ -20,7 +20,9 @@ pub fn run_command_str(command: &str, config: &Config) -> HuakResult<()> {
 mod tests {
     use super::*;
     use crate::{
-        environment::env_path_string, fs, ops::test_config,
+        environment::env_path_string,
+        fs::{self, CopyDirOptions},
+        ops::test_config,
         test_resources_dir_path, Verbosity,
     };
     use tempfile::tempdir;
@@ -31,6 +33,7 @@ mod tests {
         fs::copy_dir(
             &test_resources_dir_path().join("mock-project"),
             &dir.path().join("mock-project"),
+            &CopyDirOptions::default(),
         )
         .unwrap();
         let root = dir.path().join("mock-project");
