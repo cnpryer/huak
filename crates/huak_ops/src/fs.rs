@@ -13,6 +13,10 @@ pub fn copy_dir<T: AsRef<Path>>(
     let from = from.as_ref();
     let to = to.as_ref();
 
+    if !to.exists() {
+        fs::create_dir(to)?;
+    }
+
     if from.is_dir() {
         for entry in fs::read_dir(from)?.filter_map(|e| e.ok()) {
             let entry_path = entry.path();
