@@ -22,4 +22,5 @@ openssl = { version = "0.10.52", features = ["vendored"], optional = true }
 thiserror = "1.0.40"
 
 [dev-dependencies]
+insta-cmd = "0.3.0"
 tempfile = "3.6.0"

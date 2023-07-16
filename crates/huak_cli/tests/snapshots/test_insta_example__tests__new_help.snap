@@ -1,0 +1,27 @@
+---
+source: crates/huak_cli/tests/test_insta_example.rs
+info:
+  program: huak
+  args:
+    - new
+    - "--help"
+---
+success: true
+exit_code: 0
+----- stdout -----
+Create a new project at <path>
+
+Usage: huak new [OPTIONS] <PATH>
+
+Arguments:
+  <PATH>  Path and name of the python package
+
+Options:
+      --app     Use an application template
+      --lib     Use a library template [default]
+      --no-vcs  Don't initialize VCS in the new project
+  -q, --quiet   
+  -h, --help    Print help
+
+----- stderr -----
+
