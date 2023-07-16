@@ -45,4 +45,13 @@ impl Config {
 
         terminal
     }
+
+    /// Get a `Config` with a new `Terminal`.
+    pub fn with_terminal(self, terminal_options: TerminalOptions) -> Config {
+        Config {
+            workspace_root: self.workspace_root,
+            cwd: self.cwd,
+            terminal_options,
+        }
+    }
 }

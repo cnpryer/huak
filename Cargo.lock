@@ -412,6 +412,7 @@ dependencies = [
  "insta-cmd",
  "openssl",
  "tempfile",
+ "termcolor",
  "thiserror",
 ]
 

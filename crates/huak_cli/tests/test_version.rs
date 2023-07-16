@@ -26,6 +26,6 @@ mod tests {
 
     #[test]
     fn test_version_help() {
-        assert_cmd_snapshot!(Command::new("huak").arg("version").arg("--help"));
+        assert_cmd_snapshot!(Command::new("huak").arg("version").arg("--help").arg("--no-color"));
     }
 }

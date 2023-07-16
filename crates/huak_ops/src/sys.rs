@@ -7,9 +7,7 @@ use std::{
     process::{Command, ExitStatus},
 };
 use termcolor::{
-    self, Color,
-    Color::{Red, Yellow},
-    ColorChoice, ColorSpec, StandardStream, WriteColor,
+    self, Color, ColorChoice, ColorSpec, StandardStream, WriteColor,
 };
 
 #[derive(Debug)]
@@ -52,17 +50,37 @@ pub struct Terminal {
     /// A write object for terminal output.
     output: TerminalOut,
     /// How verbose messages should be.
-    verbosity: Verbosity,
+    options: TerminalOptions,
 }
 
 impl Terminal {
     /// Create a new terminal struct with maximum verbosity.
     pub fn new() -> Terminal {
         Terminal {
-            verbosity: Verbosity::Verbose,
+            options: TerminalOptions {
+                verbosity: Verbosity::Verbose,
+                color_choice: ColorChoice::Auto,
+            },
             output: TerminalOut::Stream {
-                stdout: StandardStream::stdout(ColorChoice::Auto),
                 stderr: StandardStream::stderr(ColorChoice::Auto),
+            },
+        }
+    }
+
+    pub fn with_options(self, color_choice: ColorChoice) -> Terminal {
+        let output = if color_choice == ColorChoice::Never {
+            TerminalOut::Simple {
+                stderr: StandardStream::stdout(color_choice),
+            }
+        } else {
+            self.output
+        };
+
+        Terminal {
+            output,
+            options: TerminalOptions {
+                verbosity: self.options.verbosity,
+                color_choice,
             },
         }
     }
@@ -70,14 +88,14 @@ impl Terminal {
     /// Print an error message.
     pub fn print_error<T: Display>(&mut self, message: T) -> HuakResult<()> {
         self.output
-            .message_stderr(&"error", Some(&message), Red, false)
+            .message_stderr(&"error", Some(&message), Color::Red, false)
     }
 
     /// Prints a warning message.
     pub fn print_warning<T: Display>(&mut self, message: T) -> HuakResult<()> {
-        match self.verbosity {
+        match self.options.verbosity {
             Verbosity::Quiet => Ok(()),
-            _ => self.print(&"warning", Some(&message), Yellow, false),
+            _ => self.print(&"warning", Some(&message), Color::Yellow, false),
         }
     }
 
@@ -108,7 +126,7 @@ impl Terminal {
         color: Color,
         justified: bool,
     ) -> HuakResult<()> {
-        match self.verbosity {
+        match self.options.verbosity {
             Verbosity::Quiet => Ok(()),
             _ => self
                 .output
@@ -118,12 +136,12 @@ impl Terminal {
 
     /// Set the verbosity level.
     pub fn set_verbosity(&mut self, verbosity: Verbosity) {
-        self.verbosity = verbosity;
+        self.options.verbosity = verbosity;
     }
 
     /// Run a command from the terminal's context.
     pub fn run_command(&mut self, cmd: &mut Command) -> HuakResult<()> {
-        let status = match self.verbosity {
+        let status = match self.options.verbosity {
             Verbosity::Quiet => {
                 let output = cmd.output()?;
                 let status = output.status;
@@ -165,14 +183,38 @@ impl Terminal {
     }
 }
 
+impl Default for Terminal {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Clone)]
 pub struct TerminalOptions {
     pub verbosity: Verbosity,
+    pub color_choice: ColorChoice,
 }
 
 impl TerminalOptions {
     pub fn verbosity(&self) -> &Verbosity {
         &self.verbosity
+    }
+
+    pub fn color_choice(&self) -> &ColorChoice {
+        &self.color_choice
+    }
+
+    pub fn take(self) -> TerminalOptions {
+        self
+    }
+}
+
+impl Default for TerminalOptions {
+    fn default() -> Self {
+        Self {
+            verbosity: Default::default(),
+            color_choice: ColorChoice::Never,
+        }
     }
 }
 
@@ -185,12 +227,6 @@ pub fn parse_command_output(
     Ok(s)
 }
 
-impl Default for Terminal {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 fn trim_error_prefix(msg: &str) -> &str {
     msg.trim_start_matches("error:")
         .trim_start_matches("ERROR:")
@@ -199,10 +235,11 @@ fn trim_error_prefix(msg: &str) -> &str {
 
 /// Objects for writing terminal output to.
 enum TerminalOut {
+    Simple {
+        stderr: StandardStream,
+    },
     /// Color-enabled stdio with information on whether color should be used
     Stream {
-        #[allow(dead_code)]
-        stdout: StandardStream,
         stderr: StandardStream,
     },
 }
@@ -215,7 +252,7 @@ impl TerminalOut {
         &mut self,
         status: &dyn Display,
         message: Option<&dyn Display>,
-        color: Color,
+        color: termcolor::Color,
         justified: bool,
     ) -> HuakResult<()> {
         match *self {
@@ -237,6 +274,10 @@ impl TerminalOut {
                     None => write!(stderr, " ")?,
                 }
             }
+            TerminalOut::Simple { ref mut stderr, .. } => match message {
+                Some(message) => writeln!(stderr, " {message}")?,
+                None => write!(stderr, " ")?,
+            },
         }
         Ok(())
     }

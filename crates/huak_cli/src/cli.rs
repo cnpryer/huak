@@ -17,6 +17,7 @@ use huak_ops::{
     Verbosity, Version, WorkspaceOptions,
 };
 use std::{path::PathBuf, process::ExitCode, str::FromStr};
+use termcolor::ColorChoice;
 
 /// A Python package manager written in Rust inspired by Cargo.
 #[derive(Parser)]
@@ -26,6 +27,8 @@ pub struct Cli {
     command: Commands,
     #[arg(short, long, global = true)]
     quiet: bool,
+    #[arg(long, global = true)]
+    no_color: bool,
 }
 
 // List of commands.
@@ -192,9 +195,17 @@ impl Cli {
         let mut config = Config {
             workspace_root: cwd.to_path_buf(),
             cwd,
-            terminal_options: TerminalOptions { verbosity },
+            terminal_options: TerminalOptions {
+                verbosity,
+                ..Default::default()
+            },
         };
-
+        if self.no_color {
+            config = config.with_terminal(TerminalOptions {
+                color_choice: ColorChoice::Never,
+                ..Default::default()
+            })
+        }
         let res = match self.command {
             Commands::Activate => activate(&config),
             Commands::Add {

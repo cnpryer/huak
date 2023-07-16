@@ -3,15 +3,19 @@ source: crates/huak_cli/tests/test_update.rs
 info:
   program: huak
   args:
-    - version
+    - update
     - "--help"
 ---
 success: true
 exit_code: 0
 ----- stdout -----
-Display the version of the project
+Update the project's dependencies
 
-Usage: huak version [OPTIONS]
+Usage: huak update [OPTIONS] [DEPENDENCIES]... [-- <TRAILING>...]
+
+Arguments:
+  [DEPENDENCIES]...  
+  [TRAILING]...      Pass trailing arguments with `--`
 
 Options:
   -q, --quiet  

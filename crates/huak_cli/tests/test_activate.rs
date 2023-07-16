@@ -1,11 +1,12 @@
-
 #[cfg(test)]
 mod tests {
-    use std::process::Command;
     use insta_cmd::assert_cmd_snapshot;
+    use std::process::Command;
 
     #[test]
     fn test_help() {
-        assert_cmd_snapshot!(Command::new("huak").arg("activate").arg("--help"));
+        assert_cmd_snapshot!(Command::new("huak")
+            .arg("activate")
+            .arg("--help"));
     }
 }

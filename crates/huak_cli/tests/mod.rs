@@ -1,5 +1,3 @@
-mod test_help;
-mod test_version;
 mod test_activate;
 mod test_add;
 mod test_build;
@@ -7,6 +5,7 @@ mod test_clean;
 mod test_completion;
 mod test_fix;
 mod test_fmt;
+mod test_help;
 mod test_init;
 mod test_install;
 mod test_lint;
@@ -17,3 +16,4 @@ mod test_remove;
 mod test_run;
 mod test_test;
 mod test_update;
+mod test_version;
