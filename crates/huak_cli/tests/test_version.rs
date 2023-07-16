@@ -23,4 +23,9 @@ mod tests {
             .arg("version")
             .current_dir(from))
     }
+
+    #[test]
+    fn test_version_help() {
+        assert_cmd_snapshot!(Command::new("huak").arg("version").arg("--help"));
+    }
 }

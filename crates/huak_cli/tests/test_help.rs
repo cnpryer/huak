@@ -88,11 +88,6 @@ mod tests {
     }
 
     #[test]
-    fn test_version_help() {
-        assert_cmd_snapshot!(Command::new("huak").arg("version").arg("--help"));
-    }
-
-    #[test]
     fn test_help() {
         assert_cmd_snapshot!(Command::new("huak").arg("--help"));
     }

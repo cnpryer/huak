@@ -1,0 +1,21 @@
+---
+source: crates/huak_cli/tests/test_version.rs
+info:
+  program: huak
+  args:
+    - version
+    - "--help"
+---
+success: true
+exit_code: 0
+----- stdout -----
+Display the version of the project
+
+Usage: huak version [OPTIONS]
+
+Options:
+  -q, --quiet  
+  -h, --help   Print help
+
+----- stderr -----
+
