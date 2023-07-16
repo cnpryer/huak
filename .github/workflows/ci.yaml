@@ -33,10 +33,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v1
       - uses: actions/setup-python@v1
+      - name: Install huak
+        run: cargo install --path crates/huak_cli
       - name: Test
         run: cargo test --all-features
-      - name: Build
-        run: cargo build --release
 
   lint-and-fmt:
     name: Lint and check fmt
