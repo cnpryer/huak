@@ -1,0 +1,15 @@
+---
+source: crates/huak_cli/tests/mod.rs
+info:
+  program: huak
+  args:
+    - version
+    - "--no-color"
+---
+success: true
+exit_code: 0
+----- stdout -----
+
+----- stderr -----
+version: 0.0.1
+

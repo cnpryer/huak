@@ -1,0 +1,26 @@
+---
+source: crates/huak_cli/tests/mod.rs
+info:
+  program: huak
+  args:
+    - fmt
+    - "--help"
+---
+success: true
+exit_code: 0
+----- stdout -----
+Format the project's Python code
+
+Usage: huak fmt [OPTIONS] [-- <TRAILING>...]
+
+Arguments:
+  [TRAILING]...  Pass trailing arguments with `--`
+
+Options:
+      --check     Check if Python code is formatted
+  -q, --quiet     
+      --no-color  
+  -h, --help      Print help
+
+----- stderr -----
+

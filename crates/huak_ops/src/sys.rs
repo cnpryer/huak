@@ -50,7 +50,7 @@ pub struct Terminal {
     /// A write object for terminal output.
     output: TerminalOut,
     /// How verbose messages should be.
-    options: TerminalOptions,
+    pub options: TerminalOptions,
 }
 
 impl Terminal {
@@ -67,22 +67,18 @@ impl Terminal {
         }
     }
 
-    pub fn with_options(self, color_choice: ColorChoice) -> Terminal {
-        let output = if color_choice == ColorChoice::Never {
+    pub fn from_options(options: TerminalOptions) -> Terminal {
+        let output = if options.color_choice == ColorChoice::Never {
             TerminalOut::Simple {
-                stderr: StandardStream::stdout(color_choice),
+                stderr: StandardStream::stderr(ColorChoice::Never),
             }
         } else {
-            self.output
+            TerminalOut::Stream {
+                stderr: StandardStream::stderr(ColorChoice::Auto),
+            }
         };
 
-        Terminal {
-            output,
-            options: TerminalOptions {
-                verbosity: self.options.verbosity,
-                color_choice,
-            },
-        }
+        Terminal { output, options }
     }
 
     /// Print an error message.
@@ -274,10 +270,15 @@ impl TerminalOut {
                     None => write!(stderr, " ")?,
                 }
             }
-            TerminalOut::Simple { ref mut stderr, .. } => match message {
-                Some(message) => writeln!(stderr, " {message}")?,
-                None => write!(stderr, " ")?,
-            },
+            TerminalOut::Simple { ref mut stderr, .. } => {
+                write!(stderr, "{status}")?;
+                write!(stderr, ":")?;
+
+                match message {
+                    Some(message) => writeln!(stderr, " {message}")?,
+                    None => write!(stderr, " ")?,
+                }
+            }
         }
         Ok(())
     }

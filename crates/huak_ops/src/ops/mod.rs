@@ -118,7 +118,10 @@ fn test_config<T: Into<PathBuf>>(
     let config = Config {
         workspace_root: root.into(),
         cwd: cwd.into(),
-        terminal_options: TerminalOptions { verbosity, ..Default::default() },
+        terminal_options: TerminalOptions {
+            verbosity,
+            ..Default::default()
+        },
     };
 
     config

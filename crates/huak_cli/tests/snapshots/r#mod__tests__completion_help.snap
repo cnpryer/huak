@@ -1,0 +1,23 @@
+---
+source: crates/huak_cli/tests/mod.rs
+info:
+  program: huak
+  args:
+    - completion
+    - "--help"
+---
+success: true
+exit_code: 0
+----- stdout -----
+Generates a shell completion script for supported shells
+
+Usage: huak completion [OPTIONS]
+
+Options:
+  -s, --shell <shell>  [possible values: bash, elvish, fish, powershell, zsh]
+  -q, --quiet          
+      --no-color       
+  -h, --help           Print help
+
+----- stderr -----
+

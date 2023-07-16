@@ -1,0 +1,27 @@
+---
+source: crates/huak_cli/tests/mod.rs
+info:
+  program: huak
+  args:
+    - add
+    - "--help"
+---
+success: true
+exit_code: 0
+----- stdout -----
+Add dependencies to the project
+
+Usage: huak add [OPTIONS] <DEPENDENCIES>... [-- <TRAILING>...]
+
+Arguments:
+  <DEPENDENCIES>...  
+  [TRAILING]...      Pass trailing arguments with `--`
+
+Options:
+      --group <GROUP>  Adds an optional dependency group
+  -q, --quiet          
+      --no-color       
+  -h, --help           Print help
+
+----- stderr -----
+

@@ -39,11 +39,7 @@ impl Config {
 
     /// Get a `Terminal` based on the `Config` data.
     pub fn terminal(&self) -> Terminal {
-        let mut terminal = Terminal::new();
-        let verbosity = *self.terminal_options.verbosity();
-        terminal.set_verbosity(verbosity);
-
-        terminal
+        Terminal::from_options(self.terminal_options.clone())
     }
 
     /// Get a `Config` with a new `Terminal`.

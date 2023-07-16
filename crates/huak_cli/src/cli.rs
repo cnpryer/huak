@@ -201,10 +201,10 @@ impl Cli {
             },
         };
         if self.no_color {
-            config = config.with_terminal(TerminalOptions {
+            config.terminal_options = TerminalOptions {
+                verbosity,
                 color_choice: ColorChoice::Never,
-                ..Default::default()
-            })
+            };
         }
         let res = match self.command {
             Commands::Activate => activate(&config),
