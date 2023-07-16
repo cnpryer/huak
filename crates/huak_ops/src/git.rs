@@ -1,6 +1,7 @@
+use std::path::PathBuf;
+
 use crate::{error::HuakResult, Error};
 use git2::Repository;
-use std::path::Path;
 
 /// From https://github.com/github/gitignore/blob/main/Python.gitignore
 const DEFAULT_PYTHON_GITIGNORE: &str = r#"
@@ -83,8 +84,8 @@ cython_debug/
 
 /// Initialize a directory on a local system as a git repository
 /// and return the Repository.
-pub fn init<T: AsRef<Path>>(path: T) -> HuakResult<Repository> {
-    Repository::init(path).map_err(Error::GitError)
+pub fn init<T: Into<PathBuf>>(path: T) -> HuakResult<Repository> {
+    Repository::init(path.into()).map_err(Error::GitError)
 }
 
 pub fn default_python_gitignore() -> &'static str {
@@ -99,7 +100,7 @@ mod tests {
     #[test]
     fn test_init() {
         let dir = tempdir().unwrap();
-        init(&dir).unwrap();
+        init(dir.path()).unwrap();
         assert!(dir.path().join(".git").is_dir());
     }
 }

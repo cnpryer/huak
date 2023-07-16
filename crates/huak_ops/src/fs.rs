@@ -1,20 +1,17 @@
 use crate::error::{Error, HuakResult};
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{fs, path::PathBuf};
 
 #[allow(dead_code)]
-pub fn copy_dir<T: AsRef<Path>>(
+pub fn copy_dir<T: Into<PathBuf>>(
     from: T,
     to: T,
     options: &CopyDirOptions,
 ) -> Result<(), Error> {
-    let from = from.as_ref();
-    let to = to.as_ref();
+    let from = from.into();
+    let to = to.into();
 
     if !to.exists() {
-        fs::create_dir(to)?;
+        fs::create_dir(&to)?;
     }
 
     if from.is_dir() {
@@ -60,12 +57,13 @@ pub fn flatten_directories(
 ///   2. Search all sub-directory roots for file_name.
 ///   3. If file_name is found, return its path.
 ///   4. Else step one directory up until the `last` directory has been searched.
-pub fn find_root_file_bottom_up<T: AsRef<Path>>(
+pub fn find_root_file_bottom_up<T: Into<PathBuf>>(
     file_name: &str,
     dir: T,
     last: T,
 ) -> HuakResult<Option<PathBuf>> {
-    let dir = dir.as_ref();
+    let dir = dir.into();
+    let last = last.into();
     if !dir.exists() {
         return Ok(None);
     }
@@ -73,7 +71,7 @@ pub fn find_root_file_bottom_up<T: AsRef<Path>>(
         return Ok(Some(dir.join(file_name)));
     }
     // Search all sub-directory roots for target_file.
-    if let Some(path) = fs::read_dir(dir)?
+    if let Some(path) = fs::read_dir(&dir)?
         .filter(|item| item.is_ok())
         .map(|item| item.expect("failed to map dir entry").path())
         .filter(|item| item.is_dir())
@@ -81,7 +79,7 @@ pub fn find_root_file_bottom_up<T: AsRef<Path>>(
     {
         return Ok(Some(path.join(file_name)));
     };
-    if dir == last.as_ref() {
+    if dir == last {
         return Ok(None);
     }
     // If nothing is found from searching the subdirectories then perform the same search from
@@ -91,15 +89,15 @@ pub fn find_root_file_bottom_up<T: AsRef<Path>>(
         dir.parent().ok_or(Error::InternalError(
             "failed to establish a parent directory".to_string(),
         ))?,
-        last.as_ref(),
+        &last,
     )
 }
 
 /// Get the last component of a path. For example this function would return
 /// "dir" from the following path:
 /// /some/path/to/some/dir
-pub fn last_path_component<T: AsRef<Path>>(path: T) -> HuakResult<String> {
-    let path = path.as_ref();
+pub fn last_path_component<T: Into<PathBuf>>(path: T) -> HuakResult<String> {
+    let path = path.into();
     let path = path
         .components()
         .last()

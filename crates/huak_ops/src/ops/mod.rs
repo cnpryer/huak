@@ -40,7 +40,7 @@ pub use publish::{publish_project, PublishOptions};
 pub use python::{list_python, use_python};
 pub use remove::{remove_project_dependencies, RemoveOptions};
 pub use run::run_command_str;
-use std::{path::Path, process::Command};
+use std::{path::PathBuf, process::Command};
 pub use test::{test_project, TestOptions};
 pub use update::{update_project_dependencies, UpdateOptions};
 pub use version::display_project_version;
@@ -79,13 +79,13 @@ fn make_venv_command(
 }
 
 /// Create a workspace directory on the system.
-fn create_workspace<T: AsRef<Path>>(path: T) -> HuakResult<()> {
-    let root = path.as_ref();
+fn create_workspace<T: Into<PathBuf>>(path: T) -> HuakResult<()> {
+    let root = path.into();
 
     if !root.exists() {
         std::fs::create_dir(root)?;
     } else {
-        return Err(Error::DirectoryExists(root.to_path_buf()));
+        return Err(Error::DirectoryExists(root));
     }
 
     Ok(())
@@ -95,11 +95,11 @@ fn create_workspace<T: AsRef<Path>>(path: T) -> HuakResult<()> {
 ///
 /// - Initializes git
 /// - Adds .gitignore if one doesn't already exist.
-fn init_git<T: AsRef<Path>>(path: T) -> HuakResult<()> {
-    let root = path.as_ref();
+fn init_git<T: Into<PathBuf>>(path: T) -> HuakResult<()> {
+    let root = path.into();
 
     if !root.join(".git").exists() {
-        git::init(root)?;
+        git::init(&root)?;
     }
     let gitignore_path = root.join(".gitignore");
     if !gitignore_path.exists() {
@@ -110,14 +110,14 @@ fn init_git<T: AsRef<Path>>(path: T) -> HuakResult<()> {
 }
 
 #[cfg(test)]
-fn test_config<T: AsRef<Path>>(
+fn test_config<T: Into<PathBuf>>(
     root: T,
     cwd: T,
     verbosity: Verbosity,
 ) -> Config {
     let config = Config {
-        workspace_root: root.as_ref().to_path_buf(),
-        cwd: cwd.as_ref().to_path_buf(),
+        workspace_root: root.into(),
+        cwd: cwd.into(),
         terminal_options: TerminalOptions { verbosity },
     };
 

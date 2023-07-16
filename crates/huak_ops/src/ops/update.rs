@@ -121,8 +121,8 @@ mod tests {
     fn test_update_project_optional_dependencies() {
         let dir = tempdir().unwrap();
         fs::copy_dir(
-            &test_resources_dir_path().join("mock-project"),
-            &dir.path().join("mock-project"),
+            test_resources_dir_path().join("mock-project"),
+            dir.path().join("mock-project"),
             &CopyDirOptions::default(),
         )
         .unwrap();

@@ -421,7 +421,7 @@ fn publish(config: &Config, options: &PublishOptions) -> HuakResult<()> {
 fn python(command: Python, config: &Config) -> HuakResult<()> {
     match command {
         Python::List => list_python(config),
-        Python::Use { version } => use_python(version.0.as_str(), config),
+        Python::Use { version } => use_python(&version.0, config),
     }
 }
 

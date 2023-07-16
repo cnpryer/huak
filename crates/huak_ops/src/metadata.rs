@@ -1,9 +1,4 @@
-use std::{
-    ffi::OsStr,
-    fmt::Display,
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::{ffi::OsStr, fmt::Display, path::PathBuf, str::FromStr};
 
 use indexmap::IndexMap;
 use pep440_rs::Version;
@@ -29,14 +24,14 @@ pub struct LocalMetadata {
 
 impl LocalMetadata {
     /// Initialize `LocalMetadata` from a path.
-    pub fn new<T: AsRef<Path>>(path: T) -> HuakResult<LocalMetadata> {
+    pub fn new<T: Into<PathBuf>>(path: T) -> HuakResult<LocalMetadata> {
+        let path = path.into();
+
         // NOTE: Currently only pyproject.toml files are supported.
-        if path.as_ref().file_name()
-            != Some(OsStr::new(DEFAULT_METADATA_FILE_NAME))
-        {
+        if path.file_name() != Some(OsStr::new(DEFAULT_METADATA_FILE_NAME)) {
             return Err(Error::Unimplemented(format!(
                 "{} is not supported",
-                path.as_ref().display()
+                path.display()
             )));
         }
         let local_metadata = pyproject_toml_metadata(path)?;
@@ -45,7 +40,7 @@ impl LocalMetadata {
     }
 
     /// Create a `LocalMetadata` template.
-    pub fn template<T: AsRef<Path>>(path: T) -> LocalMetadata {
+    pub fn template<T: Into<PathBuf>>(path: T) -> LocalMetadata {
         LocalMetadata {
             metadata: Metadata {
                 build_system: BuildSystem {
@@ -56,7 +51,7 @@ impl LocalMetadata {
                 project: PyProjectToml::default().project.clone().unwrap(),
                 tool: None,
             },
-            path: path.as_ref().to_path_buf(),
+            path: path.into(),
         }
     }
 
@@ -89,16 +84,17 @@ impl Display for LocalMetadata {
 }
 
 /// Create `LocalMetadata` from a pyproject.toml file.
-fn pyproject_toml_metadata<T: AsRef<Path>>(
+fn pyproject_toml_metadata<T: Into<PathBuf>>(
     path: T,
 ) -> HuakResult<LocalMetadata> {
-    let pyproject_toml = PyProjectToml::new(path.as_ref())?;
+    let path = path.into();
+    let pyproject_toml = PyProjectToml::new(&path)?;
     let project = match pyproject_toml.project.as_ref() {
         Some(it) => it,
         None => {
             return Err(Error::InternalError(format!(
                 "{} is missing a project table",
-                path.as_ref().display()
+                path.display()
             )))
         }
     }
@@ -111,10 +107,7 @@ fn pyproject_toml_metadata<T: AsRef<Path>>(
         project,
         tool,
     };
-    let local_metadata = LocalMetadata {
-        metadata,
-        path: path.as_ref().to_path_buf(),
-    };
+    let local_metadata = LocalMetadata { metadata, path };
 
     Ok(local_metadata)
 }
@@ -140,7 +133,7 @@ impl Metadata {
     }
 
     pub fn project_name(&self) -> &str {
-        self.project.name.as_str()
+        &self.project.name
     }
 
     pub fn set_project_name(&mut self, name: String) {
@@ -334,8 +327,8 @@ impl std::ops::DerefMut for PyProjectToml {
 
 impl PyProjectToml {
     /// Initialize a `PyProjectToml` from its path.
-    pub fn new<T: AsRef<Path>>(path: T) -> HuakResult<PyProjectToml> {
-        let contents = std::fs::read_to_string(path)?;
+    pub fn new<T: Into<PathBuf>>(path: T) -> HuakResult<PyProjectToml> {
+        let contents = std::fs::read_to_string(path.into())?;
         let pyproject_toml: PyProjectToml = toml::from_str(&contents)?;
 
         Ok(pyproject_toml)

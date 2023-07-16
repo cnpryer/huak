@@ -46,13 +46,7 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
         let mut mypy_cmd = Command::new(python_env.python_path());
         make_venv_command(&mut mypy_cmd, &python_env)?;
         mypy_cmd
-            .args(vec![
-                "-m",
-                "mypy",
-                ".",
-                "--exclude",
-                python_env.name()?.as_str(),
-            ])
+            .args(vec!["-m", "mypy", ".", "--exclude", &python_env.name()?])
             .current_dir(workspace.root());
         terminal.run_command(&mut mypy_cmd)?;
     }
