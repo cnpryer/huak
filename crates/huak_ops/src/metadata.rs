@@ -133,7 +133,7 @@ impl Metadata {
     }
 
     pub fn project_name(&self) -> &str {
-        self.project.name.as_str()
+        &self.project.name
     }
 
     pub fn set_project_name(&mut self, name: String) {

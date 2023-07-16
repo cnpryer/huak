@@ -18,9 +18,8 @@ pub fn init_app_project(
     let mut metadata = workspace.current_local_metadata()?;
 
     let as_dep = Dependency::from_str(metadata.metadata().project_name())?;
-    let entry_point = default_entrypoint_string(
-        importable_package_name(as_dep.name())?.as_str(),
-    );
+    let entry_point =
+        default_entrypoint_string(&importable_package_name(as_dep.name())?);
     metadata
         .metadata_mut()
         .add_script(as_dep.name(), &entry_point);
