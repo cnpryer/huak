@@ -1,0 +1,24 @@
+---
+source: crates/huak_cli/tests/test_help.rs
+info:
+  program: huak
+  args:
+    - test
+    - "--help"
+---
+success: true
+exit_code: 0
+----- stdout -----
+Test the project's Python code
+
+Usage: huak test [OPTIONS] [-- <TRAILING>...]
+
+Arguments:
+  [TRAILING]...  Pass trailing arguments with `--`
+
+Options:
+  -q, --quiet  
+  -h, --help   Print help
+
+----- stderr -----
+

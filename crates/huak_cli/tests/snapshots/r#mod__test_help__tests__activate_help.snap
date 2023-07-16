@@ -1,0 +1,21 @@
+---
+source: crates/huak_cli/tests/test_help.rs
+info:
+  program: huak
+  args:
+    - activate
+    - "--help"
+---
+success: true
+exit_code: 0
+----- stdout -----
+Activate the virtual environment
+
+Usage: huak activate [OPTIONS]
+
+Options:
+  -q, --quiet  
+  -h, --help   Print help
+
+----- stderr -----
+
