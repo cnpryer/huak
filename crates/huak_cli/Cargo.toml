@@ -12,7 +12,7 @@ categories = [
 ]
 
 [dependencies]
-clap = { version = "4.3.11", features = ["cargo", "derive"] }
+clap = { workspace = true }
 clap_complete = "4.3.2"
 colored = "2.0.0"
 huak_ops = { path = "../huak_ops"}
@@ -23,4 +23,4 @@ thiserror = "1.0.40"
 
 [dev-dependencies]
 insta-cmd = "0.3.0"
-tempfile = "3.6.0"
+tempfile = { workspace = true }
