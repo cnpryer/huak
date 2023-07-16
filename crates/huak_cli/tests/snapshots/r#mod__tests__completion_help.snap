@@ -1,5 +1,5 @@
 ---
-source: crates/huak_cli/tests/test_insta_example.rs
+source: crates/huak_cli/tests/mod.rs
 info:
   program: huak
   args:
@@ -16,6 +16,7 @@ Usage: huak completion [OPTIONS]
 Options:
   -s, --shell <shell>  [possible values: bash, elvish, fish, powershell, zsh]
   -q, --quiet          
+      --no-color       
   -h, --help           Print help
 
 ----- stderr -----

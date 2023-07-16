@@ -1,5 +1,5 @@
 ---
-source: crates/huak_cli/tests/test_insta_example.rs
+source: crates/huak_cli/tests/mod.rs
 info:
   program: huak
   args:
@@ -17,6 +17,7 @@ Options:
       --include-pyc      Remove all .pyc files
       --include-pycache  Remove all __pycache__ directories
   -q, --quiet            
+      --no-color         
   -h, --help             Print help
 
 ----- stderr -----

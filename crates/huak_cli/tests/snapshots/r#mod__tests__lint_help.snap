@@ -1,5 +1,5 @@
 ---
-source: crates/huak_cli/tests/test_help.rs
+source: crates/huak_cli/tests/mod.rs
 info:
   program: huak
   args:
@@ -20,6 +20,7 @@ Options:
       --fix       Address any fixable lints
       --no-types  Perform type-checking
   -q, --quiet     
+      --no-color  
   -h, --help      Print help
 
 ----- stderr -----

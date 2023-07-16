@@ -1,5 +1,5 @@
 ---
-source: crates/huak_cli/tests/test_insta_example.rs
+source: crates/huak_cli/tests/mod.rs
 info:
   program: huak
   args:
@@ -14,8 +14,9 @@ Activate the virtual environment
 Usage: huak activate [OPTIONS]
 
 Options:
-  -q, --quiet  
-  -h, --help   Print help
+  -q, --quiet     
+      --no-color  
+  -h, --help      Print help
 
 ----- stderr -----
 

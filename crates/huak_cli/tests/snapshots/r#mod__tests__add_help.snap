@@ -1,5 +1,5 @@
 ---
-source: crates/huak_cli/tests/test_help.rs
+source: crates/huak_cli/tests/mod.rs
 info:
   program: huak
   args:
@@ -20,6 +20,7 @@ Arguments:
 Options:
       --group <GROUP>  Adds an optional dependency group
   -q, --quiet          
+      --no-color       
   -h, --help           Print help
 
 ----- stderr -----

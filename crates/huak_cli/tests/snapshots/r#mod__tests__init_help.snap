@@ -1,0 +1,25 @@
+---
+source: crates/huak_cli/tests/mod.rs
+info:
+  program: huak
+  args:
+    - init
+    - "--help"
+---
+success: true
+exit_code: 0
+----- stdout -----
+Initialize the existing project
+
+Usage: huak init [OPTIONS]
+
+Options:
+      --app       Use an application template
+      --lib       Use a library template [default]
+      --no-vcs    Don't initialize VCS in the project
+  -q, --quiet     
+      --no-color  
+  -h, --help      Print help
+
+----- stderr -----
+

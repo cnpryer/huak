@@ -592,6 +592,7 @@ mod tests {
             cwd: dir.path().to_path_buf(),
             terminal_options: TerminalOptions {
                 verbosity: sys::Verbosity::Quiet,
+                ..Default::default()
             },
         };
         let ws = config.workspace();

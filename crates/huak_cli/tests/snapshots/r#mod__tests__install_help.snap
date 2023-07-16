@@ -1,5 +1,5 @@
 ---
-source: crates/huak_cli/tests/test_insta_example.rs
+source: crates/huak_cli/tests/mod.rs
 info:
   program: huak
   args:
@@ -19,6 +19,7 @@ Arguments:
 Options:
       --groups <GROUPS>...  Install optional dependency groups
   -q, --quiet               
+      --no-color            
   -h, --help                Print help
 
 ----- stderr -----

@@ -39,10 +39,15 @@ impl Config {
 
     /// Get a `Terminal` based on the `Config` data.
     pub fn terminal(&self) -> Terminal {
-        let mut terminal = Terminal::new();
-        let verbosity = *self.terminal_options.verbosity();
-        terminal.set_verbosity(verbosity);
+        Terminal::from_options(self.terminal_options.clone())
+    }
 
-        terminal
+    /// Get a `Config` with a new `Terminal`.
+    pub fn with_terminal(self, terminal_options: TerminalOptions) -> Config {
+        Config {
+            workspace_root: self.workspace_root,
+            cwd: self.cwd,
+            terminal_options,
+        }
     }
 }

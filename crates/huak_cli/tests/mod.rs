@@ -1,5 +1,18 @@
+use std::path::PathBuf;
+
+/// The resource directory found in the Huak repo used for testing purposes.
+fn test_resources_dir_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("dev-resources")
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
     use insta_cmd::assert_cmd_snapshot;
     use std::process::Command;
 
@@ -43,6 +56,12 @@ mod tests {
     }
 
     #[test]
+    fn test_help() {
+        assert_cmd_snapshot!(Command::new("huak").arg("help"));
+        assert_cmd_snapshot!(Command::new("huak").arg("--help"));
+    }
+
+    #[test]
     fn test_init_help() {
         assert_cmd_snapshot!(Command::new("huak").arg("init").arg("--help"));
     }
@@ -73,6 +92,11 @@ mod tests {
     }
 
     #[test]
+    fn test_remove_help() {
+        assert_cmd_snapshot!(Command::new("huak").arg("remove").arg("--help"));
+    }
+
+    #[test]
     fn test_run_help() {
         assert_cmd_snapshot!(Command::new("huak").arg("run").arg("--help"));
     }
@@ -93,7 +117,11 @@ mod tests {
     }
 
     #[test]
-    fn test_help() {
-        assert_cmd_snapshot!(Command::new("huak").arg("--help"));
+    fn test_version() {
+        let from = test_resources_dir_path().join("mock-project");
+        assert_cmd_snapshot!(Command::new("huak")
+            .arg("version")
+            .arg("--no-color")
+            .current_dir(from))
     }
 }

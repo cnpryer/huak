@@ -1,5 +1,5 @@
 ---
-source: crates/huak_cli/tests/test_help.rs
+source: crates/huak_cli/tests/mod.rs
 info:
   program: huak
   args:
@@ -17,8 +17,9 @@ Arguments:
   [TRAILING]...  Pass trailing arguments with `--`
 
 Options:
-  -q, --quiet  
-  -h, --help   Print help
+  -q, --quiet     
+      --no-color  
+  -h, --help      Print help
 
 ----- stderr -----
 
