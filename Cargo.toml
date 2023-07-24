@@ -3,6 +3,6 @@ members = ["crates/*"]
 
 [workspace.dependencies]
 clap = { version = "4.3.12", features = ["cargo", "derive"] }
-tempfile = "3.6.0"
+tempfile = "3.7.0"
 termcolor = "1.2.0"
 thiserror = "1.0.43"
