@@ -60,6 +60,7 @@ mod tests {
         let cwd = root;
         let config = test_config(root, cwd, Verbosity::Quiet);
 
-        use_python(&version.to_string(), &config).unwrap();
+        let result = use_python(&version.to_string(), &config).unwrap();
+        assert_eq!(result, ());
     }
 }
