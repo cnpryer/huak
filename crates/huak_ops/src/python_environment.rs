@@ -76,12 +76,9 @@ impl PythonEnvironment {
     pub fn new<T: Into<PathBuf>>(path: T) -> HuakResult<Self> {
         let path = path.into();
 
-        // Note that only virtual environments are supported at this time.
-        if !path.join(VENV_CONFIG_FILE_NAME).exists() {
-            return Err(Error::Unimplemented(format!(
-                "{} is not supported",
-                path.display()
-            )));
+        // TODO(cnpryer): `PythonEnvironment` shouldn't be exclusive to virtual environments.
+        if !directory_is_venv(&path) {
+            return Err(Error::UnsupportedPythonEnvironment(path));
         }
 
         let env = new_venv(path)?;
@@ -230,14 +227,10 @@ impl PythonEnvironment {
 /// Helper function for creating a new virtual environment as a `PythonEnvironment`.
 fn new_venv<T: Into<PathBuf>>(path: T) -> HuakResult<PythonEnvironment> {
     let root = path.into();
+    let executables_dir_path = venv_executables_dir_path(&root);
 
-    // Establishing paths differs between Windows and Unix systems.
-    #[cfg(unix)]
-    let executables_dir_path = root.join("bin");
     #[cfg(unix)]
     let python_path = executables_dir_path.join("python");
-    #[cfg(windows)]
-    let executables_dir_path = root.join("Scripts");
     #[cfg(windows)]
     let python_path = executables_dir_path.join("python.exe");
 
@@ -271,6 +264,22 @@ fn new_venv<T: Into<PathBuf>>(path: T) -> HuakResult<PythonEnvironment> {
     };
 
     Ok(venv)
+}
+
+/// Helper for detecting virtual environment directories.
+pub fn directory_is_venv<T: Into<PathBuf>>(path: T) -> bool {
+    path.into().join(VENV_CONFIG_FILE_NAME).exists()
+}
+
+/// Helper for constructing OS-dependent venv executables directory path.
+pub fn venv_executables_dir_path<T: Into<PathBuf>>(root: T) -> PathBuf {
+    let root = root.into();
+    // Establishing paths differs between Windows and Unix systems.
+    #[cfg(unix)]
+    let path = root.join("bin");
+    #[cfg(windows)]
+    let path = root.join("Scripts");
+    path
 }
 
 #[derive(Clone)]
@@ -439,6 +448,11 @@ fn compare_interpreters(this: &Interpreter, other: &Interpreter) -> Ordering {
     }
 
     Ordering::Equal
+}
+
+/// Get any activated Python environment.
+pub fn active_python_env_path() -> Option<PathBuf> {
+    active_virtual_env_path().or(active_conda_env_path())
 }
 
 /// Get the VIRTUAL_ENV environment path if it exists.

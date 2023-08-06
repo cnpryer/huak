@@ -1,4 +1,10 @@
-use crate::{environment::Environment, Config, Error, HuakResult};
+use crate::{
+    environment::Environment,
+    python_environment::{
+        active_python_env_path, directory_is_venv, venv_executables_dir_path,
+    },
+    Config, Error, HuakResult,
+};
 use std::process::Command;
 use termcolor::Color;
 
@@ -19,10 +25,15 @@ pub fn list_python(config: &Config) -> HuakResult<()> {
 pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
     let interpreters = Environment::resolve_python_interpreters();
 
-    // Get a path to an interpreter based on the version provided.
+    // Get a path to an interpreter based on the version provided, excluding any activated Python environment.
     let path = match interpreters
         .interpreters()
         .iter()
+        .filter(|py| {
+            !active_python_env_path().map_or(false, |it| {
+                py.path().parent() == Some(&venv_executables_dir_path(it))
+            })
+        })
         .find(|py| py.version().to_string() == version)
         .map(|py| py.path())
     {
@@ -30,11 +41,15 @@ pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
         None => return Err(Error::PythonNotFound),
     };
 
-    // Remove the current Python environment if one exists.
+    // Remove the current Python virtual environment if one exists.
     let workspace = config.workspace();
     match workspace.current_python_environment() {
-        Ok(it) => std::fs::remove_dir_all(it.root())?,
-        Err(Error::PythonEnvironmentNotFound) => (),
+        Ok(it) if directory_is_venv(it.root()) => {
+            std::fs::remove_dir_all(it.root())?
+        }
+        Ok(_) => (),
+        Err(Error::PythonEnvironmentNotFound)
+        | Err(Error::UnsupportedPythonEnvironment(_)) => (),
         Err(e) => return Err(e),
     };
 

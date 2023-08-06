@@ -58,6 +58,8 @@ pub enum Error {
     TOMLEditSerializationError(#[from] toml_edit::ser::Error),
     #[error("a feature is unimplemented: {0}")]
     Unimplemented(String),
+    #[error("a python environment is unsupported for this feature")]
+    UnsupportedPythonEnvironment(PathBuf),
     #[error("a problem with utf-8 parsing occurred: {0}")]
     Utf8Error(#[from] std::str::Utf8Error),
 }
