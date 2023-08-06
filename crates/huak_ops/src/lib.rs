@@ -62,13 +62,15 @@ mod workspace;
 
 pub use config::Config;
 pub use error::{Error, HuakResult};
+pub use fs::home_dir;
 pub use python_environment::InstallOptions;
 use python_environment::PythonEnvironment;
-#[allow(unused_imports)]
-use std::path::PathBuf;
 pub use sys::{SubprocessError, TerminalOptions, Verbosity};
 pub use version::Version;
-pub use workspace::WorkspaceOptions;
+pub use workspace::{find_package_root, WorkspaceOptions};
+
+#[cfg(test)]
+use std::path::PathBuf;
 
 #[cfg(test)]
 /// The resource directory found in the Huak repo used for testing purposes.

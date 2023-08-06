@@ -2,6 +2,7 @@ use crate::error::{CliResult, Error};
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::{self, Shell};
 use huak_ops::{
+    find_package_root, home_dir,
     ops::{
         activate_python_environment, add_project_dependencies,
         add_project_optional_dependencies, build_project, clean_project,
@@ -193,7 +194,9 @@ impl Cli {
             false => Verbosity::Normal,
         };
         let mut config = Config {
-            workspace_root: cwd.to_path_buf(),
+            // TODO: Use find_workspace_root
+            workspace_root: find_package_root(&cwd, &home_dir()?)
+                .unwrap_or(cwd.to_path_buf()),
             cwd,
             terminal_options: TerminalOptions {
                 verbosity,
