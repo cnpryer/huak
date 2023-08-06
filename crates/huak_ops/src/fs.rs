@@ -115,6 +115,13 @@ pub fn last_path_component<T: Into<PathBuf>>(path: T) -> HuakResult<String> {
     Ok(path)
 }
 
+pub fn home_dir() -> HuakResult<PathBuf> {
+    std::env::var("HOME")
+        .or(std::env::var("USERPROFILE"))
+        .map(PathBuf::from)
+        .map_err(Error::EnvVarError)
+}
+
 #[cfg(test)]
 mod tests {
     use tempfile::tempdir;

@@ -52,3 +52,9 @@ impl From<std::env::VarError> for Error {
         Error::new(huak_ops::Error::EnvVarError(e), ExitCode::FAILURE)
     }
 }
+
+impl From<huak_ops::Error> for Error {
+    fn from(e: huak_ops::Error) -> Error {
+        Error::new(e, ExitCode::FAILURE)
+    }
+}
