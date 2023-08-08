@@ -4,15 +4,8 @@ use clap_complete::{self, Shell};
 use huak_ops::{
     find_package_root, home_dir,
     ops::{
-        activate_python_environment, add_project_dependencies,
-        add_project_optional_dependencies, build_project, clean_project,
-        display_project_version, format_project, init_app_project,
-        init_lib_project, install_project_dependencies, lint_project,
-        list_python, new_app_project, new_lib_project, publish_project,
-        remove_project_dependencies, run_command_str, test_project,
-        update_project_dependencies, use_python, AddOptions, BuildOptions,
-        CleanOptions, FormatOptions, LintOptions, PublishOptions,
-        RemoveOptions, TestOptions, UpdateOptions,
+        self, AddOptions, BuildOptions, CleanOptions, FormatOptions,
+        LintOptions, PublishOptions, RemoveOptions, TestOptions, UpdateOptions,
     },
     Config, Error as HuakError, HuakResult, InstallOptions, TerminalOptions,
     Verbosity, Version, WorkspaceOptions,
@@ -189,19 +182,21 @@ enum Python {
 impl Cli {
     pub fn run(self) -> CliResult<i32> {
         let cwd = std::env::current_dir()?;
+        // TODO: Use find_workspace_root
+        let workspace_root =
+            find_package_root(&cwd, &home_dir()?).unwrap_or(cwd.clone());
         let verbosity = match self.quiet {
             true => Verbosity::Quiet,
             false => Verbosity::Normal,
         };
+        let terminal_options = TerminalOptions {
+            verbosity,
+            ..Default::default()
+        };
         let mut config = Config {
-            // TODO: Use find_workspace_root
-            workspace_root: find_package_root(&cwd, &home_dir()?)
-                .unwrap_or(cwd.to_path_buf()),
+            workspace_root,
             cwd,
-            terminal_options: TerminalOptions {
-                verbosity,
-                ..Default::default()
-            },
+            terminal_options,
         };
         if self.no_color {
             config.terminal_options = TerminalOptions {
@@ -353,7 +348,7 @@ impl Cli {
 }
 
 fn activate(config: &Config) -> HuakResult<()> {
-    activate_python_environment(config)
+    ops::activate_python_environment(config)
 }
 
 fn add(
@@ -368,26 +363,26 @@ fn add(
         .collect::<Vec<String>>();
     match group.as_ref() {
         Some(it) => {
-            add_project_optional_dependencies(&deps, it, config, options)
+            ops::add_project_optional_dependencies(&deps, it, config, options)
         }
-        None => add_project_dependencies(&deps, config, options),
+        None => ops::add_project_dependencies(&deps, config, options),
     }
 }
 
 fn build(config: &Config, options: &BuildOptions) -> HuakResult<()> {
-    build_project(config, options)
+    ops::build_project(config, options)
 }
 
 fn clean(config: &Config, options: &CleanOptions) -> HuakResult<()> {
-    clean_project(config, options)
+    ops::clean_project(config, options)
 }
 
 fn fix(config: &Config, options: &LintOptions) -> HuakResult<()> {
-    lint_project(config, options)
+    ops::lint_project(config, options)
 }
 
 fn fmt(config: &Config, options: &FormatOptions) -> HuakResult<()> {
-    format_project(config, options)
+    ops::format_project(config, options)
 }
 
 fn init(
@@ -397,9 +392,9 @@ fn init(
     options: &WorkspaceOptions,
 ) -> HuakResult<()> {
     if app {
-        init_app_project(config, options)
+        ops::init_app_project(config, options)
     } else {
-        init_lib_project(config, options)
+        ops::init_lib_project(config, options)
     }
 }
 
@@ -408,11 +403,11 @@ fn install(
     config: &Config,
     options: &InstallOptions,
 ) -> HuakResult<()> {
-    install_project_dependencies(groups.as_ref(), config, options)
+    ops::install_project_dependencies(groups.as_ref(), config, options)
 }
 
 fn lint(config: &Config, options: &LintOptions) -> HuakResult<()> {
-    lint_project(config, options)
+    ops::lint_project(config, options)
 }
 
 fn new(
@@ -422,20 +417,20 @@ fn new(
     options: &WorkspaceOptions,
 ) -> HuakResult<()> {
     if app {
-        new_app_project(config, options)
+        ops::new_app_project(config, options)
     } else {
-        new_lib_project(config, options)
+        ops::new_lib_project(config, options)
     }
 }
 
 fn publish(config: &Config, options: &PublishOptions) -> HuakResult<()> {
-    publish_project(config, options)
+    ops::publish_project(config, options)
 }
 
 fn python(command: Python, config: &Config) -> HuakResult<()> {
     match command {
-        Python::List => list_python(config),
-        Python::Use { version } => use_python(&version.0, config),
+        Python::List => ops::list_python(config),
+        Python::Use { version } => ops::use_python(&version.0, config),
     }
 }
 
@@ -444,15 +439,15 @@ fn remove(
     config: &Config,
     options: &RemoveOptions,
 ) -> HuakResult<()> {
-    remove_project_dependencies(&dependencies, config, options)
+    ops::remove_project_dependencies(&dependencies, config, options)
 }
 
 fn run(command: Vec<String>, config: &Config) -> HuakResult<()> {
-    run_command_str(&command.join(" "), config)
+    ops::run_command_str(&command.join(" "), config)
 }
 
 fn test(config: &Config, options: &TestOptions) -> HuakResult<()> {
-    test_project(config, options)
+    ops::test_project(config, options)
 }
 
 fn update(
@@ -460,11 +455,11 @@ fn update(
     config: &Config,
     options: &UpdateOptions,
 ) -> HuakResult<()> {
-    update_project_dependencies(dependencies, config, options)
+    ops::update_project_dependencies(dependencies, config, options)
 }
 
 fn version(config: &Config) -> HuakResult<()> {
-    display_project_version(config)
+    ops::display_project_version(config)
 }
 
 fn completion(options: &CompletionOptions) -> HuakResult<()> {
