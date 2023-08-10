@@ -41,6 +41,52 @@ impl Package {
     pub fn metadata(&self) -> &Metadata {
         &self.metadata
     }
+
+    /// Initialize a `Package` from a `&str`.
+    ///
+    /// ```
+    /// use huak_ops::Package;
+    ///
+    /// let package = Package::from_str("my-package == 0.0.1").unwrap();
+    /// ```
+    pub fn from_str(s: &str) -> HuakResult<Package> {
+        // A naive approach to parsing the name and `VersionSpecifiers` from the `&str`.
+        // Find the first character of the `VersionSpecifiers`. Everything prior is considered
+        // the name.
+        let spec_str = parse_version_specifiers_str(s)
+            .ok_or(Error::InvalidVersionString(s.to_string()))?;
+        let name = s.strip_suffix(spec_str).unwrap_or(s).to_string();
+        let version_specifiers = VersionSpecifiers::from_str(spec_str)?;
+
+        // Since we only want to define `Package`s as having a specific `Version`,
+        // a `Package` cannot be initialized with multiple `VersionSpecifier`s.
+        if version_specifiers.len() > 1 {
+            return Err(Error::InvalidVersionString(format!(
+                "{} can only contain one version specifier",
+                s
+            )));
+        }
+        let version_specifer = version_specifiers.first().unwrap();
+        if version_specifer.operator() != &Operator::Equal {
+            return Err(Error::InvalidVersionString(format!(
+                "{} must contain {} specifier",
+                s,
+                Operator::Equal
+            )));
+        }
+
+        let id = PackageId {
+            name: canonical_package_name(&name)?,
+            version: version_specifer.version().to_owned(),
+        };
+
+        let mut metadata = Metadata::default();
+        metadata.set_project_name(name);
+
+        let package = Package { id, metadata };
+
+        Ok(package)
+    }
 }
 
 impl Display for Package {
@@ -74,56 +120,6 @@ impl From<Metadata> for Package {
             },
             metadata: value,
         }
-    }
-}
-
-/// Initialize a `Package` from a `&str`.
-///
-/// ```
-/// use huak_ops::Package;
-///
-/// let package = Package::from_str("my-package == 0.0.1").unwrap();
-/// ```
-impl FromStr for Package {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // A naive approach to parsing the name and `VersionSpecifiers` from the `&str`.
-        // Find the first character of the `VersionSpecifiers`. Everything prior is considered
-        // the name.
-        let spec_str = parse_version_specifiers_str(s)
-            .expect("package version specifier(s)");
-        let name = s.strip_suffix(spec_str).unwrap_or(s).to_string();
-        let version_specifiers = VersionSpecifiers::from_str(spec_str)?;
-
-        // Since we only want to define `Package`s as having a specific `Version`,
-        // a `Package` cannot be initialized with multiple `VersionSpecifier`s.
-        if version_specifiers.len() > 1 {
-            return Err(Error::InvalidVersionString(format!(
-                "{} can only contain one version specifier",
-                s
-            )));
-        }
-        let version_specifer = version_specifiers.first().unwrap();
-        if version_specifer.operator() != &Operator::Equal {
-            return Err(Error::InvalidVersionString(format!(
-                "{} must contain {} specifier",
-                s,
-                Operator::Equal
-            )));
-        }
-
-        let id = PackageId {
-            name: canonical_package_name(&name)?,
-            version: version_specifer.version().to_owned(),
-        };
-
-        let mut metadata = Metadata::default();
-        metadata.set_project_name(name);
-
-        let package = Package { id, metadata };
-
-        Ok(package)
     }
 }
 
