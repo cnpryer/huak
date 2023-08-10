@@ -16,7 +16,7 @@ pep440_rs = "0.3.11"
 pep508_rs = "0.2.1"
 pyproject-toml = "0.7.0"
 serde = { version = "1.0.163", features = ["derive"] }
-serde_json = "1.0.96"
+serde_json = "1.0.104"
 termcolor = { workspace = true }
 thiserror = { workspace = true }
 toml = { version = "0.7.6", features = ["preserve_order"] }
