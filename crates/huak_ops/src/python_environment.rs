@@ -10,9 +10,11 @@ use std::{
 };
 
 use crate::{
-    environment::env_path_values, fs, package::Package, sys, version::Version,
-    Config, Error, HuakResult,
+    environment::env_path_values, fs, package::Package, sys, Config, Error,
+    HuakResult,
 };
+
+use pep440_rs::Version as VersionPEP440;
 
 const DEFAULT_VENV_NAME: &str = ".venv";
 const VENV_CONFIG_FILE_NAME: &str = "pyvenv.cfg";
@@ -244,8 +246,7 @@ fn new_venv<T: Into<PathBuf>>(path: T) -> HuakResult<PythonEnvironment> {
         .join("lib")
         .join(format!(
             "python{}.{}",
-            version.release()[0],
-            version.release()[1]
+            version.release[0], version.release[1]
         ))
         .join("site-packages");
     #[cfg(windows)]
@@ -294,7 +295,7 @@ pub struct InstallOptions {
 /// See https://docs.python.org/3/library/venv.html.
 struct VenvConfig {
     /// The `Version` of the virtual environment's Python `Interpreter`.
-    version: Version,
+    version: VersionPEP440,
 }
 
 impl VenvConfig {
@@ -309,13 +310,13 @@ impl VenvConfig {
         let lines = buff_reader.lines().flatten().collect::<Vec<String>>();
 
         // Search for version = "X.X.X"
-        let mut version = Version::from_str("0.0.0");
+        let mut version = VersionPEP440::from_str("0.0.0");
         lines.iter().for_each(|item| {
             let mut split = item.splitn(2, '=');
             let key = split.next().unwrap_or_default().trim();
             let val = split.next().unwrap_or_default().trim();
             if key == "version" {
-                version = Version::from_str(val)
+                version = VersionPEP440::from_str(val)
             }
         });
 
@@ -365,7 +366,7 @@ impl Interpreters {
 
     #[allow(dead_code)]
     /// Get a Python `Interpreter` by its `Version`.
-    fn exact(&self, version: &Version) -> Option<&Interpreter> {
+    fn exact(&self, version: &VersionPEP440) -> Option<&Interpreter> {
         self.interpreters
             .iter()
             .find(|interpreter| &interpreter.version == version)
@@ -390,13 +391,16 @@ impl Interpreters {
 /// ```
 pub struct Interpreter {
     /// The `Version` of the Python `Interpreter`.
-    version: Version,
+    version: VersionPEP440,
     /// The absolute path to the Python `Interpreter`.
     path: PathBuf,
 }
 
 impl Interpreter {
-    pub fn new<T: Into<PathBuf>>(path: T, version: Version) -> Interpreter {
+    pub fn new<T: Into<PathBuf>>(
+        path: T,
+        version: VersionPEP440,
+    ) -> Interpreter {
         Interpreter {
             version,
             path: path.into(),
@@ -407,7 +411,7 @@ impl Interpreter {
         &self.path
     }
 
-    pub fn version(&self) -> &Version {
+    pub fn version(&self) -> &VersionPEP440 {
         &self.version
     }
 }
@@ -483,7 +487,8 @@ pub fn default_venv_name() -> &'static str {
 
 /// Get an `Iterator` over available Python `Interpreter` paths parsed from the `PATH`
 /// environment variable (inspired by brettcannon/python-launcher).
-pub fn python_paths() -> impl Iterator<Item = (Option<Version>, PathBuf)> {
+pub fn python_paths() -> impl Iterator<Item = (Option<VersionPEP440>, PathBuf)>
+{
     let paths =
         fs::flatten_directories(env_path_values().unwrap_or(Vec::new()));
 
@@ -494,7 +499,7 @@ pub fn python_paths() -> impl Iterator<Item = (Option<Version>, PathBuf)> {
 /// one is found.
 fn python_interpreters_in_paths(
     paths: impl IntoIterator<Item = PathBuf>,
-) -> impl Iterator<Item = (Option<Version>, PathBuf)> {
+) -> impl Iterator<Item = (Option<VersionPEP440>, PathBuf)> {
     paths.into_iter().filter_map(|item| {
         item.file_name()
             .or(None)
@@ -561,13 +566,13 @@ fn valid_python_interpreter_file_name(file_name: &str) -> bool {
 /// On Unix we just attempt the parse immediately.
 fn version_from_python_interpreter_file_name(
     file_name: &str,
-) -> HuakResult<Version> {
+) -> HuakResult<VersionPEP440> {
     match OS {
-        "windows" => Version::from_str(
+        "windows" => VersionPEP440::from_str(
             &file_name.strip_suffix(".exe").unwrap_or(file_name)
                 ["python".len()..],
         ),
-        _ => Version::from_str(&file_name["python".len()..]),
+        _ => VersionPEP440::from_str(&file_name["python".len()..]),
     }
     .map_err(|_| {
         Error::InternalError(format!("could not version from {file_name}"))
@@ -576,7 +581,7 @@ fn version_from_python_interpreter_file_name(
 
 pub fn parse_python_version_from_command<T: Into<PathBuf>>(
     path: T,
-) -> HuakResult<Option<Version>> {
+) -> HuakResult<Option<VersionPEP440>> {
     let mut cmd = Command::new(path.into());
     cmd.args([
         "-c",
@@ -585,7 +590,7 @@ pub fn parse_python_version_from_command<T: Into<PathBuf>>(
     let output = sys::parse_command_output(cmd.output()?)?
         .replace(' ', ".")
         .replace(['\r', '\n'], "");
-    let version = Version::from_str(&output).ok();
+    let version = VersionPEP440::from_str(&output).ok();
 
     Ok(version)
 }

@@ -5,6 +5,7 @@ use crate::{
     },
     Config, Error, HuakResult,
 };
+use pep440_rs::Version as VersionPEP440;
 use std::process::Command;
 use termcolor::Color;
 
@@ -22,7 +23,7 @@ pub fn list_python(config: &Config) -> HuakResult<()> {
     Ok(())
 }
 
-pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
+pub fn use_python(version: &VersionPEP440, config: &Config) -> HuakResult<()> {
     let interpreters = Environment::resolve_python_interpreters();
 
     // Get a path to an interpreter based on the version provided, excluding any activated Python environment.
@@ -34,7 +35,7 @@ pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
                 py.path().parent() == Some(&venv_executables_dir_path(it))
             })
         })
-        .find(|py| py.version().to_string() == version)
+        .find(|py| py.version() == version)
         .map(|py| py.path())
     {
         Some(it) => it,
@@ -75,6 +76,6 @@ mod tests {
         let cwd = root;
         let config = test_config(root, cwd, Verbosity::Quiet);
 
-        use_python(&version.to_string(), &config).unwrap();
+        use_python(version, &config).unwrap();
     }
 }

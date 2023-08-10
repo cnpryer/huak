@@ -385,6 +385,7 @@ dependencies = [
  "human-panic",
  "insta-cmd",
  "openssl",
+ "pep440_rs",
  "tempfile",
  "termcolor",
  "thiserror",

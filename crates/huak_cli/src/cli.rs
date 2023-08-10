@@ -8,8 +8,9 @@ use huak_ops::{
         LintOptions, PublishOptions, RemoveOptions, TestOptions, UpdateOptions,
     },
     Config, Error as HuakError, HuakResult, InstallOptions, TerminalOptions,
-    Verbosity, Version, WorkspaceOptions,
+    Verbosity, WorkspaceOptions,
 };
+use pep440_rs::Version as VersionPEP440;
 use std::{path::PathBuf, process::ExitCode, str::FromStr};
 use termcolor::ColorChoice;
 
@@ -499,19 +500,19 @@ impl ToString for Dependency {
 }
 
 #[derive(Debug, Clone)]
-pub struct PythonVersion(String);
+pub struct PythonVersion(VersionPEP440);
 
 impl FromStr for PythonVersion {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let version = Version::from_str(s).map_err(|_| {
+        let version = VersionPEP440::from_str(s).map_err(|_| {
             Error::new(
                 HuakError::InternalError("failed to parse version".to_string()),
                 ExitCode::FAILURE,
             )
         })?;
 
-        Ok(Self(version.to_string()))
+        Ok(Self(version))
     }
 }

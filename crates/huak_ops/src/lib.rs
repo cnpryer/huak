@@ -66,7 +66,6 @@ pub use fs::home_dir;
 pub use python_environment::InstallOptions;
 use python_environment::PythonEnvironment;
 pub use sys::{SubprocessError, TerminalOptions, Verbosity};
-pub use version::Version;
 pub use workspace::{find_package_root, WorkspaceOptions};
 
 #[cfg(test)]
