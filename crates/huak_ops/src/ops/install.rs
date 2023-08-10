@@ -70,7 +70,6 @@ mod tests {
         package::Package,
         test_resources_dir_path, Verbosity,
     };
-    use std::str::FromStr;
     use tempfile::tempdir;
 
     #[test]
