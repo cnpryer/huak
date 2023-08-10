@@ -20,7 +20,7 @@ human-panic = "1.1.3"
 # included to build PyPi Wheels (see .github/workflow/README.md)
 openssl = { version = "0.10.52", features = ["vendored"], optional = true }
 termcolor = { workspace = true }
-thiserror = "1.0.43"
+thiserror = "1.0.44"
 
 [dev-dependencies]
 insta-cmd = "0.3.0"
