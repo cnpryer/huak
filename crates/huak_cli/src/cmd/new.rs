@@ -1,12 +1,9 @@
 use super::{create_workspace, init_git};
-use crate::{
-    dependency::Dependency,
+use huak_ops::{
     fs,
-    metadata::{
-        default_entrypoint_string, default_test_file_contents, LocalMetadata,
-    },
+    metadata::{default_entrypoint_string, default_test_file_contents},
     package::importable_package_name,
-    Config, Error, HuakResult, WorkspaceOptions,
+    Config, Dependency, Error, HuakResult, LocalMetadata, WorkspaceOptions,
 };
 use std::str::FromStr;
 
@@ -80,7 +77,7 @@ pub fn new_lib_project(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ops::test_config, Verbosity};
+    use crate::{test::test_config, Verbosity};
     use tempfile::tempdir;
 
     #[test]

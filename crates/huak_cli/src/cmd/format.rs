@@ -1,5 +1,5 @@
 use super::make_venv_command;
-use crate::{dependency::Dependency, Config, HuakResult, InstallOptions};
+use huak_ops::{Config, Dependency, HuakResult, InstallOptions};
 use std::{process::Command, str::FromStr};
 
 pub struct FormatOptions {
@@ -94,10 +94,10 @@ pub fn format_project(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
+    use huak_ops::{
         fs::{self, CopyDirOptions},
-        ops::{test_config, test_venv},
-        test_resources_dir_path, Verbosity,
+        sys::Verbosity,
+        test::{test_config, test_resources_dir_path, test_venv},
     };
     use tempfile::tempdir;
 

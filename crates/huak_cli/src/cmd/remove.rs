@@ -1,4 +1,4 @@
-use crate::{
+use huak_ops::{
     dependency::dependency_iter, Config, Error, HuakResult, InstallOptions,
 };
 
@@ -60,12 +60,10 @@ pub fn remove_project_dependencies(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        dependency::Dependency,
+    use huak_ops::{
         fs::{self, CopyDirOptions},
-        ops::{test_config, test_venv},
-        package::Package,
-        test_resources_dir_path, Verbosity,
+        test::{test_config, test_resources_dir_path, test_venv},
+        Dependency, Package, Verbosity,
     };
     use std::str::FromStr;
     use tempfile::tempdir;

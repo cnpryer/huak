@@ -1,6 +1,5 @@
-use crate::{
-    dependency::{dependency_iter, Dependency},
-    Config, HuakResult, InstallOptions,
+use huak_ops::{
+    dependency::dependency_iter, Config, Dependency, HuakResult, InstallOptions,
 };
 use std::str::FromStr;
 
@@ -89,10 +88,10 @@ pub fn update_project_dependencies(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
+    use huak_ops::{
         fs::{self, CopyDirOptions},
-        ops::{test_config, test_venv},
-        test_resources_dir_path, Verbosity,
+        sys::Verbosity,
+        test::{test_config, test_resources_dir_path, test_venv},
     };
     use tempfile::tempdir;
 

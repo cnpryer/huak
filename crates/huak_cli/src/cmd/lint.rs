@@ -1,5 +1,5 @@
 use super::make_venv_command;
-use crate::{dependency::Dependency, Config, HuakResult, InstallOptions};
+use huak_ops::{Config, Dependency, HuakResult, InstallOptions};
 use std::{process::Command, str::FromStr};
 
 pub struct LintOptions {
@@ -96,9 +96,11 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::fs::CopyDirOptions;
-    use crate::ops::{test_config, test_venv};
-    use crate::{fs, test_resources_dir_path, Verbosity};
+    use huak_ops::{
+        fs::{self, CopyDirOptions},
+        sys::Verbosity,
+        test::{test_config, test_resources_dir_path, test_venv},
+    };
     use tempfile::tempdir;
 
     #[test]

@@ -2,6 +2,7 @@
 //!
 //! Huak implements a cli application with various subcommands.
 mod cli;
+pub mod cmd;
 use clap::Parser;
 use cli::Cli;
 use colored::Colorize;

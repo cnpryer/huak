@@ -1,10 +1,7 @@
 use super::init_git;
-use crate::{
-    dependency::Dependency,
-    fs,
-    metadata::{default_entrypoint_string, LocalMetadata},
-    package::importable_package_name,
-    Config, Error, HuakResult, WorkspaceOptions,
+use huak_ops::{
+    fs, metadata::default_entrypoint_string, package::importable_package_name,
+    Config, Dependency, Error, HuakResult, LocalMetadata, WorkspaceOptions,
 };
 use std::str::FromStr;
 
@@ -52,10 +49,9 @@ pub fn init_lib_project(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        metadata::{default_pyproject_toml_contents, PyProjectToml},
-        ops::test_config,
-        Verbosity,
+    use huak_ops::{
+        metadata::default_pyproject_toml_contents, test::test_config,
+        PyProjectToml, Verbosity,
     };
     use tempfile::tempdir;
 

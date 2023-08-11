@@ -1,5 +1,5 @@
 use super::make_venv_command;
-use crate::{sys, Config, HuakResult};
+use huak_ops::{sys, Config, HuakResult};
 use std::{env::consts::OS, process::Command};
 
 pub fn run_command_str(command: &str, config: &Config) -> HuakResult<()> {
@@ -19,11 +19,11 @@ pub fn run_command_str(command: &str, config: &Config) -> HuakResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
+    use huak_ops::{
         environment::env_path_string,
         fs::{self, CopyDirOptions},
-        ops::test_config,
-        test_resources_dir_path, Verbosity,
+        test::{test_config, test_resources_dir_path},
+        Verbosity,
     };
     use tempfile::tempdir;
 
