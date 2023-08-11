@@ -1,9 +1,6 @@
-use crate::{
-    environment::Environment,
-    python_environment::{
-        active_python_env_path, directory_is_venv, venv_executables_dir_path,
-    },
-    Config, Error, HuakResult,
+use huak_ops::{
+    active_python_env_path, directory_is_venv, venv_executables_dir_path,
+    Config, Environment, Error, HuakResult,
 };
 use std::process::Command;
 use termcolor::Color;
@@ -63,7 +60,8 @@ pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ops::test_config, Verbosity};
+    use crate::cmd::test_fixtures::test_config;
+    use huak_ops::Verbosity;
     use tempfile::tempdir;
 
     #[test]

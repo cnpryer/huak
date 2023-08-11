@@ -15,16 +15,6 @@ mod test;
 mod update;
 mod version;
 
-#[allow(unused_imports)]
-use crate::{
-    config::Config,
-    sys::{TerminalOptions, Verbosity},
-    workspace::Workspace,
-};
-use crate::{
-    environment::env_path_values, git, python_environment::PythonEnvironment,
-    Error, HuakResult,
-};
 pub use activate::activate_python_environment;
 pub use add::{
     add_project_dependencies, add_project_optional_dependencies, AddOptions,
@@ -32,6 +22,12 @@ pub use add::{
 pub use build::{build_project, BuildOptions};
 pub use clean::{clean_project, CleanOptions};
 pub use format::{format_project, FormatOptions};
+use huak_ops::{
+    default_python_gitignore, env_path_values, git_init, Error, HuakResult,
+    PythonEnvironment,
+};
+#[allow(unused_imports)]
+use huak_ops::{Config, TerminalOptions, Verbosity, Workspace};
 pub use init::{init_app_project, init_lib_project};
 pub use install::install_project_dependencies;
 pub use lint::{lint_project, LintOptions};
@@ -99,39 +95,52 @@ fn init_git<T: Into<PathBuf>>(path: T) -> HuakResult<()> {
     let root = path.into();
 
     if !root.join(".git").exists() {
-        git::init(&root)?;
+        git_init(&root)?;
     }
     let gitignore_path = root.join(".gitignore");
     if !gitignore_path.exists() {
-        std::fs::write(gitignore_path, git::default_python_gitignore())?;
+        std::fs::write(gitignore_path, default_python_gitignore())?;
     }
 
     Ok(())
 }
 
 #[cfg(test)]
-fn test_config<T: Into<PathBuf>>(
-    root: T,
-    cwd: T,
-    verbosity: Verbosity,
-) -> Config {
-    let config = Config {
-        workspace_root: root.into(),
-        cwd: cwd.into(),
-        terminal_options: TerminalOptions {
-            verbosity,
-            ..Default::default()
-        },
-    };
+pub(crate) mod test_fixtures {
+    use super::*;
 
-    config
-}
+    /// The resource directory found in the Huak repo used for testing purposes.
+    pub(crate) fn test_resources_dir_path() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("dev-resources")
+    }
 
-#[cfg(test)]
-fn test_venv(ws: &Workspace) {
-    let env = ws.environment();
-    let venv_path = format!("{}", ws.root().join(".venv").display());
-    let python_path = env.interpreters().latest().unwrap().path();
-    let mut cmd = Command::new(python_path);
-    cmd.args(["-m", "venv", &venv_path]);
+    pub(crate) fn test_config<T: Into<PathBuf>>(
+        root: T,
+        cwd: T,
+        verbosity: Verbosity,
+    ) -> Config {
+        let config = Config {
+            workspace_root: root.into(),
+            cwd: cwd.into(),
+            terminal_options: TerminalOptions {
+                verbosity,
+                ..Default::default()
+            },
+        };
+
+        config
+    }
+
+    pub(crate) fn test_venv(ws: &Workspace) {
+        let env = ws.environment();
+        let venv_path = format!("{}", ws.root().join(".venv").display());
+        let python_path = env.interpreters().latest().unwrap().path();
+        let mut cmd = Command::new(python_path);
+        cmd.args(["-m", "venv", &venv_path]);
+    }
 }

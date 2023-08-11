@@ -53,6 +53,12 @@ impl From<std::env::VarError> for Error {
     }
 }
 
+impl From<glob::GlobError> for Error {
+    fn from(e: glob::GlobError) -> Error {
+        Error::new(huak_ops::Error::GlobError(e), ExitCode::FAILURE)
+    }
+}
+
 impl From<huak_ops::Error> for Error {
     fn from(e: huak_ops::Error) -> Error {
         Error::new(e, ExitCode::FAILURE)

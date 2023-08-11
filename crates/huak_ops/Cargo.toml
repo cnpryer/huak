@@ -10,10 +10,10 @@ doctest = false
 [dependencies]
 clap = { workspace = true }
 git2 = "0.17.2"
-glob = "0.3.1"
+glob = { workspace = true }
 indexmap = "2.0.0"
-pep440_rs = "0.3.11"
-pep508_rs = "0.2.1"
+pep440_rs = { workspace = true }
+pep508_rs = { workspace = true }
 pyproject-toml = "0.7.0"
 serde = { version = "1.0.163", features = ["derive"] }
 serde_json = "1.0.104"

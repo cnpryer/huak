@@ -1,0 +1,22 @@
+---
+source: crates/huak_cli/tests/mod.rs
+assertion_line: 93
+info:
+  program: huak
+  args:
+    - test
+    - "--help"
+---
+success: false
+exit_code: 127
+----- stdout -----
+
+----- stderr -----
+pyenv: huak: command not found
+
+The `huak' command exists in these Python versions:
+  3.9.7
+
+Note: See 'pyenv help global' for tips on allowing both
+      python2 and python3 to be found.
+

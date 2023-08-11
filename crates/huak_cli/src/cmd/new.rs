@@ -1,12 +1,8 @@
 use super::{create_workspace, init_git};
-use crate::{
-    dependency::Dependency,
-    fs,
-    metadata::{
-        default_entrypoint_string, default_test_file_contents, LocalMetadata,
-    },
-    package::importable_package_name,
-    Config, Error, HuakResult, WorkspaceOptions,
+use huak_ops::{
+    default_package_entrypoint_string, default_package_test_file_contents,
+    importable_package_name, last_path_component, Config, Dependency, Error,
+    HuakResult, LocalMetadata, WorkspaceOptions,
 };
 use std::str::FromStr;
 
@@ -19,7 +15,7 @@ pub fn new_app_project(
     let workspace = config.workspace();
     let mut metadata = workspace.current_local_metadata()?;
 
-    let name = fs::last_path_component(workspace.root().as_path())?;
+    let name = last_path_component(workspace.root().as_path())?;
     let as_dep = Dependency::from_str(&name)?;
     metadata.metadata_mut().set_project_name(name);
 
@@ -29,7 +25,7 @@ pub fn new_app_project(
         src_path.join(&importable_name).join("main.py"),
         super::DEFAULT_PYTHON_MAIN_FILE_CONTENTS,
     )?;
-    let entry_point = default_entrypoint_string(&importable_name);
+    let entry_point = default_package_entrypoint_string(&importable_name);
     metadata
         .metadata_mut()
         .add_script(as_dep.name(), &entry_point);
@@ -57,7 +53,7 @@ pub fn new_lib_project(
         init_git(workspace.root())?;
     }
 
-    let name = &fs::last_path_component(&config.workspace_root)?;
+    let name = &last_path_component(&config.workspace_root)?;
     metadata.metadata_mut().set_project_name(name.to_string());
     metadata.write_file()?;
 
@@ -72,7 +68,7 @@ pub fn new_lib_project(
     )?;
     std::fs::write(
         config.workspace_root.join("tests").join("test_version.py"),
-        default_test_file_contents(&importable_name),
+        default_package_test_file_contents(&importable_name),
     )
     .map_err(Error::IOError)
 }
@@ -80,7 +76,8 @@ pub fn new_lib_project(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{ops::test_config, Verbosity};
+    use crate::cmd::test_fixtures::test_config;
+    use huak_ops::Verbosity;
     use tempfile::tempdir;
 
     #[test]

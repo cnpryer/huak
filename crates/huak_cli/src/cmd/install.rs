@@ -1,4 +1,4 @@
-use crate::{dependency::Dependency, Config, HuakResult, InstallOptions};
+use huak_ops::{Config, Dependency, HuakResult, InstallOptions};
 
 pub fn install_project_dependencies(
     groups: Option<&Vec<String>>,
@@ -64,18 +64,16 @@ pub fn install_project_dependencies(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        fs::{self, CopyDirOptions},
-        ops::{test_config, test_venv},
-        package::Package,
-        test_resources_dir_path, Verbosity,
+    use crate::cmd::test_fixtures::{
+        test_config, test_resources_dir_path, test_venv,
     };
+    use huak_ops::{copy_dir, CopyDirOptions, Package, Verbosity};
     use tempfile::tempdir;
 
     #[test]
     fn test_install_project_dependencies() {
         let dir = tempdir().unwrap();
-        fs::copy_dir(
+        copy_dir(
             &test_resources_dir_path().join("mock-project"),
             &dir.path().join("mock-project"),
             &CopyDirOptions::default(),
@@ -100,7 +98,7 @@ mod tests {
     #[test]
     fn test_install_project_optional_dependencies() {
         let dir = tempdir().unwrap();
-        fs::copy_dir(
+        copy_dir(
             &test_resources_dir_path().join("mock-project"),
             &dir.path().join("mock-project"),
             &CopyDirOptions::default(),

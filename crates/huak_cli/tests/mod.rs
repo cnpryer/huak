@@ -1,20 +1,7 @@
-use std::path::PathBuf;
-
-/// The resource directory found in the Huak repo used for testing purposes.
-fn test_resources_dir_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join("dev-resources")
-}
-
 #[cfg(test)]
 mod tests {
-    use super::*;
     use insta_cmd::assert_cmd_snapshot;
-    use std::process::Command;
+    use std::{path::PathBuf, process::Command};
 
     #[test]
     fn test_activate_help() {
@@ -123,5 +110,15 @@ mod tests {
             .arg("version")
             .arg("--no-color")
             .current_dir(from))
+    }
+
+    /// The resource directory found in the Huak repo used for testing purposes.
+    fn test_resources_dir_path() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("dev-resources")
     }
 }

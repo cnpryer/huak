@@ -1,6 +1,5 @@
-use crate::{
-    dependency::{dependency_iter, Dependency},
-    Config, HuakResult, InstallOptions,
+use huak_ops::{
+    dependency_iter, Config, Dependency, HuakResult, InstallOptions,
 };
 use std::str::FromStr;
 
@@ -89,17 +88,16 @@ pub fn update_project_dependencies(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        fs::{self, CopyDirOptions},
-        ops::{test_config, test_venv},
-        test_resources_dir_path, Verbosity,
+    use crate::cmd::test_fixtures::{
+        test_config, test_resources_dir_path, test_venv,
     };
+    use huak_ops::{copy_dir, CopyDirOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]
     fn test_update_project_dependencies() {
         let dir = tempdir().unwrap();
-        fs::copy_dir(
+        copy_dir(
             &test_resources_dir_path().join("mock-project"),
             &dir.path().join("mock-project"),
             &CopyDirOptions::default(),
@@ -120,7 +118,7 @@ mod tests {
     #[test]
     fn test_update_project_optional_dependencies() {
         let dir = tempdir().unwrap();
-        fs::copy_dir(
+        copy_dir(
             test_resources_dir_path().join("mock-project"),
             dir.path().join("mock-project"),
             &CopyDirOptions::default(),

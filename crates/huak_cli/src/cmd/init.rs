@@ -1,10 +1,8 @@
 use super::init_git;
-use crate::{
-    dependency::Dependency,
-    fs,
-    metadata::{default_entrypoint_string, LocalMetadata},
-    package::importable_package_name,
-    Config, Error, HuakResult, WorkspaceOptions,
+use huak_ops::{
+    default_package_entrypoint_string, importable_package_name,
+    last_path_component, Config, Dependency, Error, HuakResult, LocalMetadata,
+    WorkspaceOptions,
 };
 use std::str::FromStr;
 
@@ -18,8 +16,9 @@ pub fn init_app_project(
     let mut metadata = workspace.current_local_metadata()?;
 
     let as_dep = Dependency::from_str(metadata.metadata().project_name())?;
-    let entry_point =
-        default_entrypoint_string(&importable_package_name(as_dep.name())?);
+    let entry_point = default_package_entrypoint_string(
+        &importable_package_name(as_dep.name())?,
+    );
     metadata
         .metadata_mut()
         .add_script(as_dep.name(), &entry_point);
@@ -44,7 +43,7 @@ pub fn init_lib_project(
         init_git(&config.workspace_root)?;
     }
 
-    let name = fs::last_path_component(&config.workspace_root)?;
+    let name = last_path_component(&config.workspace_root)?;
     metadata.metadata_mut().set_project_name(name);
     metadata.write_file()
 }
@@ -52,11 +51,8 @@ pub fn init_lib_project(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        metadata::{default_pyproject_toml_contents, PyProjectToml},
-        ops::test_config,
-        Verbosity,
-    };
+    use crate::cmd::test_fixtures::test_config;
+    use huak_ops::{default_pyproject_toml_contents, PyProjectToml, Verbosity};
     use tempfile::tempdir;
 
     #[test]

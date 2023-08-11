@@ -53,7 +53,6 @@ mod error;
 mod fs;
 mod git;
 mod metadata;
-pub mod ops;
 mod package;
 mod python_environment;
 mod sys;
@@ -61,13 +60,26 @@ mod version;
 mod workspace;
 
 pub use config::Config;
+pub use dependency::{dependency_iter, Dependency};
+pub use environment::{env_path_string, env_path_values, Environment};
 pub use error::{Error, HuakResult};
-pub use fs::home_dir;
+pub use fs::{copy_dir, home_dir, last_path_component, CopyDirOptions};
+pub use git::{default_python_gitignore, init as git_init};
+pub use metadata::{
+    default_package_entrypoint_string, default_package_test_file_contents,
+    default_pyproject_toml_contents, LocalMetadata, PyProjectToml,
+};
+pub use package::{importable_package_name, Package};
 pub use python_environment::InstallOptions;
-use python_environment::PythonEnvironment;
-pub use sys::{SubprocessError, TerminalOptions, Verbosity};
+pub use python_environment::{
+    active_python_env_path, directory_is_venv, venv_executables_dir_path,
+    PythonEnvironment,
+};
+pub use sys::{
+    shell_name, shell_path, SubprocessError, TerminalOptions, Verbosity,
+};
 pub use version::Version;
-pub use workspace::{find_package_root, WorkspaceOptions};
+pub use workspace::{find_package_root, Workspace, WorkspaceOptions};
 
 #[cfg(test)]
 use std::path::PathBuf;
