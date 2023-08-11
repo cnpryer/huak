@@ -60,7 +60,7 @@ pub fn build_project(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
+    use huak_ops::{
         fs::{self, CopyDirOptions},
         sys::Verbosity,
         test::{test_config, test_resources_dir_path, test_venv},
