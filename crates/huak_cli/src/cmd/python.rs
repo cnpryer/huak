@@ -1,7 +1,5 @@
 use huak_ops::{
-    python_environment::{
-        active_python_env_path, directory_is_venv, venv_executables_dir_path,
-    },
+    active_python_env_path, directory_is_venv, venv_executables_dir_path,
     Config, Environment, Error, HuakResult,
 };
 use std::process::Command;
@@ -62,7 +60,8 @@ pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use huak_ops::{test::test_config, Verbosity};
+    use crate::cmd::test_fixtures::test_config;
+    use huak_ops::Verbosity;
     use tempfile::tempdir;
 
     #[test]

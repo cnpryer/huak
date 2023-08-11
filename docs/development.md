@@ -42,19 +42,10 @@ The project is distributed for use. This can be publishing to a registry or simp
 
 ## The Code
 
-Currently, the project is structured using the following components:
+Currently, the project is structured using the following crates:
 
 ```bash
-src
-├── src/bin/huak    # CLI binary `huak`
-│   ├── cli         # CLI implementations
-│   ├── error       # CLI errors
-│   └── main        # CLI entry
-└── src/huak        # Library
-    ├── error       # Library errors
-    ├── fs          # Library filesystem implementations
-    ├── git         # Library git implementations
-    ├── lib         # Library core implementations
-    ├── ops         # Library operation logic
-    └── sys         # Library system implementations
+crates
+├── `huak_cli`  # The `huak` application
+└── `huak_ops`  # `huak`'s operations library
 ```

@@ -1,12 +1,12 @@
 use super::make_venv_command;
-use huak_ops::{sys, Config, HuakResult};
+use huak_ops::{shell_name, Config, HuakResult};
 use std::{env::consts::OS, process::Command};
 
 pub fn run_command_str(command: &str, config: &Config) -> HuakResult<()> {
     let workspace = config.workspace();
     let python_env = workspace.current_python_environment()?;
 
-    let mut cmd = Command::new(sys::shell_name()?);
+    let mut cmd = Command::new(shell_name()?);
     let flag = match OS {
         "windows" => "/C",
         _ => "-c",
@@ -19,18 +19,14 @@ pub fn run_command_str(command: &str, config: &Config) -> HuakResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use huak_ops::{
-        environment::env_path_string,
-        fs::{self, CopyDirOptions},
-        test::{test_config, test_resources_dir_path},
-        Verbosity,
-    };
+    use crate::cmd::test_fixtures::{test_config, test_resources_dir_path};
+    use huak_ops::{copy_dir, env_path_string, CopyDirOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]
     fn test_run_command_str() {
         let dir = tempdir().unwrap();
-        fs::copy_dir(
+        copy_dir(
             &test_resources_dir_path().join("mock-project"),
             &dir.path().join("mock-project"),
             &CopyDirOptions::default(),

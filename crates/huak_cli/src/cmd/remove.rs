@@ -1,6 +1,4 @@
-use huak_ops::{
-    dependency::dependency_iter, Config, Error, HuakResult, InstallOptions,
-};
+use huak_ops::{dependency_iter, Config, Error, HuakResult, InstallOptions};
 
 pub struct RemoveOptions {
     pub install_options: InstallOptions,
@@ -60,18 +58,17 @@ pub fn remove_project_dependencies(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use huak_ops::{
-        fs::{self, CopyDirOptions},
-        test::{test_config, test_resources_dir_path, test_venv},
-        Dependency, Package, Verbosity,
+    use crate::cmd::test_fixtures::{
+        test_config, test_resources_dir_path, test_venv,
     };
+    use huak_ops::{copy_dir, CopyDirOptions, Dependency, Package, Verbosity};
     use std::str::FromStr;
     use tempfile::tempdir;
 
     #[test]
     fn test_remove_project_dependencies() {
         let dir = tempdir().unwrap();
-        fs::copy_dir(
+        copy_dir(
             &test_resources_dir_path().join("mock-project"),
             &dir.path().join("mock-project"),
             &CopyDirOptions::default(),
@@ -113,7 +110,7 @@ mod tests {
     #[test]
     fn test_remove_project_optional_dependencies() {
         let dir = tempdir().unwrap();
-        fs::copy_dir(
+        copy_dir(
             &test_resources_dir_path().join("mock-project"),
             &dir.path().join("mock-project"),
             &CopyDirOptions::default(),

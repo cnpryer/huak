@@ -360,11 +360,11 @@ dependencies = []
     )
 }
 
-pub fn default_entrypoint_string(importable_name: &str) -> String {
+pub fn default_package_entrypoint_string(importable_name: &str) -> String {
     format!("{importable_name}.main:main")
 }
 
-pub fn default_test_file_contents(importable_name: &str) -> String {
+pub fn default_package_test_file_contents(importable_name: &str) -> String {
     format!(
         r#"from {importable_name} import __version__
 
