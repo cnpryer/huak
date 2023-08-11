@@ -11,7 +11,7 @@ use huak_ops::{
     find_package_root, home_dir, Config, Error as HuakError, HuakResult,
     InstallOptions, TerminalOptions, Verbosity, Version, WorkspaceOptions,
 };
-use std::{path::PathBuf, process::ExitCode, str::FromStr};
+use std::{env::current_dir, path::PathBuf, process::ExitCode, str::FromStr};
 use termcolor::ColorChoice;
 
 /// A Python package manager written in Rust inspired by Cargo.
@@ -182,162 +182,10 @@ enum Python {
 // Command gating for Huak.
 impl Cli {
     pub fn run(self) -> CliResult<i32> {
-        let cwd = std::env::current_dir()?;
-        // TODO: Use find_workspace_root
-        let workspace_root =
-            find_package_root(&cwd, &home_dir()?).unwrap_or(cwd.clone());
-        let verbosity = match self.quiet {
-            true => Verbosity::Quiet,
-            false => Verbosity::Normal,
-        };
-        let terminal_options = TerminalOptions {
-            verbosity,
-            ..Default::default()
-        };
-        let mut config = Config {
-            workspace_root,
-            cwd,
-            terminal_options,
-        };
-        if self.no_color {
-            config.terminal_options = TerminalOptions {
-                verbosity,
-                color_choice: ColorChoice::Never,
-            };
-        }
-        let res = match self.command {
-            Commands::Activate => activate(&config),
-            Commands::Add {
-                dependencies,
-                group,
-                trailing,
-            } => {
-                let options = AddOptions {
-                    install_options: InstallOptions { values: trailing },
-                };
-                add(dependencies, group, &config, &options)
-            }
-            Commands::Build { trailing } => {
-                let options = BuildOptions {
-                    values: trailing,
-                    install_options: InstallOptions { values: None },
-                };
-                build(&config, &options)
-            }
-            Commands::Clean {
-                include_pyc,
-                include_pycache,
-            } => {
-                let options = CleanOptions {
-                    include_pycache,
-                    include_compiled_bytecode: include_pyc,
-                };
-                clean(&config, &options)
-            }
-            Commands::Completion { shell } => {
-                let options = CompletionOptions { shell };
-                completion(&options)
-            }
-            Commands::Fix { trailing } => {
-                let options = LintOptions {
-                    values: trailing,
-                    include_types: false,
-                    install_options: InstallOptions { values: None },
-                };
-                fix(&config, &options)
-            }
-            Commands::Fmt { check, trailing } => {
-                let mut args = if check {
-                    vec!["--check".to_string()]
-                } else {
-                    Vec::new()
-                };
-                if let Some(it) = trailing {
-                    args.extend(it);
-                }
-                let options = FormatOptions {
-                    values: Some(args),
-                    install_options: InstallOptions { values: None },
-                };
-                fmt(&config, &options)
-            }
-            Commands::Init { app, lib, no_vcs } => {
-                config.workspace_root = config.cwd.clone();
-                let options = WorkspaceOptions { uses_git: !no_vcs };
-                init(app, lib, &config, &options)
-            }
-            Commands::Install { groups, trailing } => {
-                let options = InstallOptions { values: trailing };
-                install(groups, &config, &options)
-            }
-            Commands::Lint {
-                fix,
-                no_types,
-                trailing,
-            } => {
-                let mut args = if fix {
-                    vec!["--fix".to_string()]
-                } else {
-                    Vec::new()
-                };
-                if let Some(it) = trailing {
-                    args.extend(it);
-                }
-                let options = LintOptions {
-                    values: Some(args),
-                    include_types: !no_types,
-                    install_options: InstallOptions { values: None },
-                };
-                lint(&config, &options)
-            }
-            Commands::New {
-                path,
-                app,
-                lib,
-                no_vcs,
-            } => {
-                config.workspace_root = PathBuf::from(path);
-                let options = WorkspaceOptions { uses_git: !no_vcs };
-                new(app, lib, &config, &options)
-            }
-            Commands::Publish { trailing } => {
-                let options = PublishOptions {
-                    values: trailing,
-                    install_options: InstallOptions { values: None },
-                };
-                publish(&config, &options)
-            }
-            Commands::Python { command } => python(command, &config),
-            Commands::Remove {
-                dependencies,
-                trailing,
-            } => {
-                let options = RemoveOptions {
-                    install_options: InstallOptions { values: trailing },
-                };
-                remove(dependencies, &config, &options)
-            }
-            Commands::Run { command } => run(command, &config),
-            Commands::Test { trailing } => {
-                let options = TestOptions {
-                    values: trailing,
-                    install_options: InstallOptions { values: None },
-                };
-                test(&config, &options)
-            }
-            Commands::Update {
-                dependencies,
-                trailing,
-            } => {
-                let options = UpdateOptions {
-                    install_options: InstallOptions { values: trailing },
-                };
-                update(dependencies, &config, &options)
-            }
-            Commands::Version => version(&config),
-        };
+        let cwd = current_dir()?;
+        let mut config = get_config(cwd, &self);
 
-        match res {
+        match exec_command(self.command, &mut config) {
             Ok(_) => Ok(0),
             // TODO: Implement our own ExitCode or status handler.
             Err(HuakError::SubprocessFailure(e)) => {
@@ -346,6 +194,167 @@ impl Cli {
             Err(e) => Err(Error::new(e, ExitCode::FAILURE)),
         }
     }
+}
+
+fn exec_command(cmd: Commands, config: &mut Config) -> Result<(), HuakError> {
+    match cmd {
+        Commands::Activate => activate(config),
+        Commands::Add {
+            dependencies,
+            group,
+            trailing,
+        } => {
+            let options = AddOptions {
+                install_options: InstallOptions { values: trailing },
+            };
+            add(dependencies, group, config, &options)
+        }
+        Commands::Build { trailing } => {
+            let options = BuildOptions {
+                values: trailing,
+                install_options: InstallOptions { values: None },
+            };
+            build(config, &options)
+        }
+        Commands::Clean {
+            include_pyc,
+            include_pycache,
+        } => {
+            let options = CleanOptions {
+                include_pycache,
+                include_compiled_bytecode: include_pyc,
+            };
+            clean(config, &options)
+        }
+        Commands::Completion { shell } => {
+            let options = CompletionOptions { shell };
+            completion(&options)
+        }
+        Commands::Fix { trailing } => {
+            let options = LintOptions {
+                values: trailing,
+                include_types: false,
+                install_options: InstallOptions { values: None },
+            };
+            fix(config, &options)
+        }
+        Commands::Fmt { check, trailing } => {
+            let mut args = if check {
+                vec!["--check".to_string()]
+            } else {
+                Vec::new()
+            };
+            if let Some(it) = trailing {
+                args.extend(it);
+            }
+            let options = FormatOptions {
+                values: Some(args),
+                install_options: InstallOptions { values: None },
+            };
+            fmt(config, &options)
+        }
+        Commands::Init { app, lib, no_vcs } => {
+            config.workspace_root = config.cwd.clone();
+            let options = WorkspaceOptions { uses_git: !no_vcs };
+            init(app, lib, config, &options)
+        }
+        Commands::Install { groups, trailing } => {
+            let options = InstallOptions { values: trailing };
+            install(groups, config, &options)
+        }
+        Commands::Lint {
+            fix,
+            no_types,
+            trailing,
+        } => {
+            let mut args = if fix {
+                vec!["--fix".to_string()]
+            } else {
+                Vec::new()
+            };
+            if let Some(it) = trailing {
+                args.extend(it);
+            }
+            let options = LintOptions {
+                values: Some(args),
+                include_types: !no_types,
+                install_options: InstallOptions { values: None },
+            };
+            lint(config, &options)
+        }
+        Commands::New {
+            path,
+            app,
+            lib,
+            no_vcs,
+        } => {
+            config.workspace_root = PathBuf::from(path);
+            let options = WorkspaceOptions { uses_git: !no_vcs };
+            new(app, lib, config, &options)
+        }
+        Commands::Publish { trailing } => {
+            let options = PublishOptions {
+                values: trailing,
+                install_options: InstallOptions { values: None },
+            };
+            publish(config, &options)
+        }
+        Commands::Python { command } => python(command, config),
+        Commands::Remove {
+            dependencies,
+            trailing,
+        } => {
+            let options = RemoveOptions {
+                install_options: InstallOptions { values: trailing },
+            };
+            remove(dependencies, config, &options)
+        }
+        Commands::Run { command } => run(command, config),
+        Commands::Test { trailing } => {
+            let options = TestOptions {
+                values: trailing,
+                install_options: InstallOptions { values: None },
+            };
+            test(config, &options)
+        }
+        Commands::Update {
+            dependencies,
+            trailing,
+        } => {
+            let options = UpdateOptions {
+                install_options: InstallOptions { values: trailing },
+            };
+            update(dependencies, config, &options)
+        }
+        Commands::Version => version(config),
+    }
+}
+
+fn get_config(cwd: PathBuf, cli: &Cli) -> Config {
+    // TODO: Use find_workspace_root
+    let workspace_root =
+        find_package_root(&cwd, &home_dir().expect("home directory"))
+            .unwrap_or(cwd.clone());
+    let verbosity = match cli.quiet {
+        true => Verbosity::Quiet,
+        false => Verbosity::Normal,
+    };
+    let terminal_options = TerminalOptions {
+        verbosity,
+        ..Default::default()
+    };
+    let mut config = Config {
+        workspace_root,
+        cwd,
+        terminal_options,
+    };
+    if cli.no_color {
+        config.terminal_options = TerminalOptions {
+            verbosity,
+            color_choice: ColorChoice::Never,
+        };
+    }
+    config
 }
 
 fn activate(config: &Config) -> HuakResult<()> {
