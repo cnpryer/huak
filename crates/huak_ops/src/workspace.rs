@@ -127,6 +127,26 @@ pub struct WorkspaceOptions {
     pub uses_git: bool,
 }
 
+/// Search for a Python `Workspace` root.
+///
+/// `Workspace` roots consist of `Package`s. Each package can be a sub-project with its own
+/// local metadata file.
+/// 1. Search for the 'current' `Package`.
+/// 2. Check some number of parents for a `LocalMetadata` file.
+/// 3. If a parent is found it's assumed to be the root of that `Package`'s `Workspace`.
+/// 4. If a parent isn't found the current `Package` is assumed to be at the `Workspace` root.
+pub fn find_workspace_root<T: Into<PathBuf>>(
+    from: T,
+    stop_after: T,
+) -> HuakResult<PathBuf> {
+    let from = from.into();
+    if let Some(parent) = from.parent() {
+        find_package_root(parent, &stop_after.into())
+    } else {
+        find_package_root(from, stop_after.into())
+    }
+}
+
 /// Search for a Python virtual environment.
 /// 1. If VIRTUAL_ENV exists then a venv is active; use it.
 /// 2. Walk from the `from` dir upwards, searching for dir containing the pyvenv.cfg file.

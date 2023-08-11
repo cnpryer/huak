@@ -11,7 +11,7 @@ use crate::{dependency::Dependency, Error, HuakResult};
 
 const DEFAULT_METADATA_FILE_NAME: &str = "pyproject.toml";
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// A `LocalMetadata` struct used to manage local `Metadata` files such as
 /// the pyproject.toml (https://peps.python.org/pep-0621/).
 pub struct LocalMetadata {
@@ -74,6 +74,11 @@ impl LocalMetadata {
     /// Serialize the `Metadata` to a formatted string.
     pub fn to_string_pretty(&self) -> HuakResult<String> {
         Ok(toml_edit::ser::to_string_pretty(&self.metadata)?)
+    }
+
+    /// Get the path to the `LocalMetadata` file
+    pub fn path(&self) -> &PathBuf {
+        &self.path
     }
 }
 

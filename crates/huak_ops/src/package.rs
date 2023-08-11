@@ -1,7 +1,7 @@
-use crate::{metadata::Metadata, Error, HuakResult};
+use crate::{metadata::Metadata, Error, HuakResult, LocalMetadata};
 use pep440_rs::{Operator, Version, VersionSpecifiers};
 use regex::Regex;
-use std::{fmt::Display, str::FromStr};
+use std::{fmt::Display, path::PathBuf, str::FromStr};
 
 const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
 
@@ -24,6 +24,8 @@ pub struct Package {
     id: PackageId,
     /// The `Package`'s core `Metadata`.
     metadata: Metadata,
+    /// A `LocalMetadata` struct if a file exists.
+    local_metadata: Option<LocalMetadata>,
 }
 
 impl Package {
@@ -40,6 +42,25 @@ impl Package {
     /// Get a reference to the `Package`'s core `Metadata`.
     pub fn metadata(&self) -> &Metadata {
         &self.metadata
+    }
+
+    /// Get the path to a `LocalMetadata` file if one exists.
+    pub fn local_metadata_path(&self) -> Option<&PathBuf> {
+        if let Some(path) = self.local_metadata.as_ref().map(|x| x.path()) {
+            Some(path)
+        } else {
+            None
+        }
+    }
+
+    /// Get the root dir of the `Package` if one exists.
+    pub fn root(&self) -> Option<PathBuf> {
+        let metadata_filepath = match self.local_metadata_path() {
+            Some(it) => it,
+            None => return None,
+        };
+
+        metadata_filepath.parent().map(PathBuf::from)
     }
 
     // TODO: I want this implemented with `FromStr`.
@@ -86,7 +107,11 @@ impl Package {
         let mut metadata = Metadata::default();
         metadata.set_project_name(name);
 
-        let package = Package { id, metadata };
+        let package = Package {
+            id,
+            metadata,
+            local_metadata: None,
+        };
 
         Ok(package)
     }
@@ -122,6 +147,7 @@ impl From<Metadata> for Package {
                     .clone(),
             },
             metadata: value,
+            local_metadata: None,
         }
     }
 }

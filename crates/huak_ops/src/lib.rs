@@ -79,7 +79,7 @@ pub use sys::{
     shell_name, shell_path, SubprocessError, TerminalOptions, Verbosity,
 };
 pub use version::Version;
-pub use workspace::{find_package_root, Workspace, WorkspaceOptions};
+pub use workspace::{find_workspace_root, Workspace, WorkspaceOptions};
 
 #[cfg(test)]
 use std::path::PathBuf;
