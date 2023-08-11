@@ -42,6 +42,8 @@ impl Package {
         &self.metadata
     }
 
+    // TODO: I want this implemented with `FromStr`.
+    #[allow(clippy::should_implement_trait)]
     /// Initialize a `Package` from a `&str`.
     ///
     /// ```
@@ -49,10 +51,11 @@ impl Package {
     ///
     /// let package = Package::from_str("my-package == 0.0.1").unwrap();
     /// ```
-    pub fn from_str(s: &str) -> HuakResult<Package> {
+    pub fn from_str<T: AsRef<str>>(s: T) -> HuakResult<Package> {
         // A naive approach to parsing the name and `VersionSpecifiers` from the `&str`.
         // Find the first character of the `VersionSpecifiers`. Everything prior is considered
         // the name.
+        let s = s.as_ref();
         let spec_str = parse_version_specifiers_str(s)
             .ok_or(Error::InvalidVersionString(s.to_string()))?;
         let name = s.strip_suffix(spec_str).unwrap_or(s).to_string();
