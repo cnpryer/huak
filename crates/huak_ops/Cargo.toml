@@ -21,7 +21,7 @@ termcolor = { workspace = true }
 thiserror = { workspace = true }
 toml = { version = "0.7.6", features = ["preserve_order"] }
 toml_edit = "0.19.4"
-regex = "1.9.1"
+regex = "1.9.4"
 
 [dev-dependencies]
 tempfile = { workspace = true }
