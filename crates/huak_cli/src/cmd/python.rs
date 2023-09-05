@@ -60,8 +60,7 @@ pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cmd::test_fixtures::test_config;
-    use huak_ops::Verbosity;
+    use huak_ops::{TerminalOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]
@@ -69,9 +68,17 @@ mod tests {
         let dir = tempdir().unwrap();
         let interpreters = Environment::resolve_python_interpreters();
         let version = interpreters.latest().unwrap().version();
-        let root = dir.path();
-        let cwd = root;
-        let config = test_config(root, cwd, Verbosity::Quiet);
+        let workspace_root = dir.path().to_path_buf();
+        let cwd = workspace_root.clone();
+        let terminal_options = TerminalOptions {
+            verbosity: Verbosity::Quiet,
+            ..Default::default()
+        };
+        let config = Config {
+            workspace_root,
+            cwd,
+            terminal_options,
+        };
 
         use_python(&version.to_string(), &config).unwrap();
     }

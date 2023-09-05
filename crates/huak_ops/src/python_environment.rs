@@ -11,7 +11,7 @@ use std::{
 
 use crate::{
     environment::env_path_values, fs, package::Package, sys, version::Version,
-    Config, Error, HuakResult,
+    Config, Environment, Error, HuakResult,
 };
 
 const DEFAULT_VENV_NAME: &str = ".venv";
@@ -590,24 +590,39 @@ pub fn parse_python_version_from_command<T: Into<PathBuf>>(
     Ok(version)
 }
 
+/// A helper for initializing a virtual environment.
+pub fn initialize_venv<T: AsRef<Path>>(
+    path: T,
+    env: &Environment,
+) -> HuakResult<()> {
+    let Some(interpreter) = env.interpreters().latest() else {
+        return Err(Error::PythonNotFound);
+    };
+    let mut cmd = Command::new(interpreter.path());
+    cmd.args(["-m", "venv", &format!("{}", path.as_ref().display())]);
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::{TerminalOptions, Verbosity};
     use tempfile::tempdir;
-
-    use crate::TerminalOptions;
 
     use super::*;
 
     #[test]
     fn python_environment_executables_dir_name() {
         let dir = tempdir().unwrap();
+        let workspace_root = dir.path().to_path_buf();
+        let cwd = dir.path().to_path_buf();
+        let terminal_options = TerminalOptions {
+            verbosity: Verbosity::Quiet,
+            ..Default::default()
+        };
         let config = Config {
-            workspace_root: dir.path().to_path_buf(),
-            cwd: dir.path().to_path_buf(),
-            terminal_options: TerminalOptions {
-                verbosity: sys::Verbosity::Quiet,
-                ..Default::default()
-            },
+            workspace_root,
+            cwd,
+            terminal_options,
         };
         let ws = config.workspace();
         let venv = ws.resolve_python_environment().unwrap();

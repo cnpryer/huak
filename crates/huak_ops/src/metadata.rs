@@ -377,13 +377,13 @@ def test_version():
 
 #[cfg(test)]
 mod tests {
-    use std::ops::Deref;
-
     use super::*;
+    use crate::test_utils::test_resources_dir_path;
+    use std::ops::Deref;
 
     #[test]
     fn toml_from_path() {
-        let path = crate::test_resources_dir_path()
+        let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
         let local_metadata = LocalMetadata::new(path).unwrap();
@@ -398,7 +398,7 @@ mod tests {
 
     #[test]
     fn toml_to_string_pretty() {
-        let path = crate::test_resources_dir_path()
+        let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
         let local_metadata = LocalMetadata::new(path).unwrap();
@@ -431,7 +431,7 @@ dev = [
 
     #[test]
     fn toml_dependencies() {
-        let path = crate::test_resources_dir_path()
+        let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
         let local_metadata = LocalMetadata::new(path).unwrap();
@@ -444,7 +444,7 @@ dev = [
 
     #[test]
     fn toml_optional_dependencies() {
-        let path = crate::test_resources_dir_path()
+        let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
         let local_metadata = LocalMetadata::new(path).unwrap();
@@ -465,7 +465,7 @@ dev = [
 
     #[test]
     fn toml_add_dependency() {
-        let path = crate::test_resources_dir_path()
+        let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
         let mut local_metadata = LocalMetadata::new(path).unwrap();
@@ -508,7 +508,7 @@ dev = [
 
     #[test]
     fn toml_add_optional_dependency() {
-        let path = crate::test_resources_dir_path()
+        let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
         let mut local_metadata = LocalMetadata::new(path).unwrap();
@@ -551,7 +551,7 @@ new-group = ["test2"]
 
     #[test]
     fn toml_remove_dependency() {
-        let path = crate::test_resources_dir_path()
+        let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
         let mut local_metadata = LocalMetadata::new(path).unwrap();
@@ -587,7 +587,7 @@ dev = [
 
     #[test]
     fn toml_remove_optional_dependency() {
-        let path = crate::test_resources_dir_path()
+        let path = test_resources_dir_path()
             .join("mock-project")
             .join("pyproject.toml");
         let mut local_metadata = LocalMetadata::new(path).unwrap();

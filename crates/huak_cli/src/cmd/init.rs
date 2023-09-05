@@ -51,17 +51,27 @@ pub fn init_lib_project(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cmd::test_fixtures::test_config;
-    use huak_ops::{default_pyproject_toml_contents, PyProjectToml, Verbosity};
+    use huak_ops::{
+        default_pyproject_toml_contents, PyProjectToml, TerminalOptions,
+        Verbosity,
+    };
     use tempfile::tempdir;
 
     #[test]
     fn test_init_lib_project() {
         let dir = tempdir().unwrap();
         std::fs::create_dir(dir.path().join("mock-project")).unwrap();
-        let root = dir.path().join("mock-project");
-        let cwd = root.to_path_buf();
-        let config = test_config(root, cwd, Verbosity::Quiet);
+        let workspace_root = dir.path().join("mock-project");
+        let cwd = workspace_root.to_path_buf();
+        let terminal_options = TerminalOptions {
+            verbosity: Verbosity::Quiet,
+            ..Default::default()
+        };
+        let config = Config {
+            workspace_root,
+            cwd,
+            terminal_options,
+        };
         let options = WorkspaceOptions { uses_git: false };
         init_lib_project(&config, &options).unwrap();
 
@@ -78,9 +88,17 @@ mod tests {
     fn test_init_app_project() {
         let dir = tempdir().unwrap();
         std::fs::create_dir(dir.path().join("mock-project")).unwrap();
-        let root = dir.path().join("mock-project");
-        let cwd = root.to_path_buf();
-        let config = test_config(root, cwd, Verbosity::Quiet);
+        let workspace_root = dir.path().join("mock-project");
+        let cwd = workspace_root.to_path_buf();
+        let terminal_options = TerminalOptions {
+            verbosity: Verbosity::Quiet,
+            ..Default::default()
+        };
+        let config = Config {
+            workspace_root,
+            cwd,
+            terminal_options,
+        };
         let options = WorkspaceOptions { uses_git: false };
 
         init_app_project(&config, &options).unwrap();

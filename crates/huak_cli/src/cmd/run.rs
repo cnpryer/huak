@@ -18,9 +18,12 @@ pub fn run_command_str(command: &str, config: &Config) -> HuakResult<()> {
 
 #[cfg(test)]
 mod tests {
+    use crate::cmd::test_utils::test_resources_dir_path;
+
     use super::*;
-    use crate::cmd::test_fixtures::{test_config, test_resources_dir_path};
-    use huak_ops::{copy_dir, env_path_string, CopyDirOptions, Verbosity};
+    use huak_ops::{
+        copy_dir, env_path_string, CopyDirOptions, TerminalOptions, Verbosity,
+    };
     use tempfile::tempdir;
 
     #[test]
@@ -32,9 +35,17 @@ mod tests {
             &CopyDirOptions::default(),
         )
         .unwrap();
-        let root = dir.path().join("mock-project");
-        let cwd = root.to_path_buf();
-        let config = test_config(&root, &cwd, Verbosity::Quiet);
+        let workspace_root = dir.path().join("mock-project");
+        let cwd = workspace_root.to_path_buf();
+        let terminal_options = TerminalOptions {
+            verbosity: Verbosity::Quiet,
+            ..Default::default()
+        };
+        let config = Config {
+            workspace_root,
+            cwd,
+            terminal_options,
+        };
         let ws = config.workspace();
         // For some reason this test fails with multiple threads used. Workspace.resolve_python_environment()
         // ends up updating the PATH environment variable causing subsequent Python searches using PATH to fail.

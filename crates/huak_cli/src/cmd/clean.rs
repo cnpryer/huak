@@ -53,9 +53,10 @@ pub fn clean_project(
 
 #[cfg(test)]
 mod tests {
+    use crate::cmd::test_utils::test_resources_dir_path;
+
     use super::*;
-    use crate::cmd::test_fixtures::{test_config, test_resources_dir_path};
-    use huak_ops::{copy_dir, CopyDirOptions, Verbosity};
+    use huak_ops::{copy_dir, CopyDirOptions, TerminalOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]
@@ -67,9 +68,17 @@ mod tests {
             &CopyDirOptions::default(),
         )
         .unwrap();
-        let root = dir.path().join("mock-project");
-        let cwd = root.to_path_buf();
-        let config = test_config(root, cwd, Verbosity::Quiet);
+        let workspace_root = dir.path().join("mock-project");
+        let cwd = workspace_root.to_path_buf();
+        let terminal_options = TerminalOptions {
+            verbosity: Verbosity::Quiet,
+            ..Default::default()
+        };
+        let config = Config {
+            workspace_root,
+            cwd,
+            terminal_options,
+        };
         let options = CleanOptions {
             include_pycache: true,
             include_compiled_bytecode: true,
