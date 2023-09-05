@@ -124,31 +124,43 @@ pub fn home_dir() -> HuakResult<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use tempfile::tempdir;
-
     use super::*;
+    use crate::test_utils::test_resources_dir_path;
+    use tempfile::tempdir;
 
     #[test]
     fn test_copy_dir() {
-        let to = tempdir().unwrap().into_path();
-        let from = crate::test_resources_dir_path().join("mock-project");
-        copy_dir(from, to.join("mock-project"), &CopyDirOptions::default())
-            .unwrap();
+        let to = tempdir().unwrap();
+        let from = test_resources_dir_path().join("mock-project");
+        copy_dir(
+            from,
+            to.path().join("mock-project"),
+            &CopyDirOptions::default(),
+        )
+        .unwrap();
 
-        assert!(to.join("mock-project").exists());
-        assert!(to.join("mock-project").join("pyproject.toml").exists());
+        assert!(to.path().join("mock-project").exists());
+        assert!(to
+            .path()
+            .join("mock-project")
+            .join("pyproject.toml")
+            .exists());
     }
 
     #[test]
     fn test_find_root_file_bottom_up() {
-        let tmp = tempdir().unwrap().into_path();
-        let from = crate::test_resources_dir_path().join("mock-project");
-        copy_dir(&from, &tmp.join("mock-project"), &CopyDirOptions::default())
-            .unwrap();
+        let tmp = tempdir().unwrap();
+        let from = test_resources_dir_path().join("mock-project");
+        copy_dir(
+            &from,
+            &tmp.path().join("mock-project"),
+            &CopyDirOptions::default(),
+        )
+        .unwrap();
         let res = find_root_file_bottom_up(
             "pyproject.toml",
-            tmp.join("mock-project").as_path(),
-            tmp.as_path(),
+            tmp.path().join("mock-project").as_path(),
+            tmp.path(),
         );
 
         assert!(res.unwrap().unwrap().exists());

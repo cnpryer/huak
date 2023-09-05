@@ -60,10 +60,10 @@ pub fn build_project(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cmd::test_fixtures::{
-        test_config, test_resources_dir_path, test_venv,
+    use crate::cmd::test_utils::test_resources_dir_path;
+    use huak_ops::{
+        copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity,
     };
-    use huak_ops::{copy_dir, CopyDirOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]
@@ -75,11 +75,19 @@ mod tests {
             &CopyDirOptions::default(),
         )
         .unwrap();
-        let root = dir.path().join("mock-project");
+        let workspace_root = dir.path().join("mock-project");
         let cwd = dir.path().to_path_buf();
-        let config = test_config(root, cwd, Verbosity::Quiet);
+        let terminal_options = TerminalOptions {
+            verbosity: Verbosity::Quiet,
+            ..Default::default()
+        };
+        let config = Config {
+            workspace_root,
+            cwd,
+            terminal_options,
+        };
         let ws = config.workspace();
-        test_venv(&ws);
+        initialize_venv(ws.root().join(".venv"), &ws.environment()).unwrap();
         let options = BuildOptions {
             values: None,
             install_options: InstallOptions { values: None },

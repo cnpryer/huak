@@ -95,11 +95,12 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
 
 #[cfg(test)]
 mod tests {
+    use crate::cmd::test_utils::test_resources_dir_path;
+
     use super::*;
-    use crate::cmd::test_fixtures::{
-        test_config, test_resources_dir_path, test_venv,
+    use huak_ops::{
+        copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity,
     };
-    use huak_ops::{copy_dir, CopyDirOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]
@@ -111,9 +112,17 @@ mod tests {
             &CopyDirOptions::default(),
         )
         .unwrap();
-        let root = dir.path().join("mock-project");
-        let cwd = root.to_path_buf();
-        let config = test_config(root, cwd, Verbosity::Quiet);
+        let workspace_root = dir.path().join("mock-project");
+        let cwd = workspace_root.to_path_buf();
+        let terminal_options = TerminalOptions {
+            verbosity: Verbosity::Quiet,
+            ..Default::default()
+        };
+        let config = Config {
+            workspace_root,
+            cwd,
+            terminal_options,
+        };
         let options = LintOptions {
             values: None,
             include_types: true,
@@ -132,11 +141,19 @@ mod tests {
             &CopyDirOptions::default(),
         )
         .unwrap();
-        let root = dir.path().join("mock-project");
-        let cwd = root.to_path_buf();
-        let config = test_config(root, cwd, Verbosity::Quiet);
+        let workspace_root = dir.path().join("mock-project");
+        let cwd = workspace_root.to_path_buf();
+        let terminal_options = TerminalOptions {
+            verbosity: Verbosity::Quiet,
+            ..Default::default()
+        };
+        let config = Config {
+            workspace_root,
+            cwd,
+            terminal_options,
+        };
         let ws = config.workspace();
-        test_venv(&ws);
+        initialize_venv(ws.root().join(".venv"), &ws.environment()).unwrap();
         let options = LintOptions {
             values: Some(vec![String::from("--fix")]),
             include_types: true,

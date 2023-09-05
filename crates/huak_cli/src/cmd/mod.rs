@@ -106,41 +106,15 @@ fn init_git<T: Into<PathBuf>>(path: T) -> HuakResult<()> {
 }
 
 #[cfg(test)]
-pub(crate) mod test_fixtures {
-    use super::*;
+pub mod test_utils {
+    use std::path::PathBuf;
 
-    /// The resource directory found in the Huak repo used for testing purposes.
-    pub(crate) fn test_resources_dir_path() -> PathBuf {
+    pub fn test_resources_dir_path() -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .parent()
             .unwrap()
             .parent()
             .unwrap()
             .join("dev-resources")
-    }
-
-    pub(crate) fn test_config<T: Into<PathBuf>>(
-        root: T,
-        cwd: T,
-        verbosity: Verbosity,
-    ) -> Config {
-        let config = Config {
-            workspace_root: root.into(),
-            cwd: cwd.into(),
-            terminal_options: TerminalOptions {
-                verbosity,
-                ..Default::default()
-            },
-        };
-
-        config
-    }
-
-    pub(crate) fn test_venv(ws: &Workspace) {
-        let env = ws.environment();
-        let venv_path = format!("{}", ws.root().join(".venv").display());
-        let python_path = env.interpreters().latest().unwrap().path();
-        let mut cmd = Command::new(python_path);
-        cmd.args(["-m", "venv", &venv_path]);
     }
 }

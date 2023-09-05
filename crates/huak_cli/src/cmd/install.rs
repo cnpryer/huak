@@ -63,11 +63,13 @@ pub fn install_project_dependencies(
 
 #[cfg(test)]
 mod tests {
+    use crate::cmd::test_utils::test_resources_dir_path;
+
     use super::*;
-    use crate::cmd::test_fixtures::{
-        test_config, test_resources_dir_path, test_venv,
+    use huak_ops::{
+        copy_dir, initialize_venv, CopyDirOptions, Package, TerminalOptions,
+        Verbosity,
     };
-    use huak_ops::{copy_dir, CopyDirOptions, Package, Verbosity};
     use tempfile::tempdir;
 
     #[test]
@@ -79,11 +81,19 @@ mod tests {
             &CopyDirOptions::default(),
         )
         .unwrap();
-        let root = dir.path().join("mock-project");
-        let cwd = root.to_path_buf();
-        let config = test_config(&root, &cwd, Verbosity::Quiet);
+        let workspace_root = dir.path().join("mock-project");
+        let cwd = workspace_root.to_path_buf();
+        let terminal_options = TerminalOptions {
+            verbosity: Verbosity::Quiet,
+            ..Default::default()
+        };
+        let config = Config {
+            workspace_root,
+            cwd,
+            terminal_options,
+        };
         let ws = config.workspace();
-        test_venv(&ws);
+        initialize_venv(ws.root().join(".venv"), &ws.environment()).unwrap();
         let options = InstallOptions { values: None };
         let venv = ws.resolve_python_environment().unwrap();
         let test_package = Package::from_str("click==8.1.3").unwrap();
@@ -104,11 +114,19 @@ mod tests {
             &CopyDirOptions::default(),
         )
         .unwrap();
-        let root = dir.path().join("mock-project");
-        let cwd = root.to_path_buf();
-        let config = test_config(&root, &cwd, Verbosity::Quiet);
+        let workspace_root = dir.path().join("mock-project");
+        let cwd = workspace_root.to_path_buf();
+        let terminal_options = TerminalOptions {
+            verbosity: Verbosity::Quiet,
+            ..Default::default()
+        };
+        let config = Config {
+            workspace_root,
+            cwd,
+            terminal_options,
+        };
         let ws = config.workspace();
-        test_venv(&ws);
+        initialize_venv(ws.root().join(".venv"), &ws.environment()).unwrap();
         let options = InstallOptions { values: None };
         let venv = ws.resolve_python_environment().unwrap();
         let had_package = venv.contains_module("pytest").unwrap();

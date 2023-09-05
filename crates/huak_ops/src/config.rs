@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::{sys::Terminal, workspace::Workspace, TerminalOptions};
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 /// The main `Config` for Huak.
 ///
 /// The `Config` contains data telling Huak what to do at times.
