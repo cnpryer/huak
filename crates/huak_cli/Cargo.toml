@@ -26,5 +26,5 @@ termcolor = { workspace = true }
 thiserror = "1.0.44"
 
 [dev-dependencies]
-insta-cmd = "0.3.0"
+insta-cmd = "0.4.0"
 tempfile = { workspace = true }
