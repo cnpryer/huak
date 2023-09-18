@@ -23,7 +23,7 @@ openssl = { version = "0.10.57", features = ["vendored"], optional = true }
 pep440_rs = { workspace = true }
 pep508_rs = { workspace = true }
 termcolor = { workspace = true }
-thiserror = "1.0.44"
+thiserror = "1.0.48"
 
 [dev-dependencies]
 insta-cmd = "0.4.0"
