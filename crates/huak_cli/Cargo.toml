@@ -13,7 +13,7 @@ categories = [
 
 [dependencies]
 clap = { workspace = true }
-clap_complete = "4.3.2"
+clap_complete = "4.4.1"
 colored = "2.0.4"
 glob = { workspace = true }
 huak_ops = { path = "../huak_ops"}
