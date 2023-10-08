@@ -1,6 +1,4 @@
-use huak_ops::{
-    dependency_iter, Config, Dependency, HuakResult, InstallOptions,
-};
+use huak_ops::{dependency_iter, Config, Dependency, HuakResult, InstallOptions};
 use std::str::FromStr;
 
 pub struct UpdateOptions {
@@ -47,9 +45,7 @@ pub fn update_project_dependencies(
 
         if let Some(odeps) = metadata.metadata().optional_dependencies() {
             odeps.values().for_each(|reqs| {
-                deps.extend(
-                    reqs.iter().map(Dependency::from).collect::<Vec<_>>(),
-                )
+                deps.extend(reqs.iter().map(Dependency::from).collect::<Vec<_>>())
             });
         }
 
@@ -89,9 +85,7 @@ pub fn update_project_dependencies(
 mod tests {
     use super::*;
     use crate::cmd::test_utils::test_resources_dir_path;
-    use huak_ops::{
-        copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity,
-    };
+    use huak_ops::{copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]

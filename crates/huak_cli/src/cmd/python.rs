@@ -1,6 +1,6 @@
 use huak_ops::{
-    active_python_env_path, directory_is_venv, venv_executables_dir_path,
-    Config, Environment, Error, HuakResult,
+    active_python_env_path, directory_is_venv, venv_executables_dir_path, Config, Environment,
+    Error, HuakResult,
 };
 use std::process::Command;
 use termcolor::Color;
@@ -41,12 +41,9 @@ pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
     // Remove the current Python virtual environment if one exists.
     let workspace = config.workspace();
     match workspace.current_python_environment() {
-        Ok(it) if directory_is_venv(it.root()) => {
-            std::fs::remove_dir_all(it.root())?
-        }
+        Ok(it) if directory_is_venv(it.root()) => std::fs::remove_dir_all(it.root())?,
         Ok(_) => (),
-        Err(Error::PythonEnvironmentNotFound)
-        | Err(Error::UnsupportedPythonEnvironment(_)) => (),
+        Err(Error::PythonEnvironmentNotFound) | Err(Error::UnsupportedPythonEnvironment(_)) => (),
         Err(e) => return Err(e),
     };
 

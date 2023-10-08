@@ -44,9 +44,7 @@ pub fn install_project_dependencies(
         }
         if let Some(deps) = metadata.metadata().optional_dependencies() {
             deps.values().for_each(|reqs| {
-                dependencies.extend(
-                    reqs.iter().map(Dependency::from).collect::<Vec<_>>(),
-                )
+                dependencies.extend(reqs.iter().map(Dependency::from).collect::<Vec<_>>())
             });
         }
     }
@@ -67,8 +65,7 @@ mod tests {
 
     use super::*;
     use huak_ops::{
-        copy_dir, initialize_venv, CopyDirOptions, Package, TerminalOptions,
-        Verbosity,
+        copy_dir, initialize_venv, CopyDirOptions, Package, TerminalOptions, Verbosity,
     };
     use tempfile::tempdir;
 
@@ -131,12 +128,7 @@ mod tests {
         let venv = ws.resolve_python_environment().unwrap();
         let had_package = venv.contains_module("pytest").unwrap();
 
-        install_project_dependencies(
-            Some(&vec![String::from("dev")]),
-            &config,
-            &options,
-        )
-        .unwrap();
+        install_project_dependencies(Some(&vec![String::from("dev")]), &config, &options).unwrap();
 
         assert!(!had_package);
         assert!(venv.contains_module("pytest").unwrap());

@@ -73,9 +73,7 @@ impl Workspace {
         // workspace root.
         let env = match self.current_python_environment() {
             Ok(it) => it,
-            Err(Error::PythonEnvironmentNotFound) => {
-                self.new_python_environment()?
-            }
+            Err(Error::PythonEnvironmentNotFound) => self.new_python_environment()?,
             Err(e) => return Err(e),
         };
 
@@ -131,10 +129,7 @@ pub struct WorkspaceOptions {
 /// 1. If VIRTUAL_ENV exists then a venv is active; use it.
 /// 2. Walk from the `from` dir upwards, searching for dir containing the pyvenv.cfg file.
 /// 3. Stop after searching the `stop_after` dir.
-pub fn find_venv_root<T: Into<PathBuf>>(
-    from: T,
-    stop_after: T,
-) -> HuakResult<PathBuf> {
+pub fn find_venv_root<T: Into<PathBuf>>(from: T, stop_after: T) -> HuakResult<PathBuf> {
     let from = from.into();
     let stop_after = stop_after.into();
 
@@ -148,11 +143,7 @@ pub fn find_venv_root<T: Into<PathBuf>>(
         ));
     }
 
-    let file_path = match fs::find_root_file_bottom_up(
-        venv_config_file_name(),
-        from,
-        stop_after,
-    ) {
+    let file_path = match fs::find_root_file_bottom_up(venv_config_file_name(), from, stop_after) {
         Ok(it) => it.ok_or(Error::PythonEnvironmentNotFound)?,
         Err(_) => return Err(Error::PythonEnvironmentNotFound),
     };
@@ -171,10 +162,7 @@ pub fn find_venv_root<T: Into<PathBuf>>(
 /// Search for a Python `Package` root.
 /// 1. Walk from the `from` dir upwards, searching for dir containing the `LocalMetadata` file.
 /// 2. Stop after searching the `stop_after` dir.
-pub fn find_package_root<T: Into<PathBuf>>(
-    from: T,
-    stop_after: T,
-) -> HuakResult<PathBuf> {
+pub fn find_package_root<T: Into<PathBuf>>(from: T, stop_after: T) -> HuakResult<PathBuf> {
     let from = from.into();
     let stop_after = stop_after.into();
 
@@ -185,11 +173,7 @@ pub fn find_package_root<T: Into<PathBuf>>(
     }
 
     // Currently only pyproject.toml is supported
-    let file_path = match fs::find_root_file_bottom_up(
-        "pyproject.toml",
-        from,
-        stop_after,
-    ) {
+    let file_path = match fs::find_root_file_bottom_up("pyproject.toml", from, stop_after) {
         Ok(it) => it.ok_or(Error::MetadataFileNotFound)?,
         Err(_) => return Err(Error::MetadataFileNotFound),
     };

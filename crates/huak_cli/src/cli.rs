@@ -1,15 +1,15 @@
 use crate::{
     cmd::{
-        self, AddOptions, BuildOptions, CleanOptions, FormatOptions,
-        LintOptions, PublishOptions, RemoveOptions, TestOptions, UpdateOptions,
+        self, AddOptions, BuildOptions, CleanOptions, FormatOptions, LintOptions, PublishOptions,
+        RemoveOptions, TestOptions, UpdateOptions,
     },
     error::{CliResult, Error},
 };
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::{self, Shell};
 use huak_ops::{
-    find_package_root, home_dir, Config, Error as HuakError, HuakResult,
-    InstallOptions, TerminalOptions, Verbosity, Version, WorkspaceOptions,
+    find_package_root, home_dir, Config, Error as HuakError, HuakResult, InstallOptions,
+    TerminalOptions, Verbosity, Version, WorkspaceOptions,
 };
 use std::{env::current_dir, path::PathBuf, process::ExitCode, str::FromStr};
 use termcolor::ColorChoice;
@@ -188,9 +188,7 @@ impl Cli {
         match exec_command(self.command, &mut config) {
             Ok(_) => Ok(0),
             // TODO: Implement our own ExitCode or status handler.
-            Err(HuakError::SubprocessFailure(e)) => {
-                Ok(e.code().unwrap_or_default())
-            }
+            Err(HuakError::SubprocessFailure(e)) => Ok(e.code().unwrap_or_default()),
             Err(e) => Err(Error::new(e, ExitCode::FAILURE)),
         }
     }
@@ -333,8 +331,7 @@ fn exec_command(cmd: Commands, config: &mut Config) -> Result<(), HuakError> {
 fn get_config(cwd: PathBuf, cli: &Cli) -> Config {
     // TODO: Use find_workspace_root
     let workspace_root =
-        find_package_root(&cwd, &home_dir().expect("home directory"))
-            .unwrap_or(cwd.clone());
+        find_package_root(&cwd, &home_dir().expect("home directory")).unwrap_or(cwd.clone());
     let verbosity = match cli.quiet {
         true => Verbosity::Quiet,
         false => Verbosity::Normal,
@@ -372,9 +369,7 @@ fn add(
         .map(|item| item.to_string())
         .collect::<Vec<String>>();
     match group.as_ref() {
-        Some(it) => {
-            cmd::add_project_optional_dependencies(&deps, it, config, options)
-        }
+        Some(it) => cmd::add_project_optional_dependencies(&deps, it, config, options),
         None => cmd::add_project_dependencies(&deps, config, options),
     }
 }
@@ -395,12 +390,7 @@ fn fmt(config: &Config, options: &FormatOptions) -> HuakResult<()> {
     cmd::format_project(config, options)
 }
 
-fn init(
-    app: bool,
-    _lib: bool,
-    config: &Config,
-    options: &WorkspaceOptions,
-) -> HuakResult<()> {
+fn init(app: bool, _lib: bool, config: &Config, options: &WorkspaceOptions) -> HuakResult<()> {
     if app {
         cmd::init_app_project(config, options)
     } else {
@@ -420,12 +410,7 @@ fn lint(config: &Config, options: &LintOptions) -> HuakResult<()> {
     cmd::lint_project(config, options)
 }
 
-fn new(
-    app: bool,
-    _lib: bool,
-    config: &Config,
-    options: &WorkspaceOptions,
-) -> HuakResult<()> {
+fn new(app: bool, _lib: bool, config: &Config, options: &WorkspaceOptions) -> HuakResult<()> {
     if app {
         cmd::new_app_project(config, options)
     } else {
@@ -444,11 +429,7 @@ fn python(command: Python, config: &Config) -> HuakResult<()> {
     }
 }
 
-fn remove(
-    dependencies: Vec<String>,
-    config: &Config,
-    options: &RemoveOptions,
-) -> HuakResult<()> {
+fn remove(dependencies: Vec<String>, config: &Config, options: &RemoveOptions) -> HuakResult<()> {
     cmd::remove_project_dependencies(&dependencies, config, options)
 }
 

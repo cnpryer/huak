@@ -56,8 +56,8 @@ impl Package {
         // Find the first character of the `VersionSpecifiers`. Everything prior is considered
         // the name.
         let s = s.as_ref();
-        let spec_str = parse_version_specifiers_str(s)
-            .ok_or(Error::InvalidVersionString(s.to_string()))?;
+        let spec_str =
+            parse_version_specifiers_str(s).ok_or(Error::InvalidVersionString(s.to_string()))?;
         let name = s.strip_suffix(spec_str).unwrap_or(s).to_string();
         let version_specifiers = VersionSpecifiers::from_str(spec_str)?;
 

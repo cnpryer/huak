@@ -84,9 +84,7 @@ impl Display for LocalMetadata {
 }
 
 /// Create `LocalMetadata` from a pyproject.toml file.
-fn pyproject_toml_metadata<T: Into<PathBuf>>(
-    path: T,
-) -> HuakResult<LocalMetadata> {
+fn pyproject_toml_metadata<T: Into<PathBuf>>(path: T) -> HuakResult<LocalMetadata> {
     let path = path.into();
     let pyproject_toml = PyProjectToml::new(&path)?;
     let project = match pyproject_toml.project.as_ref() {
@@ -148,10 +146,7 @@ impl Metadata {
         self.project.dependencies.as_deref()
     }
 
-    pub fn contains_dependency(
-        &self,
-        dependency: &Dependency,
-    ) -> HuakResult<bool> {
+    pub fn contains_dependency(&self, dependency: &Dependency) -> HuakResult<bool> {
         if let Some(deps) = self.dependencies() {
             for d in deps {
                 if d.name == dependency.name() {
@@ -162,10 +157,7 @@ impl Metadata {
         Ok(false)
     }
 
-    pub fn contains_dependency_any(
-        &self,
-        dependency: &Dependency,
-    ) -> HuakResult<bool> {
+    pub fn contains_dependency_any(&self, dependency: &Dependency) -> HuakResult<bool> {
         if self.contains_dependency(dependency).unwrap_or_default() {
             return Ok(true);
         }
@@ -191,9 +183,7 @@ impl Metadata {
             .push(dependency.requirement().to_owned())
     }
 
-    pub fn optional_dependencies(
-        &self,
-    ) -> Option<&IndexMap<String, Vec<Requirement>>> {
+    pub fn optional_dependencies(&self) -> Option<&IndexMap<String, Vec<Requirement>>> {
         self.project.optional_dependencies.as_ref()
     }
 
@@ -218,21 +208,14 @@ impl Metadata {
         Ok(false)
     }
 
-    pub fn optional_dependency_group(
-        &self,
-        group: &str,
-    ) -> Option<&Vec<Requirement>> {
+    pub fn optional_dependency_group(&self, group: &str) -> Option<&Vec<Requirement>> {
         self.project
             .optional_dependencies
             .as_ref()
             .and_then(|deps| deps.get(group))
     }
 
-    pub fn add_optional_dependency(
-        &mut self,
-        dependency: Dependency,
-        group: &str,
-    ) {
+    pub fn add_optional_dependency(&mut self, dependency: Dependency, group: &str) {
         self.project
             .optional_dependencies
             .get_or_insert_with(IndexMap::new)
@@ -249,11 +232,7 @@ impl Metadata {
         });
     }
 
-    pub fn remove_optional_dependency(
-        &mut self,
-        dependency: &Dependency,
-        group: &str,
-    ) {
+    pub fn remove_optional_dependency(&mut self, dependency: &Dependency, group: &str) {
         self.project
             .optional_dependencies
             .as_mut()
@@ -513,14 +492,12 @@ dev = [
             .join("pyproject.toml");
         let mut local_metadata = LocalMetadata::new(path).unwrap();
 
-        local_metadata.metadata.add_optional_dependency(
-            Dependency::from_str("test1").unwrap(),
-            "dev",
-        );
-        local_metadata.metadata.add_optional_dependency(
-            Dependency::from_str("test2").unwrap(),
-            "new-group",
-        );
+        local_metadata
+            .metadata
+            .add_optional_dependency(Dependency::from_str("test1").unwrap(), "dev");
+        local_metadata
+            .metadata
+            .add_optional_dependency(Dependency::from_str("test2").unwrap(), "new-group");
         assert_eq!(
             local_metadata.to_string_pretty().unwrap(),
             r#"[build-system]
@@ -592,10 +569,9 @@ dev = [
             .join("pyproject.toml");
         let mut local_metadata = LocalMetadata::new(path).unwrap();
 
-        local_metadata.metadata.remove_optional_dependency(
-            &Dependency::from_str("isort").unwrap(),
-            "dev",
-        );
+        local_metadata
+            .metadata
+            .remove_optional_dependency(&Dependency::from_str("isort").unwrap(), "dev");
         assert_eq!(
             local_metadata.to_string_pretty().unwrap(),
             r#"[build-system]

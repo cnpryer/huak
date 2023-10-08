@@ -19,11 +19,7 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
     let ruff_dep = Dependency::from_str("ruff")?;
     let mut lint_deps = vec![ruff_dep.clone()];
     if !python_env.contains_module("ruff")? {
-        python_env.install_packages(
-            &[&ruff_dep],
-            &options.install_options,
-            config,
-        )?;
+        python_env.install_packages(&[&ruff_dep], &options.install_options, config)?;
     }
 
     let mut terminal = config.terminal();
@@ -32,11 +28,7 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
         // Install `mypy` if it isn't already installed.
         let mypy_dep = Dependency::from_str("mypy")?;
         if !python_env.contains_module("mypy")? {
-            python_env.install_packages(
-                &[&mypy_dep],
-                &options.install_options,
-                config,
-            )?;
+            python_env.install_packages(&[&mypy_dep], &options.install_options, config)?;
         }
 
         // Keep track of the fact that `mypy` is a needed lint dep.
@@ -79,10 +71,9 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
             .iter()
             .filter(|pkg| new_lint_deps.contains(&pkg.name()))
         {
-            metadata.metadata_mut().add_optional_dependency(
-                Dependency::from_str(&pkg.to_string())?,
-                "dev",
-            );
+            metadata
+                .metadata_mut()
+                .add_optional_dependency(Dependency::from_str(&pkg.to_string())?, "dev");
         }
     }
 
@@ -98,9 +89,7 @@ mod tests {
     use crate::cmd::test_utils::test_resources_dir_path;
 
     use super::*;
-    use huak_ops::{
-        copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity,
-    };
+    use huak_ops::{copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]
@@ -159,8 +148,7 @@ mod tests {
             include_types: true,
             install_options: InstallOptions { values: None },
         };
-        let lint_fix_filepath =
-            ws.root().join("src").join("mock_project").join("fix_me.py");
+        let lint_fix_filepath = ws.root().join("src").join("mock_project").join("fix_me.py");
         let pre_fix_str = r#"
 import json # this gets removed(autofixed)
 

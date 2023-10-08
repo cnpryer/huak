@@ -5,10 +5,7 @@ pub struct CleanOptions {
     pub include_compiled_bytecode: bool,
 }
 
-pub fn clean_project(
-    config: &Config,
-    options: &CleanOptions,
-) -> HuakResult<()> {
+pub fn clean_project(config: &Config, options: &CleanOptions) -> HuakResult<()> {
     let workspace = config.workspace();
 
     // Remove everything from the dist directory if it exists.
@@ -39,8 +36,7 @@ pub fn clean_project(
 
     // Remove all .pyc files in the workspace if they exist.
     if options.include_compiled_bytecode {
-        let pattern =
-            format!("{}", workspace.root().join("**").join("*.pyc").display());
+        let pattern = format!("{}", workspace.root().join("**").join("*.pyc").display());
         glob::glob(&pattern)?.for_each(|item| {
             if let Ok(it) = item {
                 std::fs::remove_file(it).ok();

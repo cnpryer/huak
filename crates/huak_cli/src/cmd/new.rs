@@ -1,15 +1,11 @@
 use super::{create_workspace, init_git};
 use huak_ops::{
-    default_package_entrypoint_string, default_package_test_file_contents,
-    importable_package_name, last_path_component, Config, Dependency, Error,
-    HuakResult, LocalMetadata, WorkspaceOptions,
+    default_package_entrypoint_string, default_package_test_file_contents, importable_package_name,
+    last_path_component, Config, Dependency, Error, HuakResult, LocalMetadata, WorkspaceOptions,
 };
 use std::str::FromStr;
 
-pub fn new_app_project(
-    config: &Config,
-    options: &WorkspaceOptions,
-) -> HuakResult<()> {
+pub fn new_app_project(config: &Config, options: &WorkspaceOptions) -> HuakResult<()> {
     new_lib_project(config, options)?;
 
     let workspace = config.workspace();
@@ -33,18 +29,13 @@ pub fn new_app_project(
     metadata.write_file()
 }
 
-pub fn new_lib_project(
-    config: &Config,
-    options: &WorkspaceOptions,
-) -> HuakResult<()> {
+pub fn new_lib_project(config: &Config, options: &WorkspaceOptions) -> HuakResult<()> {
     let workspace = config.workspace();
 
     // Create a new metadata file or error if one exists.
     let mut metadata = match workspace.current_local_metadata() {
         Ok(_) => return Err(Error::ProjectFound),
-        Err(_) => {
-            LocalMetadata::template(workspace.root().join("pyproject.toml"))
-        }
+        Err(_) => LocalMetadata::template(workspace.root().join("pyproject.toml")),
     };
 
     create_workspace(workspace.root())?;
@@ -99,8 +90,7 @@ mod tests {
 
         let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
-        let test_file_filepath =
-            ws.root().join("tests").join("test_version.py");
+        let test_file_filepath = ws.root().join("tests").join("test_version.py");
         let test_file = std::fs::read_to_string(test_file_filepath).unwrap();
         let expected_test_file = r#"from mock_project import __version__
 
@@ -142,8 +132,7 @@ def test_version():
 
         let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
-        let main_file_filepath =
-            ws.root().join("src").join("mock_project").join("main.py");
+        let main_file_filepath = ws.root().join("src").join("mock_project").join("main.py");
         let main_file = std::fs::read_to_string(main_file_filepath).unwrap();
         let expected_main_file = r#"def main():
     print("Hello, World!")
@@ -154,8 +143,7 @@ if __name__ == "__main__":
 "#;
 
         assert_eq!(
-            metadata.metadata().project().scripts.as_ref().unwrap()
-                ["mock-project"],
+            metadata.metadata().project().scripts.as_ref().unwrap()["mock-project"],
             format!("{}.main:main", "mock_project")
         );
         assert_eq!(main_file, expected_main_file);

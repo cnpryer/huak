@@ -17,11 +17,7 @@ pub fn test_project(config: &Config, options: &TestOptions) -> HuakResult<()> {
     // Install `pytest` if it isn't already installed.
     let test_dep = Dependency::from_str("pytest")?;
     if !python_env.contains_module(test_dep.name())? {
-        python_env.install_packages(
-            &[&test_dep],
-            &options.install_options,
-            config,
-        )?;
+        python_env.install_packages(&[&test_dep], &options.install_options, config)?;
     }
 
     // Add the installed `pytest` package to the metadata file if it isn't already there.
@@ -31,10 +27,9 @@ pub fn test_project(config: &Config, options: &TestOptions) -> HuakResult<()> {
             .iter()
             .filter(|pkg| pkg.name() == test_dep.name())
         {
-            metadata.metadata_mut().add_optional_dependency(
-                Dependency::from_str(&pkg.to_string())?,
-                "dev",
-            );
+            metadata
+                .metadata_mut()
+                .add_optional_dependency(Dependency::from_str(&pkg.to_string())?, "dev");
         }
     }
 
@@ -65,9 +60,7 @@ mod tests {
     use crate::cmd::test_utils::test_resources_dir_path;
 
     use super::*;
-    use huak_ops::{
-        copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity,
-    };
+    use huak_ops::{copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]

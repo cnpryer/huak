@@ -44,8 +44,7 @@ impl Environment {
             if let Some(v) = version {
                 let interpreter = Interpreter::new(path, v);
                 Some(interpreter)
-            } else if let Ok(Some(v)) = parse_python_version_from_command(&path)
-            {
+            } else if let Ok(Some(v)) = parse_python_version_from_command(&path) {
                 let interpreter = Interpreter::new(path, v);
                 Some(interpreter)
             } else {

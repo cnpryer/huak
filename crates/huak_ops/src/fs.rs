@@ -2,11 +2,7 @@ use crate::error::{Error, HuakResult};
 use std::{fs, path::PathBuf};
 
 #[allow(dead_code)]
-pub fn copy_dir<T: Into<PathBuf>>(
-    from: T,
-    to: T,
-    options: &CopyDirOptions,
-) -> Result<(), Error> {
+pub fn copy_dir<T: Into<PathBuf>>(from: T, to: T, options: &CopyDirOptions) -> Result<(), Error> {
     let from = from.into();
     let to = to.into();
 

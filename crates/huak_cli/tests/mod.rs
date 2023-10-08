@@ -5,9 +5,7 @@ mod tests {
 
     #[test]
     fn test_activate_help() {
-        assert_cmd_snapshot!(Command::new("huak")
-            .arg("activate")
-            .arg("--help"));
+        assert_cmd_snapshot!(Command::new("huak").arg("activate").arg("--help"));
     }
 
     #[test]
@@ -27,9 +25,7 @@ mod tests {
 
     #[test]
     fn test_completion_help() {
-        assert_cmd_snapshot!(Command::new("huak")
-            .arg("completion")
-            .arg("--help"));
+        assert_cmd_snapshot!(Command::new("huak").arg("completion").arg("--help"));
     }
 
     #[test]
