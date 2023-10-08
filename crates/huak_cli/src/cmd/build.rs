@@ -8,10 +8,7 @@ pub struct BuildOptions {
     pub install_options: InstallOptions,
 }
 
-pub fn build_project(
-    config: &Config,
-    options: &BuildOptions,
-) -> HuakResult<()> {
+pub fn build_project(config: &Config, options: &BuildOptions) -> HuakResult<()> {
     let workspace = config.workspace();
     let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
@@ -20,11 +17,7 @@ pub fn build_project(
     // Install the `build` package if it isn't already installed.
     let build_dep = Dependency::from_str("build")?;
     if !python_env.contains_module(build_dep.name())? {
-        python_env.install_packages(
-            &[&build_dep],
-            &options.install_options,
-            config,
-        )?;
+        python_env.install_packages(&[&build_dep], &options.install_options, config)?;
     }
 
     // Add the installed `build` package to the metadata file.
@@ -34,10 +27,9 @@ pub fn build_project(
             .iter()
             .filter(|pkg| pkg.name() == build_dep.name())
         {
-            metadata.metadata_mut().add_optional_dependency(
-                Dependency::from_str(&pkg.to_string())?,
-                "dev",
-            );
+            metadata
+                .metadata_mut()
+                .add_optional_dependency(Dependency::from_str(&pkg.to_string())?, "dev");
         }
     }
 
@@ -61,9 +53,7 @@ pub fn build_project(
 mod tests {
     use super::*;
     use crate::cmd::test_utils::test_resources_dir_path;
-    use huak_ops::{
-        copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity,
-    };
+    use huak_ops::{copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]

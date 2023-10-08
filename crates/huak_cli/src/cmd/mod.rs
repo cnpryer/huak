@@ -16,15 +16,12 @@ mod update;
 mod version;
 
 pub use activate::activate_python_environment;
-pub use add::{
-    add_project_dependencies, add_project_optional_dependencies, AddOptions,
-};
+pub use add::{add_project_dependencies, add_project_optional_dependencies, AddOptions};
 pub use build::{build_project, BuildOptions};
 pub use clean::{clean_project, CleanOptions};
 pub use format::{format_project, FormatOptions};
 use huak_ops::{
-    default_python_gitignore, env_path_values, git_init, Error, HuakResult,
-    PythonEnvironment,
+    default_python_gitignore, env_path_values, git_init, Error, HuakResult, PythonEnvironment,
 };
 #[allow(unused_imports)]
 use huak_ops::{Config, TerminalOptions, Verbosity, Workspace};
@@ -57,17 +54,13 @@ if __name__ == "__main__":
 ///   `PATH` environment variable.
 /// - Adds `VIRTUAL_ENV` environment variable to the command pointing at the virtual environment's
 ///   root.
-fn make_venv_command(
-    cmd: &mut Command,
-    venv: &PythonEnvironment,
-) -> HuakResult<()> {
+fn make_venv_command(cmd: &mut Command, venv: &PythonEnvironment) -> HuakResult<()> {
     let mut paths = env_path_values().unwrap_or_default();
 
     paths.insert(0, venv.executables_dir_path().clone());
     cmd.env(
         "PATH",
-        std::env::join_paths(paths)
-            .map_err(|e| Error::InternalError(e.to_string()))?,
+        std::env::join_paths(paths).map_err(|e| Error::InternalError(e.to_string()))?,
     )
     .env("VIRTUAL_ENV", venv.root());
 

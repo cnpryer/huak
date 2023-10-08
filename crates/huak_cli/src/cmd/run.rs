@@ -21,9 +21,7 @@ mod tests {
     use crate::cmd::test_utils::test_resources_dir_path;
 
     use super::*;
-    use huak_ops::{
-        copy_dir, env_path_string, CopyDirOptions, TerminalOptions, Verbosity,
-    };
+    use huak_ops::{copy_dir, env_path_string, CopyDirOptions, TerminalOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]

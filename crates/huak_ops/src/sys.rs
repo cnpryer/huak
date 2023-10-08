@@ -6,9 +6,7 @@ use std::{
     path::Path,
     process::{Command, ExitStatus},
 };
-use termcolor::{
-    self, Color, ColorChoice, ColorSpec, StandardStream, WriteColor,
-};
+use termcolor::{self, Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 #[derive(Debug)]
 pub struct SubprocessError {
@@ -142,10 +140,8 @@ impl Terminal {
                 let output = cmd.output()?;
                 let status = output.status;
 
-                let stdout =
-                    trim_error_prefix(std::str::from_utf8(&output.stdout)?);
-                let stderr =
-                    trim_error_prefix(std::str::from_utf8(&output.stderr)?);
+                let stdout = trim_error_prefix(std::str::from_utf8(&output.stdout)?);
+                let stderr = trim_error_prefix(std::str::from_utf8(&output.stderr)?);
 
                 if !status.success() {
                     if !stdout.is_empty() {
@@ -214,9 +210,7 @@ impl Default for TerminalOptions {
     }
 }
 
-pub fn parse_command_output(
-    output: std::process::Output,
-) -> HuakResult<String> {
+pub fn parse_command_output(output: std::process::Output) -> HuakResult<String> {
     let mut s = String::new();
     s.push_str(std::str::from_utf8(&output.stdout)?);
     s.push_str(std::str::from_utf8(&output.stderr)?);
@@ -254,9 +248,7 @@ impl TerminalOut {
         match *self {
             TerminalOut::Stream { ref mut stderr, .. } => {
                 stderr.reset()?;
-                stderr.set_color(
-                    ColorSpec::new().set_bold(true).set_fg(Some(color)),
-                )?;
+                stderr.set_color(ColorSpec::new().set_bold(true).set_fg(Some(color)))?;
                 if justified {
                     write!(stderr, "{status:>12}")?;
                 } else {
@@ -291,9 +283,7 @@ pub fn shell_name() -> HuakResult<String> {
         .file_name()
         .and_then(|name| name.to_str())
         .map(|name| name.to_owned())
-        .ok_or_else(|| {
-            Error::InternalError("shell path is invalid".to_owned())
-        })?;
+        .ok_or_else(|| Error::InternalError("shell path is invalid".to_owned()))?;
     Ok(shell_name)
 }
 

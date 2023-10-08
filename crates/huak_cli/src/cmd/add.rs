@@ -1,6 +1,4 @@
-use huak_ops::{
-    dependency_iter, Config, Dependency, HuakResult, InstallOptions,
-};
+use huak_ops::{dependency_iter, Config, Dependency, HuakResult, InstallOptions};
 use pep440_rs::VersionSpecifiers;
 use pep508_rs::VersionOrUrl;
 use std::str::FromStr;
@@ -40,16 +38,11 @@ pub fn add_project_dependencies(
     for dep in deps.iter_mut() {
         if dep.requirement().version_or_url.is_none() {
             // TODO: Optimize this .find
-            if let Some(pkg) = packages.iter().find(|p| p.name() == dep.name())
-            {
-                dep.requirement_mut().version_or_url =
-                    Some(VersionOrUrl::VersionSpecifier(
-                        VersionSpecifiers::from_str(&format!(
-                            "=={}",
-                            pkg.version()
-                        ))
+            if let Some(pkg) = packages.iter().find(|p| p.name() == dep.name()) {
+                dep.requirement_mut().version_or_url = Some(VersionOrUrl::VersionSpecifier(
+                    VersionSpecifiers::from_str(&format!("=={}", pkg.version()))
                         .expect("package should have a version"),
-                    ));
+                ));
             }
         }
 
@@ -97,16 +90,11 @@ pub fn add_project_optional_dependencies(
     for dep in deps.iter_mut() {
         if dep.requirement().version_or_url.is_none() {
             // TODO: Optimize this .find
-            if let Some(pkg) = packages.iter().find(|p| p.name() == dep.name())
-            {
-                dep.requirement_mut().version_or_url =
-                    Some(VersionOrUrl::VersionSpecifier(
-                        VersionSpecifiers::from_str(&format!(
-                            "=={}",
-                            pkg.version()
-                        ))
+            if let Some(pkg) = packages.iter().find(|p| p.name() == dep.name()) {
+                dep.requirement_mut().version_or_url = Some(VersionOrUrl::VersionSpecifier(
+                    VersionSpecifiers::from_str(&format!("=={}", pkg.version()))
                         .expect("package should have a version"),
-                    ));
+                ));
             }
         }
 
@@ -131,9 +119,7 @@ pub fn add_project_optional_dependencies(
 mod tests {
     use super::*;
     use crate::cmd::test_utils::test_resources_dir_path;
-    use huak_ops::{
-        copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity,
-    };
+    use huak_ops::{copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]
@@ -162,8 +148,7 @@ mod tests {
             install_options: InstallOptions { values: None },
         };
 
-        add_project_dependencies(&[String::from("ruff")], &config, &options)
-            .unwrap();
+        add_project_dependencies(&[String::from("ruff")], &config, &options).unwrap();
 
         let dep = Dependency::from_str("ruff").unwrap();
         let metadata = ws.current_local_metadata().unwrap();
@@ -200,13 +185,8 @@ mod tests {
             install_options: InstallOptions { values: None },
         };
 
-        add_project_optional_dependencies(
-            &[String::from("ruff")],
-            group,
-            &config,
-            &options,
-        )
-        .unwrap();
+        add_project_optional_dependencies(&[String::from("ruff")], group, &config, &options)
+            .unwrap();
 
         let dep = Dependency::from_str("ruff").unwrap();
         let metadata = ws.current_local_metadata().unwrap();

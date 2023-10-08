@@ -8,10 +8,7 @@ pub struct PublishOptions {
     pub install_options: InstallOptions,
 }
 
-pub fn publish_project(
-    config: &Config,
-    options: &PublishOptions,
-) -> HuakResult<()> {
+pub fn publish_project(config: &Config, options: &PublishOptions) -> HuakResult<()> {
     let workspace = config.workspace();
     let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
@@ -20,11 +17,7 @@ pub fn publish_project(
     // Install `twine` if it isn't already installed.
     let pub_dep = Dependency::from_str("twine")?;
     if !python_env.contains_module(pub_dep.name())? {
-        python_env.install_packages(
-            &[&pub_dep],
-            &options.install_options,
-            config,
-        )?;
+        python_env.install_packages(&[&pub_dep], &options.install_options, config)?;
     }
 
     // Add the installed `twine` package to the metadata file if it isn't already there.
@@ -34,10 +27,9 @@ pub fn publish_project(
             .iter()
             .filter(|pkg| pkg.name() == pub_dep.name())
         {
-            metadata.metadata_mut().add_optional_dependency(
-                Dependency::from_str(&pkg.to_string())?,
-                "dev",
-            );
+            metadata
+                .metadata_mut()
+                .add_optional_dependency(Dependency::from_str(&pkg.to_string())?, "dev");
         }
     }
 

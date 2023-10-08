@@ -10,8 +10,8 @@ use std::{
 };
 
 use crate::{
-    environment::env_path_values, fs, package::Package, sys, version::Version,
-    Config, Environment, Error, HuakResult,
+    environment::env_path_values, fs, package::Package, sys, version::Version, Config, Environment,
+    Error, HuakResult,
 };
 
 const DEFAULT_VENV_NAME: &str = ".venv";
@@ -303,8 +303,8 @@ impl VenvConfig {
         let path = path.into();
 
         // Read the file and flatten the lines for parsing.
-        let file = File::open(&path)
-            .unwrap_or_else(|_| panic!("failed to open {}", path.display()));
+        let file =
+            File::open(&path).unwrap_or_else(|_| panic!("failed to open {}", path.display()));
         let buff_reader = BufReader::new(file);
         let lines = buff_reader.lines().flatten().collect::<Vec<String>>();
 
@@ -502,9 +502,7 @@ fn python_interpreters_in_paths(
                 if valid_python_interpreter_file_name(file_name) {
                     #[cfg(unix)]
                     {
-                        if let Ok(version) =
-                            version_from_python_interpreter_file_name(file_name)
-                        {
+                        if let Ok(version) = version_from_python_interpreter_file_name(file_name) {
                             Some((Some(version), item.clone()))
                         } else {
                             None
@@ -512,8 +510,7 @@ fn python_interpreters_in_paths(
                     }
                     #[cfg(windows)]
                     Some((
-                        version_from_python_interpreter_file_name(file_name)
-                            .ok(),
+                        version_from_python_interpreter_file_name(file_name).ok(),
                         item.clone(),
                     ))
                 } else {
@@ -534,8 +531,7 @@ fn valid_python_interpreter_file_name(file_name: &str) -> bool {
         return false;
     }
 
-    file_name.len() >= "python3.0".len()
-        && file_name["python".len()..].parse::<f32>().is_ok()
+    file_name.len() >= "python3.0".len() && file_name["python".len()..].parse::<f32>().is_ok()
 }
 
 #[cfg(windows)]
@@ -558,24 +554,17 @@ fn valid_python_interpreter_file_name(file_name: &str) -> bool {
 ///
 /// On Windows we strip the .exe extension and attempt the parse.
 /// On Unix we just attempt the parse immediately.
-fn version_from_python_interpreter_file_name(
-    file_name: &str,
-) -> HuakResult<Version> {
+fn version_from_python_interpreter_file_name(file_name: &str) -> HuakResult<Version> {
     match OS {
         "windows" => Version::from_str(
-            &file_name.strip_suffix(".exe").unwrap_or(file_name)
-                ["python".len()..],
+            &file_name.strip_suffix(".exe").unwrap_or(file_name)["python".len()..],
         ),
         _ => Version::from_str(&file_name["python".len()..]),
     }
-    .map_err(|_| {
-        Error::InternalError(format!("could not version from {file_name}"))
-    })
+    .map_err(|_| Error::InternalError(format!("could not version from {file_name}")))
 }
 
-pub fn parse_python_version_from_command<T: Into<PathBuf>>(
-    path: T,
-) -> HuakResult<Option<Version>> {
+pub fn parse_python_version_from_command<T: Into<PathBuf>>(path: T) -> HuakResult<Option<Version>> {
     let mut cmd = Command::new(path.into());
     cmd.args([
         "-c",
@@ -590,10 +579,7 @@ pub fn parse_python_version_from_command<T: Into<PathBuf>>(
 }
 
 /// A helper for initializing a virtual environment.
-pub fn initialize_venv<T: AsRef<Path>>(
-    path: T,
-    env: &Environment,
-) -> HuakResult<()> {
+pub fn initialize_venv<T: AsRef<Path>>(path: T, env: &Environment) -> HuakResult<()> {
     let Some(interpreter) = env.interpreters().latest() else {
         return Err(Error::PythonNotFound);
     };

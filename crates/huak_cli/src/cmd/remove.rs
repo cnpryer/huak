@@ -47,9 +47,7 @@ pub fn remove_project_dependencies(
 
     // Uninstall the dependencies from the Python environment if an environment is found.
     match workspace.current_python_environment() {
-        Ok(it) => {
-            it.uninstall_packages(&deps, &options.install_options, config)
-        }
+        Ok(it) => it.uninstall_packages(&deps, &options.install_options, config),
         Err(Error::PythonEnvironmentNotFound) => Ok(()),
         Err(e) => Err(e),
     }
@@ -61,8 +59,7 @@ mod tests {
 
     use super::*;
     use huak_ops::{
-        copy_dir, initialize_venv, CopyDirOptions, Dependency, Package,
-        TerminalOptions, Verbosity,
+        copy_dir, initialize_venv, CopyDirOptions, Dependency, Package, TerminalOptions, Verbosity,
     };
     use std::str::FromStr;
     use tempfile::tempdir;
@@ -99,17 +96,14 @@ mod tests {
             .unwrap();
         let metadata = ws.current_local_metadata().unwrap();
         let venv_had_package = venv.contains_package(&test_package);
-        let toml_had_package =
-            metadata.metadata().contains_dependency(&test_dep).unwrap();
+        let toml_had_package = metadata.metadata().contains_dependency(&test_dep).unwrap();
 
-        remove_project_dependencies(&["click".to_string()], &config, &options)
-            .unwrap();
+        remove_project_dependencies(&["click".to_string()], &config, &options).unwrap();
 
         let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
         let venv_contains_package = venv.contains_package(&test_package);
-        let toml_contains_package =
-            metadata.metadata().contains_dependency(&test_dep).unwrap();
+        let toml_contains_package = metadata.metadata().contains_dependency(&test_dep).unwrap();
 
         assert!(venv_had_package);
         assert!(toml_had_package);
@@ -148,23 +142,20 @@ mod tests {
         let test_dep = Dependency::from_str("black==22.8.0").unwrap();
         venv.install_packages(&[&test_dep], &options.install_options, &config)
             .unwrap();
-        let venv_had_package =
-            venv.contains_module(test_package.name()).unwrap();
+        let venv_had_package = venv.contains_module(test_package.name()).unwrap();
         let toml_had_package = metadata
             .metadata()
             .contains_optional_dependency(&test_dep, "dev")
             .unwrap();
 
-        remove_project_dependencies(&["black".to_string()], &config, &options)
-            .unwrap();
+        remove_project_dependencies(&["black".to_string()], &config, &options).unwrap();
 
         let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
         let venv_contains_package = venv
             .contains_module(metadata.metadata().project_name())
             .unwrap();
-        let toml_contains_package =
-            metadata.metadata().contains_dependency(&test_dep).unwrap();
+        let toml_contains_package = metadata.metadata().contains_dependency(&test_dep).unwrap();
 
         assert!(venv_had_package);
         assert!(toml_had_package);
