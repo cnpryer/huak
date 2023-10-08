@@ -1,13 +1,13 @@
 use huak_python_package_manager::{Config, Error, HuakResult};
 use termcolor::Color;
 
+#[allow(clippy::module_name_repetitions)]
 pub fn display_project_version(config: &Config) -> HuakResult<()> {
     let workspace = config.workspace();
     let package = workspace.current_package()?;
 
-    let version = match package.metadata().project_version() {
-        Some(it) => it,
-        None => return Err(Error::PackageVersionNotFound),
+    let Some(version) = package.metadata().project_version() else {
+        return Err(Error::PackageVersionNotFound);
     };
 
     config

@@ -71,11 +71,11 @@ fn make_venv_command(cmd: &mut Command, venv: &PythonEnvironment) -> HuakResult<
 fn create_workspace<T: Into<PathBuf>>(path: T) -> HuakResult<()> {
     let root = path.into();
 
-    if !root.exists() {
-        std::fs::create_dir(root)?;
-    } else {
+    if root.exists() {
         return Err(Error::DirectoryExists(root));
     }
+
+    std::fs::create_dir(root)?;
 
     Ok(())
 }
@@ -102,6 +102,7 @@ fn init_git<T: Into<PathBuf>>(path: T) -> HuakResult<()> {
 pub mod test_utils {
     use std::path::PathBuf;
 
+    #[must_use]
     pub fn test_resources_dir_path() -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .parent()

@@ -23,7 +23,7 @@ const CONDA_ENV_ENV_VAR: &str = "CONDA_PREFIX";
 /// containing an installed Python `Interpreter` and `Package`s.
 ///
 /// An example of a valid `PythonEnvironment` would be a Virtual environment.
-/// See https://peps.python.org/pep-0405/
+/// See <https://peps.python.org/pep-0405/>.
 ///
 /// The structure of a `Venv` on a system depends on if it is Windows or not.
 ///
@@ -86,6 +86,7 @@ impl PythonEnvironment {
         Ok(env)
     }
 
+    #[must_use]
     /// Get a reference to the path to the `PythonEnvironment`.
     pub fn root(&self) -> &Path {
         self.root.as_ref()
@@ -96,16 +97,19 @@ impl PythonEnvironment {
         fs::last_path_component(&self.root)
     }
 
+    #[must_use]
     /// Get a reference to the Python `Interpreter`'s path that's used by the `PythonEnvironment`.
     pub fn python_path(&self) -> &PathBuf {
         self.interpreter.path()
     }
 
+    #[must_use]
     /// Get a reference to the `PythonEnvironment`'s executables directory path.
     pub fn executables_dir_path(&self) -> &PathBuf {
         &self.executables_dir_path
     }
 
+    #[must_use]
     /// Get a reference to the `PythonEnvironment`'s site-packages directory path.
     pub fn site_packages_dir_path(&self) -> &PathBuf {
         &self.site_packages_path
@@ -123,10 +127,10 @@ impl PythonEnvironment {
     {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "install"])
-            .args(packages.iter().map(|item| item.to_string()));
+            .args(packages.iter().map(ToString::to_string));
 
         if let Some(v) = options.values.as_ref() {
-            cmd.args(v.iter().map(|item| item.as_str()));
+            cmd.args(v.iter().map(String::as_str));
         }
 
         config.terminal().run_command(&mut cmd)
@@ -144,11 +148,11 @@ impl PythonEnvironment {
     {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "uninstall"])
-            .args(packages.iter().map(|item| item.to_string()))
+            .args(packages.iter().map(ToString::to_string))
             .arg("-y");
 
         if let Some(v) = options.values.as_ref() {
-            cmd.args(v.iter().map(|item| item.as_str()));
+            cmd.args(v.iter().map(String::as_str));
         }
 
         config.terminal().run_command(&mut cmd)
@@ -166,10 +170,10 @@ impl PythonEnvironment {
     {
         let mut cmd = Command::new(self.python_path());
         cmd.args(["-m", "pip", "install", "--upgrade"])
-            .args(packages.iter().map(|item| item.to_string()));
+            .args(packages.iter().map(ToString::to_string));
 
         if let Some(v) = options.values.as_ref() {
-            cmd.args(v.iter().map(|item| item.as_str()));
+            cmd.args(v.iter().map(String::as_str));
         }
 
         config.terminal().run_command(&mut cmd)
@@ -192,7 +196,7 @@ impl PythonEnvironment {
         }
     }
 
-    #[allow(dead_code)]
+    #[must_use]
     /// Check if the `PythonEnvironment` has a `Package` already installed.
     pub fn contains_package(&self, package: &Package) -> bool {
         self.site_packages_dir_path().join(package.name()).exists()
@@ -204,7 +208,7 @@ impl PythonEnvironment {
         cmd.args(["-m", "pip", "freeze"]);
 
         let output = cmd.output()?;
-        let output = sys::parse_command_output(output)?;
+        let output = sys::parse_command_output(&output)?;
         let mut packages = Vec::new();
         for line in output.split('\n') {
             if !line.is_empty() {
@@ -215,6 +219,7 @@ impl PythonEnvironment {
         Ok(packages)
     }
 
+    #[must_use]
     /// Check if the `PythonEnvironment` is already activated.
     pub fn active(&self) -> bool {
         Some(&self.root)
@@ -291,7 +296,7 @@ pub struct InstallOptions {
 
 /// Python virtual environment configuration data (pyvenv.cfg).
 ///
-/// See https://docs.python.org/3/library/venv.html.
+/// See <https://docs.python.org/3/library/venv.html>.
 struct VenvConfig {
     /// The `Version` of the virtual environment's Python `Interpreter`.
     version: Version,
@@ -309,17 +314,16 @@ impl VenvConfig {
         let lines = buff_reader.lines().flatten().collect::<Vec<String>>();
 
         // Search for version = "X.X.X"
-        let mut version = Version::from_str("0.0.0");
-        lines.iter().for_each(|item| {
+        let mut version = Version::from_str("0.0.0")?;
+        for item in lines {
             let mut split = item.splitn(2, '=');
             let key = split.next().unwrap_or_default().trim();
             let val = split.next().unwrap_or_default().trim();
             if key == "version" {
-                version = Version::from_str(val)
+                version = Version::from_str(val)?;
             }
-        });
+        }
 
-        let version = version.expect("Python version from pyvenv.cfg");
         let cfg = VenvConfig { version };
 
         Ok(cfg)
@@ -328,7 +332,7 @@ impl VenvConfig {
 
 /// A wrapper for a collection of `Interpreter`s.
 ///
-/// Use `Interpreters` to access latest and exact Python `Interpreter`s by `Version.
+/// Use `Interpreters` to access latest and exact Python `Interpreter`s by `Version`.
 /// You can also get an `Interpreter` by its path.
 ///
 /// ```
@@ -450,12 +454,13 @@ fn compare_interpreters(this: &Interpreter, other: &Interpreter) -> Ordering {
     Ordering::Equal
 }
 
+#[must_use]
 /// Get any activated Python environment.
 pub fn active_python_env_path() -> Option<PathBuf> {
     active_virtual_env_path().or(active_conda_env_path())
 }
 
-/// Get the VIRTUAL_ENV environment path if it exists.
+/// Get the `VIRTUAL_ENV` environment path if it exists.
 pub fn active_virtual_env_path() -> Option<PathBuf> {
     if let Ok(path) = std::env::var(VIRTUAL_ENV_ENV_VAR) {
         return Some(PathBuf::from(path));
@@ -464,7 +469,7 @@ pub fn active_virtual_env_path() -> Option<PathBuf> {
     None
 }
 
-/// Get the CONDA_PREFIX environment path if it exists.
+/// Get the `CONDA_PREFIX` environment path if it exists.
 pub fn active_conda_env_path() -> Option<PathBuf> {
     if let Ok(path) = std::env::var(CONDA_ENV_ENV_VAR) {
         return Some(PathBuf::from(path));
@@ -570,7 +575,7 @@ pub fn parse_python_version_from_command<T: Into<PathBuf>>(path: T) -> HuakResul
         "-c",
         "import sys;v=sys.version_info;print(v.major,v.minor,v.micro)",
     ]);
-    let output = sys::parse_command_output(cmd.output()?)?
+    let output = sys::parse_command_output(&cmd.output()?)?
         .replace(' ', ".")
         .replace(['\r', '\n'], "");
     let version = Version::from_str(&output).ok();

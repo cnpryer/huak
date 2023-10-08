@@ -15,12 +15,7 @@ pub fn remove_project_dependencies(
 
     // Collect any dependencies to remove from the metadata file.
     let deps = dependency_iter(dependencies)
-        .filter(|dep| {
-            metadata
-                .metadata()
-                .contains_dependency_any(dep)
-                .unwrap_or_default()
-        })
+        .filter(|dep| metadata.metadata().contains_dependency_any(dep))
         .collect::<Vec<_>>();
 
     if deps.is_empty() {
@@ -30,7 +25,7 @@ pub fn remove_project_dependencies(
     // Get all groups from the metadata file to include in the removal process.
     let mut groups = Vec::new();
     if let Some(deps) = metadata.metadata().optional_dependencies() {
-        groups.extend(deps.keys().map(|key| key.to_string()));
+        groups.extend(deps.keys().map(ToString::to_string));
     }
     for dep in &deps {
         metadata.metadata_mut().remove_dependency(dep);
@@ -74,7 +69,7 @@ mod tests {
         )
         .unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()
@@ -96,14 +91,14 @@ mod tests {
             .unwrap();
         let metadata = ws.current_local_metadata().unwrap();
         let venv_had_package = venv.contains_package(&test_package);
-        let toml_had_package = metadata.metadata().contains_dependency(&test_dep).unwrap();
+        let toml_had_package = metadata.metadata().contains_dependency(&test_dep);
 
         remove_project_dependencies(&["click".to_string()], &config, &options).unwrap();
 
         let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
         let venv_contains_package = venv.contains_package(&test_package);
-        let toml_contains_package = metadata.metadata().contains_dependency(&test_dep).unwrap();
+        let toml_contains_package = metadata.metadata().contains_dependency(&test_dep);
 
         assert!(venv_had_package);
         assert!(toml_had_package);
@@ -121,7 +116,7 @@ mod tests {
         )
         .unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()
@@ -145,8 +140,7 @@ mod tests {
         let venv_had_package = venv.contains_module(test_package.name()).unwrap();
         let toml_had_package = metadata
             .metadata()
-            .contains_optional_dependency(&test_dep, "dev")
-            .unwrap();
+            .contains_optional_dependency(&test_dep, "dev");
 
         remove_project_dependencies(&["black".to_string()], &config, &options).unwrap();
 
@@ -155,7 +149,7 @@ mod tests {
         let venv_contains_package = venv
             .contains_module(metadata.metadata().project_name())
             .unwrap();
-        let toml_contains_package = metadata.metadata().contains_dependency(&test_dep).unwrap();
+        let toml_contains_package = metadata.metadata().contains_dependency(&test_dep);
 
         assert!(venv_had_package);
         assert!(toml_had_package);

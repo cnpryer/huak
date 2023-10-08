@@ -21,7 +21,7 @@ pub fn publish_project(config: &Config, options: &PublishOptions) -> HuakResult<
     }
 
     // Add the installed `twine` package to the metadata file if it isn't already there.
-    if !metadata.metadata().contains_dependency_any(&pub_dep)? {
+    if !metadata.metadata().contains_dependency_any(&pub_dep) {
         for pkg in python_env
             .installed_packages()?
             .iter()
@@ -29,7 +29,7 @@ pub fn publish_project(config: &Config, options: &PublishOptions) -> HuakResult<
         {
             metadata
                 .metadata_mut()
-                .add_optional_dependency(Dependency::from_str(&pkg.to_string())?, "dev");
+                .add_optional_dependency(&Dependency::from_str(&pkg.to_string())?, "dev");
         }
     }
 
@@ -41,7 +41,7 @@ pub fn publish_project(config: &Config, options: &PublishOptions) -> HuakResult<
     let mut cmd = Command::new(python_env.python_path());
     let mut args = vec!["-m", "twine", "upload", "dist/*"];
     if let Some(v) = options.values.as_ref() {
-        args.extend(v.iter().map(|item| item.as_str()));
+        args.extend(v.iter().map(String::as_str));
     }
     make_venv_command(&mut cmd, &python_env)?;
     cmd.args(args).current_dir(workspace.root());

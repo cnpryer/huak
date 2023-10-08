@@ -11,7 +11,7 @@ pub fn copy_dir<T: Into<PathBuf>>(from: T, to: T, options: &CopyDirOptions) -> R
     }
 
     if from.is_dir() {
-        for entry in fs::read_dir(from)?.filter_map(|e| e.ok()) {
+        for entry in fs::read_dir(from)?.filter_map(Result::ok) {
             let entry_path = entry.path();
             if options.exclude.contains(&entry_path) {
                 continue;
@@ -43,15 +43,15 @@ pub fn flatten_directories(
         .into_iter()
         .filter_map(|p| p.read_dir().ok())
         .flatten()
-        .filter_map(|e| e.ok())
+        .filter_map(Result::ok)
         .map(|e| e.path())
 }
 
-/// Search for the path to a target file from a given directory's path and the file_name.
+/// Search for the path to a target file from a given directory's path and the `file_name`.
 /// The search is executed with the following steps:
 ///   1. Get all sub-directories.
-///   2. Search all sub-directory roots for file_name.
-///   3. If file_name is found, return its path.
+///   2. Search all sub-directory roots for `file_name`.
+///   3. If `file_name` is found, return its path.
 ///   4. Else step one directory up until the `last` directory has been searched.
 pub fn find_root_file_bottom_up<T: Into<PathBuf>>(
     file_name: &str,
@@ -68,7 +68,7 @@ pub fn find_root_file_bottom_up<T: Into<PathBuf>>(
     }
     // Search all sub-directory roots for target_file.
     if let Some(path) = fs::read_dir(&dir)?
-        .filter(|item| item.is_ok())
+        .filter(Result::is_ok)
         .map(|item| item.expect("failed to map dir entry").path())
         .filter(|item| item.is_dir())
         .find(|item| item.join(file_name).exists())

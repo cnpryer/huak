@@ -13,7 +13,7 @@ const DEFAULT_METADATA_FILE_NAME: &str = "pyproject.toml";
 
 #[derive(Debug)]
 /// A `LocalMetadata` struct used to manage local `Metadata` files such as
-/// the pyproject.toml (https://peps.python.org/pep-0621/).
+/// the pyproject.toml (<https://peps.python.org/pep-0621/>).
 pub struct LocalMetadata {
     /// The core `Metadata`.
     /// See https://packaging.python.org/en/latest/specifications/core-metadata/.
@@ -55,6 +55,7 @@ impl LocalMetadata {
         }
     }
 
+    #[must_use]
     /// Get a reference to the core `Metadata`.
     pub fn metadata(&self) -> &Metadata {
         &self.metadata
@@ -97,7 +98,7 @@ fn pyproject_toml_metadata<T: Into<PathBuf>>(path: T) -> HuakResult<LocalMetadat
         }
     }
     .to_owned();
-    let build_system = pyproject_toml.build_system.to_owned();
+    let build_system = pyproject_toml.build_system.clone();
     let tool = pyproject_toml.tool;
 
     let metadata = Metadata {
@@ -114,7 +115,7 @@ fn pyproject_toml_metadata<T: Into<PathBuf>>(path: T) -> HuakResult<LocalMetadat
 #[serde(rename_all = "kebab-case")]
 /// The `Metadata` of a `Package`.
 ///
-/// See https://peps.python.org/pep-0621/ for more about core metadata.
+/// See <https://peps.python.org/pep-0621/> for more about core metadata.
 pub struct Metadata {
     /// The build system used for the `Package`.
     build_system: BuildSystem,
@@ -135,7 +136,7 @@ impl Metadata {
     }
 
     pub fn set_project_name(&mut self, name: String) {
-        self.project.name = name
+        self.project.name = name;
     }
 
     pub fn project_version(&self) -> Option<&Version> {
@@ -146,66 +147,62 @@ impl Metadata {
         self.project.dependencies.as_deref()
     }
 
-    pub fn contains_dependency(&self, dependency: &Dependency) -> HuakResult<bool> {
+    pub fn contains_dependency(&self, dependency: &Dependency) -> bool {
         if let Some(deps) = self.dependencies() {
             for d in deps {
                 if d.name == dependency.name() {
-                    return Ok(true);
+                    return true;
                 }
             }
         }
-        Ok(false)
+        false
     }
 
-    pub fn contains_dependency_any(&self, dependency: &Dependency) -> HuakResult<bool> {
-        if self.contains_dependency(dependency).unwrap_or_default() {
-            return Ok(true);
+    pub fn contains_dependency_any(&self, dependency: &Dependency) -> bool {
+        if self.contains_dependency(dependency) {
+            return true;
         }
 
         if let Some(deps) = self.optional_dependencies().as_ref() {
             if deps.is_empty() {
-                return Ok(false);
+                return false;
             }
             for d in deps.values().flatten() {
                 if d.name == dependency.name() {
-                    return Ok(true);
+                    return true;
                 }
             }
         }
 
-        Ok(false)
+        false
     }
 
-    pub fn add_dependency(&mut self, dependency: Dependency) {
+    pub fn add_dependency(&mut self, dependency: &Dependency) {
         self.project
             .dependencies
             .get_or_insert_with(Vec::new)
-            .push(dependency.requirement().to_owned())
+            .push(dependency.requirement().to_owned());
     }
 
     pub fn optional_dependencies(&self) -> Option<&IndexMap<String, Vec<Requirement>>> {
         self.project.optional_dependencies.as_ref()
     }
 
-    pub fn contains_optional_dependency(
-        &self,
-        dependency: &Dependency,
-        group: &str,
-    ) -> HuakResult<bool> {
+    pub fn contains_optional_dependency(&self, dependency: &Dependency, group: &str) -> bool {
         if let Some(deps) = self.optional_dependencies().as_ref() {
             if let Some(g) = deps.get(group) {
                 if deps.is_empty() {
-                    return Ok(false);
+                    return false;
                 }
                 for d in g {
                     if d.name == dependency.name() {
-                        return Ok(true);
+                        return true;
                     }
                 }
             }
         }
 
-        Ok(false)
+        false
     }
 
     pub fn optional_dependency_group(&self, group: &str) -> Option<&Vec<Requirement>> {
@@ -215,7 +212,7 @@ impl Metadata {
             .and_then(|deps| deps.get(group))
     }
 
-    pub fn add_optional_dependency(&mut self, dependency: Dependency, group: &str) {
+    pub fn add_optional_dependency(&mut self, dependency: &Dependency, group: &str) {
         self.project
             .optional_dependencies
             .get_or_insert_with(IndexMap::new)
@@ -324,6 +321,7 @@ impl Default for PyProjectToml {
     }
 }
 
+#[must_use]
 pub fn default_pyproject_toml_contents(name: &str) -> String {
     format!(
         r#"[build-system]
@@ -339,10 +337,12 @@ dependencies = []
     )
 }
 
+#[must_use]
 pub fn default_package_entrypoint_string(importable_name: &str) -> String {
     format!("{importable_name}.main:main")
 }
 
+#[must_use]
 pub fn default_package_test_file_contents(importable_name: &str) -> String {
     format!(
         r#"from {importable_name} import __version__
@@ -372,7 +372,7 @@ mod tests {
             *local_metadata.metadata.project_version().unwrap(),
             Version::from_str("0.0.1").unwrap()
         );
-        assert!(local_metadata.metadata.dependencies().is_some())
+        assert!(local_metadata.metadata.dependencies().is_some());
     }
 
     #[test]
@@ -429,11 +429,10 @@ dev = [
         let local_metadata = LocalMetadata::new(path).unwrap();
 
         assert_eq!(
-            local_metadata
+            &**local_metadata
                 .metadata
                 .optional_dependency_group("dev")
-                .unwrap()
-                .deref(),
+                .unwrap(),
             vec![
                 Requirement::from_str("pytest>=6").unwrap(),
                 Requirement::from_str("black==22.8.0").unwrap(),
@@ -454,7 +453,7 @@ dev = [
             version_or_url: None,
             marker: None,
         });
-        local_metadata.metadata.add_dependency(dep);
+        local_metadata.metadata.add_dependency(&dep);
 
         assert_eq!(
             local_metadata.to_string_pretty().unwrap(),
@@ -482,7 +481,7 @@ dev = [
     "isort ==5.12.0",
 ]
 "#
-        )
+        );
     }
 
     #[test]
@@ -494,10 +493,10 @@ dev = [
 
         local_metadata
             .metadata
-            .add_optional_dependency(Dependency::from_str("test1").unwrap(), "dev");
+            .add_optional_dependency(&Dependency::from_str("test1").unwrap(), "dev");
         local_metadata
             .metadata
-            .add_optional_dependency(Dependency::from_str("test2").unwrap(), "new-group");
+            .add_optional_dependency(&Dependency::from_str("test2").unwrap(), "new-group");
         assert_eq!(
             local_metadata.to_string_pretty().unwrap(),
             r#"[build-system]
@@ -523,7 +522,7 @@ dev = [
 ]
 new-group = ["test2"]
 "#
-        )
+        );
     }
 
     #[test]
@@ -559,7 +558,7 @@ dev = [
     "isort ==5.12.0",
 ]
 "#
-        )
+        );
     }
 
     #[test]
@@ -594,6 +593,6 @@ dev = [
     "black ==22.8.0",
 ]
 "#
-        )
+        );
     }
 }

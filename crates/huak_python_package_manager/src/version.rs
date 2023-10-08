@@ -19,6 +19,7 @@ pub struct Version {
 }
 
 impl Version {
+    #[must_use]
     pub fn release(&self) -> &Vec<usize> {
         &self.release
     }
@@ -76,8 +77,7 @@ impl FromStr for Version {
 
         if release.len() != 3 {
             return Err(Error::InvalidVersionString(format!(
-                "{} must be SemVer-compatible",
-                s
+                "{s} must be SemVer-compatible"
             )));
         }
 
@@ -90,9 +90,8 @@ impl FromStr for Version {
 /// Use regex to capture potential `Version` numbers from a `&str`.
 fn captures_version_str(s: &str) -> HuakResult<Captures> {
     let re = Regex::new(r"^(\d+)(?:\.(\d+))?(?:\.(\d+))?$")?;
-    let captures = match re.captures(s) {
-        Some(captures) => captures,
-        None => return Err(Error::InvalidVersionString(s.to_string())),
+    let Some(captures) = re.captures(s) else {
+        return Err(Error::InvalidVersionString(s.to_string()));
     };
     Ok(captures)
 }
@@ -102,12 +101,12 @@ fn captures_version_str(s: &str) -> HuakResult<Captures> {
 /// Expects three parts (MAJOR.MINOR.PATCH) and defaults each part to 0.
 fn parse_semver_from_captures(captures: &Captures) -> HuakResult<Vec<usize>> {
     let mut parts = vec![0, 0, 0];
-    for i in [0, 1, 2].into_iter() {
+    for i in [0, 1, 2] {
         if let Some(it) = captures.get(i + 1) {
             parts[i] = it
                 .as_str()
                 .parse::<usize>()
-                .map_err(|e| Error::InternalError(e.to_string()))?
+                .map_err(|e| Error::InternalError(e.to_string()))?;
         }
     }
 
@@ -177,6 +176,6 @@ mod tests {
         let v = Version {
             release: vec![3, 11, 1],
         };
-        assert_eq!(v.to_string(), "3.11.1")
+        assert_eq!(v.to_string(), "3.11.1");
     }
 }

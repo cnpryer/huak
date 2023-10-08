@@ -14,10 +14,12 @@ pub struct SubprocessError {
 }
 
 impl SubprocessError {
+    #[must_use]
     pub fn new(status: ExitStatus) -> Self {
         SubprocessError { status }
     }
 
+    #[must_use]
     pub fn code(&self) -> Option<i32> {
         self.status.code()
     }
@@ -112,7 +114,7 @@ impl Terminal {
     /// The messages follows without color.
     ///
     /// NOTE: Messages are printed to stderr. This is behavior cargo implements as well to
-    /// avoid polluting stdout for end users. See https://github.com/rust-lang/cargo/issues/1473
+    /// avoid polluting stdout for end users. See <https://github.com/rust-lang/cargo/issues/1473>.
     fn print(
         &mut self,
         status: &dyn Display,
@@ -135,6 +137,8 @@ impl Terminal {
 
     /// Run a command from the terminal's context.
     pub fn run_command(&mut self, cmd: &mut Command) -> HuakResult<()> {
+        // Allow `single_match_else` because `Quiet won't be the only handled `Verbosity`.
+        #[allow(clippy::single_match_else)]
         let status = match self.options.verbosity {
             Verbosity::Quiet => {
                 let output = cmd.output()?;
@@ -188,14 +192,17 @@ pub struct TerminalOptions {
 }
 
 impl TerminalOptions {
+    #[must_use]
     pub fn verbosity(&self) -> &Verbosity {
         &self.verbosity
     }
 
+    #[must_use]
     pub fn color_choice(&self) -> &ColorChoice {
         &self.color_choice
     }
 
+    #[must_use]
     pub fn take(self) -> TerminalOptions {
         self
     }
@@ -204,13 +211,13 @@ impl TerminalOptions {
 impl Default for TerminalOptions {
     fn default() -> Self {
         Self {
-            verbosity: Default::default(),
+            verbosity: Verbosity::default(),
             color_choice: ColorChoice::Never,
         }
     }
 }
 
-pub fn parse_command_output(output: std::process::Output) -> HuakResult<String> {
+pub fn parse_command_output(output: &std::process::Output) -> HuakResult<String> {
     let mut s = String::new();
     s.push_str(std::str::from_utf8(&output.stdout)?);
     s.push_str(std::str::from_utf8(&output.stderr)?);
@@ -237,7 +244,7 @@ enum TerminalOut {
 impl TerminalOut {
     /// Prints out a message with a status. The status comes first, and is bold plus
     /// the given color. The status can be justified, in which case the max width that
-    /// will right align is DEFAULT_MESSAGE_JUSTIFIED_CHARS chars.
+    /// will right align is `DEFAULT_MESSAGE_JUSTIFIED_CHARS` chars.
     fn message_stderr(
         &mut self,
         status: &dyn Display,
@@ -282,7 +289,7 @@ pub fn shell_name() -> HuakResult<String> {
     let shell_name = Path::new(&shell_path)
         .file_name()
         .and_then(|name| name.to_str())
-        .map(|name| name.to_owned())
+        .map(ToOwned::to_owned)
         .ok_or_else(|| Error::InternalError("shell path is invalid".to_owned()))?;
     Ok(shell_name)
 }

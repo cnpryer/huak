@@ -7,6 +7,8 @@ pub struct UpdateOptions {
     pub install_options: InstallOptions,
 }
 
+#[allow(clippy::module_name_repetitions)]
+#[allow(clippy::needless_pass_by_value)]
 pub fn update_project_dependencies(
     dependencies: Option<Vec<String>>,
     config: &Config,
@@ -21,11 +23,7 @@ pub fn update_project_dependencies(
     if let Some(it) = dependencies.as_ref() {
         let deps = dependency_iter(it)
             .filter_map(|dep| {
-                if metadata
-                    .metadata()
-                    .contains_dependency_any(&dep)
-                    .unwrap_or_default()
-                {
+                if metadata.metadata().contains_dependency_any(&dep) {
                     Some(dep)
                 } else {
                     None
@@ -42,12 +40,13 @@ pub fn update_project_dependencies(
         let mut deps = metadata
             .metadata()
             .dependencies()
-            .map(|reqs| reqs.iter().map(Dependency::from).collect::<Vec<_>>())
-            .unwrap_or(Vec::new());
+            .map_or(Vec::new(), |reqs| {
+                reqs.iter().map(Dependency::from).collect::<Vec<_>>()
+            });
 
         if let Some(odeps) = metadata.metadata().optional_dependencies() {
             odeps.values().for_each(|reqs| {
-                deps.extend(reqs.iter().map(Dependency::from).collect::<Vec<_>>())
+                deps.extend(reqs.iter().map(Dependency::from).collect::<Vec<_>>());
             });
         }
 
@@ -58,21 +57,19 @@ pub fn update_project_dependencies(
     // Get all groups from the metadata file to include in the removal process.
     let mut groups = Vec::new();
     if let Some(deps) = metadata.metadata().optional_dependencies() {
-        groups.extend(deps.keys().map(|key| key.to_string()));
+        groups.extend(deps.keys().map(ToString::to_string));
     }
 
     for pkg in python_env.installed_packages()? {
         let dep = &Dependency::from_str(&pkg.to_string())?;
-        if metadata.metadata().contains_dependency(dep)? {
+        if metadata.metadata().contains_dependency(dep) {
             metadata.metadata_mut().remove_dependency(dep);
-            metadata.metadata_mut().add_dependency(dep.clone())
+            metadata.metadata_mut().add_dependency(dep);
         }
-        for g in groups.iter() {
-            if metadata.metadata().contains_optional_dependency(dep, g)? {
+        for g in &groups {
+            if metadata.metadata().contains_optional_dependency(dep, g) {
                 metadata.metadata_mut().remove_optional_dependency(dep, g);
-                metadata
-                    .metadata_mut()
-                    .add_optional_dependency(dep.clone(), g);
+                metadata.metadata_mut().add_optional_dependency(dep, g);
             }
         }
     }
@@ -102,7 +99,7 @@ mod tests {
         )
         .unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()
@@ -131,7 +128,7 @@ mod tests {
         )
         .unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()

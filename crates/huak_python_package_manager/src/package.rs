@@ -27,16 +27,19 @@ pub struct Package {
 }
 
 impl Package {
+    #[must_use]
     /// Get a reference to the `Package`'s name.
     pub fn name(&self) -> &str {
         &self.id.name
     }
 
+    #[must_use]
     /// Get a reference to the PEP 440 `Version` of the `Package`.
     pub fn version(&self) -> &Version {
         &self.id.version
     }
 
+    #[must_use]
     /// Get a reference to the `Package`'s core `Metadata`.
     pub fn metadata(&self) -> &Metadata {
         &self.metadata
@@ -65,15 +68,13 @@ impl Package {
         // a `Package` cannot be initialized with multiple `VersionSpecifier`s.
         if version_specifiers.len() > 1 {
             return Err(Error::InvalidVersionString(format!(
-                "{} can only contain one version specifier",
-                s
+                "{s} can only contain one version specifier"
             )));
         }
         let version_specifer = version_specifiers.first().unwrap();
         if version_specifer.operator() != &Operator::Equal {
             return Err(Error::InvalidVersionString(format!(
-                "{} must contain {} specifier",
-                s,
+                "{s} must contain {} specifier",
                 Operator::Equal
             )));
         }

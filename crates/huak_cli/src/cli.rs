@@ -186,7 +186,7 @@ impl Cli {
         let mut config = get_config(cwd, &self);
 
         match exec_command(self.command, &mut config) {
-            Ok(_) => Ok(0),
+            Ok(()) => Ok(0),
             // TODO: Implement our own ExitCode or status handler.
             Err(HuakError::SubprocessFailure(e)) => Ok(e.code().unwrap_or_default()),
             Err(e) => Err(Error::new(e, ExitCode::FAILURE)),
@@ -194,7 +194,9 @@ impl Cli {
     }
 }
 
-fn exec_command(cmd: Commands, config: &mut Config) -> Result<(), HuakError> {
+// TODO(cnpryer): Might be a [lints] bug.
+#[allow(clippy::too_many_lines)]
+fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
     match cmd {
         Commands::Activate => activate(config),
         Commands::Add {
@@ -205,7 +207,7 @@ fn exec_command(cmd: Commands, config: &mut Config) -> Result<(), HuakError> {
             let options = AddOptions {
                 install_options: InstallOptions { values: trailing },
             };
-            add(dependencies, group, config, &options)
+            add(&dependencies, group.as_ref(), config, &options)
         }
         Commands::Build { trailing } => {
             let options = BuildOptions {
@@ -226,7 +228,8 @@ fn exec_command(cmd: Commands, config: &mut Config) -> Result<(), HuakError> {
         }
         Commands::Completion { shell } => {
             let options = CompletionOptions { shell };
-            completion(&options)
+            completion(&options);
+            Ok(())
         }
         Commands::Fix { trailing } => {
             let options = LintOptions {
@@ -305,9 +308,9 @@ fn exec_command(cmd: Commands, config: &mut Config) -> Result<(), HuakError> {
             let options = RemoveOptions {
                 install_options: InstallOptions { values: trailing },
             };
-            remove(dependencies, config, &options)
+            remove(&dependencies, config, &options)
         }
-        Commands::Run { command } => run(command, config),
+        Commands::Run { command } => run(&command, config),
         Commands::Test { trailing } => {
             let options = TestOptions {
                 values: trailing,
@@ -332,9 +335,10 @@ fn get_config(cwd: PathBuf, cli: &Cli) -> Config {
     // TODO: Use find_workspace_root
     let workspace_root =
         find_package_root(&cwd, &home_dir().expect("home directory")).unwrap_or(cwd.clone());
-    let verbosity = match cli.quiet {
-        true => Verbosity::Quiet,
-        false => Verbosity::Normal,
+    let verbosity = if cli.quiet {
+        Verbosity::Quiet
+    } else {
+        Verbosity::Normal
     };
     let terminal_options = TerminalOptions {
         verbosity,
@@ -359,14 +363,14 @@ fn activate(config: &Config) -> HuakResult<()> {
 }
 
 fn add(
-    dependencies: Vec<Dependency>,
-    group: Option<String>,
+    dependencies: &[Dependency],
+    group: Option<&String>,
     config: &Config,
     options: &AddOptions,
 ) -> HuakResult<()> {
     let deps = dependencies
         .iter()
-        .map(|item| item.to_string())
+        .map(std::string::ToString::to_string)
         .collect::<Vec<String>>();
     match group.as_ref() {
         Some(it) => cmd::add_project_optional_dependencies(&deps, it, config, options),
@@ -398,6 +402,7 @@ fn init(app: bool, _lib: bool, config: &Config, options: &WorkspaceOptions) -> H
     }
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn install(
     groups: Option<Vec<String>>,
     config: &Config,
@@ -429,11 +434,11 @@ fn python(command: Python, config: &Config) -> HuakResult<()> {
     }
 }
 
-fn remove(dependencies: Vec<String>, config: &Config, options: &RemoveOptions) -> HuakResult<()> {
-    cmd::remove_project_dependencies(&dependencies, config, options)
+fn remove(dependencies: &[String], config: &Config, options: &RemoveOptions) -> HuakResult<()> {
+    cmd::remove_project_dependencies(dependencies, config, options)
 }
 
-fn run(command: Vec<String>, config: &Config) -> HuakResult<()> {
+fn run(command: &[String], config: &Config) -> HuakResult<()> {
     cmd::run_command_str(&command.join(" "), config)
 }
 
@@ -453,9 +458,8 @@ fn version(config: &Config) -> HuakResult<()> {
     cmd::display_project_version(config)
 }
 
-fn completion(options: &CompletionOptions) -> HuakResult<()> {
+fn completion(options: &CompletionOptions) {
     generate_shell_completion_script(options.shell);
-    Ok(())
 }
 
 struct CompletionOptions {
@@ -485,7 +489,7 @@ impl FromStr for Dependency {
 
 impl ToString for Dependency {
     fn to_string(&self) -> String {
-        self.0.to_owned()
+        self.0.clone()
     }
 }
 
