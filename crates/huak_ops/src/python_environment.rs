@@ -484,8 +484,7 @@ pub fn default_venv_name() -> &'static str {
 /// Get an `Iterator` over available Python `Interpreter` paths parsed from the `PATH`
 /// environment variable (inspired by brettcannon/python-launcher).
 pub fn python_paths() -> impl Iterator<Item = (Option<Version>, PathBuf)> {
-    let paths =
-        fs::flatten_directories(env_path_values().unwrap_or(Vec::new()));
+    let paths = fs::flatten_directories(env_path_values().unwrap_or_default());
 
     python_interpreters_in_paths(paths)
 }

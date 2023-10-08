@@ -61,7 +61,7 @@ fn make_venv_command(
     cmd: &mut Command,
     venv: &PythonEnvironment,
 ) -> HuakResult<()> {
-    let mut paths = env_path_values().unwrap_or(Vec::new());
+    let mut paths = env_path_values().unwrap_or_default();
 
     paths.insert(0, venv.executables_dir_path().clone());
     cmd.env(
