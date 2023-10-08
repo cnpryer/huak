@@ -1,5 +1,12 @@
 [workspace]
 members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.73"
+authors = ["Chris Pryer <cnpryer@gmail.com>"]
+license = "MIT"
 
 [workspace.dependencies]
 clap = { version = "4.4.2", features = ["cargo", "derive"] }
