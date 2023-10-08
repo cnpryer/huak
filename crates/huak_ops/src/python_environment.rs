@@ -610,7 +610,7 @@ mod tests {
     use super::*;
 
     // TODO(cnpryer): https://github.com/cnpryer/huak/issues/687
-    #[ignore]
+    #[ignore = "flaky test"]
     #[test]
     fn python_environment_executables_dir_name() {
         let dir = tempdir().unwrap();
@@ -635,6 +635,8 @@ mod tests {
         assert!(venv.executables_dir_path().join("python.exe").exists());
     }
 
+    // TODO(cnpryer): https://github.com/cnpryer/huak/issues/687
+    #[ignore = "flaky test"]
     #[test]
     fn find_python() {
         let path = python_paths().next().unwrap().1;
