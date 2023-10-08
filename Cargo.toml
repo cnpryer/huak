@@ -16,3 +16,11 @@ pep508_rs = "0.2.1"
 tempfile = "3.7.1"
 termcolor = "1.2.0"
 thiserror = "1.0.48"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+pedantic = "warn"
+nursery = "warn"
+cargo = "warn"
