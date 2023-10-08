@@ -1,4 +1,4 @@
-use huak_ops::{dependency_iter, Config, Error, HuakResult, InstallOptions};
+use huak_python_package_manager::{dependency_iter, Config, Error, HuakResult, InstallOptions};
 
 pub struct RemoveOptions {
     pub install_options: InstallOptions,
@@ -58,7 +58,7 @@ mod tests {
     use crate::cmd::test_utils::test_resources_dir_path;
 
     use super::*;
-    use huak_ops::{
+    use huak_python_package_manager::{
         copy_dir, initialize_venv, CopyDirOptions, Dependency, Package, TerminalOptions, Verbosity,
     };
     use std::str::FromStr;

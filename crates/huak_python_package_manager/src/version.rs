@@ -59,7 +59,7 @@ impl Display for SemVer {
 /// Initialize a `Version` from a `&str`.
 ///
 /// ```
-/// use huak_ops::Version;
+/// use huak_python_package_manager::Version;
 ///
 /// let a = Version::from_str("0.0.1").unwrap();
 /// let b = Version::from_str("0.0.2").unwrap();

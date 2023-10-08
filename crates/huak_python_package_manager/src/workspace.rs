@@ -14,7 +14,7 @@ use std::{path::PathBuf, process::Command};
 /// `Interpreters` found, etc.
 ///
 /// ```
-/// use huak_ops::Workspace;
+/// use huak_python_package_manager::Workspace;
 ///
 /// let workspace = Workspace::new(".");
 /// let env = workspace.environment();
