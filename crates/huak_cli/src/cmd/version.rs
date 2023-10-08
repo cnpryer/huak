@@ -1,4 +1,4 @@
-use huak_ops::{Config, Error, HuakResult};
+use huak_python_package_manager::{Config, Error, HuakResult};
 use termcolor::Color;
 
 pub fn display_project_version(config: &Config) -> HuakResult<()> {

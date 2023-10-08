@@ -1,5 +1,5 @@
 use super::make_venv_command;
-use huak_ops::{Config, Dependency, HuakResult, InstallOptions};
+use huak_python_package_manager::{Config, Dependency, HuakResult, InstallOptions};
 use std::{process::Command, str::FromStr};
 
 pub struct FormatOptions {
@@ -84,7 +84,9 @@ pub fn format_project(config: &Config, options: &FormatOptions) -> HuakResult<()
 mod tests {
     use super::*;
     use crate::cmd::test_utils::test_resources_dir_path;
-    use huak_ops::{copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity};
+    use huak_python_package_manager::{
+        copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity,
+    };
     use tempfile::tempdir;
 
     #[test]

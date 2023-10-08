@@ -12,7 +12,7 @@ const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
 /// its dependencies, etc.
 ///
 /// ```
-/// use huak_ops::Package;
+/// use huak_python_package_manager::Package;
 /// use pep440_rs::Version;
 ///
 /// let mut package = Package::from_str("my-project == 0.0.1").unwrap();
@@ -47,7 +47,7 @@ impl Package {
     /// Initialize a `Package` from a `&str`.
     ///
     /// ```
-    /// use huak_ops::Package;
+    /// use huak_python_package_manager::Package;
     ///
     /// let package = Package::from_str("my-package == 0.0.1").unwrap();
     /// ```

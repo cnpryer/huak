@@ -1,4 +1,4 @@
-use huak_ops::{Config, HuakResult};
+use huak_python_package_manager::{Config, HuakResult};
 
 pub struct CleanOptions {
     pub include_pycache: bool,
@@ -52,7 +52,7 @@ mod tests {
     use crate::cmd::test_utils::test_resources_dir_path;
 
     use super::*;
-    use huak_ops::{copy_dir, CopyDirOptions, TerminalOptions, Verbosity};
+    use huak_python_package_manager::{copy_dir, CopyDirOptions, TerminalOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]
