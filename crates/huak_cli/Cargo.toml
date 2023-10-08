@@ -17,7 +17,7 @@ clap_complete = "4.4.1"
 colored = "2.0.4"
 glob = { workspace = true }
 huak_python_package_manager = { path = "../huak_python_package_manager"}
-human-panic = "1.1.5"
+human-panic = "1.2.1"
 # included to build PyPi Wheels (see .github/workflow/README.md)
 openssl = { version = "0.10.57", features = ["vendored"], optional = true }
 pep440_rs = { workspace = true }
