@@ -237,7 +237,7 @@ impl Metadata {
             .optional_dependencies
             .get_or_insert_with(IndexMap::new)
             .entry(group.to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(dependency.requirement().to_owned());
     }
 
@@ -437,7 +437,7 @@ dev = [
         let local_metadata = LocalMetadata::new(path).unwrap();
 
         assert_eq!(
-            local_metadata.metadata.dependencies().unwrap().deref(),
+            local_metadata.metadata.dependencies().unwrap(),
             vec![Requirement::from_str("click==8.1.3").unwrap()]
         );
     }
