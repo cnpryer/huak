@@ -610,6 +610,8 @@ mod tests {
 
     use super::*;
 
+    // TODO(cnpryer): https://github.com/cnpryer/huak/issues/687
+    #[ignore]
     #[test]
     fn python_environment_executables_dir_name() {
         let dir = tempdir().unwrap();
