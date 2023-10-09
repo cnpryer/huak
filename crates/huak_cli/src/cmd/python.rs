@@ -22,8 +22,10 @@ pub fn list_python(config: &Config) -> HuakResult<()> {
 pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
     let interpreters = Environment::resolve_python_interpreters();
 
+    // TODO(cnpryer): Re-export `Interpreter` as public
+    #[allow(clippy::redundant_closure_for_method_calls)]
     // Get a path to an interpreter based on the version provided, excluding any activated Python environment.
-    let path = match interpreters
+    let Some(path) = interpreters
         .interpreters()
         .iter()
         .filter(|py| {
@@ -33,17 +35,19 @@ pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
         })
         .find(|py| py.version().to_string() == version)
         .map(|py| py.path())
-    {
-        Some(it) => it,
-        None => return Err(Error::PythonNotFound),
+    else {
+        return Err(Error::PythonNotFound);
     };
 
     // Remove the current Python virtual environment if one exists.
     let workspace = config.workspace();
     match workspace.current_python_environment() {
         Ok(it) if directory_is_venv(it.root()) => std::fs::remove_dir_all(it.root())?,
-        Ok(_) => (),
-        Err(Error::PythonEnvironmentNotFound) | Err(Error::UnsupportedPythonEnvironment(_)) => (),
+        // TODO(cnpryer): This might be a clippy bug.
+        #[allow(clippy::no_effect)]
+        Ok(_) | Err(Error::PythonEnvironmentNotFound | Error::UnsupportedPythonEnvironment(_)) => {
+            ();
+        }
         Err(e) => return Err(e),
     };
 

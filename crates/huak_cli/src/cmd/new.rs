@@ -74,7 +74,7 @@ mod tests {
     fn test_new_lib_project() {
         let dir = tempdir().unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()
@@ -92,12 +92,12 @@ mod tests {
         let metadata = ws.current_local_metadata().unwrap();
         let test_file_filepath = ws.root().join("tests").join("test_version.py");
         let test_file = std::fs::read_to_string(test_file_filepath).unwrap();
-        let expected_test_file = r#"from mock_project import __version__
+        let expected_test_file = r"from mock_project import __version__
 
 
 def test_version():
     assert isinstance(__version__, str)
-"#;
+";
         let init_file_filepath = ws
             .root()
             .join("src")
@@ -116,7 +116,7 @@ def test_version():
     fn test_new_app_project() {
         let dir = tempdir().unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()

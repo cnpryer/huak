@@ -50,7 +50,7 @@ mod tests {
         let dir = tempdir().unwrap();
         std::fs::create_dir(dir.path().join("mock-project")).unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()
@@ -77,7 +77,7 @@ mod tests {
         let dir = tempdir().unwrap();
         std::fs::create_dir(dir.path().join("mock-project")).unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()

@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use crate::{error::HuakResult, Error};
 use git2::Repository;
 
-/// From https://github.com/github/gitignore/blob/main/Python.gitignore
-const DEFAULT_PYTHON_GITIGNORE: &str = r#"
+/// From <https://github.com/github/gitignore/blob/main/Python.gitignore>.
+const DEFAULT_PYTHON_GITIGNORE: &str = r"
 __pycache__/
 *.py[cod]
 *$py.class
@@ -80,7 +80,7 @@ dmypy.json
 .pyre/
 .pytype/
 cython_debug/
-"#;
+";
 
 /// Initialize a directory on a local system as a git repository
 /// and return the Repository.
@@ -88,6 +88,7 @@ pub fn init<T: Into<PathBuf>>(path: T) -> HuakResult<Repository> {
     Repository::init(path.into()).map_err(Error::GitError)
 }
 
+#[must_use]
 pub fn default_python_gitignore() -> &'static str {
     DEFAULT_PYTHON_GITIGNORE
 }

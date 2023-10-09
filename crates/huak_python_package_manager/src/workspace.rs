@@ -34,11 +34,13 @@ impl Workspace {
         }
     }
 
+    #[must_use]
     /// Get a reference to the path to the `Workspace` root.
     pub fn root(&self) -> &PathBuf {
         &self.root
     }
 
+    #[must_use]
     /// Get an `Environment` associated with the `Workspace`.
     pub fn environment(&self) -> Environment {
         Environment::new()
@@ -96,9 +98,8 @@ impl Workspace {
 
         // Get the first Python `Interpreter` path found from the `PATH`
         // environment variable.
-        let python_path = match env.python_paths().next() {
-            Some(it) => it,
-            None => return Err(Error::PythonNotFound),
+        let Some(python_path) = env.python_paths().next() else {
+            return Err(Error::PythonNotFound);
         };
 
         // Set the name and path of the `PythonEnvironment. Note that we currently only
@@ -126,7 +127,7 @@ pub struct WorkspaceOptions {
 }
 
 /// Search for a Python virtual environment.
-/// 1. If VIRTUAL_ENV exists then a venv is active; use it.
+/// 1. If `VIRTUAL_ENV` exists then a venv is active; use it.
 /// 2. Walk from the `from` dir upwards, searching for dir containing the pyvenv.cfg file.
 /// 3. Stop after searching the `stop_after` dir.
 pub fn find_venv_root<T: Into<PathBuf>>(from: T, stop_after: T) -> HuakResult<PathBuf> {

@@ -25,7 +25,7 @@ pub fn install_project_dependencies(
                 dependencies.extend(reqs.iter().map(Dependency::from));
             }
         } else {
-            gs.iter().for_each(|g| {
+            for g in gs {
                 package
                     .metadata()
                     .optional_dependency_group(g)
@@ -34,7 +34,7 @@ pub fn install_project_dependencies(
                     .for_each(|req| {
                         dependencies.push(Dependency::from(req));
                     });
-            })
+            }
         }
     } else {
         // If no groups are passed then install all dependencies listed in the metadata file
@@ -44,7 +44,7 @@ pub fn install_project_dependencies(
         }
         if let Some(deps) = metadata.metadata().optional_dependencies() {
             deps.values().for_each(|reqs| {
-                dependencies.extend(reqs.iter().map(Dependency::from).collect::<Vec<_>>())
+                dependencies.extend(reqs.iter().map(Dependency::from).collect::<Vec<_>>());
             });
         }
     }
@@ -79,7 +79,7 @@ mod tests {
         )
         .unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()
@@ -112,7 +112,7 @@ mod tests {
         )
         .unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()

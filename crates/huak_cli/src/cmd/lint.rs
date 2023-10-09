@@ -47,7 +47,7 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
     let mut cmd = Command::new(python_env.python_path());
     let mut args = vec!["-m", "ruff", "check", "."];
     if let Some(v) = options.values.as_ref() {
-        args.extend(v.iter().map(|item| item.as_str()));
+        args.extend(v.iter().map(String::as_str));
     }
     make_venv_command(&mut cmd, &python_env)?;
     cmd.args(args).current_dir(workspace.root());
@@ -56,13 +56,8 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
     // Add installed lint deps (potentially both `mypy` and `ruff`) to metadata file if not already there.
     let new_lint_deps = lint_deps
         .iter()
-        .filter(|dep| {
-            !metadata
-                .metadata()
-                .contains_dependency_any(dep)
-                .unwrap_or_default()
-        })
-        .map(|dep| dep.name())
+        .filter(|dep| !metadata.metadata().contains_dependency_any(dep))
+        .map(Dependency::name)
         .collect::<Vec<_>>();
 
     if !new_lint_deps.is_empty() {
@@ -73,7 +68,7 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
         {
             metadata
                 .metadata_mut()
-                .add_optional_dependency(Dependency::from_str(&pkg.to_string())?, "dev");
+                .add_optional_dependency(&Dependency::from_str(&pkg.to_string())?, "dev");
         }
     }
 
@@ -104,7 +99,7 @@ mod tests {
         )
         .unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()
@@ -133,7 +128,7 @@ mod tests {
         )
         .unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()
@@ -151,19 +146,19 @@ mod tests {
             install_options: InstallOptions { values: None },
         };
         let lint_fix_filepath = ws.root().join("src").join("mock_project").join("fix_me.py");
-        let pre_fix_str = r#"
+        let pre_fix_str = r"
 import json # this gets removed(autofixed)
 
 
 def fn():
     pass
-"#;
-        let expected = r#"
+";
+        let expected = r"
 
 
 def fn():
     pass
-"#;
+";
         std::fs::write(&lint_fix_filepath, pre_fix_str).unwrap();
 
         lint_project(&config, &options).unwrap();

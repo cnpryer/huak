@@ -21,7 +21,7 @@ pub fn build_project(config: &Config, options: &BuildOptions) -> HuakResult<()> 
     }
 
     // Add the installed `build` package to the metadata file.
-    if !metadata.metadata().contains_dependency_any(&build_dep)? {
+    if !metadata.metadata().contains_dependency_any(&build_dep) {
         for pkg in python_env
             .installed_packages()?
             .iter()
@@ -29,7 +29,7 @@ pub fn build_project(config: &Config, options: &BuildOptions) -> HuakResult<()> 
         {
             metadata
                 .metadata_mut()
-                .add_optional_dependency(Dependency::from_str(&pkg.to_string())?, "dev");
+                .add_optional_dependency(&Dependency::from_str(&pkg.to_string())?, "dev");
         }
     }
 
@@ -41,7 +41,7 @@ pub fn build_project(config: &Config, options: &BuildOptions) -> HuakResult<()> 
     let mut cmd = Command::new(python_env.python_path());
     let mut args = vec!["-m", "build"];
     if let Some(it) = options.values.as_ref() {
-        args.extend(it.iter().map(|item| item.as_str()));
+        args.extend(it.iter().map(std::string::String::as_str));
     }
     make_venv_command(&mut cmd, &python_env)?;
     cmd.args(args).current_dir(workspace.root());

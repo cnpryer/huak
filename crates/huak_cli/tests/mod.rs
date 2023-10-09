@@ -105,7 +105,7 @@ mod tests {
         assert_cmd_snapshot!(Command::new("huak")
             .arg("version")
             .arg("--no-color")
-            .current_dir(from))
+            .current_dir(from));
     }
 
     /// The resource directory found in the Huak repo used for testing purposes.

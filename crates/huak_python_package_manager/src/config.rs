@@ -32,18 +32,21 @@ pub struct Config {
 }
 
 impl Config {
+    #[must_use]
     /// Resolve the current `Workspace` based on the `Config` data.
     pub fn workspace(&self) -> Workspace {
         Workspace::new(&self.workspace_root, self)
     }
 
+    #[must_use]
     /// Get a `Terminal` based on the `Config` data.
     pub fn terminal(&self) -> Terminal {
         Terminal::from_options(self.terminal_options.clone())
     }
 
+    #[must_use]
     /// Get a `Config` with a new `Terminal`.
-    pub fn with_terminal(self, terminal_options: TerminalOptions) -> Config {
+    pub fn with_terminal(self, terminal_options: TerminalOptions) -> Self {
         Config {
             workspace_root: self.workspace_root,
             cwd: self.cwd,

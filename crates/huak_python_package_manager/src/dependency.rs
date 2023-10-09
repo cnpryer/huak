@@ -20,6 +20,7 @@ use crate::Error;
 pub struct Dependency(Requirement);
 
 impl Dependency {
+    #[must_use]
     /// Get a reference to the wrapped `Requirement`.
     pub fn requirement(&self) -> &Requirement {
         &self.0
@@ -30,6 +31,7 @@ impl Dependency {
         &mut self.0
     }
 
+    #[must_use]
     /// Get the `Dependency` name.
     pub fn name(&self) -> &str {
         &self.requirement().name

@@ -1,7 +1,11 @@
 [package]
 name = "huak_python_package_manager"
 version = "0.0.0"
-edition = "2021"
+readme.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
 
 [lib]
 # We currently don't run doctest while the library is private.
@@ -25,3 +29,6 @@ regex = "1.9.5"
 
 [dev-dependencies]
 tempfile = { workspace = true }
+
+[lints]
+workspace = true

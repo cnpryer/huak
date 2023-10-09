@@ -20,12 +20,7 @@ pub fn add_project_dependencies(
 
     // Collect all dependencies that need to be added to the metadata file.
     let mut deps: Vec<Dependency> = dependency_iter(dependencies)
-        .filter(|dep| {
-            !metadata
-                .metadata()
-                .contains_dependency(dep)
-                .unwrap_or_default()
-        })
+        .filter(|dep| !metadata.metadata().contains_dependency(dep))
         .collect::<Vec<_>>();
 
     if deps.is_empty() {
@@ -37,7 +32,7 @@ pub fn add_project_dependencies(
 
     // If there's no version data then get the installed version and add to metadata file.
     let packages = python_env.installed_packages()?; // TODO: Only run if versions weren't provided.
-    for dep in deps.iter_mut() {
+    for dep in &mut deps {
         if dep.requirement().version_or_url.is_none() {
             // TODO: Optimize this .find
             if let Some(pkg) = packages.iter().find(|p| p.name() == dep.name()) {
@@ -48,8 +43,8 @@ pub fn add_project_dependencies(
             }
         }
 
-        if !metadata.metadata().contains_dependency(dep)? {
-            metadata.metadata_mut().add_dependency(dep.clone());
+        if !metadata.metadata().contains_dependency(dep) {
+            metadata.metadata_mut().add_dependency(dep);
         }
     }
 
@@ -72,12 +67,7 @@ pub fn add_project_optional_dependencies(
 
     // Collect all dependencies that need to be added.
     let mut deps = dependency_iter(dependencies)
-        .filter(|dep| {
-            !metadata
-                .metadata()
-                .contains_optional_dependency(dep, group)
-                .unwrap_or_default()
-        })
+        .filter(|dep| !metadata.metadata().contains_optional_dependency(dep, group))
         .collect::<Vec<Dependency>>();
 
     if deps.is_empty() {
@@ -89,7 +79,7 @@ pub fn add_project_optional_dependencies(
 
     // If there's no version data then get the installed version and add to metadata file.
     let packages = python_env.installed_packages()?; // TODO: Only run if versions weren't provided.
-    for dep in deps.iter_mut() {
+    for dep in &mut deps {
         if dep.requirement().version_or_url.is_none() {
             // TODO: Optimize this .find
             if let Some(pkg) = packages.iter().find(|p| p.name() == dep.name()) {
@@ -100,13 +90,8 @@ pub fn add_project_optional_dependencies(
             }
         }
 
-        if !metadata
-            .metadata()
-            .contains_optional_dependency(dep, group)?
-        {
-            metadata
-                .metadata_mut()
-                .add_optional_dependency(dep.clone(), group);
+        if !metadata.metadata().contains_optional_dependency(dep, group) {
+            metadata.metadata_mut().add_optional_dependency(dep, group);
         }
     }
 
@@ -136,7 +121,7 @@ mod tests {
         )
         .unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()
@@ -158,7 +143,7 @@ mod tests {
         let metadata = ws.current_local_metadata().unwrap();
 
         assert!(venv.contains_module("ruff").unwrap());
-        assert!(metadata.metadata().contains_dependency(&dep).unwrap());
+        assert!(metadata.metadata().contains_dependency(&dep));
     }
 
     #[test]
@@ -172,7 +157,7 @@ mod tests {
         .unwrap();
         let group = "dev";
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()
@@ -198,7 +183,6 @@ mod tests {
         assert!(venv.contains_module("ruff").unwrap());
         assert!(metadata
             .metadata()
-            .contains_optional_dependency(&dep, "dev")
-            .unwrap());
+            .contains_optional_dependency(&dep, "dev"));
     }
 }

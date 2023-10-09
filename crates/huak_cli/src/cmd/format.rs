@@ -32,13 +32,8 @@ pub fn format_project(config: &Config, options: &FormatOptions) -> HuakResult<()
     // Add the installed `ruff` and `black` packages to the metadata file if not already there.
     let new_format_deps = format_deps
         .iter()
-        .filter(|dep| {
-            !metadata
-                .metadata()
-                .contains_dependency_any(dep)
-                .unwrap_or_default()
-        })
-        .map(|dep| dep.name())
+        .filter(|dep| !metadata.metadata().contains_dependency_any(dep))
+        .map(Dependency::name)
         .collect::<Vec<_>>();
 
     if !new_format_deps.is_empty() {
@@ -49,7 +44,7 @@ pub fn format_project(config: &Config, options: &FormatOptions) -> HuakResult<()
         {
             metadata
                 .metadata_mut()
-                .add_optional_dependency(Dependency::from_str(&pkg.to_string())?, "dev");
+                .add_optional_dependency(&Dependency::from_str(&pkg.to_string())?, "dev");
         }
     }
 
@@ -66,12 +61,12 @@ pub fn format_project(config: &Config, options: &FormatOptions) -> HuakResult<()
     make_venv_command(&mut ruff_cmd, &python_env)?;
     let mut args = vec!["-m", "black", "."];
     if let Some(v) = options.values.as_ref() {
-        args.extend(v.iter().map(|item| item.as_str()));
+        args.extend(v.iter().map(String::as_str));
         if v.contains(&"--check".to_string()) {
             terminal.print_warning(
                     "this check will exit early if imports aren't sorted (see https://github.com/cnpryer/huak/issues/510)",
                 )?;
-            ruff_args.retain(|item| *item != "--fix")
+            ruff_args.retain(|item| *item != "--fix");
         }
     }
     ruff_cmd.args(ruff_args).current_dir(workspace.root());
@@ -99,7 +94,7 @@ mod tests {
         )
         .unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()
@@ -112,9 +107,9 @@ mod tests {
         let ws = config.workspace();
         initialize_venv(ws.root().join(".venv"), &ws.environment()).unwrap();
         let fmt_filepath = ws.root().join("src").join("mock_project").join("fmt_me.py");
-        let pre_fmt_str = r#"
+        let pre_fmt_str = r"
 def fn( ):
-    pass"#;
+    pass";
         std::fs::write(&fmt_filepath, pre_fmt_str).unwrap();
         let options = FormatOptions {
             values: None,
@@ -127,9 +122,9 @@ def fn( ):
 
         assert_eq!(
             post_fmt_str,
-            r#"def fn():
+            r"def fn():
     pass
-"#
+"
         );
     }
 }

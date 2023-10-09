@@ -1,15 +1,17 @@
 [package]
 name = "huak"
 version = "0.0.19"
-edition = "2021"
-license = "MIT"
 description = "A Python package manager written in Rust and inspired by Cargo."
 repository = "https://github.com/cnpryer/huak.git"
 homepage = "https://github.com/cnpryer/huak.git"
-rust-version = "1.69.0"
 categories = [
     "development-tools"
 ]
+readme.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
 
 [dependencies]
 clap = { workspace = true }
@@ -28,3 +30,6 @@ thiserror = "1.0.48"
 [dev-dependencies]
 insta-cmd = "0.4.0"
 tempfile = { workspace = true }
+
+[lints]
+workspace = true

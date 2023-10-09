@@ -31,7 +31,7 @@ pub fn clean_project(config: &Config, options: &CleanOptions) -> HuakResult<()> 
             if let Ok(it) = item {
                 std::fs::remove_dir_all(it).ok();
             }
-        })
+        });
     }
 
     // Remove all .pyc files in the workspace if they exist.
@@ -41,7 +41,7 @@ pub fn clean_project(config: &Config, options: &CleanOptions) -> HuakResult<()> 
             if let Ok(it) = item {
                 std::fs::remove_file(it).ok();
             }
-        })
+        });
     }
 
     Ok(())
@@ -65,7 +65,7 @@ mod tests {
         )
         .unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()
@@ -87,7 +87,7 @@ mod tests {
             config.workspace_root.join("dist").join("*").display()
         ))
         .unwrap()
-        .map(|item| item.unwrap())
+        .map(std::result::Result::unwrap)
         .collect::<Vec<_>>();
         let pycaches = glob::glob(&format!(
             "{}",
@@ -98,14 +98,14 @@ mod tests {
                 .display()
         ))
         .unwrap()
-        .map(|item| item.unwrap())
+        .map(std::result::Result::unwrap)
         .collect::<Vec<_>>();
         let bytecode = glob::glob(&format!(
             "{}",
             config.workspace_root.join("**").join("*.pyc").display()
         ))
         .unwrap()
-        .map(|item| item.unwrap())
+        .map(std::result::Result::unwrap)
         .collect::<Vec<_>>();
 
         assert!(dist.is_empty());

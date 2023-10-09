@@ -82,6 +82,7 @@ pub use workspace::{find_package_root, Workspace, WorkspaceOptions};
 pub mod test_utils {
     use std::path::PathBuf;
 
+    #[must_use]
     pub fn test_resources_dir_path() -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .parent()

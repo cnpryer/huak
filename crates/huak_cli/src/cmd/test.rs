@@ -21,7 +21,7 @@ pub fn test_project(config: &Config, options: &TestOptions) -> HuakResult<()> {
     }
 
     // Add the installed `pytest` package to the metadata file if it isn't already there.
-    if !metadata.metadata().contains_dependency_any(&test_dep)? {
+    if !metadata.metadata().contains_dependency_any(&test_dep) {
         for pkg in python_env
             .installed_packages()?
             .iter()
@@ -29,7 +29,7 @@ pub fn test_project(config: &Config, options: &TestOptions) -> HuakResult<()> {
         {
             metadata
                 .metadata_mut()
-                .add_optional_dependency(Dependency::from_str(&pkg.to_string())?, "dev");
+                .add_optional_dependency(&Dependency::from_str(&pkg.to_string())?, "dev");
         }
     }
 
@@ -43,11 +43,11 @@ pub fn test_project(config: &Config, options: &TestOptions) -> HuakResult<()> {
     let python_path = if workspace.root().join("src").exists() {
         workspace.root().join("src")
     } else {
-        workspace.root().to_path_buf()
+        workspace.root().clone()
     };
     let mut args = vec!["-m", "pytest"];
     if let Some(v) = options.values.as_ref() {
-        args.extend(v.iter().map(|item| item.as_str()));
+        args.extend(v.iter().map(String::as_str));
     }
     cmd.args(args)
         .env("PYTHONPATH", python_path)
@@ -75,7 +75,7 @@ mod tests {
         )
         .unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = workspace_root.to_path_buf();
+        let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()
