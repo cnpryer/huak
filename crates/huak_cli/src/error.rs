@@ -28,19 +28,13 @@ impl std::fmt::Display for Error {
 
 impl From<clap::Error> for Error {
     fn from(e: clap::Error) -> Error {
-        Error::new(
-            huak_package_manager::Error::ClapError(e),
-            ExitCode::FAILURE,
-        )
+        Error::new(huak_package_manager::Error::ClapError(e), ExitCode::FAILURE)
     }
 }
 
 impl From<std::io::Error> for Error {
     fn from(e: std::io::Error) -> Error {
-        Error::new(
-            huak_package_manager::Error::IOError(e),
-            ExitCode::FAILURE,
-        )
+        Error::new(huak_package_manager::Error::IOError(e), ExitCode::FAILURE)
     }
 }
 
@@ -64,10 +58,7 @@ impl From<std::env::VarError> for Error {
 
 impl From<glob::GlobError> for Error {
     fn from(e: glob::GlobError) -> Error {
-        Error::new(
-            huak_package_manager::Error::GlobError(e),
-            ExitCode::FAILURE,
-        )
+        Error::new(huak_package_manager::Error::GlobError(e), ExitCode::FAILURE)
     }
 }
 

@@ -1,6 +1,4 @@
-use huak_package_manager::{
-    dependency_iter, Config, Dependency, HuakResult, InstallOptions,
-};
+use huak_package_manager::{dependency_iter, Config, Dependency, HuakResult, InstallOptions};
 use std::str::FromStr;
 
 pub struct UpdateOptions {
