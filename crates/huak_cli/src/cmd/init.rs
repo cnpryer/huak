@@ -1,5 +1,5 @@
 use super::init_git;
-use huak_python_package_manager::{
+use huak_package_manager::{
     default_package_entrypoint_string, importable_package_name, last_path_component, Config,
     Dependency, Error, HuakResult, LocalMetadata, WorkspaceOptions,
 };
@@ -40,7 +40,7 @@ pub fn init_lib_project(config: &Config, options: &WorkspaceOptions) -> HuakResu
 #[cfg(test)]
 mod tests {
     use super::*;
-    use huak_python_package_manager::{
+    use huak_package_manager::{
         default_pyproject_toml_contents, PyProjectToml, TerminalOptions, Verbosity,
     };
     use tempfile::tempdir;

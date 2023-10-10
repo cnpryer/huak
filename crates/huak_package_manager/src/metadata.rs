@@ -358,7 +358,6 @@ def test_version():
 mod tests {
     use super::*;
     use crate::test_utils::test_resources_dir_path;
-    use std::ops::Deref;
 
     #[test]
     fn toml_from_path() {

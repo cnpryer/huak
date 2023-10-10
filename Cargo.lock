@@ -346,7 +346,7 @@ dependencies = [
  "clap_complete",
  "colored",
  "glob",
- "huak_python_package_manager",
+ "huak_package_manager",
  "human-panic",
  "insta-cmd",
  "openssl",
@@ -358,7 +358,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "huak_python_package_manager"
+name = "huak_package_manager"
 version = "0.0.0"
 dependencies = [
  "clap",

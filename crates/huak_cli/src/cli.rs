@@ -7,7 +7,7 @@ use crate::{
 };
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::{self, Shell};
-use huak_python_package_manager::{
+use huak_package_manager::{
     find_package_root, home_dir, Config, Error as HuakError, HuakResult, InstallOptions,
     TerminalOptions, Verbosity, Version, WorkspaceOptions,
 };
