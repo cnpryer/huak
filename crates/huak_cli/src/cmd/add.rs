@@ -1,6 +1,4 @@
-use huak_package_manager::{
-    dependency_iter, Config, Dependency, HuakResult, InstallOptions,
-};
+use huak_package_manager::{dependency_iter, Config, Dependency, HuakResult, InstallOptions};
 use pep440_rs::VersionSpecifiers;
 use pep508_rs::VersionOrUrl;
 use std::str::FromStr;
