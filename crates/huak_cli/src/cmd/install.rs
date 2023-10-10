@@ -1,4 +1,4 @@
-use huak_python_package_manager::{Config, Dependency, HuakResult, InstallOptions};
+use huak_package_manager::{Config, Dependency, HuakResult, InstallOptions};
 
 pub fn install_project_dependencies(
     groups: Option<&Vec<String>>,
@@ -64,7 +64,7 @@ mod tests {
     use crate::cmd::test_utils::test_resources_dir_path;
 
     use super::*;
-    use huak_python_package_manager::{
+    use huak_package_manager::{
         copy_dir, initialize_venv, CopyDirOptions, Package, TerminalOptions, Verbosity,
     };
     use tempfile::tempdir;

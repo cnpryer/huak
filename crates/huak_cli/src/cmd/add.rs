@@ -1,4 +1,4 @@
-use huak_python_package_manager::{
+use huak_package_manager::{
     dependency_iter, Config, Dependency, HuakResult, InstallOptions,
 };
 use pep440_rs::VersionSpecifiers;
@@ -106,7 +106,7 @@ pub fn add_project_optional_dependencies(
 mod tests {
     use super::*;
     use crate::cmd::test_utils::test_resources_dir_path;
-    use huak_python_package_manager::{
+    use huak_package_manager::{
         copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity,
     };
     use tempfile::tempdir;

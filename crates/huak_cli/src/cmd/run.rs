@@ -1,5 +1,5 @@
 use super::make_venv_command;
-use huak_python_package_manager::{shell_name, Config, HuakResult};
+use huak_package_manager::{shell_name, Config, HuakResult};
 use std::{env::consts::OS, process::Command};
 
 pub fn run_command_str(command: &str, config: &Config) -> HuakResult<()> {
@@ -21,7 +21,7 @@ mod tests {
     use crate::cmd::test_utils::test_resources_dir_path;
 
     use super::*;
-    use huak_python_package_manager::{
+    use huak_package_manager::{
         copy_dir, env_path_string, CopyDirOptions, TerminalOptions, Verbosity,
     };
     use tempfile::tempdir;

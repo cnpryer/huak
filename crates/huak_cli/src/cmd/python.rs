@@ -1,4 +1,4 @@
-use huak_python_package_manager::{
+use huak_package_manager::{
     active_python_env_path, directory_is_venv, venv_executables_dir_path, Config, Environment,
     Error, HuakResult,
 };
@@ -61,7 +61,7 @@ pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use huak_python_package_manager::{TerminalOptions, Verbosity};
+    use huak_package_manager::{TerminalOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]

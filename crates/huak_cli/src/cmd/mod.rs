@@ -20,11 +20,11 @@ pub use add::{add_project_dependencies, add_project_optional_dependencies, AddOp
 pub use build::{build_project, BuildOptions};
 pub use clean::{clean_project, CleanOptions};
 pub use format::{format_project, FormatOptions};
-use huak_python_package_manager::{
+use huak_package_manager::{
     default_python_gitignore, env_path_values, git_init, Error, HuakResult, PythonEnvironment,
 };
 #[allow(unused_imports)]
-use huak_python_package_manager::{Config, TerminalOptions, Verbosity, Workspace};
+use huak_package_manager::{Config, TerminalOptions, Verbosity, Workspace};
 pub use init::{init_app_project, init_lib_project};
 pub use install::install_project_dependencies;
 pub use lint::{lint_project, LintOptions};

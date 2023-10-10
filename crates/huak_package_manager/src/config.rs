@@ -10,7 +10,7 @@ use crate::{sys::Terminal, workspace::Workspace, TerminalOptions};
 /// what it was when it was requested.
 ///
 /// ```
-/// use huak_python_package_manager::{Config, sys::{TerminalOptions, Verbosity};
+/// use huak_package_manager::{Config, sys::{TerminalOptions, Verbosity};
 ///
 /// let config = Config {
 ///     workspace_root: PathBuf::from("."),
