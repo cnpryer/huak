@@ -29,6 +29,7 @@ termcolor = { workspace = true }
 thiserror = "1.0.48"
 
 [dev-dependencies]
+huak_dev = { path = "../huak_dev" }
 insta-cmd = "0.4.0"
 tempfile = { workspace = true }
 

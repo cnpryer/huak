@@ -101,7 +101,7 @@ mod tests {
 
     #[test]
     fn test_version() {
-        let from = test_resources_dir_path().join("mock-project");
+        let from = dev_resources_dir().join("mock-project");
         assert_cmd_snapshot!(Command::new("huak")
             .arg("version")
             .arg("--no-color")
@@ -109,7 +109,7 @@ mod tests {
     }
 
     /// The resource directory found in the Huak repo used for testing purposes.
-    fn test_resources_dir_path() -> PathBuf {
+    fn dev_resources_dir() -> PathBuf {
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .parent()
             .unwrap()

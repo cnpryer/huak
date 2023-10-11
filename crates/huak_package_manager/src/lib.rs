@@ -77,18 +77,3 @@ pub use python_environment::{
 pub use sys::{shell_name, shell_path, SubprocessError, TerminalOptions, Verbosity};
 pub use version::Version;
 pub use workspace::{find_package_root, Workspace, WorkspaceOptions};
-
-#[cfg(test)]
-pub mod test_utils {
-    use std::path::PathBuf;
-
-    #[must_use]
-    pub fn test_resources_dir_path() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .join("dev-resources")
-    }
-}

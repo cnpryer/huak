@@ -50,9 +50,8 @@ pub fn remove_project_dependencies(
 
 #[cfg(test)]
 mod tests {
-    use crate::cmd::test_utils::test_resources_dir_path;
-
     use super::*;
+    use huak_dev::dev_resources_dir;
     use huak_package_manager::{
         copy_dir, initialize_venv, CopyDirOptions, Dependency, Package, TerminalOptions, Verbosity,
     };
@@ -63,7 +62,7 @@ mod tests {
     fn test_remove_project_dependencies() {
         let dir = tempdir().unwrap();
         copy_dir(
-            &test_resources_dir_path().join("mock-project"),
+            &dev_resources_dir().join("mock-project"),
             &dir.path().join("mock-project"),
             &CopyDirOptions::default(),
         )
@@ -110,7 +109,7 @@ mod tests {
     fn test_remove_project_optional_dependencies() {
         let dir = tempdir().unwrap();
         copy_dir(
-            &test_resources_dir_path().join("mock-project"),
+            &dev_resources_dir().join("mock-project"),
             &dir.path().join("mock-project"),
             &CopyDirOptions::default(),
         )

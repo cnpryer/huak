@@ -346,6 +346,7 @@ dependencies = [
  "clap_complete",
  "colored",
  "glob",
+ "huak_dev",
  "huak_home",
  "huak_package_manager",
  "human-panic",
@@ -359,6 +360,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "huak_dev"
+version = "0.0.0"
+
+[[package]]
 name = "huak_home"
 version = "0.0.0"
 
@@ -369,6 +374,7 @@ dependencies = [
  "clap",
  "git2",
  "glob",
+ "huak_dev",
  "indexmap",
  "pep440_rs",
  "pep508_rs",

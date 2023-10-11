@@ -114,13 +114,13 @@ pub fn last_path_component<T: Into<PathBuf>>(path: T) -> HuakResult<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::test_resources_dir_path;
+    use huak_dev::dev_resources_dir;
     use tempfile::tempdir;
 
     #[test]
     fn test_copy_dir() {
         let to = tempdir().unwrap();
-        let from = test_resources_dir_path().join("mock-project");
+        let from = dev_resources_dir().join("mock-project");
         copy_dir(
             from,
             to.path().join("mock-project"),
@@ -139,7 +139,7 @@ mod tests {
     #[test]
     fn test_find_root_file_bottom_up() {
         let tmp = tempdir().unwrap();
-        let from = test_resources_dir_path().join("mock-project");
+        let from = dev_resources_dir().join("mock-project");
         copy_dir(
             &from,
             &tmp.path().join("mock-project"),

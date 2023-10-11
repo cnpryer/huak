@@ -28,6 +28,7 @@ toml_edit = "0.19.4"
 regex = "1.9.5"
 
 [dev-dependencies]
+huak_dev = { path = "../huak_dev" }
 tempfile = { workspace = true }
 
 [lints]
