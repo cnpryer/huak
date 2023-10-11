@@ -7,9 +7,10 @@ use crate::{
 };
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::{self, Shell};
+use huak_home::huak_home_dir;
 use huak_package_manager::{
-    find_package_root, home_dir, Config, Error as HuakError, HuakResult, InstallOptions,
-    TerminalOptions, Verbosity, Version, WorkspaceOptions,
+    find_package_root, Config, Error as HuakError, HuakResult, InstallOptions, TerminalOptions,
+    Verbosity, Version, WorkspaceOptions,
 };
 use std::{env::current_dir, path::PathBuf, process::ExitCode, str::FromStr};
 use termcolor::ColorChoice;
@@ -334,7 +335,7 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
 fn get_config(cwd: PathBuf, cli: &Cli) -> Config {
     // TODO: Use find_workspace_root
     let workspace_root =
-        find_package_root(&cwd, &home_dir().expect("home directory")).unwrap_or(cwd.clone());
+        find_package_root(&cwd, &huak_home_dir().expect("home directory")).unwrap_or(cwd.clone());
     let verbosity = if cli.quiet {
         Verbosity::Quiet
     } else {

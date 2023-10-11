@@ -63,7 +63,7 @@ pub use config::Config;
 pub use dependency::{dependency_iter, Dependency};
 pub use environment::{env_path_string, env_path_values, Environment};
 pub use error::{Error, HuakResult};
-pub use fs::{copy_dir, home_dir, last_path_component, CopyDirOptions};
+pub use fs::{copy_dir, last_path_component, CopyDirOptions};
 pub use git::{default_python_gitignore, init as git_init};
 pub use metadata::{
     default_package_entrypoint_string, default_package_test_file_contents,

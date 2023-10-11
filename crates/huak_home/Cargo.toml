@@ -1,0 +1,13 @@
+[package]
+name = "huak_home"
+description = "Shared home directories."
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

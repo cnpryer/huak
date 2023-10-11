@@ -346,6 +346,7 @@ dependencies = [
  "clap_complete",
  "colored",
  "glob",
+ "huak_home",
  "huak_package_manager",
  "human-panic",
  "insta-cmd",
@@ -356,6 +357,10 @@ dependencies = [
  "termcolor",
  "thiserror",
 ]
+
+[[package]]
+name = "huak_home"
+version = "0.0.0"
 
 [[package]]
 name = "huak_package_manager"
