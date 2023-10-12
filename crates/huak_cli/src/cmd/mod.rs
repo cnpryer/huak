@@ -97,18 +97,3 @@ fn init_git<T: Into<PathBuf>>(path: T) -> HuakResult<()> {
 
     Ok(())
 }
-
-#[cfg(test)]
-pub mod test_utils {
-    use std::path::PathBuf;
-
-    #[must_use]
-    pub fn test_resources_dir_path() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .parent()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .join("dev-resources")
-    }
-}

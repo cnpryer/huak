@@ -57,9 +57,8 @@ pub fn test_project(config: &Config, options: &TestOptions) -> HuakResult<()> {
 
 #[cfg(test)]
 mod tests {
-    use crate::cmd::test_utils::test_resources_dir_path;
-
     use super::*;
+    use huak_dev::dev_resources_dir;
     use huak_package_manager::{
         copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity,
     };
@@ -69,7 +68,7 @@ mod tests {
     fn test_test_project() {
         let dir = tempdir().unwrap();
         copy_dir(
-            &test_resources_dir_path().join("mock-project"),
+            &dev_resources_dir().join("mock-project"),
             &dir.path().join("mock-project"),
             &CopyDirOptions::default(),
         )
