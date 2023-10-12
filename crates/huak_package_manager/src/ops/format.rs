@@ -1,5 +1,5 @@
 use super::make_venv_command;
-use huak_package_manager::{Config, Dependency, HuakResult, InstallOptions};
+use crate::{Config, Dependency, HuakResult, InstallOptions};
 use std::{process::Command, str::FromStr};
 
 pub struct FormatOptions {
@@ -78,10 +78,8 @@ pub fn format_project(config: &Config, options: &FormatOptions) -> HuakResult<()
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity};
     use huak_dev::dev_resources_dir;
-    use huak_package_manager::{
-        copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity,
-    };
     use tempfile::tempdir;
 
     #[test]

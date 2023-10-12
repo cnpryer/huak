@@ -1,6 +1,6 @@
 use std::process::Command;
 
-use huak_package_manager::{Config, HuakResult};
+use crate::{Config, HuakResult};
 
 pub fn activate_python_environment(config: &Config) -> HuakResult<()> {
     let workspace = config.workspace();

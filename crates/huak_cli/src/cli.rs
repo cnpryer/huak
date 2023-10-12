@@ -1,13 +1,11 @@
-use crate::{
-    cmd::{
-        self, AddOptions, BuildOptions, CleanOptions, FormatOptions, LintOptions, PublishOptions,
-        RemoveOptions, TestOptions, UpdateOptions,
-    },
-    error::{CliResult, Error},
-};
+use crate::error::{CliResult, Error};
 use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::{self, Shell};
 use huak_home::huak_home_dir;
+use huak_package_manager::ops::{
+    self, AddOptions, BuildOptions, CleanOptions, FormatOptions, LintOptions, PublishOptions,
+    RemoveOptions, TestOptions, UpdateOptions,
+};
 use huak_package_manager::{
     find_package_root, Config, Error as HuakError, HuakResult, InstallOptions, TerminalOptions,
     Verbosity, Version, WorkspaceOptions,
@@ -360,7 +358,7 @@ fn get_config(cwd: PathBuf, cli: &Cli) -> Config {
 }
 
 fn activate(config: &Config) -> HuakResult<()> {
-    cmd::activate_python_environment(config)
+    ops::activate_python_environment(config)
 }
 
 fn add(
@@ -374,32 +372,32 @@ fn add(
         .map(std::string::ToString::to_string)
         .collect::<Vec<String>>();
     match group.as_ref() {
-        Some(it) => cmd::add_project_optional_dependencies(&deps, it, config, options),
-        None => cmd::add_project_dependencies(&deps, config, options),
+        Some(it) => ops::add_project_optional_dependencies(&deps, it, config, options),
+        None => ops::add_project_dependencies(&deps, config, options),
     }
 }
 
 fn build(config: &Config, options: &BuildOptions) -> HuakResult<()> {
-    cmd::build_project(config, options)
+    ops::build_project(config, options)
 }
 
 fn clean(config: &Config, options: &CleanOptions) -> HuakResult<()> {
-    cmd::clean_project(config, options)
+    ops::clean_project(config, options)
 }
 
 fn fix(config: &Config, options: &LintOptions) -> HuakResult<()> {
-    cmd::lint_project(config, options)
+    ops::lint_project(config, options)
 }
 
 fn fmt(config: &Config, options: &FormatOptions) -> HuakResult<()> {
-    cmd::format_project(config, options)
+    ops::format_project(config, options)
 }
 
 fn init(app: bool, _lib: bool, config: &Config, options: &WorkspaceOptions) -> HuakResult<()> {
     if app {
-        cmd::init_app_project(config, options)
+        ops::init_app_project(config, options)
     } else {
-        cmd::init_lib_project(config, options)
+        ops::init_lib_project(config, options)
     }
 }
 
@@ -409,42 +407,42 @@ fn install(
     config: &Config,
     options: &InstallOptions,
 ) -> HuakResult<()> {
-    cmd::install_project_dependencies(groups.as_ref(), config, options)
+    ops::install_project_dependencies(groups.as_ref(), config, options)
 }
 
 fn lint(config: &Config, options: &LintOptions) -> HuakResult<()> {
-    cmd::lint_project(config, options)
+    ops::lint_project(config, options)
 }
 
 fn new(app: bool, _lib: bool, config: &Config, options: &WorkspaceOptions) -> HuakResult<()> {
     if app {
-        cmd::new_app_project(config, options)
+        ops::new_app_project(config, options)
     } else {
-        cmd::new_lib_project(config, options)
+        ops::new_lib_project(config, options)
     }
 }
 
 fn publish(config: &Config, options: &PublishOptions) -> HuakResult<()> {
-    cmd::publish_project(config, options)
+    ops::publish_project(config, options)
 }
 
 fn python(command: Python, config: &Config) -> HuakResult<()> {
     match command {
-        Python::List => cmd::list_python(config),
-        Python::Use { version } => cmd::use_python(&version.0, config),
+        Python::List => ops::list_python(config),
+        Python::Use { version } => ops::use_python(&version.0, config),
     }
 }
 
 fn remove(dependencies: &[String], config: &Config, options: &RemoveOptions) -> HuakResult<()> {
-    cmd::remove_project_dependencies(dependencies, config, options)
+    ops::remove_project_dependencies(dependencies, config, options)
 }
 
 fn run(command: &[String], config: &Config) -> HuakResult<()> {
-    cmd::run_command_str(&command.join(" "), config)
+    ops::run_command_str(&command.join(" "), config)
 }
 
 fn test(config: &Config, options: &TestOptions) -> HuakResult<()> {
-    cmd::test_project(config, options)
+    ops::test_project(config, options)
 }
 
 fn update(
@@ -452,11 +450,11 @@ fn update(
     config: &Config,
     options: &UpdateOptions,
 ) -> HuakResult<()> {
-    cmd::update_project_dependencies(dependencies, config, options)
+    ops::update_project_dependencies(dependencies, config, options)
 }
 
 fn version(config: &Config) -> HuakResult<()> {
-    cmd::display_project_version(config)
+    ops::display_project_version(config)
 }
 
 fn completion(options: &CompletionOptions) {

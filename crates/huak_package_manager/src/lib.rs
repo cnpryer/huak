@@ -53,6 +53,7 @@ mod error;
 mod fs;
 mod git;
 mod metadata;
+pub mod ops;
 mod package;
 mod python_environment;
 mod sys;

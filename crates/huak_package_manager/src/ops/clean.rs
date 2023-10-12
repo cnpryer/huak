@@ -1,4 +1,4 @@
-use huak_package_manager::{Config, HuakResult};
+use crate::{Config, HuakResult};
 
 pub struct CleanOptions {
     pub include_pycache: bool,
@@ -50,8 +50,8 @@ pub fn clean_project(config: &Config, options: &CleanOptions) -> HuakResult<()> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{copy_dir, CopyDirOptions, TerminalOptions, Verbosity};
     use huak_dev::dev_resources_dir;
-    use huak_package_manager::{copy_dir, CopyDirOptions, TerminalOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]

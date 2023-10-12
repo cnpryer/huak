@@ -1,4 +1,4 @@
-use huak_package_manager::{dependency_iter, Config, Error, HuakResult, InstallOptions};
+use crate::{dependency_iter, Config, Error, HuakResult, InstallOptions};
 
 pub struct RemoveOptions {
     pub install_options: InstallOptions,
@@ -51,10 +51,10 @@ pub fn remove_project_dependencies(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use huak_dev::dev_resources_dir;
-    use huak_package_manager::{
+    use crate::{
         copy_dir, initialize_venv, CopyDirOptions, Dependency, Package, TerminalOptions, Verbosity,
     };
+    use huak_dev::dev_resources_dir;
     use std::str::FromStr;
     use tempfile::tempdir;
 

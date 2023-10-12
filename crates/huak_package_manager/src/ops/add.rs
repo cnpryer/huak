@@ -1,4 +1,4 @@
-use huak_package_manager::{dependency_iter, Config, Dependency, HuakResult, InstallOptions};
+use crate::{dependency_iter, Config, Dependency, HuakResult, InstallOptions};
 use pep440_rs::VersionSpecifiers;
 use pep508_rs::VersionOrUrl;
 use std::str::FromStr;
@@ -103,10 +103,8 @@ pub fn add_project_optional_dependencies(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity};
     use huak_dev::dev_resources_dir;
-    use huak_package_manager::{
-        copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity,
-    };
     use tempfile::tempdir;
 
     #[test]
