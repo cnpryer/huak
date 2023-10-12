@@ -1,4 +1,4 @@
-use huak_package_manager::{Config, Dependency, HuakResult, InstallOptions};
+use crate::{Config, Dependency, HuakResult, InstallOptions};
 
 pub fn install_project_dependencies(
     groups: Option<&Vec<String>>,
@@ -62,10 +62,8 @@ pub fn install_project_dependencies(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{copy_dir, initialize_venv, CopyDirOptions, Package, TerminalOptions, Verbosity};
     use huak_dev::dev_resources_dir;
-    use huak_package_manager::{
-        copy_dir, initialize_venv, CopyDirOptions, Package, TerminalOptions, Verbosity,
-    };
     use tempfile::tempdir;
 
     #[test]

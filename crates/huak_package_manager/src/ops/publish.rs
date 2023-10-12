@@ -1,5 +1,5 @@
 use super::make_venv_command;
-use huak_package_manager::{Config, Dependency, HuakResult, InstallOptions};
+use crate::{Config, Dependency, HuakResult, InstallOptions};
 use std::{process::Command, str::FromStr};
 
 pub struct PublishOptions {

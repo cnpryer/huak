@@ -1,4 +1,4 @@
-use huak_package_manager::{dependency_iter, Config, Dependency, HuakResult, InstallOptions};
+use crate::{dependency_iter, Config, Dependency, HuakResult, InstallOptions};
 use std::str::FromStr;
 
 pub struct UpdateOptions {
@@ -81,10 +81,8 @@ pub fn update_project_dependencies(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity};
     use huak_dev::dev_resources_dir;
-    use huak_package_manager::{
-        copy_dir, initialize_venv, CopyDirOptions, TerminalOptions, Verbosity,
-    };
     use tempfile::tempdir;
 
     #[test]

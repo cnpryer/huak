@@ -1,4 +1,4 @@
-use huak_package_manager::{Config, Error, HuakResult};
+use crate::{Config, Error, HuakResult};
 use termcolor::Color;
 
 #[allow(clippy::module_name_repetitions)]

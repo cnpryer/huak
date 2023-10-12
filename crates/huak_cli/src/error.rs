@@ -56,12 +56,6 @@ impl From<std::env::VarError> for Error {
     }
 }
 
-impl From<glob::GlobError> for Error {
-    fn from(e: glob::GlobError) -> Error {
-        Error::new(huak_package_manager::Error::GlobError(e), ExitCode::FAILURE)
-    }
-}
-
 impl From<huak_package_manager::Error> for Error {
     fn from(e: huak_package_manager::Error) -> Error {
         Error::new(e, ExitCode::FAILURE)

@@ -1,5 +1,5 @@
 use super::{create_workspace, init_git};
-use huak_package_manager::{
+use crate::{
     default_package_entrypoint_string, default_package_test_file_contents, importable_package_name,
     last_path_component, Config, Dependency, Error, HuakResult, LocalMetadata, WorkspaceOptions,
 };
@@ -67,7 +67,7 @@ pub fn new_lib_project(config: &Config, options: &WorkspaceOptions) -> HuakResul
 #[cfg(test)]
 mod tests {
     use super::*;
-    use huak_package_manager::{TerminalOptions, Verbosity};
+    use crate::{TerminalOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]

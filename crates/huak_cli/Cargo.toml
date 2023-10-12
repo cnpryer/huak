@@ -17,14 +17,11 @@ license.workspace = true
 clap = { workspace = true }
 clap_complete = "4.4.1"
 colored = "2.0.4"
-glob = { workspace = true }
 huak_home = { version = "0.0.0", path = "../huak_home" }
 huak_package_manager = { path = "../huak_package_manager"}
 human-panic = "1.1.5"
 # included to build PyPi Wheels (see .github/workflow/README.md)
 openssl = { version = "0.10.57", features = ["vendored"], optional = true }
-pep440_rs = { workspace = true }
-pep508_rs = { workspace = true }
 termcolor = { workspace = true }
 thiserror = "1.0.48"
 
