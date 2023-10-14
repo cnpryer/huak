@@ -34,13 +34,13 @@ class Release(NamedTuple):
     architecture: str
     build_configuration: str
     checksum: str
-    url_suffix: str
+    url: str
 
     def to_rust_string(self) -> str:
         (major, minor, patch) = self.version.split(".")
         version = f"Version::new({major}, {minor}, {patch})"
         return f"""\
-Release::new("{self.kind}", {version}, "{self.os}", "{self.architecture}", "{self.build_configuration}", "{self.checksum}", "{self.url_suffix}")\
+Release::new("{self.kind}", {version}, "{self.os}", "{self.architecture}", "{self.build_configuration}", "{self.checksum}", "{self.url}")\
 """  # noqa
 
 
@@ -71,8 +71,6 @@ for release in release_json:
 
 module = f"""\
 //! This file was generated with `{FILE.name}`.
-
-const DOWNLOAD_URL: &str = "https://github.com/indygreg/python-build-standalone/releases/download/";
 
 #[rustfmt::skip]
 pub const RELEASES: &[Release] = &[\
@@ -115,9 +113,7 @@ for release in release_json:
             arch_str,
             build_str,
             checksum_str,
-            asset["browser_download_url"].removeprefix(
-                "https://github.com/indygreg/python-build-standalone/releases/download/"
-            ),
+            asset["browser_download_url"],
         )
         new_releases["url"].append(asset["browser_download_url"])
         new_releases["string"].append(release.to_rust_string())
@@ -131,7 +127,7 @@ pub struct Release<'a> {
     pub architecture: &'a str,
     pub build_configuration: &'a str,
     pub checksum: &'a str,
-    url_suffix: &'a str,
+    pub url: &'a str,
 }
 
 impl Release<'static> {
@@ -142,7 +138,7 @@ impl Release<'static> {
         architecture: &'static str,
         build_configuration: &'static str,
         checksum: &'static str,
-        url_suffix: &'static str,
+        url: &'static str,
     ) -> Self {
         Self {
             kind,
@@ -151,12 +147,8 @@ impl Release<'static> {
             architecture,
             build_configuration,
             checksum,
-            url_suffix,
+            url,
         }
-    }
-
-    pub fn url(&self) -> String {
-        format!("{}{}", DOWNLOAD_URL, self.url_suffix)
     }
 }
 
