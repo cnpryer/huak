@@ -10,7 +10,9 @@ license = "MIT"
 
 [workspace.dependencies]
 clap = { version = "4.4.2", features = ["cargo", "derive"] }
+colored = "2.0.4"
 glob = "0.3.1"
+human-panic = "1.1.5"
 pep440_rs = "0.3.11"
 pep508_rs = "0.2.1"
 tempfile = "3.7.1"

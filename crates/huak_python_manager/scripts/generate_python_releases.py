@@ -120,6 +120,7 @@ for release in release_json:
         module += "\n\t" + release.to_rust_string() + ","
 module += """\n];
 
+#[derive(Copy, Clone)]
 pub struct Release<'a> {
     pub kind: &'a str,
     pub version: Version,
@@ -152,6 +153,7 @@ impl Release<'static> {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Version {
     pub major: u8,
     pub minor: u8,
