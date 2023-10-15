@@ -21,6 +21,9 @@ pub fn main() -> ExitCode {
         // Lazy-like exit of a subprocess failure. TODO: https://github.com/cnpryer/huak/issues/631
         Ok(code) => exit(code),
         Err(e) => {
+            // TODO(cnpryer):
+            //   - Make subprocess hack more clear
+            //   - https://github.com/cnpryer/huak/issues/318
             if e.error.to_string().is_empty() {
                 eprintln!("{}", e.error);
             } else {
