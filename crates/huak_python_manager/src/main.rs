@@ -1,7 +1,18 @@
-use huak_home::huak_home_dir;
+use clap::Parser;
+use cli::Cli;
+use colored::Colorize;
+use human_panic::setup_panic;
+
+mod cli;
+mod install;
 mod releases;
+mod resolve;
+mod version;
 
 fn main() {
-    println!("{:?}", huak_home_dir());
-    println!("{:?}", releases::RELEASES[0].url);
+    setup_panic!();
+
+    if let Err(e) = Cli::parse().run() {
+        eprintln!("{}{} {}", "error".red(), ":".bold(), e);
+    }
 }

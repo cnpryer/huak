@@ -1,5 +1,6 @@
 //! This file was generated with `generate_python_releases.py`.
 
+#[allow(dead_code)]
 #[rustfmt::skip]
 pub const RELEASES: &[Release] = &[
 	Release::new("cpython", Version::new(3, 10, 13), "apple", "aarch64", "pgo+lto", "a2635841454295c5bc2c18740346fd8308f2a8adcce2407b87c9faf261fed29c", "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.10.13%2B20231002-aarch64-apple-darwin-pgo%2Blto-full.tar.zst"),
@@ -474,6 +475,7 @@ pub const RELEASES: &[Release] = &[
 	Release::new("cpython", Version::new(3, 9, 10), "linux", "x86_64", "pgo", "d23017bc20b640615af8f5eab0f1bf0c9264526bcb8c2a326f4a13b21725cff1", "https://github.com/indygreg/python-build-standalone/releases/download/20220227/cpython-3.9.10%2B20220227-x86_64-unknown-linux-gnu-pgo-full.tar.zst"),
 ];
 
+#[derive(Copy, Clone)]
 pub struct Release<'a> {
     pub kind: &'a str,
     pub version: Version,
@@ -485,6 +487,7 @@ pub struct Release<'a> {
 }
 
 impl Release<'static> {
+    #[allow(dead_code)]
     const fn new(
         kind: &'static str,
         version: Version,
@@ -506,6 +509,7 @@ impl Release<'static> {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Version {
     pub major: u8,
     pub minor: u8,
@@ -513,6 +517,7 @@ pub struct Version {
 }
 
 impl Version {
+    #[allow(dead_code)]
     const fn new(major: u8, minor: u8, patch: u8) -> Self {
         Self {
             major,
