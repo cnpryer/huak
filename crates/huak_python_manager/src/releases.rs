@@ -1,8 +1,11 @@
 //! This file was generated with `generate_python_releases.py`.
 
+use std::{cmp::Ordering, fmt::Display};
+
 #[allow(dead_code)]
 #[rustfmt::skip]
-pub const RELEASES: &[Release] = &[
+// TODO(cnpryer): Perf
+pub(crate) const RELEASES: &[Release] = &[
 	Release::new("cpython", Version::new(3, 10, 13), "apple", "aarch64", "pgo+lto", "a2635841454295c5bc2c18740346fd8308f2a8adcce2407b87c9faf261fed29c", "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.10.13%2B20231002-aarch64-apple-darwin-pgo%2Blto-full.tar.zst"),
 	Release::new("cpython", Version::new(3, 10, 13), "apple", "aarch64", "pgo", "67b64174b8d33aa1b2e3bb3a4a3e475ff96d511c540f46e3c0774f8b77be4d91", "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.10.13%2B20231002-aarch64-apple-darwin-pgo-full.tar.zst"),
 	Release::new("cpython", Version::new(3, 10, 13), "windows", "i686", "pgo", "1c015e64732d3a18951fcea30d364c80fb83322363fec1a2c85c70840fb75a92", "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.10.13%2B20231002-i686-pc-windows-msvc-shared-pgo-full.tar.zst"),
@@ -475,8 +478,8 @@ pub const RELEASES: &[Release] = &[
 	Release::new("cpython", Version::new(3, 9, 10), "linux", "x86_64", "pgo", "d23017bc20b640615af8f5eab0f1bf0c9264526bcb8c2a326f4a13b21725cff1", "https://github.com/indygreg/python-build-standalone/releases/download/20220227/cpython-3.9.10%2B20220227-x86_64-unknown-linux-gnu-pgo-full.tar.zst"),
 ];
 
-#[derive(Copy, Clone)]
-pub struct Release<'a> {
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub(crate) struct Release<'a> {
     pub kind: &'a str,
     pub version: Version,
     pub os: &'a str,
@@ -509,8 +512,8 @@ impl Release<'static> {
     }
 }
 
-#[derive(Copy, Clone)]
-pub struct Version {
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub(crate) struct Version {
     pub major: u8,
     pub minor: u8,
     pub patch: u8,
@@ -525,4 +528,40 @@ impl Version {
             patch,
         }
     }
+}
+
+impl Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
+    }
+}
+
+impl PartialOrd<Self> for Version {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Version {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match compare_version(*self, *other) {
+            Ordering::Less => Ordering::Less,
+            Ordering::Equal => Ordering::Equal,
+            Ordering::Greater => Ordering::Greater,
+        }
+    }
+}
+
+fn compare_version(this: Version, other: Version) -> Ordering {
+    for (a, b) in [
+        (this.major, other.major),
+        (this.minor, other.minor),
+        (this.patch, other.patch),
+    ] {
+        if a != b {
+            return a.cmp(&b);
+        }
+    }
+
+    Ordering::Equal
 }
