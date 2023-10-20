@@ -23,7 +23,7 @@ HEADERS = headers = {
 
 VERSION_PATTERN = re.compile(r"cpython-(\d+\.\d+\.\d+)")
 OS_PATTERN = re.compile(r"-(windows|apple|linux)-")
-ARCHITECTURE_PATTERN = re.compile(r"-(aarch64|i686|x86_64)-")
+ARCHITECTURE_PATTERN = re.compile(r"-(aarch64|i686|x86_64|x86)-")
 BUILD_PATTERN = re.compile(r"-(pgo\+lto|pgo)-")
 
 
@@ -58,7 +58,12 @@ def get_checksum(url: str) -> str | None:
     return res.text.strip()
 
 
-generated = pl.read_parquet(FILE.parent / "generated_python_releases.parquet")
+path = FILE.parent / "generated_python_releases.parquet"
+generated = (
+    pl.DataFrame({"url": [], "string": []}, schema={"url": pl.Utf8, "string": pl.Utf8})
+    if not path.exists()
+    else pl.read_parquet(path)
+)
 new_releases = {"url": [], "string": []}
 
 # Identify releases with checksums published.
@@ -72,6 +77,7 @@ for release in release_json:
 module = f"""\
 //! This file was generated with `{FILE.name}`.
 
+#[allow(dead_code)]
 #[rustfmt::skip]
 pub const RELEASES: &[Release] = &[\
 """  # noqa
@@ -132,6 +138,7 @@ pub struct Release<'a> {
 }
 
 impl Release<'static> {
+    #[allow(dead_code)]
     const fn new(
         kind: &'static str,
         version: Version,
@@ -161,6 +168,7 @@ pub struct Version {
 }
 
 impl Version {
+    #[allow(dead_code)]
     const fn new(major: u8, minor: u8, patch: u8) -> Self {
         Self {
             major,
