@@ -1,5 +1,5 @@
 use crate::{
-    releases::{self, Release, RELEASES},
+    releases::{Release, RELEASES},
     version::RequestedVersion,
 };
 use std::env::consts::{ARCH, OS};
@@ -32,38 +32,12 @@ fn resolve_release_with_options(options: &Options) -> Option<Release<'static>> {
         if let Some(req) = options.version.as_ref() {
             candidates
                 .into_iter()
-                .find(|it| is_requested_version(it.version, req))
+                .find(|it| req.matches_version(it.version))
                 .copied()
         } else {
             candidates.first().map(|it| **it)
         }
     }
-}
-
-/// Evaluates if some Python release's version is what was requested.
-fn is_requested_version(
-    release_version: releases::Version,
-    requested_version: &RequestedVersion,
-) -> bool {
-    if let Some(major) = requested_version.major {
-        if release_version.major != major {
-            return false;
-        }
-    }
-
-    if let Some(minor) = requested_version.minor {
-        if release_version.minor != minor {
-            return false;
-        }
-    }
-
-    if let Some(patch) = requested_version.patch {
-        if release_version.patch != patch {
-            return false;
-        }
-    }
-
-    true
 }
 
 #[derive(Default)]
