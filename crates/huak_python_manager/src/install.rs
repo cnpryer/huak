@@ -46,6 +46,17 @@ fn download_release(release: &Release, to: &PathBuf) -> Result<(), Error> {
 
 /// Validation for release installation. The following is verified prior to installation:
 /// - checksum
-fn validate_release(_release: &Release) -> Result<(), Error> {
-    todo!()
+fn validate_release(release: &Release) -> Result<(), Error> {
+    let url = format!("{}.sha256", release.url);
+    let response = reqwest::blocking::get(&url)?;
+
+    if !response.status().is_success() {
+        bail!("failed to fetch checksum from {url}");
+    }
+
+    if response.text()?.strip_suffix('\n') != Some(release.checksum) {
+        bail!("failed to validate checksum");
+    }
+
+    Ok(())
 }
