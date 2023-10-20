@@ -17,7 +17,7 @@ pub(crate) struct Cli {
 impl Cli {
     pub(crate) fn run(self) -> Result<(), Error> {
         match self.command {
-            Commands::Install { version } => cmd::install(&version),
+            Commands::Install { version } => cmd::install(version),
         }
     }
 }
@@ -34,12 +34,14 @@ enum Commands {
 }
 
 mod cmd {
-    use super::Error;
-    use super::RequestedVersion;
-    use crate::install;
-    use crate::resolve::Strategy;
+    use super::{Error, RequestedVersion};
+    use crate::install::install_to_home;
+    use crate::resolve::{Options, Strategy};
 
-    pub(crate) fn install(version: &RequestedVersion) -> Result<(), Error> {
-        install::install_to_home(version, &Strategy::Auto)
+    pub(crate) fn install(version: RequestedVersion) -> Result<(), Error> {
+        install_to_home(&Strategy::Selection(Options {
+            version: Some(version),
+            ..Default::default()
+        }))
     }
 }

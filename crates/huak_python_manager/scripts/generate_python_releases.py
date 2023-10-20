@@ -74,13 +74,14 @@ for release in release_json:
             has_checksum.add(asset["browser_download_url"].removesuffix(".sha256"))
 
 
-module = f"""\
-//! This file was generated with `{FILE.name}`.
+module = (
+    f"""//! This file was generated with `{FILE.name}`."""
+    """\n\nuse std::{cmp::Ordering, fmt::Display};
 
 #[allow(dead_code)]
 #[rustfmt::skip]
-pub const RELEASES: &[Release] = &[\
-"""  # noqa
+pub(crate) const RELEASES: &[Release] = &["""
+)
 for release in release_json:
     for asset in release["assets"]:
         # Avoid making requests for releases we've already generated.
@@ -126,8 +127,8 @@ for release in release_json:
         module += "\n\t" + release.to_rust_string() + ","
 module += """\n];
 
-#[derive(Copy, Clone)]
-pub struct Release<'a> {
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub(crate) struct Release<'a> {
     pub kind: &'a str,
     pub version: Version,
     pub os: &'a str,
@@ -160,8 +161,8 @@ impl Release<'static> {
     }
 }
 
-#[derive(Copy, Clone)]
-pub struct Version {
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub(crate) struct Version {
     pub major: u8,
     pub minor: u8,
     pub patch: u8,
@@ -176,6 +177,42 @@ impl Version {
             patch,
         }
     }
+}
+
+impl Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
+    }
+}
+
+impl PartialOrd<Self> for Version {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Version {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match compare_version(*self, *other) {
+            Ordering::Less => Ordering::Less,
+            Ordering::Equal => Ordering::Equal,
+            Ordering::Greater => Ordering::Greater,
+        }
+    }
+}
+
+fn compare_version(this: Version, other: Version) -> Ordering {
+    for (a, b) in [
+        (this.major, other.major),
+        (this.minor, other.minor),
+        (this.patch, other.patch),
+    ] {
+        if a != b {
+            return a.cmp(&b);
+        }
+    }
+
+    Ordering::Equal
 }
 """
 
