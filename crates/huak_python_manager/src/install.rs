@@ -4,58 +4,45 @@ use crate::{
 };
 use anyhow::{bail, Context, Error, Ok}; // TODO(cnpryer): Use thiserror in library code.
 use huak_home::huak_home_dir;
-use std::{fs::File, path::PathBuf};
+use sha2::{Digest, Sha256};
 use tar::Archive;
-use tempfile::TempDir;
-use zstd::decode_all;
+use zstd::stream::read::Decoder;
 
-/// Install a Python release to `~/.huak/bin/`.
 pub(crate) fn install_to_home(strategy: &Strategy) -> Result<(), Error> {
     let release = resolve_release(strategy).context("requested release data")?;
-    let tmp_dir = TempDir::new()?;
-    let tmp_name = "tmp.tar.zst";
-    let tmp_path = tmp_dir.path().join(tmp_name);
     let target_dir = huak_home_dir()
         .context("requested huak's home directory")?
         .join("toolchains")
         .join(format!("huak-{}-{}", release.kind, release.version));
 
-    download_release(&release, &tmp_path)?;
+    let buffer = download_release(&release)?;
+    validate_checksum(&buffer, release.checksum)?;
 
-    let mut archive = File::open(tmp_path)?;
-    let decoded = decode_all(&mut archive)?;
+    // TODO(cnpryer): Support more archive formats.
+    let decoded = Decoder::with_buffer(buffer.as_slice())?;
+    let mut archive = Archive::new(decoded);
 
-    let mut archive = Archive::new(decoded.as_slice());
     Ok(archive.unpack(target_dir)?)
 }
 
-/// Download the release to a temporary archive file (`to`).
-fn download_release(release: &Release, to: &PathBuf) -> Result<(), Error> {
-    validate_release(release)?;
-
+fn download_release(release: &Release) -> Result<Vec<u8>, Error> {
     let mut response = reqwest::blocking::get(release.url)?;
 
     if !response.status().is_success() {
         bail!("failed to download file from {}", release.url);
     }
 
-    let mut file = File::create(to)?;
-    response.copy_to(&mut file)?;
+    let mut contents = Vec::new();
+    response.copy_to(&mut contents)?;
 
-    Ok(())
+    Ok(contents)
 }
 
-/// Validation for release installation. The following is verified prior to installation:
-/// - checksum
-fn validate_release(release: &Release) -> Result<(), Error> {
-    let url = format!("{}.sha256", release.url);
-    let response = reqwest::blocking::get(&url)?;
+fn validate_checksum(bytes: &[u8], checksum: &str) -> Result<(), Error> {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
 
-    if !response.status().is_success() {
-        bail!("failed to fetch checksum from {url}");
-    }
-
-    if response.text()?.strip_suffix('\n') != Some(release.checksum) {
+    if !hex::encode(hasher.finalize()).eq_ignore_ascii_case(checksum) {
         bail!("failed to validate checksum");
     }
 
