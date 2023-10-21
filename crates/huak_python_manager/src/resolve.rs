@@ -1,8 +1,10 @@
-use crate::{
-    releases::{Release, RELEASES},
-    version::RequestedVersion,
+use crate::releases::{Release, Version, RELEASES};
+use anyhow::Error; // TODO(cnpryer): Library code should use thiserror
+use std::{
+    env::consts::{ARCH, OS},
+    fmt::Display,
+    str::FromStr,
 };
-use std::env::consts::{ARCH, OS};
 
 /// Resolve a Python Release based on a resolution `Strategy`.
 pub(crate) fn resolve_release(strategy: &Strategy) -> Option<Release<'static>> {
@@ -154,6 +156,53 @@ impl PartialEq<str> for ReleaseBuildConfiguration {
 impl PartialEq<ReleaseBuildConfiguration> for &str {
     fn eq(&self, other: &ReleaseBuildConfiguration) -> bool {
         self == &other.0.as_str()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct RequestedVersion {
+    pub(crate) major: Option<u8>,
+    pub(crate) minor: Option<u8>,
+    pub(crate) patch: Option<u8>,
+}
+
+impl RequestedVersion {
+    /// Evaluates if some Python release's version is what was requested.
+    pub(crate) fn matches_version(&self, version: Version) -> bool {
+        self.major.map_or(true, |it| it == version.major)
+            && self.minor.map_or(true, |it| it == version.minor)
+            && self.patch.map_or(true, |it| it == version.patch)
+    }
+}
+
+impl FromStr for RequestedVersion {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut parts = s
+            .split('.')
+            .map(|it| it.parse::<u8>().expect("parsed requested version part"));
+
+        Ok(RequestedVersion {
+            major: parts.next(),
+            minor: parts.next(),
+            patch: parts.next(),
+        })
+    }
+}
+
+impl Display for RequestedVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(major) = self.major {
+            write!(f, "{major}")?;
+        }
+        if let Some(minor) = self.minor {
+            write!(f, ".{minor}")?;
+        }
+        if let Some(patch) = self.patch {
+            write!(f, ".{patch}")?;
+        }
+        Ok(())
     }
 }
 

@@ -7,7 +7,6 @@ mod cli;
 mod install;
 mod releases;
 mod resolve;
-mod version;
 
 fn main() {
     setup_panic!();

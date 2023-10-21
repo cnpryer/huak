@@ -1,4 +1,4 @@
-use crate::version::RequestedVersion;
+use crate::resolve::RequestedVersion;
 use anyhow::Error;
 use clap::{Parser, Subcommand};
 
@@ -39,6 +39,7 @@ mod cmd {
     use crate::resolve::{Options, Strategy};
 
     pub(crate) fn install(version: RequestedVersion) -> Result<(), Error> {
+        println!("installing Python {version}");
         install_to_home(&Strategy::Selection(Options {
             version: Some(version),
             ..Default::default()
