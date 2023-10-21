@@ -17,7 +17,8 @@ pub(crate) fn install_to_home(strategy: &Strategy) -> Result<(), Error> {
     let tmp_path = tmp_dir.path().join(tmp_name);
     let target_dir = huak_home_dir()
         .context("requested huak's home directory")?
-        .join("bin");
+        .join("toolchains")
+        .join(format!("huak-{}-{}", release.kind, release.version));
 
     download_release(&release, &tmp_path)?;
 
