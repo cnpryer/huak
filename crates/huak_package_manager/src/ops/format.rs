@@ -15,9 +15,7 @@ pub fn format_project(config: &Config, options: &FormatOptions) -> HuakResult<()
     let python_env = workspace.resolve_python_environment()?;
 
     // Install `ruff` it isn't already installed.
-    let format_deps = [
-        Dependency::from_str("ruff")?,
-    ];
+    let format_deps = [Dependency::from_str("ruff")?];
 
     let new_format_deps = format_deps
         .iter()
