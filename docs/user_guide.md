@@ -142,10 +142,13 @@ my-project on master 📦 v0.0.1 via 🐍 v3.11.0
 
 #### Using --check
 
-Use `--check` if all you want to do is verify your code is already formatted. Note that `huak` currently uses a combination of `black` and `ruff` to format your code. This means that `--` can only pass options to `black`. Use the `[tool.ruff]` approach to configure import sorting.
+!!! Warning
+  As of `v0.0.20` `huak` no longer uses `black`.
+
+Use `--check` if all you want to do is verify your code is already formatted. Note that `huak` currently uses `ruff` to format your code. This means that `--` can only pass options to `ruff`. Use the `[tool.ruff]` for more configuration.
 
 !!! Warning
-    `huak` will exit prior to running the `black` *check* if your imports are not sorted. See [#510](https://github.com/cnpryer/huak/issues/510) for the status of this issue.
+    `huak` will exit prior to running with `--check` if your imports are not sorted. See [#510](https://github.com/cnpryer/huak/issues/510) for the status of this issue.
 
 ### Lint your code
 
