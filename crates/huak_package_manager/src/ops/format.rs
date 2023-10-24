@@ -14,9 +14,8 @@ pub fn format_project(config: &Config, options: &FormatOptions) -> HuakResult<()
     let mut metadata = workspace.current_local_metadata()?;
     let python_env = workspace.resolve_python_environment()?;
 
-    // Install `ruff` and `black` if they aren't already installed.
+    // Install `ruff` it isn't already installed.
     let format_deps = [
-        Dependency::from_str("black")?,
         Dependency::from_str("ruff")?,
     ];
 
@@ -29,7 +28,7 @@ pub fn format_project(config: &Config, options: &FormatOptions) -> HuakResult<()
         python_env.install_packages(&new_format_deps, &options.install_options, config)?;
     }
 
-    // Add the installed `ruff` and `black` packages to the metadata file if not already there.
+    // Add the installed `ruff` package to the metadata file if not already there.
     let new_format_deps = format_deps
         .iter()
         .filter(|dep| !metadata.metadata().contains_dependency_any(dep))
@@ -52,14 +51,15 @@ pub fn format_project(config: &Config, options: &FormatOptions) -> HuakResult<()
         metadata.write_file()?;
     }
 
-    // Run `ruff` and `black` for formatting imports and the rest of the Python code in the workspace.
+    // Run `ruff` for formatting imports and the rest of the Python code in the workspace.
+    // NOTE: This needs to be refactored https://github.com/cnpryer/huak/issues/784, https://github.com/cnpryer/huak/issues/718
     let mut terminal = config.terminal();
     let mut cmd = Command::new(python_env.python_path());
     let mut ruff_cmd = Command::new(python_env.python_path());
-    let mut ruff_args = vec!["-m", "ruff", "check", ".", "--select", "I001", "--fix"];
+    let mut ruff_args = vec!["-m", "ruff", "check", ".", "--select", "I", "--fix"];
     make_venv_command(&mut cmd, &python_env)?;
     make_venv_command(&mut ruff_cmd, &python_env)?;
-    let mut args = vec!["-m", "black", "."];
+    let mut args = vec!["-m", "ruff", "format", "."];
     if let Some(v) = options.values.as_ref() {
         args.extend(v.iter().map(String::as_str));
         if v.contains(&"--check".to_string()) {
