@@ -1,6 +1,7 @@
-use crate::resolve::RequestedVersion;
 use anyhow::Error;
 use clap::{Parser, Subcommand};
+use huak_python_manager::RequestedVersion;
+use std::path::PathBuf;
 
 /// A Python interpreter management system for Huak.
 #[derive(Parser)]
@@ -17,7 +18,7 @@ pub(crate) struct Cli {
 impl Cli {
     pub(crate) fn run(self) -> Result<(), Error> {
         match self.command {
-            Commands::Install { version } => cmd::install(version),
+            Commands::Install { version, target } => cmd::install(version, target),
         }
     }
 }
@@ -29,20 +30,29 @@ enum Commands {
     /// Install a Python interpreter.
     Install {
         #[arg(required = true)]
+        /// Version of Python to install.
         version: RequestedVersion,
+
+        /// Target path to install Python to.
+        #[arg(long, required = true)]
+        target: PathBuf,
     },
 }
 
 mod cmd {
-    use super::{Error, RequestedVersion};
-    use crate::install::install_to_home;
-    use crate::resolve::{Options, Strategy};
+    use std::path::PathBuf;
 
-    pub(crate) fn install(version: RequestedVersion) -> Result<(), Error> {
-        println!("installing Python {version}");
-        install_to_home(&Strategy::Selection(Options {
+    use super::{Error, RequestedVersion};
+    use huak_python_manager::{install_with_target, Options, Strategy};
+
+    pub(crate) fn install(version: RequestedVersion, target: PathBuf) -> Result<(), Error> {
+        println!("installing Python {version}...");
+
+        let strategy = Strategy::Selection(Options {
             version: Some(version),
             ..Default::default()
-        }))
+        });
+
+        install_with_target(&strategy, target)
     }
 }

@@ -44,126 +44,55 @@ fn resolve_release_with_options(options: &Options) -> Option<Release<'static>> {
 
 #[derive(Default)]
 /// The strategy used for resolving a Python releases.
-pub(crate) enum Strategy {
+pub enum Strategy<'a> {
     #[default]
     /// Resolve with the latest possible Python release version for the current environment.
     Latest,
     /// `Selection` - Use some selection criteria to determine the Python release. Unused
     /// options criteria will resolve to *best possible defaults*.
-    Selection(Options),
+    Selection(Options<'a>),
 }
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 /// Options criteria used for resolving Python releases.
-pub(crate) struct Options {
-    pub kind: ReleaseKind,
-    pub version: Option<RequestedVersion>, // TODO(cnpryer): Can this default to something like *Latest*?
-    pub os: ReleaseOS,
-    pub architecture: ReleaseArchitecture,
-    pub build_configuration: ReleaseBuildConfiguration,
+pub struct Options<'a> {
+    pub kind: &'a str,
+    pub version: Option<RequestedVersion>, // TODO(cnpryer): Refactor to default as *latest available*
+    pub os: &'a str,
+    pub architecture: &'a str,
+    pub build_configuration: &'a str,
 }
 
-#[derive(Debug)]
-pub(crate) struct ReleaseKind(String);
-
-impl Default for ReleaseKind {
+// TODO(cnpryer): Refactor
+impl Default for Options<'static> {
     fn default() -> Self {
-        Self(String::from("cpython"))
-    }
-}
-
-impl PartialEq<str> for ReleaseKind {
-    fn eq(&self, other: &str) -> bool {
-        self.0.as_str() == other
-    }
-}
-
-impl PartialEq<ReleaseKind> for &str {
-    fn eq(&self, other: &ReleaseKind) -> bool {
-        self == &other.0.as_str()
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct ReleaseOS(String);
-
-impl Default for ReleaseOS {
-    fn default() -> Self {
-        Self(String::from(match OS {
-            "macos" => "apple",
-            "windows" => "windows",
-            _ => "linux",
-        }))
-    }
-}
-
-impl PartialEq<str> for ReleaseOS {
-    fn eq(&self, other: &str) -> bool {
-        self.0.as_str() == other
-    }
-}
-
-impl PartialEq<ReleaseOS> for &str {
-    fn eq(&self, other: &ReleaseOS) -> bool {
-        self == &other.0.as_str()
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct ReleaseArchitecture(String);
-
-impl Default for ReleaseArchitecture {
-    fn default() -> Self {
-        Self(String::from(match ARCH {
-            "x86_64" => "x86_64",
-            "aarch64" => "aarch64",
-            "x86" => "i686", // TODO(cnpryer): Need to look at other windows releases.
-            _ => unimplemented!(),
-        }))
-    }
-}
-
-impl PartialEq<str> for ReleaseArchitecture {
-    fn eq(&self, other: &str) -> bool {
-        self.0.as_str() == other
-    }
-}
-
-impl PartialEq<ReleaseArchitecture> for &str {
-    fn eq(&self, other: &ReleaseArchitecture) -> bool {
-        self == &other.0.as_str()
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct ReleaseBuildConfiguration(String);
-
-impl Default for ReleaseBuildConfiguration {
-    fn default() -> Self {
-        Self(String::from(match OS {
-            "windows" => "pgo",
-            _ => "pgo+lto",
-        }))
-    }
-}
-
-impl PartialEq<str> for ReleaseBuildConfiguration {
-    fn eq(&self, other: &str) -> bool {
-        self.0.as_str() == other
-    }
-}
-
-impl PartialEq<ReleaseBuildConfiguration> for &str {
-    fn eq(&self, other: &ReleaseBuildConfiguration) -> bool {
-        self == &other.0.as_str()
+        Self {
+            kind: "cpython",
+            version: Option::default(),
+            os: match OS {
+                "macos" => "apple",
+                "windows" => "windows",
+                _ => "linux",
+            },
+            architecture: match ARCH {
+                "x86_64" => "x86_64",
+                "aarch64" => "aarch64",
+                "x86" => "i686", // TODO(cnpryer): Need to look at other windows releases.
+                _ => unimplemented!(),
+            },
+            build_configuration: match OS {
+                "windows" => "pgo",
+                _ => "pgo+lto",
+            },
+        }
     }
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct RequestedVersion {
-    pub(crate) major: Option<u8>,
-    pub(crate) minor: Option<u8>,
-    pub(crate) patch: Option<u8>,
+pub struct RequestedVersion {
+    pub major: Option<u8>,
+    pub minor: Option<u8>,
+    pub patch: Option<u8>,
 }
 
 impl RequestedVersion {
@@ -223,11 +152,11 @@ mod tests {
     #[test]
     fn test_selection() {
         let resolved_release = resolve_release(&Strategy::Selection(Options {
-            kind: ReleaseKind("cpython".to_string()),
+            kind: "cpython",
             version: Some(RequestedVersion::from_str("3.8").unwrap()),
-            os: ReleaseOS("apple".to_string()),
-            architecture: ReleaseArchitecture("aarch64".to_string()),
-            build_configuration: ReleaseBuildConfiguration("pgo+lto".to_string()),
+            os: "apple",
+            architecture: "aarch64",
+            build_configuration: "pgo+lto",
         }))
         .unwrap();
 
