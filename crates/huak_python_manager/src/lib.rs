@@ -8,7 +8,7 @@
 //!
 //! ### CLI
 //!
-//! ```
+//! ```cmd
 //! huak_python_manager install 3.12 --target <path-to-target-dir>
 //! ```
 //!
@@ -18,9 +18,9 @@
 //!
 //! TODO(cnpryer): Design better API.
 //!
-//! ```rust
-//! use std::path::PathBuf;
-//! use huak_python_manager::{Options, Strategy, install_with_target};
+//! ```no_run
+//! use std::{str::FromStr, path::PathBuf};
+//! use huak_python_manager::{Options, RequestedVersion, Strategy, install_with_target};
 //!
 //!
 //! // The version of the Python to install.
@@ -30,9 +30,9 @@
 //! let target = PathBuf::from("...");
 //!
 //! // Use selection strategy to resolve for the best matching release available.
-//! let strategy = Strategy::Selection(Options { version, kind: "cpython", os: "apple", architecture: "aarch64", build_configuration: "pgo+lto"});
+//! let strategy = Strategy::Selection(Options { version: Some(version), kind: "cpython", os: "apple", architecture: "aarch64", build_configuration: "pgo+lto"});
 //!
-//! install_with_target(strategy, target).unwrap();
+//! install_with_target(&strategy, target).unwrap();
 //!
 //! ```
 
