@@ -627,7 +627,6 @@ dependencies = [
  "clap",
  "colored",
  "hex",
- "huak_home",
  "human-panic",
  "reqwest",
  "sha2",

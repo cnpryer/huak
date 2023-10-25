@@ -3,17 +3,13 @@ use crate::{
     resolve::{resolve_release, Strategy},
 };
 use anyhow::{bail, Context, Error, Ok}; // TODO(cnpryer): Use thiserror in library code.
-use huak_home::huak_home_dir;
 use sha2::{Digest, Sha256};
+use std::path::PathBuf;
 use tar::Archive;
 use zstd::stream::read::Decoder;
 
-pub(crate) fn install_to_home(strategy: &Strategy) -> Result<(), Error> {
+pub fn install_with_target<T: Into<PathBuf>>(strategy: &Strategy, target: T) -> Result<(), Error> {
     let release = resolve_release(strategy).context("requested release data")?;
-    let target_dir = huak_home_dir()
-        .context("requested huak's home directory")?
-        .join("toolchains")
-        .join(format!("huak-{}-{}", release.kind, release.version));
 
     let buffer = download_release(&release)?;
     validate_checksum(&buffer, release.checksum)?;
@@ -22,7 +18,7 @@ pub(crate) fn install_to_home(strategy: &Strategy) -> Result<(), Error> {
     let decoded = Decoder::with_buffer(buffer.as_slice())?;
     let mut archive = Archive::new(decoded);
 
-    Ok(archive.unpack(target_dir)?)
+    Ok(archive.unpack(target.into())?)
 }
 
 fn download_release(release: &Release) -> Result<Vec<u8>, Error> {
