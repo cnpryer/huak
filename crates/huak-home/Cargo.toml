@@ -1,7 +1,7 @@
 [package]
-name = "huak_dev"
+name = "huak-home"
+description = "Shared home directories."
 version = "0.0.0"
-description = "Development utilities."
 edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true

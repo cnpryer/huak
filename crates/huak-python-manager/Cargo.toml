@@ -1,5 +1,5 @@
 [package]
-name = "huak_python_manager"
+name = "huak-python-manager"
 description = "A Python interpreter management system for Huak."
 version = "0.0.0"
 edition.workspace = true
