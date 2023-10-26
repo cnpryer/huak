@@ -26,6 +26,8 @@ thiserror = { workspace = true }
 toml = { version = "0.7.6", features = ["preserve_order"] }
 toml_edit = "0.19.4"
 regex = "1.9.5"
+huak-python-manager = { path = "../huak-python-manager" }
+huak-home = { path = "../huak-home" }
 
 [dev-dependencies]
 huak-dev = { path = "../huak-dev" }

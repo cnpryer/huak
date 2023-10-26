@@ -28,7 +28,7 @@ pub use install::install_project_dependencies;
 pub use lint::{lint_project, LintOptions};
 pub use new::{new_app_project, new_lib_project};
 pub use publish::{publish_project, PublishOptions};
-pub use python::{list_python, use_python};
+pub use python::{install_python, list_python, use_python};
 pub use remove::{remove_project_dependencies, RemoveOptions};
 pub use run::run_command_str;
 use std::{path::PathBuf, process::Command};

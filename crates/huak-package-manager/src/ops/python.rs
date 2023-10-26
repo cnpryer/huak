@@ -2,6 +2,10 @@ use crate::{
     active_python_env_path, directory_is_venv, venv_executables_dir_path, Config, Environment,
     Error, HuakResult,
 };
+use huak_home::huak_home_dir;
+use huak_python_manager::{
+    install_with_target, resolve_release, Options, RequestedVersion, Strategy,
+};
 use std::process::Command;
 use termcolor::Color;
 
@@ -56,6 +60,30 @@ pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
     cmd.args(["-m", "venv", ".venv"])
         .current_dir(&config.workspace_root);
     config.terminal().run_command(&mut cmd)
+}
+
+pub fn install_python(version: &RequestedVersion) -> HuakResult<()> {
+    // Use default selection strategy to find the best match for the requested version.
+    let strategy = Strategy::Selection(Options {
+        version: Some(version.clone()),
+        ..Default::default()
+    });
+
+    let Some(release) = resolve_release(&strategy) else {
+        return Err(Error::PythonReleaseNotFound(version.to_string()));
+    };
+
+    // Always install to Huak's toolchain.
+    let Some(target) = huak_home_dir().map(|it| {
+        it.join("toolchains").join(format!(
+            "huak-{}-{}-{}-{}",
+            release.kind, release.version, release.os, release.architecture
+        ))
+    }) else {
+        return Err(Error::HuakHomeNotFound);
+    };
+
+    install_with_target(&release, target).map_err(|e| Error::PythonInstallError(e.to_string()))
 }
 
 #[cfg(test)]

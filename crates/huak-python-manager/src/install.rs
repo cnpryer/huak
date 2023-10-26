@@ -1,17 +1,12 @@
-use crate::{
-    releases::Release,
-    resolve::{resolve_release, Strategy},
-};
-use anyhow::{bail, Context, Error, Ok}; // TODO(cnpryer): Use thiserror in library code.
+use crate::releases::Release;
+use anyhow::{bail, Error, Ok}; // TODO(cnpryer): Use thiserror in library code.
 use sha2::{Digest, Sha256};
 use std::path::PathBuf;
 use tar::Archive;
 use zstd::stream::read::Decoder;
 
-pub fn install_with_target<T: Into<PathBuf>>(strategy: &Strategy, target: T) -> Result<(), Error> {
-    let release = resolve_release(strategy).context("requested release data")?;
-
-    let buffer = download_release(&release)?;
+pub fn install_with_target<T: Into<PathBuf>>(release: &Release, target: T) -> Result<(), Error> {
+    let buffer = download_release(release)?;
     validate_checksum(&buffer, release.checksum)?;
 
     // TODO(cnpryer): Support more archive formats.

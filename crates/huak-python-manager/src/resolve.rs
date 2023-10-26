@@ -7,7 +7,8 @@ use std::{
 };
 
 /// Resolve a Python Release based on a resolution `Strategy`.
-pub(crate) fn resolve_release(strategy: &Strategy) -> Option<Release<'static>> {
+#[must_use]
+pub fn resolve_release(strategy: &Strategy) -> Option<Release<'static>> {
     match strategy {
         Strategy::Latest => resolve_release_with_options(&Options::default()),
         Strategy::Selection(options) => resolve_release_with_options(options),

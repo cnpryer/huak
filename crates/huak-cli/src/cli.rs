@@ -8,8 +8,9 @@ use huak_package_manager::ops::{
 };
 use huak_package_manager::{
     find_package_root, Config, Error as HuakError, HuakResult, InstallOptions, TerminalOptions,
-    Verbosity, Version, WorkspaceOptions,
+    Verbosity, WorkspaceOptions,
 };
+use huak_python_manager::RequestedVersion;
 use std::{env::current_dir, path::PathBuf, process::ExitCode, str::FromStr};
 use termcolor::ColorChoice;
 
@@ -174,7 +175,13 @@ enum Python {
     Use {
         /// A Python interpreter version number.
         #[arg(required = true)]
-        version: PythonVersion,
+        version: RequestedVersion,
+    },
+    /// Install a version of Python.
+    Install {
+        /// The version of Python to install.
+        #[arg(required = true)]
+        version: RequestedVersion,
     },
 }
 
@@ -429,7 +436,8 @@ fn publish(config: &Config, options: &PublishOptions) -> HuakResult<()> {
 fn python(command: Python, config: &Config) -> HuakResult<()> {
     match command {
         Python::List => ops::list_python(config),
-        Python::Use { version } => ops::use_python(&version.0, config),
+        Python::Use { version } => ops::use_python(&version.to_string(), config),
+        Python::Install { version } => ops::install_python(&version),
     }
 }
 
@@ -489,23 +497,5 @@ impl FromStr for Dependency {
 impl ToString for Dependency {
     fn to_string(&self) -> String {
         self.0.clone()
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct PythonVersion(String);
-
-impl FromStr for PythonVersion {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let version = Version::from_str(s).map_err(|_| {
-            Error::new(
-                HuakError::InternalError("failed to parse version".to_string()),
-                ExitCode::FAILURE,
-            )
-        })?;
-
-        Ok(Self(version.to_string()))
     }
 }
