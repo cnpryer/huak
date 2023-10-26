@@ -1,5 +1,5 @@
 [package]
-name = "huak_package_manager"
+name = "huak-package-manager"
 version = "0.0.0"
 readme.workspace = true
 edition.workspace = true
@@ -28,7 +28,7 @@ toml_edit = "0.19.4"
 regex = "1.9.5"
 
 [dev-dependencies]
-huak_dev = { path = "../huak_dev" }
+huak-dev = { path = "../huak-dev" }
 tempfile = { workspace = true }
 
 [lints]
