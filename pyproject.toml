@@ -21,7 +21,7 @@ repository = "https://github.com/cnpryer/huak"
 
 [tool.maturin]
 bindings = "bin"
-manifest-path = "crates/huak_cli/Cargo.toml"
+manifest-path = "crates/huak-cli/Cargo.toml"
 module-name = "huak"
 python-source = "python"
 strip = true

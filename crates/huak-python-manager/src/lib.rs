@@ -20,7 +20,7 @@
 //!
 //! ```no_run
 //! use std::{str::FromStr, path::PathBuf};
-//! use huak_python_manager::{Options, RequestedVersion, Strategy, install_with_target};
+//! use huak_python_manager::{Options, RequestedVersion, Strategy, install_with_target, resolve_release};
 //!
 //!
 //! // The version of the Python to install.
@@ -32,12 +32,13 @@
 //! // Use selection strategy to resolve for the best matching release available.
 //! let strategy = Strategy::Selection(Options { version: Some(version), kind: "cpython", os: "apple", architecture: "aarch64", build_configuration: "pgo+lto"});
 //!
-//! install_with_target(&strategy, target).unwrap();
+//! let release = resolve_release(&strategy).unwrap();
 //!
+//! install_with_target(&release, target).unwrap();
 //! ```
 
 pub use crate::install::install_with_target;
-pub use crate::resolve::{Options, RequestedVersion, Strategy};
+pub use crate::resolve::{resolve_release, Options, RequestedVersion, Strategy};
 
 mod install;
 mod releases;

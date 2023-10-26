@@ -43,7 +43,8 @@ mod cmd {
     use std::path::PathBuf;
 
     use super::{Error, RequestedVersion};
-    use huak_python_manager::{install_with_target, Options, Strategy};
+    use anyhow::Context;
+    use huak_python_manager::{install_with_target, resolve_release, Options, Strategy};
 
     pub(crate) fn install(version: RequestedVersion, target: PathBuf) -> Result<(), Error> {
         println!("installing Python {version}...");
@@ -53,6 +54,8 @@ mod cmd {
             ..Default::default()
         });
 
-        install_with_target(&strategy, target)
+        let release = resolve_release(&strategy).context("requested release data")?;
+
+        install_with_target(&release, target)
     }
 }

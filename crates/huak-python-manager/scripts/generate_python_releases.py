@@ -128,7 +128,7 @@ for release in release_json:
 module += """\n];
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub(crate) struct Release<'a> {
+pub struct Release<'a> {
     pub kind: &'a str,
     pub version: Version,
     pub os: &'a str,
@@ -162,7 +162,7 @@ impl Release<'static> {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub(crate) struct Version {
+pub struct Version {
     pub major: u8,
     pub minor: u8,
     pub patch: u8,

@@ -20,6 +20,8 @@ pub enum Error {
     GlobPatternError(#[from] glob::PatternError),
     #[error("a problem with huak configuration occurred: {0}")]
     HuakConfigurationError(String),
+    #[error("a problem occurred resolving huak's home directory")]
+    HuakHomeNotFound,
     #[error("a problem with huak's internals occurred: {0}")]
     InternalError(String),
     #[error("a version number could not be parsed: {0}")]
@@ -42,6 +44,10 @@ pub enum Error {
     ProjectFound,
     #[error("a python interpreter could not be found")]
     PythonNotFound,
+    #[error("a problem occurred attempting to install python: {0}")]
+    PythonInstallError(String),
+    #[error("a python release could not be found: {0}")]
+    PythonReleaseNotFound(String),
     #[error("a python environment could not be found")]
     PythonEnvironmentNotFound,
     #[error("a regex error occurred: {0}")]

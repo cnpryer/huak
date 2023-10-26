@@ -35,7 +35,7 @@ jobs:
       - uses: actions/setup-python@v1
       # We install instead of just build for insta-cmd TODO(cnpryer)
       - name: Install huak
-        run: cargo install --path crates/huak_cli
+        run: cargo install --path crates/huak-cli
       - name: Test
         run: cargo test --all-features
 
