@@ -65,7 +65,7 @@ huak toolchain list                    # Display available toolchains
 
 #### Installing toolchains
 
-Until Huak is distributed as a standalone application (not via PyPI) it will continue to behave how it currently does (using available Python environments). When the user runs `huak toolchain install` Huak will either recognize there is already a toolchain installed and available or it will install the latest toolchain available (see [Fetching available toolchains](#fetching-available-toolchains)).
+Until Huak is distributed as a standalone application (not via PyPI) it will continue to behave how it currently does (using available Python environments). When the user runs `huak toolchain install` Huak will either recognize there is already a toolchain installed and available or it will install the latest toolchain available (see *"Fetching available toolchains"*).
 
 Users can install toolchains using the `huak toolchain install` command.
 
