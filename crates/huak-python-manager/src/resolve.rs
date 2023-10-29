@@ -1,5 +1,7 @@
-use crate::releases::{Release, Version, RELEASES};
-use anyhow::Error; // TODO(cnpryer): Library code should use thiserror
+use crate::{
+    error::Error,
+    releases::{Release, Version, RELEASES},
+};
 use std::{
     env::consts::{ARCH, OS},
     fmt::Display,
@@ -109,14 +111,26 @@ impl FromStr for RequestedVersion {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut parts = s
-            .split('.')
-            .map(|it| it.parse::<u8>().expect("parsed requested version part"));
+        let mut parts = s.split('.').map(str::parse);
+
+        let Some(Ok(major)) = parts.next() else {
+            return Err(Error::ParseRequestedVersionError(s.to_string()));
+        };
+
+        let Some(Ok(minor)) = parts.next() else {
+            return Err(Error::ParseRequestedVersionError(s.to_string()));
+        };
+
+        let patch = match parts.next() {
+            Some(Ok(it)) => Some(it),
+            Some(Err(_e)) => return Err(Error::ParseRequestedVersionError(s.to_string())),
+            _ => None,
+        };
 
         Ok(RequestedVersion {
-            major: parts.next(),
-            minor: parts.next(),
-            patch: parts.next(),
+            major: Some(major),
+            minor: Some(minor),
+            patch,
         })
     }
 }

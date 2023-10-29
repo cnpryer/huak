@@ -40,6 +40,7 @@
 pub use crate::install::install_with_target;
 pub use crate::resolve::{resolve_release, Options, RequestedVersion, Strategy};
 
+mod error;
 mod install;
 mod releases;
 mod resolve;
