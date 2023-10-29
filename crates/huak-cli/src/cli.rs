@@ -132,6 +132,7 @@ enum Commands {
         trailing: Option<Vec<String>>,
     },
     /// Manage Python installations.
+    #[clap(alias = "py")]
     Python {
         #[command(subcommand)]
         command: Python,
