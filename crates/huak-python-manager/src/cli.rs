@@ -55,6 +55,6 @@ mod cmd {
 
         let release = resolve_release(&strategy).context("requested release data")?;
 
-        install_with_target(&release, target)
+        install_with_target(&release, target).context("failed to install with target")
     }
 }

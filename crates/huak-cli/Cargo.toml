@@ -14,22 +14,22 @@ authors.workspace = true
 license.workspace = true
 
 [dependencies]
-clap = { workspace = true }
+clap.workspace = true
 clap_complete = "4.4.1"
-colored = { workspace = true }
+colored.workspace = true
 huak-home = { path = "../huak-home" }
 huak-package-manager = { path = "../huak-package-manager"}
 huak-python-manager = { path = "../huak-python-manager" }
-human-panic = { workspace = true }
+human-panic.workspace = true
 # included to build PyPi Wheels (see .github/workflow/README.md)
 openssl = { version = "0.10.57", features = ["vendored"], optional = true }
-termcolor = { workspace = true }
-thiserror = "1.0.48"
+termcolor.workspace = true
+thiserror.workspace = true
 
 [dev-dependencies]
 huak-dev = { path = "../huak-dev" }
 insta-cmd = "0.4.0"
-tempfile = { workspace = true }
+tempfile.workspace = true
 
 [lints]
 workspace = true

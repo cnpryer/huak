@@ -12,17 +12,17 @@ license.workspace = true
 doctest = false
 
 [dependencies]
-clap = { workspace = true }
+clap.workspace = true
 git2 = "0.17.2"
-glob = { workspace = true }
+glob.workspace = true
 indexmap = "2.0.0"
-pep440_rs = { workspace = true }
-pep508_rs = { workspace = true }
+pep440_rs.workspace = true
+pep508_rs.workspace = true
 pyproject-toml = "0.7.0"
 serde = { version = "1.0.185", features = ["derive"] }
 serde_json = "1.0.107"
-termcolor = { workspace = true }
-thiserror = { workspace = true }
+termcolor.workspace = true
+thiserror.workspace = true
 toml = { version = "0.7.6", features = ["preserve_order"] }
 toml_edit = "0.19.4"
 regex = "1.9.5"
@@ -31,7 +31,7 @@ huak-home = { path = "../huak-home" }
 
 [dev-dependencies]
 huak-dev = { path = "../huak-dev" }
-tempfile = { workspace = true }
+tempfile.workspace = true
 
 [lints]
 workspace = true
