@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-#[must_use]
 /// Huak's home directory is located at ~/.huak.
 ///
 /// # Unix
@@ -10,6 +9,7 @@ use std::path::PathBuf;
 /// # Windows
 ///
 /// On windows the `USERPROFILE` environment variable is used if it exists.
+#[must_use]
 pub fn huak_home_dir() -> Option<PathBuf> {
     home_dir().map(|p| p.join(".huak"))
 }

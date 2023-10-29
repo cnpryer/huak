@@ -2,7 +2,6 @@ use std::path::PathBuf;
 
 use crate::{sys::Terminal, workspace::Workspace, TerminalOptions};
 
-#[derive(Clone, Default)]
 /// The main `Config` for Huak.
 ///
 /// The `Config` contains data telling Huak what to do at times.
@@ -22,6 +21,7 @@ use crate::{sys::Terminal, workspace::Workspace, TerminalOptions};
 ///
 /// let workspace = config.workspace();
 /// ```
+#[derive(Clone, Default)]
 pub struct Config {
     /// The configured `Workspace` root path.
     pub workspace_root: PathBuf,
@@ -32,20 +32,20 @@ pub struct Config {
 }
 
 impl Config {
-    #[must_use]
     /// Resolve the current `Workspace` based on the `Config` data.
+    #[must_use]
     pub fn workspace(&self) -> Workspace {
         Workspace::new(&self.workspace_root, self)
     }
 
-    #[must_use]
     /// Get a `Terminal` based on the `Config` data.
+    #[must_use]
     pub fn terminal(&self) -> Terminal {
         Terminal::from_options(self.terminal_options.clone())
     }
 
-    #[must_use]
     /// Get a `Config` with a new `Terminal`.
+    #[must_use]
     pub fn with_terminal(self, terminal_options: TerminalOptions) -> Self {
         Config {
             workspace_root: self.workspace_root,

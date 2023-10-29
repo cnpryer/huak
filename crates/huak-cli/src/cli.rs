@@ -185,6 +185,26 @@ enum Python {
     },
 }
 
+#[derive(Subcommand)]
+enum Toolchain {
+    /// List available toolchains.
+    List,
+    /// Use an available toolchain.
+    Use {
+        /// The version of Python to use.
+        #[arg(required = true)]
+        version: RequestedVersion,
+    },
+    /// Install a toolchain.
+    Install {
+        /// The version of Python to install.
+        #[arg(required = true)]
+        version: RequestedVersion,
+        /// The path to install a toolchain to.
+        target: PathBuf,
+    },
+}
+
 // Command gating for Huak.
 impl Cli {
     pub fn run(self) -> CliResult<i32> {

@@ -5,7 +5,6 @@ use pep508_rs::{Requirement, VersionOrUrl};
 
 use crate::Error;
 
-#[derive(Clone, Debug)]
 /// The `Dependency` is an abstraction for `Package` data used as a cheap alternative
 /// for operations on lots of `Package` data.
 ///
@@ -17,11 +16,12 @@ use crate::Error;
 ///
 /// let dependency = Dependency::from_str("my-dependency >= 0.1.0, < 0.2.0").unwrap();
 /// ```
+#[derive(Clone, Debug)]
 pub struct Dependency(Requirement);
 
 impl Dependency {
-    #[must_use]
     /// Get a reference to the wrapped `Requirement`.
+    #[must_use]
     pub fn requirement(&self) -> &Requirement {
         &self.0
     }
@@ -31,8 +31,8 @@ impl Dependency {
         &mut self.0
     }
 
-    #[must_use]
     /// Get the `Dependency` name.
+    #[must_use]
     pub fn name(&self) -> &str {
         &self.requirement().name
     }

@@ -34,14 +34,14 @@ impl Workspace {
         }
     }
 
-    #[must_use]
     /// Get a reference to the path to the `Workspace` root.
+    #[must_use]
     pub fn root(&self) -> &PathBuf {
         &self.root
     }
 
-    #[must_use]
     /// Get an `Environment` associated with the `Workspace`.
+    #[must_use]
     pub fn environment(&self) -> Environment {
         Environment::new()
     }

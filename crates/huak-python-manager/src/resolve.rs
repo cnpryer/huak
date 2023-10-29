@@ -43,8 +43,8 @@ fn resolve_release_with_options(options: &Options) -> Option<Release<'static>> {
     }
 }
 
-#[derive(Default)]
 /// The strategy used for resolving a Python releases.
+#[derive(Default)]
 pub enum Strategy<'a> {
     #[default]
     /// Resolve with the latest possible Python release version for the current environment.
@@ -54,8 +54,8 @@ pub enum Strategy<'a> {
     Selection(Options<'a>),
 }
 
-#[derive(Debug)]
 /// Options criteria used for resolving Python releases.
+#[derive(Debug)]
 pub struct Options<'a> {
     pub kind: &'a str,
     pub version: Option<RequestedVersion>, // TODO(cnpryer): Refactor to default as *latest available*

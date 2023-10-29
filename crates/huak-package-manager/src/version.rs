@@ -10,10 +10,10 @@ trait ToSemVer {
     fn to_semver(self) -> SemVer;
 }
 
-#[derive(Debug)]
 /// A generic `Version` struct.
 ///
 /// This struct is mainly used for the Python `Interpreter`.
+#[derive(Debug)]
 pub struct Version {
     release: Vec<usize>,
 }

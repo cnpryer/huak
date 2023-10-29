@@ -2,9 +2,9 @@
 
 use std::{cmp::Ordering, fmt::Display};
 
+// TODO(cnpryer): Perf
 #[allow(dead_code)]
 #[rustfmt::skip]
-// TODO(cnpryer): Perf
 pub(crate) const RELEASES: &[Release] = &[
 	Release::new("cpython", Version::new(3, 10, 13), "apple", "aarch64", "pgo+lto", "a2635841454295c5bc2c18740346fd8308f2a8adcce2407b87c9faf261fed29c", "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.10.13%2B20231002-aarch64-apple-darwin-pgo%2Blto-full.tar.zst"),
 	Release::new("cpython", Version::new(3, 10, 13), "apple", "aarch64", "pgo", "67b64174b8d33aa1b2e3bb3a4a3e475ff96d511c540f46e3c0774f8b77be4d91", "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.10.13%2B20231002-aarch64-apple-darwin-pgo-full.tar.zst"),
