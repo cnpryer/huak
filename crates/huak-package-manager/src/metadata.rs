@@ -11,9 +11,9 @@ use crate::{dependency::Dependency, Error, HuakResult};
 
 const DEFAULT_METADATA_FILE_NAME: &str = "pyproject.toml";
 
-#[derive(Debug)]
 /// A `LocalMetadata` struct used to manage local `Metadata` files such as
 /// the pyproject.toml (<https://peps.python.org/pep-0621/>).
+#[derive(Debug)]
 pub struct LocalMetadata {
     /// The core `Metadata`.
     /// See https://packaging.python.org/en/latest/specifications/core-metadata/.
@@ -55,8 +55,8 @@ impl LocalMetadata {
         }
     }
 
-    #[must_use]
     /// Get a reference to the core `Metadata`.
+    #[must_use]
     pub fn metadata(&self) -> &Metadata {
         &self.metadata
     }
@@ -111,11 +111,11 @@ fn pyproject_toml_metadata<T: Into<PathBuf>>(path: T) -> HuakResult<LocalMetadat
     Ok(local_metadata)
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "kebab-case")]
 /// The `Metadata` of a `Package`.
 ///
 /// See <https://peps.python.org/pep-0621/> for more about core metadata.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "kebab-case")]
 pub struct Metadata {
     /// The build system used for the `Package`.
     build_system: BuildSystem,

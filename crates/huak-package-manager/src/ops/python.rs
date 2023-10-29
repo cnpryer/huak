@@ -27,8 +27,8 @@ pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
     let interpreters = Environment::resolve_python_interpreters();
 
     // TODO(cnpryer): Re-export `Interpreter` as public
-    #[allow(clippy::redundant_closure_for_method_calls)]
     // Get a path to an interpreter based on the version provided, excluding any activated Python environment.
+    #[allow(clippy::redundant_closure_for_method_calls)]
     let Some(path) = interpreters
         .interpreters()
         .iter()

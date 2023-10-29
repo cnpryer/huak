@@ -86,8 +86,8 @@ impl PythonEnvironment {
         Ok(env)
     }
 
-    #[must_use]
     /// Get a reference to the path to the `PythonEnvironment`.
+    #[must_use]
     pub fn root(&self) -> &Path {
         self.root.as_ref()
     }
@@ -97,20 +97,20 @@ impl PythonEnvironment {
         fs::last_path_component(&self.root)
     }
 
-    #[must_use]
     /// Get a reference to the Python `Interpreter`'s path that's used by the `PythonEnvironment`.
+    #[must_use]
     pub fn python_path(&self) -> &PathBuf {
         self.interpreter.path()
     }
 
-    #[must_use]
     /// Get a reference to the `PythonEnvironment`'s executables directory path.
+    #[must_use]
     pub fn executables_dir_path(&self) -> &PathBuf {
         &self.executables_dir_path
     }
 
-    #[must_use]
     /// Get a reference to the `PythonEnvironment`'s site-packages directory path.
+    #[must_use]
     pub fn site_packages_dir_path(&self) -> &PathBuf {
         &self.site_packages_path
     }
@@ -196,8 +196,8 @@ impl PythonEnvironment {
         }
     }
 
-    #[must_use]
     /// Check if the `PythonEnvironment` has a `Package` already installed.
+    #[must_use]
     pub fn contains_package(&self, package: &Package) -> bool {
         self.site_packages_dir_path().join(package.name()).exists()
     }
@@ -219,8 +219,8 @@ impl PythonEnvironment {
         Ok(packages)
     }
 
-    #[must_use]
     /// Check if the `PythonEnvironment` is already activated.
+    #[must_use]
     pub fn active(&self) -> bool {
         Some(&self.root)
             == active_virtual_env_path()
@@ -287,8 +287,8 @@ pub fn venv_executables_dir_path<T: Into<PathBuf>>(root: T) -> PathBuf {
     path
 }
 
-#[derive(Clone)]
 /// A struct used to configure Python `Package` installations.
+#[derive(Clone)]
 pub struct InstallOptions {
     /// A values vector of install options typically used for passing on arguments.
     pub values: Option<Vec<String>>,
@@ -361,28 +361,27 @@ impl Interpreters {
         &self.interpreters
     }
 
-    #[allow(dead_code)]
     /// Get the latest Python `Interpreter` by `Version`.
+    #[allow(dead_code)]
     pub fn latest(&self) -> Option<&Interpreter> {
         self.interpreters.iter().max()
     }
 
-    #[allow(dead_code)]
     /// Get a Python `Interpreter` by its `Version`.
+    #[allow(dead_code)]
     fn exact(&self, version: &Version) -> Option<&Interpreter> {
         self.interpreters
             .iter()
             .find(|interpreter| &interpreter.version == version)
     }
 
-    #[allow(dead_code)]
     /// Get a Python `Interpreter` by its path.
+    #[allow(dead_code)]
     fn get(&self, path: &PathBuf) -> Option<&Interpreter> {
         self.interpreters.iter().find(|p| p.path() == path)
     }
 }
 
-#[derive(Debug)]
 /// The Python `Interpreter` is used to interact with installed Python `Interpreter`s.
 ///
 /// `Interpreter` contains information like the `Interpreter`'s path, `Version`, etc.
@@ -392,6 +391,7 @@ impl Interpreters {
 ///
 /// let python = Interpreter::new("path/to/python");
 /// ```
+#[derive(Debug)]
 pub struct Interpreter {
     /// The `Version` of the Python `Interpreter`.
     version: Version,
@@ -454,8 +454,8 @@ fn compare_interpreters(this: &Interpreter, other: &Interpreter) -> Ordering {
     Ordering::Equal
 }
 
-#[must_use]
 /// Get any activated Python environment.
+#[must_use]
 pub fn active_python_env_path() -> Option<PathBuf> {
     active_virtual_env_path().or(active_conda_env_path())
 }
@@ -525,8 +525,8 @@ fn python_interpreters_in_paths(
     })
 }
 
-#[cfg(unix)]
 /// A function for checking if a Python `Interpreter`'s file name is valid.
+#[cfg(unix)]
 fn valid_python_interpreter_file_name(file_name: &str) -> bool {
     if file_name == "python" {
         return true;
@@ -539,8 +539,8 @@ fn valid_python_interpreter_file_name(file_name: &str) -> bool {
     file_name.len() >= "python3.0".len() && file_name["python".len()..].parse::<f32>().is_ok()
 }
 
-#[cfg(windows)]
 /// A function for checking if a Python `Interpreter`'s file name is valid.
+#[cfg(windows)]
 fn valid_python_interpreter_file_name(file_name: &str) -> bool {
     if file_name == "python.exe" || file_name == "python" {
         return true;

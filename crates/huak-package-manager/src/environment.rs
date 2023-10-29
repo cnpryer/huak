@@ -22,8 +22,8 @@ pub struct Environment {
 }
 
 impl Environment {
-    #[must_use]
     /// Initialize an `Environment`.
+    #[must_use]
     pub fn new() -> Environment {
         let interpreters = Environment::resolve_python_interpreters();
 
@@ -38,8 +38,8 @@ impl Environment {
             .map(Interpreter::path)
     }
 
-    #[must_use]
     /// Resolve `Interpreters` for the `Environment`.
+    #[must_use]
     pub fn resolve_python_interpreters() -> Interpreters {
         // Note that we filter out any interpreters we can't establish a `Version` for.
         let interpreters = python_paths().filter_map(|(version, path)| {
@@ -57,8 +57,8 @@ impl Environment {
         Interpreters::new(interpreters)
     }
 
-    #[must_use]
     /// Get a reference to the environment's resolved Python interpreters.
+    #[must_use]
     pub fn interpreters(&self) -> &Interpreters {
         &self.interpreters
     }
@@ -70,8 +70,8 @@ impl Default for Environment {
     }
 }
 
-#[must_use]
 /// Get a vector of paths from the system `PATH` environment variable.
+#[must_use]
 pub fn env_path_values() -> Option<Vec<PathBuf>> {
     if let Some(val) = env_path_string() {
         return Some(std::env::split_paths(&val).collect());
@@ -80,8 +80,8 @@ pub fn env_path_values() -> Option<Vec<PathBuf>> {
     None
 }
 
-#[must_use]
 /// Get the `OsString` value of the enrionment variable `PATH`.
+#[must_use]
 pub fn env_path_string() -> Option<OsString> {
     std::env::var_os("PATH")
 }

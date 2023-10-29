@@ -29,10 +29,9 @@ impl Cli {
 enum Commands {
     /// Install a Python interpreter.
     Install {
-        #[arg(required = true)]
         /// Version of Python to install.
+        #[arg(required = true)]
         version: RequestedVersion,
-
         /// Target path to install Python to.
         #[arg(long, required = true)]
         target: PathBuf,

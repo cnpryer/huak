@@ -5,7 +5,6 @@ use std::{fmt::Display, str::FromStr};
 
 const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
 
-#[derive(Clone)]
 /// The `Package` contains data about a Python `Package`.
 ///
 /// A `Package` contains information like the project's name, its version, authors,
@@ -19,6 +18,7 @@ const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
 ///
 /// assert_eq!(package.version, Version::from_str("0.0.1").unwrap()));
 /// ```
+#[derive(Clone)]
 pub struct Package {
     /// Information used to identify the `Package`.
     id: PackageId,
@@ -27,26 +27,25 @@ pub struct Package {
 }
 
 impl Package {
-    #[must_use]
     /// Get a reference to the `Package`'s name.
+    #[must_use]
     pub fn name(&self) -> &str {
         &self.id.name
     }
 
-    #[must_use]
     /// Get a reference to the PEP 440 `Version` of the `Package`.
+    #[must_use]
     pub fn version(&self) -> &Version {
         &self.id.version
     }
 
-    #[must_use]
     /// Get a reference to the `Package`'s core `Metadata`.
+    #[must_use]
     pub fn metadata(&self) -> &Metadata {
         &self.metadata
     }
 
     // TODO: I want this implemented with `FromStr`.
-    #[allow(clippy::should_implement_trait)]
     /// Initialize a `Package` from a `&str`.
     ///
     /// ```
@@ -54,6 +53,7 @@ impl Package {
     ///
     /// let package = Package::from_str("my-package == 0.0.1").unwrap();
     /// ```
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str<T: AsRef<str>>(s: T) -> HuakResult<Package> {
         // A naive approach to parsing the name and `VersionSpecifiers` from the `&str`.
         // Find the first character of the `VersionSpecifiers`. Everything prior is considered
@@ -137,8 +137,8 @@ impl PartialEq for Package {
 
 impl Eq for Package {}
 
-#[derive(Clone)]
 /// The `PackageId` struct is used to contain `Package`-identifying data.
+#[derive(Clone)]
 struct PackageId {
     /// The `Package` name.
     name: String,

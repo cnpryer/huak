@@ -11,8 +11,8 @@ use std::process::{exit, ExitCode};
 
 mod error;
 
-#[must_use]
 /// Launch Huak's cli process.
+#[must_use]
 pub fn main() -> ExitCode {
     setup_panic!();
 
