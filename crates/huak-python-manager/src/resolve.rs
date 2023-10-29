@@ -93,16 +93,16 @@ impl Default for Options<'static> {
 
 #[derive(Debug, Clone)]
 pub struct RequestedVersion {
-    pub major: Option<u8>,
-    pub minor: Option<u8>,
+    pub major: u8,
+    pub minor: u8,
     pub patch: Option<u8>,
 }
 
 impl RequestedVersion {
     /// Evaluates if some Python release's version is what was requested.
     pub(crate) fn matches_version(&self, version: Version) -> bool {
-        self.major.map_or(true, |it| it == version.major)
-            && self.minor.map_or(true, |it| it == version.minor)
+        self.major == version.major
+            && self.minor == version.minor
             && self.patch.map_or(true, |it| it == version.patch)
     }
 }
@@ -128,8 +128,8 @@ impl FromStr for RequestedVersion {
         };
 
         Ok(RequestedVersion {
-            major: Some(major),
-            minor: Some(minor),
+            major,
+            minor,
             patch,
         })
     }
@@ -137,15 +137,12 @@ impl FromStr for RequestedVersion {
 
 impl Display for RequestedVersion {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(major) = self.major {
-            write!(f, "{major}")?;
-        }
-        if let Some(minor) = self.minor {
-            write!(f, ".{minor}")?;
-        }
+        write!(f, "{}.{}", self.major, self.minor)?;
+
         if let Some(patch) = self.patch {
             write!(f, ".{patch}")?;
         }
+
         Ok(())
     }
 }
