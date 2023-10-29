@@ -55,8 +55,8 @@ huak toolchain uninstall <version>     # Uninstall a toolchain via its channel v
 huak toolchain use <version>           # Use a toolchain via its channel version
 huak toolchain add <tool>              # Add a tool to the current toolchain
 huak toolchain remove <tool>           # Remove a tool from the current toolchain
+huak toolchain run <tool>              # Run a tool installed to the current toolchain.
 huak toolchain info                    # Display the current toolchain's information
-huak toolchain fetch                   # Fetch toolchains available for installation
 huak toolchain list                    # Display available toolchains
 ```
 
@@ -65,7 +65,7 @@ huak toolchain list                    # Display available toolchains
 
 #### Installing toolchains
 
-Until Huak is distributed as a standalone application (not via PyPI) it will continue to behave how it currently does (using available Python environments). When the user runs `huak toolchain install` Huak will either recognize there is already a toolchain installed and available or it will install the latest toolchain available (see *"Fetching available toolchains"*).
+Until Huak is distributed as a standalone application (not via PyPI) it will continue to behave how it currently does (using available Python environments). When the user runs `huak toolchain install` Huak will either recognize there is already a toolchain installed and available or it will install the latest toolchain available.
 
 Users can install toolchains using the `huak toolchain install` command.
 
@@ -76,7 +76,7 @@ Without any other arguments `install` will:
   - If a `[huak.toolchain]` table is used in the project's pyproject.toml file it will install it if it isn't already installed.
   - It will attempt to figure out which toolchain to install by checking for a related virtual environment.
   - If no virtual environment is associated with the project it will install a toolchain compatible with the latest version of Python available on the system.
-  - If no Python is found on the system it will install the latest available version (see *"Fetching available toolchains"*).
+  - If no Python is found on the system it will install the latest available version.
 
 Users can specify versions to install by running `huak toolchain install <version>`.
 
@@ -110,7 +110,7 @@ Toolchains can be uninstalled using `huak toolchain uninstall`. This will remove
 
 #### Using toolchains
 
-By default Huak will attempt to *use* the latest available toolchain. If one isn't installed it will fetch and install the latest available. Telling Huak to *use* a toolchain will:
+By default Huak will attempt to *use* the latest available toolchain. If one isn't installed it will install the latest available. Telling Huak to *use* a toolchain will:
 
 - Override the default if a project can't be associated with the command.
 - Override the relationship defined Huak's settings.toml if one already exists. If one does not exist it will be added to the settings.toml file.
@@ -156,21 +156,15 @@ Display information about the currently active toolchain by running `huak toolch
 huak toolchain info --channel <version>
 ```
 
-Users can display information about toolchains that aren't installed by running `huak toolchain fetch <version>` and then running `huak toolchain info <version>`. See *"Fetching available toolchains"* for more.
-
 The information displayed about the toolchain includes:
 
 - The channel
 - Installed tools and their info
 - Managing environments (example: its virtual environment)
 
-#### Fetching available toolchains
-
-A *fetch* can be used to request information about toolchains that are available to Huak but maybe not currently installed. Toolchains become available to Huak as new Python releases are published. Fetching this data will update Huak's knowledge of what's available.
-
 #### Listing available toolchains
 
-Users can list toolchains available for Huak to use. This does not perform a *fetch* unless `--fetch` is used.
+Users can list toolchains available for Huak to use.
 
 #### Huak as a proxy
 
