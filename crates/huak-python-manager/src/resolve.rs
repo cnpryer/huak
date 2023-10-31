@@ -105,7 +105,9 @@ impl RequestedVersion {
     pub fn matches_version(&self, version: &Version) -> bool {
         self.major == version.major
             && self.minor == version.minor
-            && self.patch.map_or(true, |it| Some(it) == version.patch)
+            && self
+                .patch
+                .map_or(true, |it| it == version.patch.unwrap_or(it))
     }
 }
 

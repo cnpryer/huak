@@ -100,7 +100,7 @@ mod tests {
         let version = RequestedVersion {
             major: version.major,
             minor: version.minor,
-            patch: version.patch,
+            patch: None,
         };
         let workspace_root = dir.path().to_path_buf();
         let cwd = workspace_root.clone();
