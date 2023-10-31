@@ -575,6 +575,7 @@ dependencies = [
  "huak-home",
  "huak-python-manager",
  "indexmap 2.0.2",
+ "lazy_static",
  "pep440_rs",
  "pep508_rs",
  "pyproject-toml",

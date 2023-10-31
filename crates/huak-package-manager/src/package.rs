@@ -1,9 +1,14 @@
 use crate::{metadata::Metadata, Error, HuakResult};
+use lazy_static::lazy_static;
 use pep440_rs::{Operator, Version, VersionSpecifiers};
 use regex::Regex;
-use std::{fmt::Display, str::FromStr};
+use std::{borrow::Cow, fmt::Display, str::FromStr};
 
 const VERSION_OPERATOR_CHARACTERS: [char; 5] = ['=', '~', '!', '>', '<'];
+
+lazy_static! {
+    static ref PACKAGE_REGEX: Regex = Regex::new("[-_. ]+").expect("hyphen-underscore regex");
+}
 
 /// The `Package` contains data about a Python `Package`.
 ///
@@ -80,7 +85,7 @@ impl Package {
         }
 
         let id = PackageId {
-            name: canonical_package_name(&name)?,
+            name: canonical_package_name(&name).into_owned(),
             version: version_specifer.version().to_owned(),
         };
 
@@ -166,13 +171,11 @@ fn parse_version_specifiers_str(s: &str) -> Option<&str> {
 
 /// Convert a name to an importable version of the name.
 pub fn importable_package_name(name: &str) -> HuakResult<String> {
-    let canonical_name = canonical_package_name(name)?;
+    let canonical_name = canonical_package_name(name);
     Ok(canonical_name.replace('-', "_"))
 }
 
 /// Normalize a name to a distributable and packagable name.
-fn canonical_package_name(name: &str) -> HuakResult<String> {
-    let re = Regex::new("[-_. ]+")?;
-    let res = re.replace_all(name, "-");
-    Ok(res.into_owned())
+fn canonical_package_name(name: &str) -> Cow<str> {
+    PACKAGE_REGEX.replace_all(name, "-")
 }
