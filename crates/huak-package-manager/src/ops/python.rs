@@ -23,7 +23,7 @@ pub fn list_python(config: &Config) -> HuakResult<()> {
     Ok(())
 }
 
-pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
+pub fn use_python(version: &RequestedVersion, config: &Config) -> HuakResult<()> {
     let interpreters = Environment::resolve_python_interpreters();
 
     // TODO(cnpryer): Re-export `Interpreter` as public
@@ -37,7 +37,7 @@ pub fn use_python(version: &str, config: &Config) -> HuakResult<()> {
                 py.path().parent() == Some(&venv_executables_dir_path(it))
             })
         })
-        .find(|py| py.version().to_string() == version)
+        .find(|py| version.matches_version(py.version()))
         .map(|py| py.path())
     else {
         return Err(Error::PythonNotFound);
@@ -97,6 +97,11 @@ mod tests {
         let dir = tempdir().unwrap();
         let interpreters = Environment::resolve_python_interpreters();
         let version = interpreters.latest().unwrap().version();
+        let version = RequestedVersion {
+            major: version.major,
+            minor: version.minor,
+            patch: version.patch,
+        };
         let workspace_root = dir.path().to_path_buf();
         let cwd = workspace_root.clone();
         let terminal_options = TerminalOptions {
@@ -109,6 +114,6 @@ mod tests {
             terminal_options,
         };
 
-        use_python(&version.to_string(), &config).unwrap();
+        use_python(&version, &config).unwrap();
     }
 }

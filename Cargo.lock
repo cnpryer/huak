@@ -597,6 +597,8 @@ dependencies = [
  "colored",
  "hex",
  "human-panic",
+ "lazy_static",
+ "regex",
  "reqwest",
  "sha2",
  "tar",

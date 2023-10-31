@@ -1,6 +1,6 @@
 //! This file was generated with `generate_python_releases.py`.
 
-use std::{cmp::Ordering, fmt::Display};
+use crate::Version;
 
 // TODO(cnpryer): Perf
 #[allow(dead_code)]
@@ -510,58 +510,4 @@ impl Release<'static> {
             url,
         }
     }
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub struct Version {
-    pub major: u8,
-    pub minor: u8,
-    pub patch: u8,
-}
-
-impl Version {
-    #[allow(dead_code)]
-    const fn new(major: u8, minor: u8, patch: u8) -> Self {
-        Self {
-            major,
-            minor,
-            patch,
-        }
-    }
-}
-
-impl Display for Version {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
-    }
-}
-
-impl PartialOrd<Self> for Version {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Version {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match compare_version(*self, *other) {
-            Ordering::Less => Ordering::Less,
-            Ordering::Equal => Ordering::Equal,
-            Ordering::Greater => Ordering::Greater,
-        }
-    }
-}
-
-fn compare_version(this: Version, other: Version) -> Ordering {
-    for (a, b) in [
-        (this.major, other.major),
-        (this.minor, other.minor),
-        (this.patch, other.patch),
-    ] {
-        if a != b {
-            return a.cmp(&b);
-        }
-    }
-
-    Ordering::Equal
 }

@@ -76,7 +76,7 @@ for release in release_json:
 
 module = (
     f"""//! This file was generated with `{FILE.name}`."""
-    """\n\nuse std::{cmp::Ordering, fmt::Display};
+    """\n\nuse crate::Version;
 
 #[allow(dead_code)]
 #[rustfmt::skip]
@@ -161,59 +161,6 @@ impl Release<'static> {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub struct Version {
-    pub major: u8,
-    pub minor: u8,
-    pub patch: u8,
-}
-
-impl Version {
-    #[allow(dead_code)]
-    const fn new(major: u8, minor: u8, patch: u8) -> Self {
-        Self {
-            major,
-            minor,
-            patch,
-        }
-    }
-}
-
-impl Display for Version {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
-    }
-}
-
-impl PartialOrd<Self> for Version {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Version {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match compare_version(*self, *other) {
-            Ordering::Less => Ordering::Less,
-            Ordering::Equal => Ordering::Equal,
-            Ordering::Greater => Ordering::Greater,
-        }
-    }
-}
-
-fn compare_version(this: Version, other: Version) -> Ordering {
-    for (a, b) in [
-        (this.major, other.major),
-        (this.minor, other.minor),
-        (this.patch, other.patch),
-    ] {
-        if a != b {
-            return a.cmp(&b);
-        }
-    }
-
-    Ordering::Equal
-}
 """
 
 path = ROOT / "crates" / CRATE / "src" / "releases.rs"
