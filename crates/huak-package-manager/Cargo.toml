@@ -28,6 +28,7 @@ toml_edit = "0.19.4"
 regex.workspace = true
 huak-python-manager = { path = "../huak-python-manager" }
 huak-home = { path = "../huak-home" }
+lazy_static.workspace = true
 
 [dev-dependencies]
 huak-dev = { path = "../huak-dev" }
