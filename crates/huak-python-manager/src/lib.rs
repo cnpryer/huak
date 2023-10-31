@@ -37,10 +37,13 @@
 //! install_with_target(&release, target).unwrap();
 //! ```
 
+pub use crate::error::Error;
 pub use crate::install::install_with_target;
 pub use crate::resolve::{resolve_release, Options, RequestedVersion, Strategy};
+pub use crate::version::Version;
 
 mod error;
 mod install;
 mod releases;
 mod resolve;
+mod version;

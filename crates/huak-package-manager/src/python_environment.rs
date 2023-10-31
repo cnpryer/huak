@@ -1,3 +1,7 @@
+use crate::{
+    environment::env_path_values, fs, package::Package, sys, Config, Environment, Error, HuakResult,
+};
+use huak_python_manager::Version;
 use std::{
     cmp::Ordering,
     env::consts::OS,
@@ -7,11 +11,6 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
     str::FromStr,
-};
-
-use crate::{
-    environment::env_path_values, fs, package::Package, sys, version::Version, Config, Environment,
-    Error, HuakResult,
 };
 
 const DEFAULT_VENV_NAME: &str = ".venv";
@@ -247,11 +246,7 @@ fn new_venv<T: Into<PathBuf>>(path: T) -> HuakResult<PythonEnvironment> {
     #[cfg(unix)]
     let site_packages_path = root
         .join("lib")
-        .join(format!(
-            "python{}.{}",
-            version.release()[0],
-            version.release()[1]
-        ))
+        .join(format!("python{}.{}", version.major, version.minor))
         .join("site-packages");
     #[cfg(windows)]
     let site_packages_path = root.join("Lib").join("site-packages");
@@ -369,10 +364,10 @@ impl Interpreters {
 
     /// Get a Python `Interpreter` by its `Version`.
     #[allow(dead_code)]
-    fn exact(&self, version: &Version) -> Option<&Interpreter> {
+    fn exact(&self, version: Version) -> Option<&Interpreter> {
         self.interpreters
             .iter()
-            .find(|interpreter| &interpreter.version == version)
+            .find(|interpreter| interpreter.version == version)
     }
 
     /// Get a Python `Interpreter` by its path.

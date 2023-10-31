@@ -42,6 +42,8 @@ pub enum Error {
     PackageVersionNotFound,
     #[error("a project already exists")]
     ProjectFound,
+    #[error("{0}")]
+    PythonManagerError(#[from] huak_python_manager::Error),
     #[error("a python interpreter could not be found")]
     PythonNotFound,
     #[error("a problem occurred attempting to install python: {0}")]

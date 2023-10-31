@@ -457,7 +457,7 @@ fn publish(config: &Config, options: &PublishOptions) -> HuakResult<()> {
 fn python(command: Python, config: &Config) -> HuakResult<()> {
     match command {
         Python::List => ops::list_python(config),
-        Python::Use { version } => ops::use_python(&version.to_string(), config),
+        Python::Use { version } => ops::use_python(&version, config),
         Python::Install { version } => ops::install_python(&version),
     }
 }
