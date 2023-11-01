@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@nightly
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-python@v1
       # We install instead of just build for insta-cmd TODO(cnpryer)
       - name: Install huak
@@ -48,7 +48,7 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
         with:
           components: clippy
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - name: Run lints
         env:
           RUSTFLAGS: -C debuginfo=0
@@ -65,7 +65,7 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
         with:
           components: rustfmt
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - name: Run formatting check
         run: |
           cargo fmt --all -- --check
