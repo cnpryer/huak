@@ -57,6 +57,7 @@ mod tests {
             workspace_root,
             cwd,
             terminal_options,
+            ..Default::default()
         };
         let options = WorkspaceOptions { uses_git: false };
         init_lib_project(&config, &options).unwrap();
@@ -84,6 +85,7 @@ mod tests {
             workspace_root,
             cwd,
             terminal_options,
+            ..Default::default()
         };
         let options = WorkspaceOptions { uses_git: false };
 

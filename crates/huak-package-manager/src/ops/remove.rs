@@ -77,6 +77,7 @@ mod tests {
             workspace_root,
             cwd,
             terminal_options,
+            ..Default::default()
         };
         let options = RemoveOptions {
             install_options: InstallOptions { values: None },
@@ -124,6 +125,7 @@ mod tests {
             workspace_root,
             cwd,
             terminal_options,
+            ..Default::default()
         };
         let options = RemoveOptions {
             install_options: InstallOptions { values: None },

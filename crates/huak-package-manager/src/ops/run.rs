@@ -42,6 +42,7 @@ mod tests {
             workspace_root,
             cwd,
             terminal_options,
+            ..Default::default()
         };
         let ws = config.workspace();
         // For some reason this test fails with multiple threads used. Workspace.resolve_python_environment()
