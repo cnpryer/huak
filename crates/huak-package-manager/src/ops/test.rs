@@ -81,6 +81,7 @@ mod tests {
             workspace_root,
             cwd,
             terminal_options,
+            ..Default::default()
         };
         let ws = config.workspace();
         initialize_venv(ws.root().join(".venv"), &ws.environment()).unwrap();

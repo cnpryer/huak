@@ -73,6 +73,7 @@ mod tests {
             workspace_root,
             cwd,
             terminal_options,
+            ..Default::default()
         };
         let options = CleanOptions {
             include_pycache: true,

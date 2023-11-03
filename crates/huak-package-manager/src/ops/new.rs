@@ -83,6 +83,7 @@ mod tests {
             workspace_root,
             cwd,
             terminal_options,
+            ..Default::default()
         };
         let options = WorkspaceOptions { uses_git: false };
 
@@ -125,6 +126,7 @@ def test_version():
             workspace_root,
             cwd,
             terminal_options,
+            ..Default::default()
         };
         let options = WorkspaceOptions { uses_git: false };
 

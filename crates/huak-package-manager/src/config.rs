@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use huak_home::huak_home_dir;
+
 use crate::{sys::Terminal, workspace::Workspace, TerminalOptions};
 
 /// The main `Config` for Huak.
@@ -21,7 +23,7 @@ use crate::{sys::Terminal, workspace::Workspace, TerminalOptions};
 ///
 /// let workspace = config.workspace();
 /// ```
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct Config {
     /// The configured `Workspace` root path.
     pub workspace_root: PathBuf,
@@ -29,6 +31,8 @@ pub struct Config {
     pub cwd: PathBuf,
     /// `Terminal` options to use.
     pub terminal_options: TerminalOptions,
+    /// Huak's home directory.
+    pub home: Option<PathBuf>,
 }
 
 impl Config {
@@ -51,6 +55,18 @@ impl Config {
             workspace_root: self.workspace_root,
             cwd: self.cwd,
             terminal_options,
+            ..Default::default()
+        }
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            workspace_root: PathBuf::default(),
+            cwd: PathBuf::default(),
+            terminal_options: TerminalOptions::default(),
+            home: huak_home_dir(),
         }
     }
 }

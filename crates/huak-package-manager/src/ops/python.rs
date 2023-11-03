@@ -112,6 +112,7 @@ mod tests {
             workspace_root,
             cwd,
             terminal_options,
+            ..Default::default()
         };
 
         use_python(&version, &config).unwrap();

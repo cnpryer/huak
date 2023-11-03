@@ -375,6 +375,7 @@ fn get_config(cwd: PathBuf, cli: &Cli) -> Config {
         workspace_root,
         cwd,
         terminal_options,
+        home: huak_home_dir(),
     };
     if cli.no_color {
         config.terminal_options = TerminalOptions {
