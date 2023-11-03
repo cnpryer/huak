@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
 /// Huak's home directory is located at ~/.huak.
 ///
@@ -11,7 +11,10 @@ use std::path::PathBuf;
 /// On windows the `USERPROFILE` environment variable is used if it exists.
 #[must_use]
 pub fn huak_home_dir() -> Option<PathBuf> {
-    home_dir().map(|p| p.join(".huak"))
+    env::var("HUAK_HOME")
+        .ok()
+        .map(PathBuf::from)
+        .or(home_dir().map(|p| p.join(".huak")))
 }
 
 #[cfg(windows)]

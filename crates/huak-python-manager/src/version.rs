@@ -1,8 +1,7 @@
+use crate::error::Error;
 use lazy_static::lazy_static;
 use regex::{Captures, Regex};
 use std::{cmp::Ordering, fmt::Display, str::FromStr};
-
-use crate::error::Error;
 
 lazy_static! {
     static ref VERSION_REGEX: Regex =

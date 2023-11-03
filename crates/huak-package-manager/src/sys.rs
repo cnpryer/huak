@@ -84,7 +84,7 @@ impl Terminal {
     /// Print an error message.
     pub fn print_error<T: Display>(&mut self, message: T) -> HuakResult<()> {
         self.output
-            .message_stderr(&"error", Some(&message), Color::Red, false)
+            .message_stderr_with_status(&"error", Some(&message), Color::Red, false)
     }
 
     /// Prints a warning message.
@@ -110,6 +110,17 @@ impl Terminal {
         self.print(&title, Some(&message), color, justified)
     }
 
+    /// Prints a message without a status.
+    pub fn print_without_status<T>(&mut self, message: T, color: Color) -> HuakResult<()>
+    where
+        T: Display,
+    {
+        match self.options.verbosity {
+            Verbosity::Quiet => Ok(()),
+            _ => self.output.message_stderr(Some(&message), color),
+        }
+    }
+
     /// Prints a message, where the status will have `color` color, and can be justified.
     /// The messages follows without color.
     ///
@@ -126,7 +137,7 @@ impl Terminal {
             Verbosity::Quiet => Ok(()),
             _ => self
                 .output
-                .message_stderr(status, message, color, justified),
+                .message_stderr_with_status(status, message, color, justified),
         }
     }
 
@@ -245,7 +256,7 @@ impl TerminalOut {
     /// Prints out a message with a status. The status comes first, and is bold plus
     /// the given color. The status can be justified, in which case the max width that
     /// will right align is `DEFAULT_MESSAGE_JUSTIFIED_CHARS` chars.
-    fn message_stderr(
+    fn message_stderr_with_status(
         &mut self,
         status: &dyn Display,
         message: Option<&dyn Display>,
@@ -257,7 +268,7 @@ impl TerminalOut {
                 stderr.reset()?;
                 stderr.set_color(ColorSpec::new().set_bold(true).set_fg(Some(color)))?;
                 if justified {
-                    write!(stderr, "{status:>12}")?;
+                    write!(stderr, "  {status:>11}")?;
                 } else {
                     write!(stderr, "{status}")?;
                     stderr.set_color(ColorSpec::new().set_bold(true))?;
@@ -278,6 +289,28 @@ impl TerminalOut {
                     None => write!(stderr, " ")?,
                 }
             }
+        }
+        Ok(())
+    }
+
+    fn message_stderr(
+        &mut self,
+        message: Option<&dyn Display>,
+        color: termcolor::Color,
+    ) -> HuakResult<()> {
+        match *self {
+            TerminalOut::Stream { ref mut stderr, .. } => {
+                stderr.reset()?;
+                stderr.set_color(ColorSpec::new().set_bold(true).set_fg(Some(color)))?;
+                match message {
+                    Some(message) => writeln!(stderr, "{message}")?,
+                    None => write!(stderr, " ")?,
+                }
+            }
+            TerminalOut::Simple { ref mut stderr, .. } => match message {
+                Some(message) => writeln!(stderr, "{message}")?,
+                None => write!(stderr, " ")?,
+            },
         }
         Ok(())
     }

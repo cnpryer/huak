@@ -548,6 +548,7 @@ dependencies = [
  "huak-home",
  "huak-package-manager",
  "huak-python-manager",
+ "huak-toolchain",
  "human-panic",
  "insta-cmd",
  "openssl",
@@ -571,9 +572,11 @@ dependencies = [
  "clap",
  "git2",
  "glob",
+ "hex",
  "huak-dev",
  "huak-home",
  "huak-python-manager",
+ "huak-toolchain",
  "indexmap 2.0.2",
  "lazy_static",
  "pep440_rs",
@@ -582,6 +585,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
+ "sha2",
  "tempfile",
  "termcolor",
  "thiserror",
@@ -605,6 +609,15 @@ dependencies = [
  "tar",
  "thiserror",
  "zstd",
+]
+
+[[package]]
+name = "huak-toolchain"
+version = "0.0.0"
+dependencies = [
+ "huak-python-manager",
+ "pep440_rs",
+ "thiserror",
 ]
 
 [[package]]

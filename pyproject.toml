@@ -29,3 +29,6 @@ strip = true
 [build-system]
 requires = ["maturin>=0.14,<0.15"]
 build-backend = "maturin"
+
+[tool.huak]
+toolchain = "default"

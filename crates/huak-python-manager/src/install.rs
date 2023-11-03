@@ -19,7 +19,7 @@ pub fn install_with_target<T: Into<PathBuf>>(release: &Release, target: T) -> Re
         .map_err(|e| Error::TarError(e.to_string()))
 }
 
-fn download_release(release: &Release) -> Result<Vec<u8>, Error> {
+pub(crate) fn download_release(release: &Release) -> Result<Vec<u8>, Error> {
     let mut response = reqwest::blocking::get(release.url)?;
 
     if !response.status().is_success() {
@@ -35,7 +35,7 @@ fn download_release(release: &Release) -> Result<Vec<u8>, Error> {
     Ok(contents)
 }
 
-fn validate_checksum(bytes: &[u8], checksum: &str) -> Result<(), Error> {
+pub(crate) fn validate_checksum(bytes: &[u8], checksum: &str) -> Result<(), Error> {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
 

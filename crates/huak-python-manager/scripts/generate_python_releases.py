@@ -161,6 +161,16 @@ impl Release<'static> {
     }
 }
 
+impl Display for Release<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}-{}-{}-{}-{}",
+            self.kind, self.version, self.os, self.architecture, self.build_configuration
+        )
+    }
+}
+
 """
 
 path = ROOT / "crates" / CRATE / "src" / "releases.rs"

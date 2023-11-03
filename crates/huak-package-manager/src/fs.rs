@@ -12,8 +12,8 @@ pub fn copy_dir<T: Into<PathBuf>>(from: T, to: T, options: &CopyDirOptions) -> R
 
     if from.is_dir() {
         for entry in fs::read_dir(from)?.filter_map(Result::ok) {
-            let entry_path = entry.path();
-            if options.exclude.contains(&entry_path) {
+            let entry_as_path = entry.path();
+            if options.exclude.contains(&entry_as_path) {
                 continue;
             }
 

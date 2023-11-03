@@ -6,10 +6,12 @@ use thiserror::Error as ThisError;
 #[allow(clippy::enum_variant_names)]
 #[derive(ThisError, Debug)]
 pub enum Error {
-    #[error("a problem occurred attempting to parse a requested version: {0}")]
-    ParseRequestedVersionError(String),
+    #[error("a release option is invalid: {0}")]
+    InvalidReleaseOption(String),
     #[error("a version is invalid: {0}")]
     InvalidVersion(String),
+    #[error("a problem occurred attempting to parse a requested version: {0}")]
+    ParseRequestedVersionError(String),
     #[error("a problem occurred with a request: {0}")]
     RequestError(String),
     #[error("a problem with reqwest occurred: {0}")]

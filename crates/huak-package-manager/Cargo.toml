@@ -29,6 +29,9 @@ regex.workspace = true
 huak-python-manager = { path = "../huak-python-manager" }
 huak-home = { path = "../huak-home" }
 lazy_static.workspace = true
+huak-toolchain = { path = "../huak-toolchain" }
+hex.workspace = true
+sha2.workspace = true
 
 [dev-dependencies]
 huak-dev = { path = "../huak-dev" }

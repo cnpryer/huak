@@ -1,5 +1,7 @@
 //! This file was generated with `generate_python_releases.py`.
 
+use std::fmt::Display;
+
 use crate::Version;
 
 // TODO(cnpryer): Perf
@@ -509,5 +511,15 @@ impl Release<'static> {
             checksum,
             url,
         }
+    }
+}
+
+impl Display for Release<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}-{}-{}-{}-{}",
+            self.kind, self.version, self.os, self.architecture, self.build_configuration
+        )
     }
 }

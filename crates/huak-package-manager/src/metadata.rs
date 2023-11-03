@@ -248,6 +248,10 @@ impl Metadata {
             .entry(name.to_string())
             .or_insert(entrypoint.to_string());
     }
+
+    pub fn tool(&self) -> Option<&Table> {
+        self.tool.as_ref()
+    }
 }
 
 impl Default for Metadata {

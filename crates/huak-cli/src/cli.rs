@@ -11,6 +11,7 @@ use huak_package_manager::{
     Verbosity, WorkspaceOptions,
 };
 use huak_python_manager::RequestedVersion;
+use huak_toolchain::{Channel, LocalTool};
 use std::{env::current_dir, path::PathBuf, process::ExitCode, str::FromStr};
 use termcolor::ColorChoice;
 
@@ -156,6 +157,12 @@ enum Commands {
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
+    /// Manage toolchains.
+    #[clap(alias = "tc")]
+    Toolchain {
+        #[command(subcommand)]
+        command: Toolchain,
+    },
     /// Update the project's dependencies.
     Update {
         #[arg(num_args = 0..)]
@@ -188,21 +195,69 @@ enum Python {
 
 #[derive(Subcommand)]
 enum Toolchain {
-    /// List available toolchains.
-    List,
-    /// Use an available toolchain.
-    Use {
-        /// The version of Python to use.
-        #[arg(required = true)]
-        version: RequestedVersion,
+    /// Add a tool to a toolchain.
+    Add {
+        /// A tool to add.
+        tool: LocalTool,
+        /// Add a tool to a specific channel.
+        #[arg(long, required = false)]
+        channel: Option<Channel>,
+    },
+    /// Display information about a toolchain.
+    Info {
+        /// The toolchain channel to display information for.
+        #[arg(long, required = false)]
+        channel: Option<Channel>,
     },
     /// Install a toolchain.
     Install {
-        /// The version of Python to install.
-        #[arg(required = true)]
-        version: RequestedVersion,
+        /// The toolchain channel to install.
+        #[arg(required = false)]
+        channel: Option<Channel>,
         /// The path to install a toolchain to.
-        target: PathBuf,
+        #[arg(required = false)]
+        target: Option<PathBuf>, // TODO(cnpryer): Could default to home dir toolchains dir.
+    },
+    /// List available toolchains.
+    List,
+    /// Remove a tool from a toolchain.
+    Remove {
+        /// A tool to add.
+        tool: LocalTool,
+        /// Remove a tool from a specific channel.
+        #[arg(long, required = false)]
+        channel: Option<Channel>,
+    },
+    /// Run a tool installed to a toolchain.
+    Run {
+        /// The tool to run.
+        tool: LocalTool,
+        /// The toolchain channel to run a tool from.
+        #[arg(long, required = false)]
+        channel: Option<Channel>,
+        /// Args to run the tool with.
+        #[arg(num_args = 1.., required = false)]
+        trailing: Option<Vec<String>>,
+    },
+    /// Uninstall a toolchain.
+    Uninstall {
+        /// The toolchain channel to uninstall.
+        #[arg(required = false)]
+        channel: Option<Channel>,
+    },
+    /// Update the current toolchain.
+    Update {
+        /// A tool to update.
+        #[arg(required = false)]
+        tool: Option<LocalTool>, // TODO(cnpryer): Either include @version or add version arg.
+        /// The toolchain channel to update.
+        #[arg(long, required = false)]
+        channel: Option<Channel>,
+    },
+    /// Use an available toolchain.
+    Use {
+        /// The toolchain channel to use.
+        channel: Channel,
     },
 }
 
@@ -345,6 +400,7 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
             };
             test(config, &options)
         }
+        Commands::Toolchain { command } => toolchain(command, config),
         Commands::Update {
             dependencies,
             trailing,
@@ -459,7 +515,7 @@ fn python(command: Python, config: &Config) -> HuakResult<()> {
     match command {
         Python::List => ops::list_python(config),
         Python::Use { version } => ops::use_python(&version, config),
-        Python::Install { version } => ops::install_python(&version),
+        Python::Install { version } => ops::install_python(version),
     }
 }
 
@@ -473,6 +529,26 @@ fn run(command: &[String], config: &Config) -> HuakResult<()> {
 
 fn test(config: &Config, options: &TestOptions) -> HuakResult<()> {
     ops::test_project(config, options)
+}
+
+fn toolchain(command: Toolchain, config: &Config) -> HuakResult<()> {
+    match command {
+        Toolchain::Add { tool, channel } => ops::add_tool(&tool, channel, config),
+        Toolchain::Info { channel } => ops::toolchain_info(channel.as_ref(), config),
+        Toolchain::Install { channel, target } => ops::install_toolchain(channel, target, config),
+        Toolchain::List => ops::list_toolchains(config),
+        Toolchain::Remove { tool, channel } => ops::remove_tool(&tool, channel.as_ref(), config),
+        Toolchain::Run {
+            tool,
+            channel,
+            trailing,
+        } => ops::run_tool(&tool, channel.as_ref(), trailing, config),
+        Toolchain::Uninstall { channel } => ops::uninstall_toolchain(channel.as_ref(), config),
+        Toolchain::Update { tool, channel } => {
+            ops::update_toolchain(tool, channel.as_ref(), config)
+        }
+        Toolchain::Use { channel } => ops::use_toolchain(&channel, config),
+    }
 }
 
 fn update(
