@@ -5,6 +5,19 @@ use std::{
 
 use crate::{Channel, LocalToolchain};
 
+/// A struct used to resolve `LocalToolchain`s from some filesystem.
+///
+/// `LocalToolchainResolver`s are used to search for toolchains on the filesystem using
+/// `Channel`s.
+///
+/// ```rust
+/// use std::path::PathBuf;
+/// use huak_toolchain::{Channel, LocalToolchainResolver};
+///
+/// let dir = PathBuf::new();
+/// let resolver = LocalToolchainResolver::new();
+/// let toolchain = resolver.from_dir(&Channel::Default, dir);
+/// ```
 #[derive(Default)]
 pub struct LocalToolchainResolver;
 
@@ -33,10 +46,6 @@ impl LocalToolchainResolver {
             .find(|p| path_matches_name(channel, p))
             .map(LocalToolchain::new)
     }
-}
-
-pub enum Entry {
-    String(String),
 }
 
 fn resolve_from_dir<T: AsRef<Path>>(channel: &Channel, path: T) -> Option<LocalToolchain> {

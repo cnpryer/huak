@@ -49,14 +49,17 @@
 //! Local tools can be executable programs.
 //!
 //! ```rust
-//! use huak_toolchain::prelude::*;
+//! use huak_toolchain::LocalToolchain;
+//! use std::path::PathBuf;
 //!
-//! let path = PathBuff::new("path/to/toolchain/");
-//! let toolchain = LocalToolchain::new(path)?;
+//! let path = PathBuf::from("path/to/toolchain/");
+//! let toolchain = LocalToolchain::new(&path);
 //! let py = toolchain.tool("python");
+//! let bin = path.join("bin");
+//! let py_bin = bin.join("python");
 //!
-//! assert_eq!(py.name, "python");
-//! assert_eq!(py.path, path.join("bin").join("python"))
+//! assert_eq!(&py.name, "python");
+//! assert_eq!(py.path, py_bin);
 //! ```
 //!
 //! Use `toolchain.try_with_proxy_tool(tool)` to attempt to create a proxy file installed to the toolchain.
@@ -66,14 +69,15 @@
 //! may contain full copies of executable programs or proxies to them.
 //!
 //! ```
+//!
+//! ```
 //! export PATH="/path/to/toolchain/bin/:$PATH"
 //! ```
 
 pub use channel::{Channel, DescriptorParts};
 pub use error::Error;
-pub use install::install_toolchain_with_target;
 use path::name_from_path;
-pub use resolve::{Entry, LocalToolchainResolver};
+pub use resolve::LocalToolchainResolver;
 #[cfg(unix)]
 use std::os::unix::fs::symlink;
 #[cfg(windows)]
@@ -86,7 +90,6 @@ pub use tools::LocalTool;
 
 mod channel;
 mod error;
-mod install;
 mod path;
 mod resolve;
 mod tools;
@@ -96,7 +99,25 @@ pub struct LocalToolchain {
     inner: LocalToolchainInner,
 }
 
-// TODO(cnpryer): Teardown
+/// The local toolchain for Huak.
+///
+/// A local toolchain is created for different channels. The channel determines its
+/// release installs and its path.
+///
+/// A `LocalToolchain` is meant to be used as an API for toolchain management on some
+/// filesystem.
+///
+/// ```rust
+/// use std::path::PathBuf;
+/// use huak_toolchain::LocalToolchain;
+///
+///
+/// let root = PathBuf::new();
+/// let toolchain = LocalToolchain::new(&root);
+///
+/// assert_eq!(toolchain.root(), &root);
+/// assert_eq!(toolchain.bin(), root.join("bin"));
+/// ```
 impl LocalToolchain {
     pub fn new<T: Into<PathBuf>>(path: T) -> Self {
         let path = path.into();

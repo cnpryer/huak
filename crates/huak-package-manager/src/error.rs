@@ -25,9 +25,9 @@ pub enum Error {
     #[error("a problem occurred resolving huak's home directory")]
     HuakHomeNotFound,
     #[error("a toolchain cannot be found")]
-    HuakToolchainNotFound,
+    ToolchainNotFound,
     #[error("{0}")] // See TODO note above.
-    HuakToolchainError(#[from] huak_toolchain::Error),
+    ToolchainError(#[from] huak_toolchain::Error),
     #[error("a toolchain already exists: {0}")]
     LocalToolchainExists(PathBuf),
     #[error("a problem with huak's internals occurred: {0}")]

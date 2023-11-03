@@ -20,17 +20,13 @@
 //!
 //! ```no_run
 //! use std::{str::FromStr, path::PathBuf};
-//! use huak_python_manager::{Options, RequestedVersion, Strategy, install_with_target, resolve_release};
-//!
-//!
-//! // The version of the Python to install.
-//! let version = RequestedVersion::from_str("3.12").unwrap();
+//! use huak_python_manager::{ReleaseOptions, Strategy, install_with_target, resolve_release};
 //!
 //! // Target directory to install Python to.
 //! let target = PathBuf::from("...");
 //!
 //! // Use selection strategy to resolve for the best matching release available.
-//! let strategy = Strategy::Selection(Options { version: Some(version), kind: "cpython", os: "apple", architecture: "aarch64", build_configuration: "pgo+lto"});
+//! let strategy = Strategy::Selection(ReleaseOptions::default());
 //!
 //! let release = resolve_release(&strategy).unwrap();
 //!
@@ -38,7 +34,6 @@
 //! ```
 
 pub use crate::error::Error;
-pub use crate::install::install_with_target;
 pub use crate::resolve::{
     release_options_from_requested_version, resolve_release, ReleaseArchitecture,
     ReleaseBuildConfiguration, ReleaseKind, ReleaseOption, ReleaseOptions, ReleaseOs,
@@ -46,6 +41,7 @@ pub use crate::resolve::{
 };
 pub use crate::version::Version;
 use install::download_release;
+pub use install::install_with_target;
 pub use releases::Release;
 use std::path::Path;
 use tar::Archive;

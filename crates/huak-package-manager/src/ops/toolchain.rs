@@ -282,7 +282,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
         .is_err()
     {
         if let Err(e) = toolchain.register_tool_from_path(&path, "python", true) {
-            return Err(Error::HuakToolchainError(e));
+            return Err(Error::ToolchainError(e));
         }
     }
 

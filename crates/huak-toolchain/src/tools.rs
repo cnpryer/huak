@@ -1,6 +1,18 @@
 use crate::name_from_path;
 use std::{fmt::Display, path::PathBuf, str::FromStr};
 
+/// The local tool for Huak's toolchain system.
+///
+/// A `LocalTool` provides a small wrapper for tool paths.
+/// ```rust
+/// use std::path::PathBuf;
+/// use huak_toolchain::LocalTool;
+///
+/// let path = PathBuf::new();
+/// let tool = LocalTool::new(&path);
+///
+/// assert_eq!(&path, &tool.path);
+/// ```
 #[derive(Clone, Debug)]
 pub struct LocalTool {
     pub name: String,

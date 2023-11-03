@@ -128,7 +128,7 @@ impl Workspace {
     /// 3. ~/.huak/settings.toml configuration
     pub fn resolve_local_toolchain(&self, channel: Option<&Channel>) -> HuakResult<LocalToolchain> {
         let Some(it) = resolve_local_toolchain(self, channel) else {
-            return Err(Error::HuakToolchainNotFound);
+            return Err(Error::ToolchainNotFound);
         };
 
         Ok(it)
