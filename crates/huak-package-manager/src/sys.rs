@@ -212,7 +212,7 @@ impl Default for TerminalOptions {
     fn default() -> Self {
         Self {
             verbosity: Verbosity::default(),
-            color_choice: ColorChoice::Never,
+            color_choice: ColorChoice::Auto,
         }
     }
 }
