@@ -37,6 +37,12 @@ The goal is to create an opinionated tool to support a reliably inviting onboard
 ❯ pip install huak
 ```
 
+To install Huak from source use `Cargo`:
+
+```
+cargo install --git https://github.com/cnpryer/huak.git huak
+```
+
 ## Usage
 
 ```console
