@@ -50,9 +50,9 @@ The following is an incomplete demonstration of the CLI planned:
 
 ```
 huak toolchain update <tool>           # Update the current toolchain tools
-huak toolchain install <version>       # Install a toolchain via its channel version
-huak toolchain uninstall <version>     # Uninstall a toolchain via its channel version
-huak toolchain use <version>           # Use a toolchain via its channel version
+huak toolchain install <channel>       # Install a toolchain via its channel
+huak toolchain uninstall <channel>     # Uninstall a toolchain via its channel
+huak toolchain use <channel>           # Use a toolchain via its channel
 huak toolchain add <tool>              # Add a tool to the current toolchain
 huak toolchain remove <tool>           # Remove a tool from the current toolchain
 huak toolchain run <tool>              # Run a tool installed to the current toolchain.
@@ -78,7 +78,7 @@ Without any other arguments `install` will:
   - If no virtual environment is associated with the project it will install a toolchain compatible with the latest version of Python available on the system.
   - If no Python is found on the system it will install the latest available version.
 
-Users can specify versions to install by running `huak toolchain install <version>`.
+Users can specify channels to install by running `huak toolchain install <channel>`.
 
 So if a user wanted to install the default toolchain associated with Python 3.12 the following command would be used:
 
@@ -86,13 +86,27 @@ So if a user wanted to install the default toolchain associated with Python 3.12
 huak toolchain install 3.12
 ```
 
-`<version>` is the requested version of the Python release associated with the toolchain. If major.minor.patch is used it will attempt to resolve the toolchain for that specific version. If major.minor or just major is used it will resolve for the latest version available associated with the requested version. See *"Using channels"* for more.
-
 Users can install toolchains for their own non-Huak usage by using `--target` (see *"Without Huak"*).
 
-When a toolchain is installed a minimal virtual environment is generated to maintain any Python environment dependent tools installed to the toolchain.
+Toolchains can be uniquely identified by their platform targets -- which can currently be derived by the Python release installed to the toolchain. This includes:
+- kind - Defaults to 'cpython'
+- version
+- os (support windows, macos, linux)
+- architecture
+- build configuration (optional)
 
-When a toolchain is installed for a specific project Huak is managing then that relationship is added to Huak's settings.toml file (see *"Home directory"*).
+When a toolchain is installed a virtual environment is created to maintain any tools used by Huak. Toolchains installed with Huak are keyed into a settings.toml db found in Huak's home directory.
+
+A toolchain installed with `cpython-3.12.0-apple-aarch64`:
+```
+❯ huak toolchain list
+    Installed 
+           1) cpython-3.12.0-apple-aarch64
+```
+
+The process of resolving releases for toolchain channels will change over time, so it would be nice to include configuration for resolution behavior (defining a 'nightly'; staying bleeding-edge with certain toolchain tools).
+
+The goal is to maintain the smallest required installation of Python for the projects Huak manages. The first-pass will attempt to install tools to the bin directory as proxies to the original download. Some systems will use hardlinks. And some systems might require full copies of the download.
 
 #### Updating toolchains
 
@@ -106,7 +120,7 @@ huak toolchain update ruff
 
 #### Uninstalling toolchains
 
-Toolchains can be uninstalled using `huak toolchain uninstall`. This will remove the currently active toolchain. Using `huak toolchain uninstall <version>` will attempt to uninstall a toolchain associated with the requested version.
+Toolchains can be uninstalled using `huak toolchain uninstall`. This will remove the currently active toolchain. Using `huak toolchain uninstall <channel>` will attempt to uninstall a toolchain associated with the requested version.
 
 #### Using toolchains
 
@@ -119,7 +133,7 @@ In order to resolve a toolchain this behavior will follow the same logic defined
 
 #### Using channels
 
-As mentioned in *"Installing toolchains"*, toolchains have *versions*. Versions are paired with Python release versions. Channels can be further differentiated by information such as the release source or build type, but for now channels available to Huak users will remain the default <major.minor.patch> matching a CPython release.
+`<channel>` is the the requested toolchain channel to use. Versions can be used for channels. *Using* `"3.12"` would key the current scope with the toolchain channel `"3.12"` into the settings.toml db. The resolved toolchain would include Python installed with the latest default release options available for that channel.
 
 To use a channel for a pyproject.toml-managed project add the `[huak.toolchain]` table:
 
@@ -130,7 +144,11 @@ channel = 3.12
 
 See *"Pyproject.toml `[huak.toolchain]`"* for more.
 
-Eventually channels won't be limited to version identifiers.
+##### `Channel`
+
+- Default channel - A channel called 'default' that is installed by default when no toolchin is present. Any time a project uses a toolchain if there isn't a toolchain keyed in the settings.toml for that scope a default would be resolved if available.
+- Versioned channel - A channel leading with version numbers. Whenever only major.minor are used the most recently used tooolchain with an exact match or latest patch-version would be used.
+
 
 #### Adding tools to toolchains
 
@@ -153,7 +171,7 @@ huak toolchain remove ruff
 Display information about the currently active toolchain by running `huak toolchain info`. To display information about a specific toolchain that's already installed:
 
 ```
-huak toolchain info --channel <version>
+huak toolchain info --channel <channel>
 ```
 
 The information displayed about the toolchain includes:
