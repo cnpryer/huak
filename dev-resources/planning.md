@@ -33,17 +33,23 @@ A workspace can be initialized to a root, or it can be resolved for a path `work
 Since workspaces are a simple wrapper for some scope on a system you should be able to construct data that allows for nested scopes.
 
 ```rust
-// Search here then step up one level and search.
-let path = WalkPath::new(vec![0, -1]);
+// dir (root)
+// └── project (child)
+// | └── pyproject.toml
+// └── pyproject.toml
+let dir = TempDir::new().unwrap();
+let root = create_mock_ws(dir.as_ref());
+let project = mock.join("package");
 
-// Use a file as a workspace resolution target.
-let target = WalkTarget::File("pyproject.toml");
+// Use a file name as a workspace marker.
+let marker = Marker::FileName("pyproject.toml".to_string());
 
-// Resolve a multi-package workspace root.
-let ws = Workspace::resolve(config.cwd().join("package"), target, path).unwrap();
+// Resolve from the sub-directory with the workspace marker.
+let mut resolver = Resolver::new();
+let ws = resolver.cwd(project).marker(marker).resolve();
 
 assert!(ws.root().exists());
-assert_eq!(ws.root(), config.cwd().join("pyproject.toml"));
+assert_eq!(ws.root(), root.path());
 ```
 
 This is useful for Huak since resolving a workspace can include resolving packages within a workspace. It's on the rest of Huak to make *project experience* good.
