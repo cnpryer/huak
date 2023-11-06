@@ -226,7 +226,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
     py_manager.unpack(release_bytes, &downloads_dir, true)?;
 
     // Get the path to the unpacked contents.
-    let py_bin = py_bin(toolchain.downloads().join("python)"));
+    let py_bin = py_bin(toolchain.downloads().join("python"));
     let py_path = maybe_exe(py_bin.join(format!(
         "python{}.{}",
         release.version.major, release.version.minor
@@ -288,7 +288,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
 
     terminal.print_custom(
         "Success",
-        format!("installed python to {}", toolchain.bin().display()),
+        format!("installed python ({})", toolchain.bin().display()),
         Color::Green,
         true,
     )?;
@@ -313,7 +313,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
         terminal.set_verbosity(Verbosity::Normal);
         terminal.print_custom(
             "Success",
-            format!("installed {name} to {}", toolchain.bin().display()),
+            format!("installed {name} ({})", toolchain.bin().display()),
             Color::Green,
             true,
         )?;
@@ -322,7 +322,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
     terminal.print_custom(
         "Finished",
         format!(
-            "installed '{}' to {}",
+            "installed '{}' ({})",
             toolchain.name(),
             toolchain.root().display()
         ),
