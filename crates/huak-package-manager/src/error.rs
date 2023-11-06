@@ -4,6 +4,8 @@ use thiserror::Error as ThisError;
 
 pub type HuakResult<T> = Result<T, Error>;
 
+// TODO(cnpryer): If errors are given "a problem..." prompts there could be redundancy in messages.
+//   These prompts feel more like application experience than library needs.
 #[derive(ThisError, Debug)]
 pub enum Error {
     #[error("a problem with argument parsing occurred: {0}")]
@@ -22,8 +24,16 @@ pub enum Error {
     HuakConfigurationError(String),
     #[error("a problem occurred resolving huak's home directory")]
     HuakHomeNotFound,
+    #[error("a toolchain cannot be found")]
+    ToolchainNotFound,
+    #[error("{0}")] // See TODO note above.
+    ToolchainError(#[from] huak_toolchain::Error),
+    #[error("a toolchain already exists: {0}")]
+    LocalToolchainExists(PathBuf),
     #[error("a problem with huak's internals occurred: {0}")]
     InternalError(String),
+    #[error("a checksum is invalid: {0}")]
+    InvalidChecksum(String),
     #[error("a version number could not be parsed: {0}")]
     InvalidVersionString(String),
     #[error("a problem occurred with json deserialization: {0}")]
@@ -60,6 +70,8 @@ pub enum Error {
     TOMLDeserializationError(#[from] toml::de::Error),
     #[error("a problem with toml serialization occurred {0}")]
     TOMLSerializationError(#[from] toml::ser::Error),
+    #[error("{0}")]
+    TOMLEditError(#[from] toml_edit::TomlError),
     #[error("a problem with toml deserialization occurred: {0}")]
     TOMLEditDeserializationError(#[from] toml_edit::de::Error),
     #[error("a problem with toml serialization occurred {0}")]

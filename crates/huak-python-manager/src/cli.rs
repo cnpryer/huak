@@ -39,21 +39,19 @@ enum Commands {
 }
 
 mod cmd {
-    use std::path::PathBuf;
-
-    use super::{Error, RequestedVersion};
+    use super::{Error, PathBuf, RequestedVersion};
     use anyhow::Context;
-    use huak_python_manager::{install_with_target, resolve_release, Options, Strategy};
+    use huak_python_manager::{
+        install_with_target, release_options_from_requested_version, resolve_release, Strategy,
+    };
 
     pub(crate) fn install(version: RequestedVersion, target: PathBuf) -> Result<(), Error> {
         println!("installing Python {version}...");
 
-        let strategy = Strategy::Selection(Options {
-            version: Some(version),
-            ..Default::default()
-        });
-
-        let release = resolve_release(&strategy).context("requested release data")?;
+        let release = resolve_release(&Strategy::Selection(
+            release_options_from_requested_version(version)?,
+        ))
+        .context("requested release data")?;
 
         install_with_target(&release, target).context("failed to install with target")
     }

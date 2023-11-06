@@ -1,6 +1,5 @@
-use std::path::PathBuf;
-
 use huak_home::huak_home_dir;
+use std::path::PathBuf;
 
 use crate::{sys::Terminal, workspace::Workspace, TerminalOptions};
 

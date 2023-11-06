@@ -56,6 +56,7 @@ mod metadata;
 pub mod ops;
 mod package;
 mod python_environment;
+mod settings;
 mod sys;
 mod workspace;
 

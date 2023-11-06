@@ -4,7 +4,8 @@ use crate::{
 };
 use huak_home::huak_home_dir;
 use huak_python_manager::{
-    install_with_target, resolve_release, Options, RequestedVersion, Strategy,
+    install_with_target, release_options_from_requested_version, resolve_release, RequestedVersion,
+    Strategy,
 };
 use std::process::Command;
 use termcolor::Color;
@@ -62,15 +63,12 @@ pub fn use_python(version: &RequestedVersion, config: &Config) -> HuakResult<()>
     config.terminal().run_command(&mut cmd)
 }
 
-pub fn install_python(version: &RequestedVersion) -> HuakResult<()> {
+pub fn install_python(version: RequestedVersion) -> HuakResult<()> {
     // Use default selection strategy to find the best match for the requested version.
-    let strategy = Strategy::Selection(Options {
-        version: Some(version.clone()),
-        ..Default::default()
-    });
+    let strategy = Strategy::Selection(release_options_from_requested_version(version)?);
 
     let Some(release) = resolve_release(&strategy) else {
-        return Err(Error::PythonReleaseNotFound(version.to_string()));
+        return Err(Error::PythonReleaseNotFound(strategy.to_string()));
     };
 
     // Always install to Huak's toolchain.

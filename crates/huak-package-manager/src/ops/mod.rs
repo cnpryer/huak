@@ -12,6 +12,7 @@ mod python;
 mod remove;
 mod run;
 mod test;
+mod toolchain;
 mod update;
 mod version;
 
@@ -33,6 +34,10 @@ pub use remove::{remove_project_dependencies, RemoveOptions};
 pub use run::run_command_str;
 use std::{path::PathBuf, process::Command};
 pub use test::{test_project, TestOptions};
+pub use toolchain::{
+    add_tool, install_toolchain, list_toolchains, remove_tool, run_tool, toolchain_info,
+    uninstall_toolchain, update_toolchain, use_toolchain,
+};
 pub use update::{update_project_dependencies, UpdateOptions};
 pub use version::display_project_version;
 

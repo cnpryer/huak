@@ -1,0 +1,15 @@
+[package]
+name = "huak-toolchain"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+huak-python-manager = { path = "../huak-python-manager" }
+pep440_rs.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

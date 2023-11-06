@@ -73,7 +73,7 @@ Without any other arguments `install` will:
 
 - Install the latest toolchain available if Huak doesn't already have one set up.
 - Install the toolchain associated with the project's Python environment if it isn't already installed.
-  - If a `[huak.toolchain]` table is used in the project's pyproject.toml file it will install it if it isn't already installed.
+  - If a `[tool.huak.toolchain]` table is used in the project's pyproject.toml file it will install it if it isn't already installed.
   - It will attempt to figure out which toolchain to install by checking for a related virtual environment.
   - If no virtual environment is associated with the project it will install a toolchain compatible with the latest version of Python available on the system.
   - If no Python is found on the system it will install the latest available version.
@@ -135,14 +135,14 @@ In order to resolve a toolchain this behavior will follow the same logic defined
 
 `<channel>` is the the requested toolchain channel to use. Versions can be used for channels. *Using* `"3.12"` would key the current scope with the toolchain channel `"3.12"` into the settings.toml db. The resolved toolchain would include Python installed with the latest default release options available for that channel.
 
-To use a channel for a pyproject.toml-managed project add the `[huak.toolchain]` table:
+To use a channel for a pyproject.toml-managed project add the `[tool.huak.toolchain]` table:
 
 ```toml
-[huak.toolchain]
+[tool.huak.toolchain]
 channel = 3.12
 ```
 
-See *"Pyproject.toml `[huak.toolchain]`"* for more.
+See *"Pyproject.toml `[tool.huak.toolchain]`"* for more.
 
 ##### `Channel`
 
@@ -193,7 +193,7 @@ Huak will utilize tools from a toolchain without the user having to manage that 
 Toolchains can be used without Huak by activating their virtual environments. If `huak toolchain install 3.12.0 --target ~/desktop` is used a directory containing an installed Python interpreter is available for use. In order to utilize these tools users can activate the virtual environment by running:
 
 ```
-. ./desktop/huak-cpython-3.12.0-apple-aarch64/.venv/bin/activate
+. ./desktop/cpython-3.12.0-apple-aarch64/.venv/bin/activate
 ```
 
 #### Home directory
@@ -201,8 +201,8 @@ Toolchains can be used without Huak by activating their virtual environments. If
 - Env file: Centralized method for updating PATH and environment for Huak usage. Includes adding bin directory to PATH.
 - Bin directory: Contains executable programs often used as proxies for other programs for Huak. For the toolchain usage only Huak is added to this directory.
 - Settings file: Settings data for Huak is stored in settings.toml. Stores defaults and project-specific configuration including toolchains and eventually Python environments.
-- Toolchains directory: Contains Huak's toolchains with the following naming convention huak-{interpreter kind}-{version}-{os}-{architecture}.
+- Toolchains directory: Contains Huak's toolchains with the following naming convention {interpreter kind}-{version}-{os}-{architecture}.
 
-#### Pyproject.toml `[huak.toolchain]`
+#### Pyproject.toml `[tool.huak.toolchain]`
 
 This table is used to configure the toolchain for a project. The channel field is used to indicate the requested version of the toolchain, but eventually channels can include markers unlike version requests.
