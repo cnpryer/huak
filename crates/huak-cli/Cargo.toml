@@ -1,6 +1,6 @@
 [package]
 name = "huak"
-version = "0.0.19-alpha1"
+version = "0.0.20-alpha.1"
 description = "A Python package manager written in Rust and inspired by Cargo."
 repository = "https://github.com/cnpryer/huak.git"
 homepage = "https://github.com/cnpryer/huak.git"
