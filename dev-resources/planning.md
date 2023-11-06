@@ -1,6 +1,66 @@
 This document contains structured historical plans for developing Huak.
 
 
+# Huak Workspaces
+
+## Summary
+
+Workspaces define some scope on a users system. Every workspace has a root. Workspaces are often resolved by searching for a matching file target (more many).
+
+## Motivation
+
+I don't like how coupled workspaces currently are with the rest of the system. This pulls it out and defines it as a kind of common context from which things can occur. It's up to the rest of the library to figure out how it might be useful.
+
+## Requirements
+
+- Should simplify code
+- Should allow for composability
+
+
+## Details
+
+Some workspace's data includes:
+
+- root
+
+Huak executes different operations often *from* a workspace. So its useful to define operations that occur for and against some place on the filesystem.
+
+A workspace can be initialized to a root, or it can be resolved for a path `workspace.resolve_with_target("pyproject.toml")`.
+
+
+### composability
+
+Since workspaces are a simple wrapper for some scope on a system you should be able to construct data that allows for nested scopes.
+
+```rust
+let workspace = Workspace::new(cwd);
+let current_workspace = workspace.resolve_with_target("pyproject.toml")?;
+let parent_workspace = workspace.path().parent().map(|it| {
+  let ws = Workspace::new(it);
+  ws.resolve_with_target(it)
+})
+
+// Create a struct to compose multiple workspaces inside a parent workspace.
+struct MyWorkspace {
+  root: PathBuf,
+  packages: Vec<Workspace>,
+}
+```
+
+This is useful for Huak since resolving a workspace can include resolving packages within a workspace. It's on the rest of Huak to make *project experience* good.
+
+### Decoupling
+
+When building the toolchain implementation for Huak it would have been useful to have a common interface for workspace resolution and usage. For example the toolchain can benefit from having an easy way to define a scope for the application. settings.toml will track what scopes in the system have been configured to use a specific toolchain installation.
+
+This would also benefit Huak's development environment experience for projects and virtual environments. The same logic could be used for providing virtual environment mapping for projects.
+
+## Questions
+
+- Should environment data be decoupled from workspaces?
+- Should the terminal and other platform concepts also be decoupled?
+
+
 
 # Huak's Toolchain
 
