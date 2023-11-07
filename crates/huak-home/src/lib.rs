@@ -14,16 +14,21 @@ pub fn huak_home_dir() -> Option<PathBuf> {
     env::var("HUAK_HOME")
         .ok()
         .map(PathBuf::from)
-        .or(home_dir().map(|p| p.join(".huak")))
+        .or(sys::home_dir().map(|p| p.join(".huak")))
 }
 
-#[cfg(windows)]
-fn home_dir() -> Option<PathBuf> {
-    std::env::var("USERPROFILE").map(PathBuf::from).ok()
-}
+pub mod sys {
+    use super::PathBuf;
 
-#[cfg(any(unix, target_os = "redox"))]
-fn home_dir() -> Option<PathBuf> {
-    #[allow(deprecated)]
-    std::env::home_dir()
+    #[cfg(windows)]
+    pub fn home_dir() -> Option<PathBuf> {
+        std::env::var("USERPROFILE").map(PathBuf::from).ok()
+    }
+
+    #[cfg(any(unix, target_os = "redox"))]
+    #[must_use]
+    pub fn home_dir() -> Option<PathBuf> {
+        #[allow(deprecated)]
+        std::env::home_dir()
+    }
 }
