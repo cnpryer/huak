@@ -78,6 +78,7 @@ pub use channel::{Channel, DescriptorParts};
 pub use error::Error;
 use path::name_from_path;
 pub use resolve::LocalToolchainResolver;
+pub use settings::SettingsDb;
 #[cfg(unix)]
 use std::os::unix::fs::symlink;
 #[cfg(windows)]
@@ -92,6 +93,7 @@ mod channel;
 mod error;
 mod path;
 mod resolve;
+mod settings;
 mod tools;
 
 #[derive(Debug)]

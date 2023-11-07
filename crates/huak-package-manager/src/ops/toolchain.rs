@@ -1,10 +1,10 @@
-use crate::{settings::SettingsDb, Config, Error, HuakResult, Verbosity};
+use crate::{Config, Error, HuakResult, Verbosity};
 use huak_home::huak_home_dir;
 use huak_python_manager::{
     resolve_release, PythonManager, Release, ReleaseArchitecture, ReleaseBuildConfiguration,
     ReleaseKind, ReleaseOption, ReleaseOptions, ReleaseOs, RequestedVersion, Strategy, Version,
 };
-use huak_toolchain::{Channel, DescriptorParts, LocalTool, LocalToolchain};
+use huak_toolchain::{Channel, DescriptorParts, LocalTool, LocalToolchain, SettingsDb};
 use sha2::{Digest, Sha256};
 use std::{
     env::consts::OS,

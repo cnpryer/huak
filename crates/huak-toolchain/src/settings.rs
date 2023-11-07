@@ -1,5 +1,5 @@
 //! This module implements read and write functionality for Huak's persisted application data.
-use crate::HuakResult;
+use crate::Error;
 use std::path::Path;
 use toml_edit::Document;
 
@@ -21,13 +21,13 @@ impl SettingsDb {
         &mut self.doc
     }
 
-    pub fn try_from<T: AsRef<Path>>(path: T) -> HuakResult<Self> {
+    pub fn try_from<T: AsRef<Path>>(path: T) -> Result<Self, Error> {
         Ok(SettingsDb::new(read_settings_file(path)?))
     }
 }
 
 /// A helper for reading the contents of a settings.toml file.
-pub(crate) fn read_settings_file<T: AsRef<Path>>(path: T) -> HuakResult<Document> {
+pub(crate) fn read_settings_file<T: AsRef<Path>>(path: T) -> Result<Document, Error> {
     let doc = std::str::from_utf8(std::fs::read(path)?.as_slice())?.parse::<Document>()?;
 
     Ok(doc)
