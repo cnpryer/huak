@@ -186,11 +186,12 @@ impl PythonEnvironment {
         #[cfg(windows)]
         {
             let mut path = dir.join(module_name);
-            match path.set_extension("exe") {
-                true => return Ok(path.exists()),
-                false => Err(Error::InternalError(format!(
+            if path.set_extension("exe") {
+                Ok(path.exists())
+            } else {
+                Err(Error::InternalError(format!(
                     "failed to create path for {module_name}"
-                ))),
+                )))
             }
         }
     }

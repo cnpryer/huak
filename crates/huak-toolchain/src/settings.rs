@@ -9,10 +9,12 @@ pub struct SettingsDb {
 }
 
 impl SettingsDb {
+    #[must_use]
     pub fn new(doc: Document) -> Self {
         Self { doc }
     }
 
+    #[must_use]
     pub fn doc(&self) -> &Document {
         &self.doc
     }
