@@ -549,6 +549,7 @@ dependencies = [
  "huak-package-manager",
  "huak-python-manager",
  "huak-toolchain",
+ "huak-workspace",
  "human-panic",
  "insta-cmd",
  "openssl",

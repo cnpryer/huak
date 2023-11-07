@@ -7,11 +7,12 @@ use huak_package_manager::ops::{
     RemoveOptions, TestOptions, UpdateOptions,
 };
 use huak_package_manager::{
-    find_package_root, Config, Error as HuakError, HuakResult, InstallOptions, TerminalOptions,
-    Verbosity, WorkspaceOptions,
+    Config, Error as HuakError, HuakResult, InstallOptions, TerminalOptions, Verbosity,
+    WorkspaceOptions,
 };
 use huak_python_manager::RequestedVersion;
 use huak_toolchain::{Channel, LocalTool};
+use huak_workspace::{resolve_root, PathMarker};
 use std::{env::current_dir, path::PathBuf, process::ExitCode, str::FromStr};
 use termcolor::ColorChoice;
 
@@ -416,8 +417,7 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
 
 fn get_config(cwd: PathBuf, cli: &Cli) -> Config {
     // TODO: Use find_workspace_root
-    let workspace_root =
-        find_package_root(&cwd, &huak_home_dir().expect("home directory")).unwrap_or(cwd.clone());
+    let ws = resolve_root(&cwd, PathMarker::file("pyproject.toml"));
     let verbosity = if cli.quiet {
         Verbosity::Quiet
     } else {
@@ -428,7 +428,7 @@ fn get_config(cwd: PathBuf, cli: &Cli) -> Config {
         ..Default::default()
     };
     let mut config = Config {
-        workspace_root,
+        workspace_root: ws.root().clone(),
         cwd,
         terminal_options,
         home: huak_home_dir(),

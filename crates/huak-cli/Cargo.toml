@@ -21,6 +21,7 @@ huak-home = { path = "../huak-home" }
 huak-package-manager = { path = "../huak-package-manager"}
 huak-python-manager = { path = "../huak-python-manager" }
 huak-toolchain = { path = "../huak-toolchain" }
+huak-workspace = { path = "../huak-workspace" }
 human-panic.workspace = true
 # included to build PyPi Wheels (see .github/workflow/README.md)
 openssl = { version = "0.10.57", features = ["vendored"], optional = true }
