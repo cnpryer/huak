@@ -17,7 +17,7 @@
 //! assert!(ws.root().exists());
 //! assert_eq!(ws.root(), dir.path());
 //!```
-pub use resolve::{resolve_root, PathMarker};
+pub use resolve::{resolve_first, resolve_root, PathMarker};
 use std::path::{Path, PathBuf};
 
 mod resolve;
@@ -80,41 +80,5 @@ fn new_workspace<T: AsRef<Path>>(path: T) -> Workspace {
     Workspace {
         root: path.as_ref().to_path_buf(),
         members: None,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::resolve::{resolve_root, PathMarker};
-    use std::{fs::File, io::Write};
-    use tempfile::TempDir;
-
-    #[test]
-    fn test_resolve_root() {
-        let dir = TempDir::new().unwrap();
-        let mock = create_mock_ws(dir.as_ref());
-        let cwd = mock.join("package");
-        let ws = resolve_root(cwd, PathMarker::file("pyproject.toml"));
-
-        assert!(ws.root().exists());
-        assert_eq!(ws.root(), dir.path());
-    }
-
-    // Create a mock workspace and return its path.
-    fn create_mock_ws(path: &Path) -> PathBuf {
-        let sub = path.join("package");
-
-        std::fs::create_dir_all(&sub).unwrap();
-
-        let marker = "pyproject.toml";
-
-        let mut file = File::create(path.join(marker)).unwrap();
-        file.write_all(&[]).unwrap();
-
-        let mut file = File::create(sub.join(marker)).unwrap();
-        file.write_all(&[]).unwrap();
-
-        path.to_path_buf()
     }
 }
