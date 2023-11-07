@@ -66,7 +66,7 @@ mod tests {
         )
         .unwrap();
         let workspace_root = dir.path().join("mock-project");
-        let cwd = dir.path().to_path_buf();
+        let cwd = workspace_root.to_path_buf();
         let terminal_options = TerminalOptions {
             verbosity: Verbosity::Quiet,
             ..Default::default()

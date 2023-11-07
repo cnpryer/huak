@@ -76,4 +76,4 @@ pub use python_environment::{
     InstallOptions, PythonEnvironment,
 };
 pub use sys::{shell_name, shell_path, SubprocessError, TerminalOptions, Verbosity};
-pub use workspace::{find_package_root, Workspace, WorkspaceOptions};
+pub use workspace::{Workspace, WorkspaceOptions};
