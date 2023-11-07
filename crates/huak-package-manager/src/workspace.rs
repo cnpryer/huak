@@ -1,5 +1,4 @@
 use crate::package::Package;
-use crate::settings::SettingsDb;
 use crate::{
     environment::Environment,
     fs,
@@ -7,7 +6,7 @@ use crate::{
     python_environment::{default_venv_name, venv_config_file_name},
     Config, Error, HuakResult, PythonEnvironment,
 };
-use huak_toolchain::{Channel, LocalToolchain, LocalToolchainResolver};
+use huak_toolchain::{Channel, LocalToolchain, LocalToolchainResolver, SettingsDb};
 use huak_workspace::{resolve_first, PathMarker};
 use std::{path::PathBuf, process::Command};
 use toml_edit::{Item, Value};

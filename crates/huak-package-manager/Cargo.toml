@@ -24,7 +24,7 @@ serde_json = "1.0.107"
 termcolor.workspace = true
 thiserror.workspace = true
 toml = { version = "0.7.6", features = ["preserve_order"] }
-toml_edit = "0.19.4"
+toml_edit.workspace = true
 regex.workspace = true
 huak-python-manager = { path = "../huak-python-manager" }
 huak-home = { path = "../huak-home" }

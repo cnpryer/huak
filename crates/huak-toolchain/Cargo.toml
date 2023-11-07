@@ -10,6 +10,7 @@ license.workspace = true
 huak-python-manager = { path = "../huak-python-manager" }
 pep440_rs.workspace = true
 thiserror.workspace = true
+toml_edit.workspace = true
 
 [lints]
 workspace = true
