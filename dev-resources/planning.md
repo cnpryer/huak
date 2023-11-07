@@ -1,6 +1,36 @@
 This document contains structured historical plans for developing Huak.
 
 
+# Huak Toolchain Settings
+
+## Summary
+
+Like rustup's settings.toml, a settings.toml will be used to tie projects to toolchains.
+
+## Motivation
+
+`huak toolchain use` requires persisted data in the user's environment to track what projects *use* which installed toolchains. settings.toml provides a place to store this data as "scopes" for installed toolchains.
+
+## Requirements
+
+- Multiple projects can have entries in a settings.toml.
+- The file will change a lot with use.
+- Allow for a configured default.
+
+## Details
+
+Huak's toolchain management system can allow for target directories to contain settings.toml files. Settings can live outside a toolchain directory containing settings data about how the toolchain might be used.
+
+```toml
+[scopes]
+"/" = "default"  # Resolve to "default" for any paths under the root (sets "default" as default)
+"some/project/path" = "channel or path"
+```
+
+Keyed channels and paths would resolve in the directory the settings.toml is located.
+
+
+
 # Huak Workspaces
 
 ## Summary
