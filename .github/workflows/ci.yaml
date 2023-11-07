@@ -37,7 +37,7 @@ jobs:
       - name: Install huak
         run: cargo install --path crates/huak-cli
       - name: Test
-        run: cargo test --all-features
+        run: cargo test --workspace --all-features
 
   clippy-lints:
     name: Clippy lints
