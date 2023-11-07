@@ -8,6 +8,7 @@ use crate::{
     Config, Error, HuakResult, PythonEnvironment,
 };
 use huak_toolchain::{Channel, LocalToolchain, LocalToolchainResolver};
+use huak_workspace::{resolve_first, PathMarker};
 use std::{path::PathBuf, process::Command};
 use toml_edit::{Item, Value};
 
@@ -62,13 +63,17 @@ impl Workspace {
 
     /// Get the current `LocalMetadata` based on the `Config` data.
     pub fn current_local_metadata(&self) -> HuakResult<LocalMetadata> {
-        let package_root = find_package_root(&self.config.cwd, &self.root)?;
+        // The current metadata file is the first found in a search.
+        let ws = resolve_first(&self.config.cwd, PathMarker::file("pyproject.toml"));
 
         // Currently only pyproject.toml is supported.
-        let path = package_root.join("pyproject.toml");
-        let metadata = LocalMetadata::new(path)?;
+        let path = ws.root().join("pyproject.toml");
 
-        Ok(metadata)
+        if path.exists() {
+            LocalMetadata::new(path)
+        } else {
+            Err(Error::MetadataFileNotFound)
+        }
     }
 
     /// Resolve a `PythonEnvironment` pulling the current or creating one if none is found.
@@ -162,36 +167,6 @@ pub fn find_venv_root<T: Into<PathBuf>>(from: T, stop_after: T) -> HuakResult<Pa
     let file_path = match fs::find_root_file_bottom_up(venv_config_file_name(), from, stop_after) {
         Ok(it) => it.ok_or(Error::PythonEnvironmentNotFound)?,
         Err(_) => return Err(Error::PythonEnvironmentNotFound),
-    };
-
-    // The root of the venv is always the parent dir to the pyvenv.cfg file.
-    let root = file_path
-        .parent()
-        .ok_or(Error::InternalError(
-            "failed to establish parent directory".to_string(),
-        ))?
-        .to_path_buf();
-
-    Ok(root)
-}
-
-/// Search for a Python `Package` root.
-/// 1. Walk from the `from` dir upwards, searching for dir containing the `LocalMetadata` file.
-/// 2. Stop after searching the `stop_after` dir.
-pub fn find_package_root<T: Into<PathBuf>>(from: T, stop_after: T) -> HuakResult<PathBuf> {
-    let from = from.into();
-    let stop_after = stop_after.into();
-
-    if !from.is_dir() || !stop_after.is_dir() {
-        return Err(Error::InternalError(
-            "`from` and `stop_after` must be directoreis".to_string(),
-        ));
-    }
-
-    // Currently only pyproject.toml is supported
-    let file_path = match fs::find_root_file_bottom_up("pyproject.toml", from, stop_after) {
-        Ok(it) => it.ok_or(Error::MetadataFileNotFound)?,
-        Err(_) => return Err(Error::MetadataFileNotFound),
     };
 
     // The root of the venv is always the parent dir to the pyvenv.cfg file.
