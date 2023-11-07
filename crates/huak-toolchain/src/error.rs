@@ -21,8 +21,8 @@ pub enum Error {
     LocalToolNotFound(PathBuf),
     #[error("a toolchain already exists: {0}")]
     LocalToolchainExistsError(PathBuf),
-    #[error("a problem with utf-8 parsing occurred: {0}")]
-    Utf8Error(#[from] std::str::Utf8Error),
     #[error("{0}")]
     TOMLEditError(#[from] toml_edit::TomlError),
+    #[error("a problem with utf-8 parsing occurred: {0}")]
+    Utf8Error(#[from] std::str::Utf8Error),
 }
