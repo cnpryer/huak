@@ -34,22 +34,16 @@ Since workspaces are a simple wrapper for some scope on a system you should be a
 
 ```rust
 // dir (root)
-// └── project (child)
+// └── project (member)
 // | └── pyproject.toml
 // └── pyproject.toml
 let dir = TempDir::new().unwrap();
-let root = create_mock_ws(dir.as_ref());
-let project = mock.join("package");
-
-// Use a file name as a workspace marker.
-let marker = Marker::FileName("pyproject.toml".to_string());
-
-// Resolve from the sub-directory with the workspace marker.
-let mut resolver = Resolver::new();
-let ws = resolver.cwd(project).marker(marker).resolve();
+let mock = create_mock_ws(dir.as_ref());
+let cwd = mock.join("package");
+let ws = resolve_root(cwd, PathMarker::file("pyproject.toml"));
 
 assert!(ws.root().exists());
-assert_eq!(ws.root(), root.path());
+assert_eq!(ws.root(), dir.path());
 ```
 
 This is useful for Huak since resolving a workspace can include resolving packages within a workspace. It's on the rest of Huak to make *project experience* good.
