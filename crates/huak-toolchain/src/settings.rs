@@ -39,9 +39,9 @@ impl SettingsDb {
     ///
     /// let mut db = SettingsDb::new();
     /// let cwd = PathBuf::new();
-    /// let channel = "3.12";
+    /// let toolchain = PathBuf::new();
     ///
-    /// db.insert_scope(cwd, channel);
+    /// db.insert_scope(cwd, toolchain);
     /// ```
     pub fn insert_scope<T: AsRef<Path>>(&mut self, key: T, value: T) {
         let key = format!("{}", key.as_ref().display());
@@ -102,7 +102,7 @@ mod tests {
 
         let (_, value) = db.get_scope_entry("/").unwrap();
 
-        assert_eq!(value.to_string(), toml_edit::value("default").to_string());
+        assert_eq!(value, "default");
 
         db.remove_scope("/");
 
