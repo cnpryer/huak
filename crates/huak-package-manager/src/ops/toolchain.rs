@@ -255,12 +255,20 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
     )?;
 
     // Try to link the tool in the bin directory as a proxy. If that fails copy the tool entirely.
-    if toolchain
-        .register_tool_from_path(&path, "python", false)
-        .is_err()
+    for it in [
+        "python".to_string(),
+        "python3".to_string(),
+        format!(
+            "python{}.{}",
+            &release.version.major, &release.version.minor
+        ),
+    ]
+    .as_ref()
     {
-        if let Err(e) = toolchain.register_tool_from_path(&path, "python", true) {
-            return Err(Error::ToolchainError(e));
+        if toolchain.register_tool_from_path(&path, it, false).is_err() {
+            if let Err(e) = toolchain.register_tool_from_path(&path, it, true) {
+                return Err(Error::ToolchainError(e));
+            }
         }
     }
 
