@@ -19,17 +19,9 @@ use termcolor::Color;
 /// Add the user-provided tool to the toolchain. If the tool is
 /// already installed to the toolchain, and a version is provided that's different from the
 /// installed tool, then replace the installed tool with the desired version.
-pub fn add_tool(tool: &LocalTool, channel: Option<Channel>, config: &Config) -> HuakResult<()> {
-    let channel = if channel.is_none() {
-        Some(Channel::Default)
-    } else {
-        channel
-    };
-
+pub fn add_tool(tool: &LocalTool, channel: Option<&Channel>, config: &Config) -> HuakResult<()> {
     // Resolve a toolchain if a channel is provided. Otherwise resolve the curerent.
-    let toolchain = config
-        .workspace()
-        .resolve_local_toolchain(channel.as_ref())?;
+    let toolchain = config.workspace().resolve_local_toolchain(channel)?;
 
     let tool = toolchain.tool(&tool.name);
     let args = [
@@ -53,7 +45,7 @@ pub fn add_tool(tool: &LocalTool, channel: Option<Channel>, config: &Config) -> 
         true,
     )?;
 
-    terminal.set_verbosity(Verbosity::Quiet);
+    // terminal.set_verbosity(Verbosity::Quiet);
 
     // terminal.set_verbosity(Verbosity::Quiet);
     terminal.run_command(cmd)?;
