@@ -533,7 +533,7 @@ fn test(config: &Config, options: &TestOptions) -> HuakResult<()> {
 
 fn toolchain(command: Toolchain, config: &Config) -> HuakResult<()> {
     match command {
-        Toolchain::Add { tool, channel } => ops::add_tool(&tool, channel, config),
+        Toolchain::Add { tool, channel } => ops::add_tool(&tool, channel.as_ref(), config),
         Toolchain::Info { channel } => ops::toolchain_info(channel.as_ref(), config),
         Toolchain::Install { channel, target } => ops::install_toolchain(channel, target, config),
         Toolchain::List => ops::list_toolchains(config),
