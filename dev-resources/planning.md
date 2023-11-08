@@ -24,11 +24,8 @@ Huak's toolchain management system can allow for target directories to contain s
 ```toml
 [scopes]
 "/" = "default"  # Resolve to "default" for any paths under the root (sets "default" as default)
-"some/project/path" = "channel or path"
+"some/project/path" = "toolchain path"
 ```
-
-Keyed channels and paths would resolve in the directory the settings.toml is located.
-
 
 
 # Huak Workspaces

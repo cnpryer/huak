@@ -9,7 +9,6 @@ use crate::{
 use huak_toolchain::{Channel, LocalToolchain, LocalToolchainResolver, SettingsDb};
 use huak_workspace::{resolve_first, PathMarker};
 use std::{path::PathBuf, process::Command};
-use toml_edit::{Item, Value};
 
 /// The `Workspace` is a struct for resolving things like the current `Package`
 /// or the current `PythonEnvironment`. It can also provide a snapshot of the `Environment`,
@@ -221,15 +220,13 @@ fn resolve_local_toolchain(
         };
     };
 
-    // Attempt to retrieve the toolchain for the current workspace scope.
-    if let Some(table) = SettingsDb::try_from(settings)
-        .ok()
-        .as_ref()
-        .and_then(|db| db.doc().as_table()["scopes"].as_table())
-    {
-        if let Some(Item::Value(Value::String(s))) = table.get(&format!("{}", config.cwd.display()))
-        {
-            return Some(LocalToolchain::new(PathBuf::from(s.to_string())));
+    // Attempt to retrieve the toolchain for the current workspace scope by resolving for
+    // the first matching path from cwd.
+    if let Some(db) = SettingsDb::try_from(settings).ok().as_ref() {
+        for p in config.cwd.ancestors() {
+            if let Some((_, value)) = db.get_scope_entry(p) {
+                return Some(LocalToolchain::new(PathBuf::from(value.to_string())));
+            }
         }
     }
 

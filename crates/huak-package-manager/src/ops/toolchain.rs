@@ -13,7 +13,6 @@ use std::{
     str::FromStr,
 };
 use termcolor::Color;
-use toml_edit::value;
 
 /// Resolve the target toolchain if a user provides one, otherwise get the current toolchain
 /// for the current workspace. If no toolchain is found then emit "error: no toolchain found".
@@ -125,19 +124,6 @@ pub fn install_toolchain(
         teardown(parent.join(&channel_string), config)?;
         Err(e)
     } else {
-        let settings = parent.join("settings.toml");
-        let Some(mut db) = SettingsDb::try_from(settings)
-            .ok()
-            .or(Some(SettingsDb::default()))
-        else {
-            return Err(Error::InternalError(
-                "failed to create settings db".to_string(),
-            ));
-        };
-        let table = db.doc_mut().as_table_mut();
-        let key = format!("{}", config.cwd.display());
-        table["toolchains"][key] = value(format!("{}", path.display()));
-
         Ok(())
     }
 }
@@ -524,10 +510,23 @@ pub fn update_toolchain(
     terminal.print_custom("Success", "finished updating", Color::Green, true)
 }
 
-pub fn use_toolchain(_channel: &Channel, _config: &Config) -> HuakResult<()> {
-    // Resolve the target toolchain if a user provides one, otherwise get the current toolchain
-    // for the current workspace. If none can be found then install and use the default toolchain.
-    todo!()
+// Resolve the target toolchain if a user provides one, otherwise get the current toolchain
+// for the current workspace. If none can be found then install and use the default toolchain.
+// Update the settings.toml with the scope that should *use* the resolved toolchain.
+pub fn use_toolchain(channel: &Channel, config: &Config) -> HuakResult<()> {
+    let ws = config.workspace();
+
+    let Some(home) = config.home.as_ref() else {
+        return Err(Error::HuakHomeNotFound);
+    };
+
+    let toolchain = ws.resolve_local_toolchain(Some(channel))?;
+    let settings = home.join("toolchains").join("settings.toml");
+    let mut db = SettingsDb::try_from(&settings).unwrap_or_default();
+
+    db.insert_scope(ws.root(), toolchain.root());
+
+    Ok(db.save(settings)?)
 }
 
 fn resolve_installed_toolchains(config: &Config) -> Option<Vec<LocalToolchain>> {
