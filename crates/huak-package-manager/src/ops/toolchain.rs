@@ -1,8 +1,11 @@
-use crate::{Config, Error, HuakResult, Verbosity};
+use crate::{
+    fs::maybe_exe, sys::symlink_supported, Config, Error, HuakResult, PythonEnvironment, Verbosity,
+};
 use huak_home::huak_home_dir;
 use huak_python_manager::{
-    resolve_release, PythonManager, Release, ReleaseArchitecture, ReleaseBuildConfiguration,
-    ReleaseKind, ReleaseOption, ReleaseOptions, ReleaseOs, RequestedVersion, Strategy, Version,
+    resolve_release, PythonManager, PythonReleaseDir, Release, ReleaseArchitecture,
+    ReleaseBuildConfiguration, ReleaseKind, ReleaseOption, ReleaseOptions, ReleaseOs,
+    RequestedVersion, Strategy, Version,
 };
 use huak_toolchain::{Channel, DescriptorParts, LocalTool, LocalToolchain, SettingsDb};
 use sha2::{Digest, Sha256};
@@ -23,19 +26,12 @@ pub fn add_tool(tool: &LocalTool, channel: Option<&Channel>, config: &Config) ->
     // Resolve a toolchain if a channel is provided. Otherwise resolve the curerent.
     let toolchain = config.workspace().resolve_local_toolchain(channel)?;
 
-    let tool = toolchain.tool(&tool.name);
-    let args = [
-        "-m".to_string(),
-        "pip".to_string(),
-        "install".to_string(),
-        tool.to_string(),
-    ];
-    let py = toolchain.tool("python");
-    let py_bin = py_bin(toolchain.downloads().join("python"));
+    let args = ["-m", "pip", "install", &tool.name];
+    let venv = PythonEnvironment::new(toolchain.root().join(".venv"))?;
 
     let mut terminal = config.terminal();
 
-    let mut cmd = Command::new(py.path);
+    let mut cmd = Command::new(venv.python_path());
     let cmd = cmd.args(args).current_dir(&config.cwd);
 
     terminal.print_custom(
@@ -45,12 +41,19 @@ pub fn add_tool(tool: &LocalTool, channel: Option<&Channel>, config: &Config) ->
         true,
     )?;
 
-    // terminal.set_verbosity(Verbosity::Quiet);
-
+    // TODO(cnpryer): Terminal work
     // terminal.set_verbosity(Verbosity::Quiet);
     terminal.run_command(cmd)?;
 
-    toolchain.register_tool_from_path(py_bin.join(&tool.name), &tool.name, false)?;
+    let Some(source) = venv.executable_module_path(&tool.name) else {
+        return Err(Error::InternalError(format!(
+            "{tool} is missing from virtual environment"
+        )));
+    };
+
+    if toolchain.register_tool(&source, &tool.name, false).is_err() {
+        toolchain.register_tool(&source, &tool.name, true)?;
+    };
 
     terminal.set_verbosity(Verbosity::Normal);
 
@@ -126,8 +129,6 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
 
     toolchain.set_channel(channel);
 
-    let name = toolchain.name();
-
     // We'll emit messages to the terminal for each tool installed.
     let mut terminal = config.terminal();
 
@@ -144,8 +145,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
         return Ok(());
     }
 
-    let root = toolchain.root();
-    for p in [root.join("bin"), root.join("downloads"), root.join("venvs")] {
+    for p in [toolchain.bin(), toolchain.downloads()] {
         std::fs::create_dir_all(p)?;
     }
 
@@ -155,7 +155,6 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
             toolchain.channel().to_string(),
         ));
     };
-    let release_string = release.to_string();
 
     let msg = if matches!(toolchain.channel(), Channel::Default) {
         format!("toolchain '{}' ({})", toolchain.name(), release)
@@ -211,107 +210,72 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
 
     // Unpack the encoded archive bytes into the toolchains downloads dir.
     py_manager.unpack(release_bytes, &downloads_dir, true)?;
+    let release_dir = PythonReleaseDir::new(downloads_dir.join("python"));
 
-    // Get the path to the unpacked contents.
-    let py_bin = py_bin(toolchain.downloads().join("python"));
-    let py_path = maybe_exe(py_bin.join(format!(
-        "python{}.{}",
-        release.version.major, release.version.minor
-    )));
+    // Get the path to the installed Python executable.
+    let py_path = release_dir.python_path(Some(&release));
 
-    terminal.print_custom("Installing", release_string, Color::Green, true)?;
-
-    // Use the installed python
-    let py = LocalTool::new(py_path);
-
-    if py.exists() {
-        terminal.print_custom(
-            "Updating",
-            "toolchain's virtual environment",
-            Color::Green,
-            true,
-        )?;
-    } else {
-        return Err(Error::InternalError(format!(
-            "'{}' could not be found",
-            py.name
-        )));
+    if !py_path.exists() {
+        return Err(Error::PythonNotFound);
     }
 
-    // Python is used from a dedicated virtual environment.
-    let from = toolchain.root().join("venvs");
-    std::fs::create_dir_all(&from)?;
+    // Create a virtual environment for the toolchain.
+    let mut cmd: Command = Command::new(&py_path);
 
-    let mut cmd: Command = Command::new(py.path);
-    cmd.current_dir(&from).args(["-m", "venv", &name]);
-    terminal.run_command(&mut cmd)?;
+    cmd.current_dir(toolchain.root());
 
-    let venv = from.join(name);
-    let path = maybe_exe(venv.join(python_bin_name()).join("python"));
-
-    terminal.print_custom(
-        "Success",
-        format!("prepared virtual environment for '{}'", toolchain.name()),
-        Color::Green,
-        true,
-    )?;
+    if symlink_supported() {
+        cmd.args(["-m", "venv", ".venv", "--symlinks"]);
+    } else {
+        cmd.args(["-m", "venv", ".venv"]);
+    }
 
     terminal.print_custom(
         "Updating",
-        "adding python to the toolchain".to_string(),
+        "setting up virtual environment",
         Color::Green,
         true,
     )?;
+    terminal.run_command(&mut cmd)?;
 
-    // Try to link the tool in the bin directory as a proxy. If that fails copy the tool entirely.
-    for it in [
-        "python".to_string(),
-        "python3".to_string(),
-        format!(
-            "python{}.{}",
-            &release.version.major, &release.version.minor
-        ),
-    ]
-    .as_ref()
+    // Use the installed python
+    let venv = PythonEnvironment::new(toolchain.root().join(".venv"))?;
+
+    // With the release unpacked to the downloads directory, we need to install the release
+    // to the toolchain we're setting up. In order to complete the setup the following steps
+    // would occur:
+    //   1. Create proxied tools for the toolchain (root/bin/).
+    //     a. Try to create python proxy (including any other alias, i.e python3, and python3.XX)
+    //     b. Try to create proxies to the default toolling
+    //     c. TODO(cnpryer): If a proxy can't be created at all how should fallback work?
+    terminal.print_custom("Updating", "setting up python", Color::Green, true)?;
+
+    if toolchain
+        .register_tool(venv.python_path(), "python", false)
+        .is_err()
     {
-        if toolchain.register_tool_from_path(&path, it, false).is_err() {
-            if let Err(e) = toolchain.register_tool_from_path(&path, it, true) {
-                return Err(Error::ToolchainError(e));
-            }
-        }
+        toolchain.register_tool(venv.python_path(), "python", true)?;
+        // TODO(cnpryer): Handle errors
     }
 
-    terminal.print_custom(
-        "Success",
-        format!("installed python ({})", toolchain.bin().display()),
-        Color::Green,
-        true,
-    )?;
+    // Register more tools to the toolchain
+    for name in ["ruff", "mypy", "pytest"] {
+        terminal.print_custom("Installing", name, Color::Green, true)?;
 
-    let py = toolchain.tool("python");
-
-    for name in default_python_tools() {
-        terminal.set_verbosity(Verbosity::Quiet);
-
-        let mut cmd: Command = Command::new(&py.path);
+        let mut cmd: Command = Command::new(venv.python_path());
         cmd.current_dir(&config.cwd)
             .args(["-m", "pip", "install", name]);
 
         terminal.run_command(&mut cmd)?;
 
-        // If the python is a symlink then use the bin its linked to. Otherwise use the venv path.
-        let path = py_bin.join(name);
+        let Some(p) = venv.executable_module_path(name) else {
+            return Err(Error::PythonModuleNotFound(name.to_string()));
+        };
 
-        // Register the installed python module as a proxy.
-        toolchain.register_tool_from_path(&path, name, false)?;
-
-        terminal.set_verbosity(Verbosity::Normal);
-        terminal.print_custom(
-            "Success",
-            format!("installed {name} ({})", toolchain.bin().display()),
-            Color::Green,
-            true,
-        )?;
+        if toolchain.register_tool(&p, name, false).is_err() {
+            toolchain.register_tool(&p, name, true)?;
+            // TODO(cnpryer): Handle errors
+        }
     }
 
     terminal.print_custom(
@@ -374,15 +338,15 @@ pub fn remove_tool(tool: &LocalTool, channel: Option<&Channel>, config: &Config)
 
     // Resolve a toolchain if a channel is provided. Otherwise resolve the curerent.
     let toolchain = config.workspace().resolve_local_toolchain(channel)?;
-
-    let tool = toolchain.tool(&tool.name);
-    let args = ["-m", "pip", "uninstall", &tool.name, "-y"];
-    let py = toolchain.tool("python");
+    let venv = PythonEnvironment::new(toolchain.root().join(".venv"))?;
 
     let mut terminal = config.terminal();
+    let args = ["-m", "pip", "uninstall", &tool.name, "-y"];
 
-    let mut cmd = Command::new(py.path);
+    let mut cmd = Command::new(venv.python_path());
     let cmd = cmd.args(args).current_dir(&config.cwd);
+
+    let tool = toolchain.tool(&tool.name);
 
     terminal.print_custom(
         "Updating",
@@ -392,11 +356,9 @@ pub fn remove_tool(tool: &LocalTool, channel: Option<&Channel>, config: &Config)
     )?;
 
     terminal.set_verbosity(Verbosity::Quiet);
-
     terminal.run_command(cmd)?;
 
     remove_path_with_scope(&tool.path, toolchain.root())?;
-
     terminal.set_verbosity(Verbosity::Normal);
 
     terminal.print_custom(
@@ -417,19 +379,39 @@ pub fn run_tool(
     config: &Config,
 ) -> HuakResult<()> {
     let ws = config.workspace();
-
     let toolchain = ws.resolve_local_toolchain(channel)?;
+    let tool = toolchain.tool(&tool.name);
 
     run(
-        toolchain.tool(&tool.name),
+        &toolchain,
+        tool,
         trailing.unwrap_or_default().as_slice(),
         config,
     )
 }
 
-fn run(tool: LocalTool, args: &[String], config: &Config) -> HuakResult<()> {
+fn run(
+    toolchain: &LocalToolchain,
+    tool: LocalTool,
+    args: &[String],
+    config: &Config,
+) -> HuakResult<()> {
     let mut terminal = config.terminal();
-    let mut cmd: Command = Command::new(tool.path);
+
+    // If the tool we're running is 'python' then we intercept and spawn a command pointing at the venv's python.
+    // TODO(cnpryer): Better proxy
+    let mut cmd = if tool.name == "python" {
+        Command::new(maybe_exe(
+            toolchain
+                .root()
+                .join(".venv")
+                .join(py_bin_name())
+                .join("python"),
+        ))
+    } else {
+        Command::new(tool.path)
+    };
+
     cmd.args(args).current_dir(&config.cwd);
     terminal.run_command(&mut cmd)
 }
@@ -453,17 +435,17 @@ pub fn uninstall_toolchain(channel: Option<&Channel>, config: &Config) -> HuakRe
         true,
     )?;
 
-    // TODO: Outside home
-    remove_path_with_scope(toolchain.root(), config.home.as_ref().expect("huak home"))?;
-
     if let Some(parent) = toolchain.root().parent() {
         let settings = parent.join("settings.toml");
 
         if let Ok(db) = SettingsDb::try_from(&settings).as_mut() {
-            db.remove_toolchain(toolchain.root());
+            db.remove_toolchain(toolchain.root())?;
             db.save(&settings)?;
         }
     }
+
+    // TODO: Outside home
+    remove_path_with_scope(toolchain.root(), config.home.as_ref().expect("huak home"))?;
 
     terminal.print_custom("Success", "toolchain uninstalled", Color::Green, true)
 }
@@ -529,7 +511,7 @@ pub fn use_toolchain(channel: &Channel, config: &Config) -> HuakResult<()> {
     let settings = home.join("toolchains").join("settings.toml");
     let mut db = SettingsDb::try_from(&settings).unwrap_or_default();
 
-    db.insert_scope(ws.root(), toolchain.root());
+    db.insert_scope(ws.root(), &toolchain.root().canonicalize()?)?;
 
     Ok(db.save(settings)?)
 }
@@ -615,30 +597,6 @@ fn release_options_from_version(version: Version) -> ReleaseOptions {
     }
 }
 
-fn python_bin_name() -> &'static str {
-    match OS {
-        "windows" => "Scripts",
-        _ => "bin",
-    }
-}
-
-fn py_bin<T: AsRef<Path>>(root: T) -> PathBuf {
-    root.as_ref().join("install").join(python_bin_name())
-}
-
-// TODO: Refactor
-fn maybe_exe(path: PathBuf) -> PathBuf {
-    if OS == "windows" && path.extension().map_or(false, |it| it == "exe") {
-        path.with_extension("exe")
-    } else {
-        path
-    }
-}
-
-fn default_python_tools() -> [&'static str; 3] {
-    ["ruff", "pytest", "mypy"]
-}
-
 fn teardown<T: AsRef<Path>>(path: T, config: &Config) -> HuakResult<()> {
     let path = path.as_ref();
 
@@ -663,12 +621,10 @@ where
         p.pop();
 
         if p == root {
-            if p.is_dir() {
-                std::fs::remove_dir_all(path)?;
-                return Ok(());
-            } else if p.is_file() {
-                std::fs::remove_file(path)?;
-                return Ok(());
+            if path.is_file() || path.is_symlink() {
+                return Ok(std::fs::remove_file(path)?);
+            } else if path.is_dir() {
+                return Ok(std::fs::remove_dir_all(path)?);
             }
         } else {
             stack.push(p);
@@ -676,4 +632,13 @@ where
     }
 
     Ok(())
+}
+
+// TODO(cnpryer): Refactor
+fn py_bin_name() -> &'static str {
+    if OS == "windows" {
+        "Scripts"
+    } else {
+        "bin"
+    }
 }

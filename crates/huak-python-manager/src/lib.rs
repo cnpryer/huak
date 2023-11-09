@@ -41,7 +41,7 @@ pub use crate::resolve::{
 };
 pub use crate::version::Version;
 use install::download_release;
-pub use install::install_with_target;
+pub use install::{install_with_target, PythonReleaseDir};
 pub use releases::Release;
 use std::path::Path;
 use tar::Archive;

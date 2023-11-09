@@ -224,7 +224,8 @@ fn resolve_local_toolchain(
     // the first matching path from cwd.
     if let Some(db) = SettingsDb::try_from(settings).ok().as_ref() {
         for p in config.cwd.ancestors() {
-            if let Some((_, value)) = db.get_scope_entry(p) {
+            // TODO(cnpryer): Should report better
+            if let Ok(Some((_, value))) = db.get_scope_entry(p) {
                 return Some(LocalToolchain::new(PathBuf::from(value.to_string())));
             }
         }
