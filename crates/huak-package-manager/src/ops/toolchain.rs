@@ -150,7 +150,11 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
     }
 
     // Determine what Python release data to use for the install.
-    let release = python_release_from_channel(toolchain.channel()).expect("release");
+    let Some(release) = python_release_from_channel(toolchain.channel()) else {
+        return Err(Error::PythonReleaseNotFound(
+            toolchain.channel().to_string(),
+        ));
+    };
     let release_string = release.to_string();
 
     let msg = if matches!(toolchain.channel(), Channel::Default) {
