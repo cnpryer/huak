@@ -1,7 +1,7 @@
 [project]
 name = "huak"
-version = "0.0.19"
-description = "A Python package manager written in Rust inspired by Cargo."
+version = "0.0.20a1"
+description = "A Python package manager written in Rust and inspired by Cargo."
 authors = [
     {email = "cnpryer@gmail.com"},
     {name = "Chris Pryer"}
@@ -21,7 +21,7 @@ repository = "https://github.com/cnpryer/huak"
 
 [tool.maturin]
 bindings = "bin"
-manifest-path = "crates/huak_cli/Cargo.toml"
+manifest-path = "crates/huak-cli/Cargo.toml"
 module-name = "huak"
 python-source = "python"
 strip = true
@@ -29,3 +29,6 @@ strip = true
 [build-system]
 requires = ["maturin>=0.14,<0.15"]
 build-backend = "maturin"
+
+[tool.huak]
+toolchain = "default"

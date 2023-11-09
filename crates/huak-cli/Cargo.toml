@@ -1,0 +1,37 @@
+[package]
+name = "huak"
+version = "0.0.20-alpha.1"
+description = "A Python package manager written in Rust and inspired by Cargo."
+repository = "https://github.com/cnpryer/huak.git"
+homepage = "https://github.com/cnpryer/huak.git"
+categories = [
+    "development-tools"
+]
+readme.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+clap.workspace = true
+clap_complete = "4.4.1"
+colored.workspace = true
+huak-home = { path = "../huak-home" }
+huak-package-manager = { path = "../huak-package-manager"}
+huak-python-manager = { path = "../huak-python-manager" }
+huak-toolchain = { path = "../huak-toolchain" }
+huak-workspace = { path = "../huak-workspace" }
+human-panic.workspace = true
+# included to build PyPi Wheels (see .github/workflow/README.md)
+openssl = { version = "0.10.57", features = ["vendored"], optional = true }
+termcolor.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+huak-dev = { path = "../huak-dev" }
+insta-cmd = "0.4.0"
+tempfile.workspace = true
+
+[lints]
+workspace = true

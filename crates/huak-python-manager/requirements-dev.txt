@@ -1,0 +1,2 @@
+polars==0.19.8
+requests==2.31.0
