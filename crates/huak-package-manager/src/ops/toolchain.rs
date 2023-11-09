@@ -341,16 +341,18 @@ pub fn list_toolchains(config: &Config) -> HuakResult<()> {
         )?;
     }
 
-    terminal.print_custom("Installed", "", Color::Green, true)?;
-
     if let Some(toolchains) = resolve_installed_toolchains(config) {
-        for (i, toolchain) in toolchains.iter().enumerate() {
-            config.terminal().print_custom(
-                format!("{:>5})", i + 1),
-                format!("{:<16}", toolchain.name()),
-                Color::Green,
-                true,
-            )?;
+        if !toolchains.is_empty() {
+            terminal.print_custom("Installed", "", Color::Green, true)?;
+
+            for (i, toolchain) in toolchains.iter().enumerate() {
+                config.terminal().print_custom(
+                    format!("{:>5})", i + 1),
+                    format!("{:<16}", toolchain.name()),
+                    Color::Green,
+                    true,
+                )?;
+            }
         }
     }
 
