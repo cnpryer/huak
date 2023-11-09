@@ -10,17 +10,26 @@ license = "MIT"
 
 [workspace.dependencies]
 clap = { version = "4.4.2", features = ["cargo", "derive"] }
+colored = "2.0.4"
 glob = "0.3.1"
+hex = "0.4.3"
+human-panic = "1.1.5"
+lazy_static = "1.4.0"
 pep440_rs = "0.3.11"
 pep508_rs = "0.2.1"
+regex = "1.10.2"
+sha2 = "0.10.8"
 tempfile = "3.7.1"
 termcolor = "1.2.0"
 thiserror = "1.0.48"
+toml_edit = { version = "0.21.0", features = ["serde", "display"] }
 
 [workspace.lints.rust]
 unsafe_code = "deny"
 
 [workspace.lints.clippy]
 pedantic = "warn"
-nursery = "warn"
-cargo = "warn"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+too_many_lines = "allow"

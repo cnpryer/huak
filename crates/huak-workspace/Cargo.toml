@@ -1,0 +1,13 @@
+[package]
+name = "huak-workspace"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,13 @@
+[package]
+name = "huak-dev"
+version = "0.0.0"
+description = "Development utilities."
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true

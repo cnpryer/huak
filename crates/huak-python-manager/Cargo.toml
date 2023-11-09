@@ -1,0 +1,25 @@
+[package]
+name = "huak-python-manager"
+description = "A Python interpreter management system for Huak."
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow = "1.0.75"
+clap.workspace = true
+colored.workspace = true
+hex.workspace = true
+human-panic.workspace = true
+lazy_static.workspace = true
+regex.workspace = true
+reqwest = { version = "0.11.22", features = ["blocking", "json"] }
+sha2.workspace = true
+tar = "0.4.40"
+thiserror.workspace = true
+zstd = "0.13.0"
+
+[lints]
+workspace = true
