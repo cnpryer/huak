@@ -1,6 +1,6 @@
 //! This module implements read and write functionality for Huak's persisted application data.
 use crate::Error;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use toml_edit::Document;
 
 #[derive(Default)]
@@ -73,6 +73,25 @@ impl SettingsDb {
     pub fn save<T: AsRef<Path>>(&self, to: T) -> Result<(), Error> {
         write_settings_file(self.doc(), to)
     }
+
+    pub fn remove_toolchain<T: AsRef<Path>>(&mut self, path: T) {
+        if let Some(scopes) = self.doc().get("scopes") {
+            if let Some(values) = scopes.as_inline_table().map(|it| it.get_values()) {
+                let keys_to_remove = values
+                    .iter()
+                    .filter(|(_, v)| PathBuf::from(escape_string(&v.to_string())) == path.as_ref())
+                    .flat_map(|(keys, _)| {
+                        keys.iter()
+                            .map(|k| PathBuf::from(escape_string(&k.to_string())))
+                    })
+                    .collect::<Vec<PathBuf>>();
+
+                for key in keys_to_remove {
+                    self.remove_scope(key);
+                }
+            }
+        }
+    }
 }
 
 /// A helper for reading the contents of a settings.toml file.
@@ -105,6 +124,26 @@ mod tests {
         assert_eq!(value, "default");
 
         db.remove_scope("/");
+
+        let table = db.doc().get("scopes").unwrap();
+
+        assert!(table
+            .as_inline_table()
+            .map_or(false, toml_edit::InlineTable::is_empty));
+    }
+
+    #[test]
+    fn test_remove_toolchain() {
+        let mut db = SettingsDb::new();
+
+        db.insert_scope("first/path", "default");
+        db.insert_scope("second/path", "default");
+
+        let (_, value) = db.get_scope_entry("first/path").unwrap();
+
+        assert_eq!(value, "default");
+
+        db.remove_toolchain("default");
 
         let table = db.doc().get("scopes").unwrap();
 

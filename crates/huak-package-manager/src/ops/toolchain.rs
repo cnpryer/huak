@@ -430,7 +430,8 @@ fn run(tool: LocalTool, args: &[String], config: &Config) -> HuakResult<()> {
 /// Resolve the target toolchain but don't perform and installs if none can be found. If a toolchain
 /// can be resolved (located) then uninstall it.
 pub fn uninstall_toolchain(channel: Option<&Channel>, config: &Config) -> HuakResult<()> {
-    let toolchain = config.workspace().resolve_local_toolchain(channel)?;
+    let ws = config.workspace();
+    let toolchain = ws.resolve_local_toolchain(channel)?;
 
     let mut terminal = config.terminal();
 
@@ -451,17 +452,10 @@ pub fn uninstall_toolchain(channel: Option<&Channel>, config: &Config) -> HuakRe
     if let Some(parent) = toolchain.root().parent() {
         let settings = parent.join("settings.toml");
 
-        let Some(mut db) = SettingsDb::try_from(settings)
-            .ok()
-            .or(Some(SettingsDb::default()))
-        else {
-            return Err(Error::InternalError(
-                "failed to create settings db".to_string(),
-            ));
-        };
-        let table = db.doc_mut().as_table_mut();
-        let key = format!("{}", config.cwd.display());
-        table.remove(&key);
+        if let Ok(db) = SettingsDb::try_from(&settings).as_mut() {
+            db.remove_toolchain(toolchain.root());
+            db.save(&settings)?;
+        }
     }
 
     terminal.print_custom("Success", "toolchain uninstalled", Color::Green, true)
