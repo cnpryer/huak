@@ -167,8 +167,8 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
 
     // Begin preparing to install 'python'.
     terminal.print_custom(
-        "Preparing",
-        format!("release validation for {release}"),
+        "Checking",
+        format!("python ({release}) release"),
         Color::Green,
         true,
     )?;
@@ -187,9 +187,14 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
         return Err(Error::InvalidChecksum(release.to_string()));
     }
 
-    terminal.print_custom("Success", format!("verified {release}"), Color::Green, true)?;
     terminal.print_custom(
-        "Downloading",
+        "Success",
+        "verified release".to_string(),
+        Color::Green,
+        true,
+    )?;
+    terminal.print_custom(
+        "Fetching",
         format!("release from {}", release.url),
         Color::Green,
         true,
@@ -198,7 +203,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
     // Extract the downloaded release to the toolchain's downloads directory.
     let downloads_dir = toolchain.downloads();
     terminal.print_custom(
-        "Extracting",
+        "Installing",
         format!("{} to {}", release_string, downloads_dir.display()),
         Color::Green,
         true,
@@ -221,7 +226,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
 
     if py.exists() {
         terminal.print_custom(
-            "Preparing",
+            "Updating",
             "toolchain's virtual environment",
             Color::Green,
             true,
