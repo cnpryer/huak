@@ -247,7 +247,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
     terminal.run_command(&mut cmd)?;
 
     let venv = from.join(name);
-    let path = venv.join(python_bin_name()).join("python");
+    let path = maybe_exe(venv.join(python_bin_name()).join("python"));
 
     terminal.print_custom(
         "Success",
