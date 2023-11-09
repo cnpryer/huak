@@ -168,7 +168,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
     // Begin preparing to install 'python'.
     terminal.print_custom(
         "Checking",
-        format!("python ({release}) release"),
+        format!("python release ({release})"),
         Color::Green,
         true,
     )?;
@@ -204,7 +204,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
     let downloads_dir = toolchain.downloads();
     terminal.print_custom(
         "Installing",
-        format!("{} to {}", release_string, downloads_dir.display()),
+        format!("unpacking release in {}", downloads_dir.display()),
         Color::Green,
         true,
     )?;
@@ -258,7 +258,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
 
     terminal.print_custom(
         "Updating",
-        "toolchain bin with python".to_string(),
+        "adding python to the toolchain".to_string(),
         Color::Green,
         true,
     )?;
