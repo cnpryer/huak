@@ -167,7 +167,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
 
     // Begin preparing to install 'python'.
     terminal.print_custom(
-        "Preparing",
+        "Updating",
         format!("release validation for {release}"),
         Color::Green,
         true,
@@ -189,7 +189,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
 
     terminal.print_custom("Success", format!("verified {release}"), Color::Green, true)?;
     terminal.print_custom(
-        "Downloading",
+        "Fetching",
         format!("release from {}", release.url),
         Color::Green,
         true,
@@ -198,7 +198,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
     // Extract the downloaded release to the toolchain's downloads directory.
     let downloads_dir = toolchain.downloads();
     terminal.print_custom(
-        "Extracting",
+        "Installing",
         format!("{} to {}", release_string, downloads_dir.display()),
         Color::Green,
         true,
@@ -221,7 +221,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
 
     if py.exists() {
         terminal.print_custom(
-            "Preparing",
+            "Updating",
             "toolchain's virtual environment",
             Color::Green,
             true,

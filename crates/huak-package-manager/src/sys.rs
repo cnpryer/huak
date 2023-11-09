@@ -268,7 +268,7 @@ impl TerminalOut {
                 stderr.reset()?;
                 stderr.set_color(ColorSpec::new().set_bold(true).set_fg(Some(color)))?;
                 if justified {
-                    write!(stderr, "  {status:>11}")?;
+                    write!(stderr, "  {status:>10}")?;
                 } else {
                     write!(stderr, "{status}")?;
                     stderr.set_color(ColorSpec::new().set_bold(true))?;
