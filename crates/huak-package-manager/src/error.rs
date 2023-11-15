@@ -54,6 +54,8 @@ pub enum Error {
     ProjectFound,
     #[error("{0}")]
     PythonManagerError(#[from] huak_python_manager::Error),
+    #[error("a python module could not be found: {0}")]
+    PythonModuleNotFound(String),
     #[error("a python interpreter could not be found")]
     PythonNotFound,
     #[error("a problem occurred attempting to install python: {0}")]

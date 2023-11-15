@@ -7,10 +7,13 @@ authors.workspace = true
 license.workspace = true
 
 [dependencies]
+dunce = "1.0.4"
 huak-python-manager = { path = "../huak-python-manager" }
-pep440_rs.workspace = true
 thiserror.workspace = true
 toml_edit.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
 
 [lints]
 workspace = true

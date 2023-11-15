@@ -21,6 +21,7 @@ pep508_rs.workspace = true
 pyproject-toml = "0.7.0"
 serde = { version = "1.0.188", features = ["derive"] }
 serde_json = "1.0.107"
+tempfile.workspace = true
 termcolor.workspace = true
 thiserror.workspace = true
 toml = { version = "0.8.2", features = ["preserve_order"] }
@@ -36,7 +37,6 @@ huak-workspace = { path = "../huak-workspace" }
 
 [dev-dependencies]
 huak-dev = { path = "../huak-dev" }
-tempfile.workspace = true
 
 [lints]
 workspace = true

@@ -1,5 +1,8 @@
 use crate::{
-    environment::env_path_values, fs, package::Package, sys, Config, Environment, Error, HuakResult,
+    environment::env_path_values,
+    fs::{self, maybe_exe},
+    package::Package,
+    sys, Config, Environment, Error, HuakResult,
 };
 use huak_python_manager::Version;
 use std::{
@@ -106,6 +109,18 @@ impl PythonEnvironment {
     #[must_use]
     pub fn executables_dir_path(&self) -> &PathBuf {
         &self.executables_dir_path
+    }
+
+    /// Get the path to an executable module installed to the `PythonEnvironment`.
+    #[must_use]
+    pub fn executable_module_path(&self, name: &str) -> Option<PathBuf> {
+        let path = maybe_exe(self.executables_dir_path().join(name));
+
+        if path.exists() {
+            Some(path)
+        } else {
+            None
+        }
     }
 
     /// Get a reference to the `PythonEnvironment`'s site-packages directory path.

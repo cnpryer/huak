@@ -228,7 +228,12 @@ impl LocalToolchain {
             },
         }
     }
-    pub fn register_tool_from_path<T: AsRef<Path>>(
+
+    /// Register a local tool from its path. `allow_copy` as `false` would restrict setup
+    /// as a light proxy to the tool. With `allow_copy` as `true` the setup can resort to
+    /// heavier tool installs including full copies.
+    // TODO(cnpryer): hard_link vs full_copy
+    pub fn register_tool<T: AsRef<Path>>(
         &self,
         path: T,
         name: &str,
@@ -260,12 +265,11 @@ impl LocalToolchain {
             return Ok(());
         };
 
-        // If copy is allowed then try hardlink then resort to full copy.
         if allow_copy {
-            let Err(_) = hard_link(path, link) else {
-                return Ok(());
-            };
-            let _copied = std::fs::copy(path, link)?;
+            hard_link(path, link)?;
+            // TODO(cnpryer): Hardlink or look into it more
+            // If copy is allowed then try hardlink then resort to full copy.
+            // let _copied = std::fs::copy(path, link)?;
             Ok(())
         } else {
             Err(symlink_err)

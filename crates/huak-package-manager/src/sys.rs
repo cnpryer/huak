@@ -1,11 +1,16 @@
 use crate::error::HuakResult;
 use crate::Error;
+#[cfg(unix)]
+use std::os::unix::fs::symlink;
+#[cfg(windows)]
+use std::os::windows::fs::symlink_file;
 use std::{
     fmt::Display,
     io::Write,
     path::Path,
     process::{Command, ExitStatus},
 };
+use tempfile::TempDir;
 use termcolor::{self, Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 #[derive(Debug)]
@@ -337,4 +342,30 @@ pub fn shell_path() -> HuakResult<String> {
 #[cfg(windows)]
 pub fn shell_path() -> HuakResult<String> {
     Ok(std::env::var("COMSPEC")?)
+}
+
+pub(crate) fn symlink_supported() -> bool {
+    if cfg!(unix) {
+        true
+    } else {
+        test_symlink().is_ok()
+    }
+}
+
+fn test_symlink() -> HuakResult<()> {
+    let dir = TempDir::new()?;
+    let original = dir.path().join("file");
+    std::fs::write(&original, "")?;
+    try_symlink(original, dir.path().join("link"))
+}
+
+// TODO(cnpryer): Refactor (see huak-toolchain)
+fn try_symlink<T: AsRef<Path>>(original: T, link: T) -> Result<(), Error> {
+    #[cfg(unix)]
+    let err = symlink(original, link);
+
+    #[cfg(windows)]
+    let err = symlink_file(original, link);
+
+    Ok(err?)
 }

@@ -1,5 +1,5 @@
 use crate::error::{Error, HuakResult};
-use std::{fs, path::PathBuf};
+use std::{env::consts::OS, fs, path::PathBuf};
 
 #[allow(dead_code)]
 pub fn copy_dir<T: Into<PathBuf>>(from: T, to: T, options: &CopyDirOptions) -> Result<(), Error> {
@@ -109,6 +109,16 @@ pub fn last_path_component<T: Into<PathBuf>>(path: T) -> HuakResult<String> {
         )))?
         .to_string();
     Ok(path)
+}
+
+// TODO: Refactor
+#[allow(dead_code)]
+pub(crate) fn maybe_exe(path: PathBuf) -> PathBuf {
+    if OS == "windows" && path.extension().is_none() {
+        path.with_extension("exe")
+    } else {
+        path
+    }
 }
 
 #[cfg(test)]
