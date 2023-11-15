@@ -111,8 +111,7 @@ impl Workspace {
                 // TODO(cnpryer): Proxy better + Refactor
                 // We use the venv Python.
                 PythonEnvironment::new(tc.root().join(".venv"))
-                    .ok()
-                    .and_then(|venv| Some(venv.python_path().to_owned()))
+                    .ok().map(|venv| venv.python_path().to_owned())
             })
             .or_else(|| env.python_paths().next().map(PathBuf::from))
         else {

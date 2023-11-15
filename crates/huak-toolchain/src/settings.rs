@@ -157,7 +157,7 @@ mod tests {
             dunce::canonicalize(&toolchain).unwrap()
         );
 
-        db.remove_scope(&dir).unwrap();
+        db.remove_scope(dir).unwrap();
 
         let table = db.doc().get("scopes").unwrap();
 
