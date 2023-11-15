@@ -101,10 +101,21 @@ impl Workspace {
     fn new_python_environment(&self) -> HuakResult<PythonEnvironment> {
         // Get a snapshot of the environment.
         let env = self.environment();
-
-        // Get the first Python `Interpreter` path found from the `PATH`
-        // environment variable.
-        let Some(python_path) = env.python_paths().next() else {
+        // Include toolchain installations when resolving for a Python interpreter to use.
+        // If a toolchain cannot be resolved then the first Python path found from the
+        // environment is used.
+        let Some(python_path) = self
+            .resolve_local_toolchain(None)
+            .ok()
+            .and_then(|tc| {
+                // TODO(cnpryer): Proxy better + Refactor
+                // We use the venv Python.
+                PythonEnvironment::new(tc.root().join(".venv"))
+                    .ok()
+                    .and_then(|venv| Some(venv.python_path().to_owned()))
+            })
+            .or_else(|| env.python_paths().next().map(PathBuf::from))
+        else {
             return Err(Error::PythonNotFound);
         };
 
