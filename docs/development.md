@@ -46,6 +46,11 @@ Currently, the project is structured using the following crates:
 
 ```bash
 crates
-├── `huak_cli`  # The `huak` application
-└── `huak_package_manager`  # `huak`'s operations library
+├── `huak-cli`              # Huak's CLI
+├── `huak-dev`              # Huak's development library
+├── `huak-home`             # Huak's home library
+├── `huak-package-manager`  # Huak's package management library
+├── `huak-python-manager`   # Huak's python management library
+├── `huak-toolchain`        # Huak's toolchain management library
+└── `huak-workspace`        # Huak's workspace library
 ```
