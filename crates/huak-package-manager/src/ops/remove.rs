@@ -10,35 +10,39 @@ pub fn remove_project_dependencies(
     options: &RemoveOptions,
 ) -> HuakResult<()> {
     let workspace = config.workspace();
-    let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
 
     // Collect any dependencies to remove from the metadata file.
     let deps = dependency_iter(dependencies)
-        .filter(|dep| metadata.metadata().contains_dependency_any(dep))
+        .filter(|dep| {
+            metadata
+                .metadata()
+                .contains_project_dependency_any(dep.name())
+        })
         .collect::<Vec<_>>();
 
     if deps.is_empty() {
         return Ok(());
     }
 
-    // Get all groups from the metadata file to include in the removal process.
-    let mut groups = Vec::new();
-    if let Some(deps) = metadata.metadata().optional_dependencies() {
-        groups.extend(deps.keys().map(ToString::to_string));
-    }
+    let optional_groups = metadata.metadata().project_optional_dependency_groups();
+
     for dep in &deps {
-        metadata.metadata_mut().remove_dependency(dep);
-        for group in &groups {
-            metadata
-                .metadata_mut()
-                .remove_optional_dependency(dep, group);
+        metadata
+            .metadata_mut()
+            .remove_project_dependency(dep.name());
+
+        if let Some(groups) = optional_groups.as_ref() {
+            for g in groups {
+                metadata
+                    .metadata_mut()
+                    .remove_project_optional_dependency(dep.name(), g);
+            }
         }
     }
 
-    if package.metadata() != metadata.metadata() {
-        metadata.write_file()?;
-    }
+    metadata.metadata_mut().formatted();
+    metadata.write_file()?;
 
     // Uninstall the dependencies from the Python environment if an environment is found.
     match workspace.current_python_environment() {
@@ -91,14 +95,18 @@ mod tests {
             .unwrap();
         let metadata = ws.current_local_metadata().unwrap();
         let venv_had_package = venv.contains_package(&test_package);
-        let toml_had_package = metadata.metadata().contains_dependency(&test_dep);
+        let toml_had_package = metadata
+            .metadata()
+            .contains_project_dependency(test_dep.name());
 
         remove_project_dependencies(&["click".to_string()], &config, &options).unwrap();
 
         let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
         let venv_contains_package = venv.contains_package(&test_package);
-        let toml_contains_package = metadata.metadata().contains_dependency(&test_dep);
+        let toml_contains_package = metadata
+            .metadata()
+            .contains_project_dependency(test_dep.name());
 
         assert!(venv_had_package);
         assert!(toml_had_package);
@@ -134,23 +142,24 @@ mod tests {
         initialize_venv(ws.root().join(".venv"), &ws.environment()).unwrap();
         let metadata = ws.current_local_metadata().unwrap();
         let venv = ws.resolve_python_environment().unwrap();
-        let test_package = Package::from_str("black==22.8.0").unwrap();
-        let test_dep = Dependency::from_str("black==22.8.0").unwrap();
+        let test_dep = Dependency::from_str("ruff").unwrap();
         venv.install_packages(&[&test_dep], &options.install_options, &config)
             .unwrap();
-        let venv_had_package = venv.contains_module(test_package.name()).unwrap();
+        let venv_had_package = venv.contains_module(test_dep.name()).unwrap();
         let toml_had_package = metadata
             .metadata()
-            .contains_optional_dependency(&test_dep, "dev");
+            .contains_project_optional_dependency(test_dep.name(), "dev");
 
-        remove_project_dependencies(&["black".to_string()], &config, &options).unwrap();
+        remove_project_dependencies(&["ruff".to_string()], &config, &options).unwrap();
 
         let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
         let venv_contains_package = venv
-            .contains_module(metadata.metadata().project_name())
+            .contains_module(&metadata.metadata().project_name().unwrap().to_string())
             .unwrap();
-        let toml_contains_package = metadata.metadata().contains_dependency(&test_dep);
+        let toml_contains_package = metadata
+            .metadata()
+            .contains_project_dependency(test_dep.name());
 
         assert!(venv_had_package);
         assert!(toml_had_package);

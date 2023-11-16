@@ -10,7 +10,6 @@ pub struct PublishOptions {
 
 pub fn publish_project(config: &Config, options: &PublishOptions) -> HuakResult<()> {
     let workspace = config.workspace();
-    let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
     let python_env = workspace.resolve_python_environment()?;
 
@@ -21,7 +20,10 @@ pub fn publish_project(config: &Config, options: &PublishOptions) -> HuakResult<
     }
 
     // Add the installed `twine` package to the metadata file if it isn't already there.
-    if !metadata.metadata().contains_dependency_any(&pub_dep) {
+    if !metadata
+        .metadata()
+        .contains_project_dependency_any(pub_dep.name())
+    {
         for pkg in python_env
             .installed_packages()?
             .iter()
@@ -29,13 +31,12 @@ pub fn publish_project(config: &Config, options: &PublishOptions) -> HuakResult<
         {
             metadata
                 .metadata_mut()
-                .add_optional_dependency(&Dependency::from_str(&pkg.to_string())?, "dev");
+                .add_project_optional_dependency(&pkg.to_string(), "dev");
         }
     }
 
-    if package.metadata() != metadata.metadata() {
-        metadata.write_file()?;
-    }
+    metadata.metadata_mut().formatted();
+    metadata.write_file()?;
 
     // Run `twine`.
     let mut cmd = Command::new(python_env.python_path());

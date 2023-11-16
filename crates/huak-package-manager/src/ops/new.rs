@@ -1,7 +1,9 @@
+use toml_edit::{Item, Table};
+
 use super::{create_workspace, init_git};
 use crate::{
-    default_package_entrypoint_string, default_package_test_file_contents, importable_package_name,
-    last_path_component, Config, Dependency, Error, HuakResult, LocalMetadata, WorkspaceOptions,
+    default_package_test_file_contents, importable_package_name, last_path_component, Config,
+    Dependency, Error, HuakResult, LocalMetadata, WorkspaceOptions,
 };
 use std::str::FromStr;
 
@@ -13,18 +15,25 @@ pub fn new_app_project(config: &Config, options: &WorkspaceOptions) -> HuakResul
 
     let name = last_path_component(workspace.root().as_path())?;
     let as_dep = Dependency::from_str(&name)?;
-    metadata.metadata_mut().set_project_name(name);
+    metadata.metadata_mut().set_project_name(&name);
 
     let src_path = workspace.root().join("src");
     let importable_name = importable_package_name(as_dep.name())?;
     std::fs::write(
-        src_path.join(&importable_name).join("main.py"),
+        src_path.join(importable_name).join("main.py"),
         super::DEFAULT_PYTHON_MAIN_FILE_CONTENTS,
     )?;
-    let entry_point = default_package_entrypoint_string(&importable_name);
-    metadata
-        .metadata_mut()
-        .add_script(as_dep.name(), &entry_point);
+
+    if let Some(table) = metadata.metadata_mut().project_table_mut() {
+        let scripts = &mut table["scripts"];
+
+        if scripts.is_none() {
+            *scripts = Item::Table(Table::new());
+        }
+
+        let importable = importable_package_name(&name)?;
+        scripts[name] = toml_edit::value(format!("{importable}.main:main"));
+    }
 
     metadata.write_file()
 }
@@ -45,7 +54,10 @@ pub fn new_lib_project(config: &Config, options: &WorkspaceOptions) -> HuakResul
     }
 
     let name = &last_path_component(&config.workspace_root)?;
-    metadata.metadata_mut().set_project_name(name.to_string());
+    metadata.metadata_mut().set_project_name(name);
+
+    metadata.metadata_mut().formatted();
+    metadata.write_file()?;
     metadata.write_file()?;
 
     let as_dep = Dependency::from_str(name)?;
@@ -68,6 +80,7 @@ pub fn new_lib_project(config: &Config, options: &WorkspaceOptions) -> HuakResul
 mod tests {
     use super::*;
     use crate::{TerminalOptions, Verbosity};
+    use huak_pyproject_toml::value_to_sanitized_string;
     use tempfile::tempdir;
 
     #[test]
@@ -108,7 +121,11 @@ def test_version():
         let expected_init_file = "__version__ = \"0.0.1\"
 ";
 
-        assert!(metadata.metadata().project().scripts.is_none());
+        assert!(metadata
+            .metadata()
+            .project_table()
+            .and_then(|it| it.get("scripts"))
+            .is_none());
         assert_eq!(test_file, expected_test_file);
         assert_eq!(init_file, expected_init_file);
     }
@@ -145,8 +162,17 @@ if __name__ == "__main__":
 "#;
 
         assert_eq!(
-            metadata.metadata().project().scripts.as_ref().unwrap()["mock-project"],
-            format!("{}.main:main", "mock_project")
+            value_to_sanitized_string(
+                metadata
+                    .metadata()
+                    .project_table()
+                    .unwrap()
+                    .get("scripts")
+                    .unwrap()["mock-project"]
+                    .as_value()
+                    .unwrap()
+            ),
+            "mock_project.main:main".to_string()
         );
         assert_eq!(main_file, expected_main_file);
     }

@@ -1,4 +1,5 @@
-use crate::{metadata::Metadata, Error, HuakResult};
+use crate::{Error, HuakResult};
+use huak_pyproject_toml::PyProjectToml;
 use lazy_static::lazy_static;
 use pep440_rs::{Operator, Version, VersionSpecifiers};
 use regex::Regex;
@@ -23,12 +24,11 @@ lazy_static! {
 ///
 /// assert_eq!(package.version, Version::from_str("0.0.1").unwrap()));
 /// ```
-#[derive(Clone)]
 pub struct Package {
     /// Information used to identify the `Package`.
     id: PackageId,
-    /// The `Package`'s core `Metadata`.
-    metadata: Metadata,
+    /// The `Package`'s core `PyProjectToml` metadata.
+    metadata: PyProjectToml,
 }
 
 impl Package {
@@ -44,10 +44,29 @@ impl Package {
         &self.id.version
     }
 
-    /// Get a reference to the `Package`'s core `Metadata`.
+    /// Get a reference to the `Package`'s core `PyProjectToml` metadata.
     #[must_use]
-    pub fn metadata(&self) -> &Metadata {
+    pub fn metadata(&self) -> &PyProjectToml {
         &self.metadata
+    }
+
+    pub fn try_from_metadata(metadata: &PyProjectToml) -> HuakResult<Self> {
+        let Some(name) = metadata.project_name() else {
+            return Err(Error::InternalError("missing project name".to_string()));
+        };
+
+        let Some(version) = metadata.project_version() else {
+            return Err(Error::InternalError("missing project version".to_string()));
+        };
+
+        Ok(Self {
+            id: PackageId {
+                name,
+                version: Version::from_str(&version)
+                    .map_err(|e| Error::InvalidVersionString(e.to_string()))?,
+            },
+            metadata: metadata.clone(),
+        })
     }
 
     // TODO: I want this implemented with `FromStr`.
@@ -89,8 +108,8 @@ impl Package {
             version: version_specifer.version().to_owned(),
         };
 
-        let mut metadata = Metadata::default();
-        metadata.set_project_name(name);
+        let mut metadata = PyProjectToml::default();
+        metadata.set_project_name(&name);
 
         let package = Package { id, metadata };
 
@@ -114,21 +133,6 @@ impl<'a> Iterator for PackageIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next()
-    }
-}
-
-impl From<Metadata> for Package {
-    fn from(value: Metadata) -> Self {
-        Package {
-            id: PackageId {
-                name: value.project_name().to_string(),
-                version: value
-                    .project_version()
-                    .unwrap_or(&Version::from_str("0.0.1").unwrap())
-                    .clone(),
-            },
-            metadata: value,
-        }
     }
 }
 

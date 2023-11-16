@@ -13,12 +13,11 @@ pub fn add_project_dependencies(
     options: &AddOptions,
 ) -> HuakResult<()> {
     let workspace = config.workspace();
-    let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
 
     // Collect all dependencies that need to be added to the metadata file.
-    let mut deps: Vec<Dependency> = dependency_iter(dependencies)
-        .filter(|dep| !metadata.metadata().contains_dependency(dep))
+    let mut deps = dependency_iter(dependencies)
+        .filter(|dep| !metadata.metadata().contains_project_dependency(dep.name()))
         .collect::<Vec<_>>();
 
     if deps.is_empty() {
@@ -41,14 +40,15 @@ pub fn add_project_dependencies(
             }
         }
 
-        if !metadata.metadata().contains_dependency(dep) {
-            metadata.metadata_mut().add_dependency(dep);
+        if !metadata.metadata().contains_project_dependency(dep.name()) {
+            metadata
+                .metadata_mut()
+                .add_project_dependency(&dep.to_string());
         }
     }
 
-    if package.metadata() != metadata.metadata() {
-        metadata.write_file()?;
-    }
+    metadata.metadata_mut().formatted();
+    metadata.write_file()?;
 
     Ok(())
 }
@@ -60,12 +60,16 @@ pub fn add_project_optional_dependencies(
     options: &AddOptions,
 ) -> HuakResult<()> {
     let workspace = config.workspace();
-    let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
 
     // Collect all dependencies that need to be added.
+    // TODO(cnpryer): Allow
     let mut deps = dependency_iter(dependencies)
-        .filter(|dep| !metadata.metadata().contains_optional_dependency(dep, group))
+        .filter(|dep| {
+            !metadata
+                .metadata()
+                .contains_project_optional_dependency(dep.name(), group)
+        })
         .collect::<Vec<Dependency>>();
 
     if deps.is_empty() {
@@ -88,14 +92,18 @@ pub fn add_project_optional_dependencies(
             }
         }
 
-        if !metadata.metadata().contains_optional_dependency(dep, group) {
-            metadata.metadata_mut().add_optional_dependency(dep, group);
+        if !metadata
+            .metadata()
+            .contains_project_optional_dependency(dep.name(), group)
+        {
+            metadata
+                .metadata_mut()
+                .add_project_optional_dependency(&dep.to_string(), group);
         }
     }
 
-    if package.metadata() != metadata.metadata() {
-        metadata.write_file()?;
-    }
+    metadata.metadata_mut().formatted();
+    metadata.write_file()?;
 
     Ok(())
 }
@@ -140,7 +148,7 @@ mod tests {
         let metadata = ws.current_local_metadata().unwrap();
 
         assert!(venv.contains_module("ruff").unwrap());
-        assert!(metadata.metadata().contains_dependency(&dep));
+        assert!(metadata.metadata().contains_project_dependency(dep.name()));
     }
 
     #[test]
@@ -172,15 +180,15 @@ mod tests {
             install_options: InstallOptions { values: None },
         };
 
-        add_project_optional_dependencies(&[String::from("ruff")], group, &config, &options)
+        add_project_optional_dependencies(&[String::from("isort")], group, &config, &options)
             .unwrap();
 
-        let dep = Dependency::from_str("ruff").unwrap();
+        let dep = Dependency::from_str("isort").unwrap();
         let metadata = ws.current_local_metadata().unwrap();
 
-        assert!(venv.contains_module("ruff").unwrap());
+        assert!(venv.contains_module("isort").unwrap());
         assert!(metadata
             .metadata()
-            .contains_optional_dependency(&dep, "dev"));
+            .contains_project_optional_dependency(dep.name(), "dev"));
     }
 }

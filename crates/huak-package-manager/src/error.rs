@@ -53,6 +53,8 @@ pub enum Error {
     #[error("a project already exists")]
     ProjectFound,
     #[error("{0}")]
+    PyProjectTomlError(#[from] huak_pyproject_toml::Error),
+    #[error("{0}")]
     PythonManagerError(#[from] huak_python_manager::Error),
     #[error("a python module could not be found: {0}")]
     PythonModuleNotFound(String),
