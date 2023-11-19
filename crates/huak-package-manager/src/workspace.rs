@@ -54,7 +54,7 @@ impl Workspace {
         // Currently only pyproject.toml `LocalMetadata` file is supported.
         let metadata = self.current_local_metadata()?;
 
-        let package = Package::from(metadata.metadata().clone());
+        let package = Package::try_from_metadata(metadata.metadata())?;
 
         Ok(package)
     }
@@ -218,7 +218,11 @@ fn resolve_local_toolchain(
 
     // Use workspace project metadata and return if a toolchain is listed.
     if let Ok(metadata) = workspace.current_local_metadata() {
-        if let Some(table) = metadata.metadata().tool().and_then(|it| it.get("huak")) {
+        if let Some(table) = metadata
+            .metadata()
+            .tool_table()
+            .and_then(|it| it.get("huak"))
+        {
             if let Some(path) = table
                 .get("toolchain")
                 .map(std::string::ToString::to_string)

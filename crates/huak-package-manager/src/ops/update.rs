@@ -13,7 +13,6 @@ pub fn update_project_dependencies(
     options: &UpdateOptions,
 ) -> HuakResult<()> {
     let workspace = config.workspace();
-    let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
     let python_env = workspace.resolve_python_environment()?;
 
@@ -21,7 +20,10 @@ pub fn update_project_dependencies(
     if let Some(it) = dependencies.as_ref() {
         let deps = dependency_iter(it)
             .filter_map(|dep| {
-                if metadata.metadata().contains_dependency_any(&dep) {
+                if metadata
+                    .metadata()
+                    .contains_project_dependency_any(dep.name())
+                {
                     Some(dep)
                 } else {
                     None
@@ -37,44 +39,58 @@ pub fn update_project_dependencies(
     } else {
         let mut deps = metadata
             .metadata()
-            .dependencies()
-            .map_or(Vec::new(), |reqs| {
-                reqs.iter().map(Dependency::from).collect::<Vec<_>>()
-            });
+            .project_dependencies()
+            .map_or(Vec::new(), |reqs| reqs.into_iter().collect::<Vec<_>>());
 
-        if let Some(odeps) = metadata.metadata().optional_dependencies() {
-            odeps.values().for_each(|reqs| {
-                deps.extend(reqs.iter().map(Dependency::from).collect::<Vec<_>>());
-            });
+        if let Some(gs) = metadata.metadata().project_optional_dependency_groups() {
+            if let Some(optional_deps) = metadata.metadata().project_optional_dependencies() {
+                for g in gs {
+                    // TODO(cnpryer): Perf
+                    if let Some(it) = optional_deps.get(&g.to_string()) {
+                        deps.extend(it.iter().cloned());
+                    }
+                }
+            }
         }
 
         deps.dedup();
+
         python_env.update_packages(&deps, &options.install_options, config)?;
     }
 
-    // Get all groups from the metadata file to include in the removal process.
-    let mut groups = Vec::new();
-    if let Some(deps) = metadata.metadata().optional_dependencies() {
-        groups.extend(deps.keys().map(ToString::to_string));
-    }
+    let groups = metadata.metadata().project_optional_dependency_groups();
 
     for pkg in python_env.installed_packages()? {
         let dep = &Dependency::from_str(&pkg.to_string())?;
-        if metadata.metadata().contains_dependency(dep) {
-            metadata.metadata_mut().remove_dependency(dep);
-            metadata.metadata_mut().add_dependency(dep);
+        if metadata.metadata().contains_project_dependency(dep.name()) {
+            metadata
+                .metadata_mut()
+                .remove_project_dependency(dep.name());
+            metadata
+                .metadata_mut()
+                .add_project_dependency(&dep.to_string());
         }
-        for g in &groups {
-            if metadata.metadata().contains_optional_dependency(dep, g) {
-                metadata.metadata_mut().remove_optional_dependency(dep, g);
-                metadata.metadata_mut().add_optional_dependency(dep, g);
+
+        if let Some(gs) = groups.as_ref() {
+            for g in gs {
+                if metadata
+                    .metadata()
+                    .contains_project_optional_dependency(dep.name(), g)
+                {
+                    metadata
+                        .metadata_mut()
+                        .remove_project_optional_dependency(dep.name(), g);
+                    metadata
+                        .metadata_mut()
+                        .add_project_optional_dependency(&dep.to_string(), g);
+                }
             }
         }
     }
 
-    if package.metadata() != metadata.metadata() {
-        metadata.write_file()?;
-    }
+    metadata.metadata_mut().formatted();
+    metadata.write_file()?;
+
     Ok(())
 }
 

@@ -34,6 +34,7 @@ huak-toolchain = { path = "../huak-toolchain" }
 hex.workspace = true
 sha2.workspace = true
 huak-workspace = { path = "../huak-workspace" }
+huak-pyproject-toml = { path = "../huak-pyproject-toml" }
 
 [dev-dependencies]
 huak-dev = { path = "../huak-dev" }

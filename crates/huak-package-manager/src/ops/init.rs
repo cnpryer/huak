@@ -1,3 +1,5 @@
+use toml_edit::{Item, Table};
+
 use super::init_git;
 use crate::{
     default_package_entrypoint_string, importable_package_name, last_path_component, Config,
@@ -11,11 +13,23 @@ pub fn init_app_project(config: &Config, options: &WorkspaceOptions) -> HuakResu
     let workspace = config.workspace();
     let mut metadata = workspace.current_local_metadata()?;
 
-    let as_dep = Dependency::from_str(metadata.metadata().project_name())?;
-    let entry_point = default_package_entrypoint_string(&importable_package_name(as_dep.name())?);
-    metadata
-        .metadata_mut()
-        .add_script(as_dep.name(), &entry_point);
+    let Some(name) = metadata.metadata().project_name() else {
+        return Err(Error::InternalError("missing project name".to_string()));
+    };
+    let as_dep = Dependency::from_str(&name)?;
+    let _entry_point = default_package_entrypoint_string(&importable_package_name(as_dep.name())?);
+
+    if let Some(table) = metadata.metadata_mut().project_table_mut() {
+        let scripts = &mut table["scripts"];
+
+        if scripts.is_none() {
+            *scripts = Item::Table(Table::new());
+        }
+
+        let importable = importable_package_name(&name)?;
+        scripts[name] = toml_edit::value(format!("{importable}.main:main"));
+    }
+
     metadata.write_file()
 }
 
@@ -33,14 +47,14 @@ pub fn init_lib_project(config: &Config, options: &WorkspaceOptions) -> HuakResu
     }
 
     let name = last_path_component(&config.workspace_root)?;
-    metadata.metadata_mut().set_project_name(name);
+    metadata.metadata_mut().set_project_name(&name);
     metadata.write_file()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{default_pyproject_toml_contents, PyProjectToml, TerminalOptions, Verbosity};
+    use crate::{default_pyproject_toml_contents, TerminalOptions, Verbosity};
     use tempfile::tempdir;
 
     #[test]
@@ -66,7 +80,7 @@ mod tests {
         let metadata = ws.current_local_metadata().unwrap();
 
         assert_eq!(
-            metadata.to_string_pretty().unwrap(),
+            metadata.metadata().to_string(),
             default_pyproject_toml_contents("mock-project")
         );
     }
@@ -93,11 +107,9 @@ mod tests {
 
         let ws = config.workspace();
         let metadata = ws.current_local_metadata().unwrap();
-        let pyproject_toml = PyProjectToml::default();
-        pyproject_toml.project.clone().unwrap().name = String::from("mock-project");
 
         assert_eq!(
-            metadata.to_string_pretty().unwrap(),
+            metadata.metadata().to_string(),
             r#"[build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

@@ -10,7 +10,6 @@ pub struct FormatOptions {
 
 pub fn format_project(config: &Config, options: &FormatOptions) -> HuakResult<()> {
     let workspace = config.workspace();
-    let package = workspace.current_package()?;
     let mut metadata = workspace.current_local_metadata()?;
     let python_env = workspace.resolve_python_environment()?;
 
@@ -29,7 +28,11 @@ pub fn format_project(config: &Config, options: &FormatOptions) -> HuakResult<()
     // Add the installed `ruff` package to the metadata file if not already there.
     let new_format_deps = format_deps
         .iter()
-        .filter(|dep| !metadata.metadata().contains_dependency_any(dep))
+        .filter(|dep| {
+            !metadata
+                .metadata()
+                .contains_project_dependency_any(dep.name())
+        })
         .map(Dependency::name)
         .collect::<Vec<_>>();
 
@@ -41,13 +44,11 @@ pub fn format_project(config: &Config, options: &FormatOptions) -> HuakResult<()
         {
             metadata
                 .metadata_mut()
-                .add_optional_dependency(&Dependency::from_str(&pkg.to_string())?, "dev");
+                .add_project_optional_dependency(&pkg.to_string(), "dev");
         }
     }
 
-    if package.metadata() != metadata.metadata() {
-        metadata.write_file()?;
-    }
+    metadata.write_file()?;
 
     // Run `ruff` for formatting imports and the rest of the Python code in the workspace.
     // NOTE: This needs to be refactored https://github.com/cnpryer/huak/issues/784, https://github.com/cnpryer/huak/issues/718

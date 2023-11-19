@@ -582,6 +582,7 @@ dependencies = [
  "hex",
  "huak-dev",
  "huak-home",
+ "huak-pyproject-toml",
  "huak-python-manager",
  "huak-toolchain",
  "huak-workspace",
@@ -598,6 +599,16 @@ dependencies = [
  "termcolor",
  "thiserror",
  "toml 0.8.8",
+ "toml_edit 0.21.0",
+]
+
+[[package]]
+name = "huak-pyproject-toml"
+version = "0.0.0"
+dependencies = [
+ "pep508_rs",
+ "tempfile",
+ "thiserror",
  "toml_edit 0.21.0",
 ]
 

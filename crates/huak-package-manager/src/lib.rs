@@ -67,7 +67,7 @@ pub use fs::{copy_dir, last_path_component, CopyDirOptions};
 pub use git::{default_python_gitignore, init as git_init};
 pub use metadata::{
     default_package_entrypoint_string, default_package_test_file_contents,
-    default_pyproject_toml_contents, LocalMetadata, PyProjectToml,
+    default_pyproject_toml_contents, LocalMetadata,
 };
 pub use package::{importable_package_name, Package};
 pub use python_environment::{
