@@ -1,13 +1,14 @@
 use crate::{
     active_python_env_path, directory_is_venv, venv_executables_dir_path, Config, Environment,
-    Error, HuakResult,
+    Error, HuakResult, PythonEnvironment,
 };
 use huak_home::huak_home_dir;
 use huak_python_manager::{
     install_with_target, release_options_from_requested_version, resolve_release, RequestedVersion,
     Strategy,
 };
-use std::process::Command;
+use huak_toolchain::Channel;
+use std::{process::Command, str::FromStr};
 use termcolor::Color;
 
 pub fn list_python(config: &Config) -> HuakResult<()> {
@@ -25,21 +26,27 @@ pub fn list_python(config: &Config) -> HuakResult<()> {
 }
 
 pub fn use_python(version: &RequestedVersion, config: &Config) -> HuakResult<()> {
-    let interpreters = Environment::resolve_python_interpreters();
+    let ws = config.workspace();
 
-    // TODO(cnpryer): Re-export `Interpreter` as public
-    // Get a path to an interpreter based on the version provided, excluding any activated Python environment.
-    #[allow(clippy::redundant_closure_for_method_calls)]
-    let Some(path) = interpreters
-        .interpreters()
-        .iter()
-        .filter(|py| {
-            !active_python_env_path().map_or(false, |it| {
-                py.path().parent() == Some(&venv_executables_dir_path(it))
-            })
-        })
-        .find(|py| version.matches_version(py.version()))
-        .map(|py| py.path())
+    let Some(path) = ws
+        .resolve_local_toolchain(Some(&Channel::from_str(&version.to_string())?))
+        .ok()
+        .map(|it| PythonEnvironment::new(it.root().join(".venv")).expect("toolchain venv"))
+        .map(|it| it.python_path().clone()) // TODO(cnpryer): Perf
+        .or(
+            // TODO(cnpryer): Re-export `Interpreter` as public
+            // Get a path to an interpreter based on the version provided, excluding any activated Python environment.
+            Environment::resolve_python_interpreters()
+                .interpreters()
+                .iter()
+                .filter(|py| {
+                    !active_python_env_path().map_or(false, |it| {
+                        py.path().parent() == Some(&venv_executables_dir_path(it))
+                    })
+                })
+                .find(|py| version.matches_version(py.version()))
+                .map(|py| py.path().clone()), // TODO(cnpryer): Perf
+        )
     else {
         return Err(Error::PythonNotFound);
     };
