@@ -3,7 +3,7 @@ use toml_edit::{Item, Table};
 use super::{create_workspace, init_git};
 use crate::{
     default_package_test_file_contents, importable_package_name, last_path_component, Config,
-    Dependency, Error, HuakResult, LocalMetadata, WorkspaceOptions,
+    Dependency, Error, HuakResult, LocalManifest, WorkspaceOptions,
 };
 use std::str::FromStr;
 
@@ -11,11 +11,11 @@ pub fn new_app_project(config: &Config, options: &WorkspaceOptions) -> HuakResul
     new_lib_project(config, options)?;
 
     let workspace = config.workspace();
-    let mut metadata = workspace.current_local_metadata()?;
+    let mut manifest = workspace.current_local_manifest()?;
 
     let name = last_path_component(workspace.root().as_path())?;
     let as_dep = Dependency::from_str(&name)?;
-    metadata.metadata_mut().set_project_name(&name);
+    manifest.manifest_data_mut().set_project_name(&name);
 
     let src_path = workspace.root().join("src");
     let importable_name = importable_package_name(as_dep.name())?;
@@ -24,7 +24,7 @@ pub fn new_app_project(config: &Config, options: &WorkspaceOptions) -> HuakResul
         super::DEFAULT_PYTHON_MAIN_FILE_CONTENTS,
     )?;
 
-    if let Some(table) = metadata.metadata_mut().project_table_mut() {
+    if let Some(table) = manifest.manifest_data_mut().project_table_mut() {
         let scripts = &mut table["scripts"];
 
         if scripts.is_none() {
@@ -35,16 +35,16 @@ pub fn new_app_project(config: &Config, options: &WorkspaceOptions) -> HuakResul
         scripts[name] = toml_edit::value(format!("{importable}.main:main"));
     }
 
-    metadata.write_file()
+    manifest.write_file()
 }
 
 pub fn new_lib_project(config: &Config, options: &WorkspaceOptions) -> HuakResult<()> {
     let workspace = config.workspace();
 
-    // Create a new metadata file or error if one exists.
-    let mut metadata = match workspace.current_local_metadata() {
+    // Create a new manifest file or error if one exists.
+    let mut manifest = match workspace.current_local_manifest() {
         Ok(_) => return Err(Error::ProjectFound),
-        Err(_) => LocalMetadata::template(workspace.root().join("pyproject.toml")),
+        Err(_) => LocalManifest::template(workspace.root().join("pyproject.toml")),
     };
 
     create_workspace(workspace.root())?;
@@ -54,11 +54,11 @@ pub fn new_lib_project(config: &Config, options: &WorkspaceOptions) -> HuakResul
     }
 
     let name = &last_path_component(&config.workspace_root)?;
-    metadata.metadata_mut().set_project_name(name);
+    manifest.manifest_data_mut().set_project_name(name);
 
-    metadata.metadata_mut().formatted();
-    metadata.write_file()?;
-    metadata.write_file()?;
+    manifest.manifest_data_mut().formatted();
+    manifest.write_file()?;
+    manifest.write_file()?;
 
     let as_dep = Dependency::from_str(name)?;
     let src_path = config.workspace_root.join("src");
@@ -103,7 +103,7 @@ mod tests {
         new_lib_project(&config, &options).unwrap();
 
         let ws = config.workspace();
-        let metadata = ws.current_local_metadata().unwrap();
+        let manifest = ws.current_local_manifest().unwrap();
         let test_file_filepath = ws.root().join("tests").join("test_version.py");
         let test_file = std::fs::read_to_string(test_file_filepath).unwrap();
         let expected_test_file = r"from mock_project import __version__
@@ -121,8 +121,8 @@ def test_version():
         let expected_init_file = "__version__ = \"0.0.1\"
 ";
 
-        assert!(metadata
-            .metadata()
+        assert!(manifest
+            .manifest_data()
             .project_table()
             .and_then(|it| it.get("scripts"))
             .is_none());
@@ -150,7 +150,7 @@ def test_version():
         new_app_project(&config, &options).unwrap();
 
         let ws = config.workspace();
-        let metadata = ws.current_local_metadata().unwrap();
+        let manifest = ws.current_local_manifest().unwrap();
         let main_file_filepath = ws.root().join("src").join("mock_project").join("main.py");
         let main_file = std::fs::read_to_string(main_file_filepath).unwrap();
         let expected_main_file = r#"def main():
@@ -163,8 +163,8 @@ if __name__ == "__main__":
 
         assert_eq!(
             value_to_sanitized_string(
-                metadata
-                    .metadata()
+                manifest
+                    .manifest_data()
                     .project_table()
                     .unwrap()
                     .get("scripts")

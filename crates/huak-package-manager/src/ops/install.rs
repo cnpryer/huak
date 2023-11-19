@@ -6,7 +6,7 @@ pub fn install_project_dependencies(
     options: &InstallOptions,
 ) -> HuakResult<()> {
     let workspace = config.workspace();
-    let metadata = workspace.current_local_metadata()?;
+    let manifest = workspace.current_local_manifest()?;
 
     let mut dependencies = Vec::new();
 
@@ -14,15 +14,16 @@ pub fn install_project_dependencies(
         // If the group "required" is passed and isn't a valid optional dependency group
         // then install just the required dependencies.
         // TODO(cnpryer): Refactor/move
-        if metadata
-            .metadata()
+        if manifest
+            .manifest_data()
             .project_optional_dependency_groups()
             .map_or(false, |it| it.iter().any(|s| s == "required"))
         {
-            if let Some(reqs) = metadata.metadata().project_dependencies() {
+            if let Some(reqs) = manifest.manifest_data().project_dependencies() {
                 dependencies.extend(reqs);
             }
-        } else if let Some(optional_deps) = metadata.metadata().project_optional_dependencies() {
+        } else if let Some(optional_deps) = manifest.manifest_data().project_optional_dependencies()
+        {
             for g in gs {
                 // TODO(cnpryer): Perf
                 if let Some(deps) = optional_deps.get(&g.to_string()) {
@@ -31,16 +32,19 @@ pub fn install_project_dependencies(
             }
         }
     } else {
-        // If no groups are passed then install all dependencies listed in the metadata file
+        // If no groups are passed then install all dependencies listed in the manifest file
         // including the optional dependencies.
-        if let Some(reqs) = metadata.metadata().project_dependencies() {
+        if let Some(reqs) = manifest.manifest_data().project_dependencies() {
             dependencies.extend(reqs);
         }
 
         // TODO(cnpryer): Install optional as opt-in
-        if let Some(groups) = metadata.metadata().project_optional_dependency_groups() {
+        if let Some(groups) = manifest
+            .manifest_data()
+            .project_optional_dependency_groups()
+        {
             for key in groups {
-                if let Some(g) = metadata.metadata().project_optional_dependencies() {
+                if let Some(g) = manifest.manifest_data().project_optional_dependencies() {
                     if let Some(it) = g.get(&key) {
                         dependencies.extend(it.iter().cloned());
                     }

@@ -11,7 +11,7 @@ pub struct LintOptions {
 
 pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
     let workspace = config.workspace();
-    let mut metadata = workspace.current_local_metadata()?;
+    let mut manifest = workspace.current_local_manifest()?;
     let python_env = workspace.resolve_python_environment()?;
 
     // Install `ruff` if it isn't already installed.
@@ -52,12 +52,12 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
     cmd.args(args).current_dir(workspace.root());
     terminal.run_command(&mut cmd)?;
 
-    // Add installed lint deps (potentially both `mypy` and `ruff`) to metadata file if not already there.
+    // Add installed lint deps (potentially both `mypy` and `ruff`) to manifest file if not already there.
     let new_lint_deps = lint_deps
         .iter()
         .filter(|dep| {
-            !metadata
-                .metadata()
+            !manifest
+                .manifest_data()
                 .contains_project_dependency_any(dep.name())
         })
         .map(Dependency::name)
@@ -69,14 +69,14 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
             .iter()
             .filter(|pkg| new_lint_deps.contains(&pkg.name()))
         {
-            metadata
-                .metadata_mut()
+            manifest
+                .manifest_data_mut()
                 .add_project_optional_dependency(&pkg.to_string(), "dev");
         }
     }
 
-    metadata.metadata_mut().formatted();
-    metadata.write_file()?;
+    manifest.manifest_data_mut().formatted();
+    manifest.write_file()?;
 
     Ok(())
 }

@@ -2,7 +2,7 @@ use crate::package::Package;
 use crate::{
     environment::Environment,
     fs,
-    metadata::LocalMetadata,
+    manifest::LocalManifest,
     python_environment::{default_venv_name, venv_config_file_name},
     Config, Error, HuakResult, PythonEnvironment,
 };
@@ -48,29 +48,29 @@ impl Workspace {
         Environment::new()
     }
 
-    /// Get the current `Package`. The current `Package` is one found by its metadata file nearest based
+    /// Get the current `Package`. The current `Package` is one found by its manifest file nearest based
     /// on the `Workspace`'s `Config` data.
     pub fn current_package(&self) -> HuakResult<Package> {
-        // Currently only pyproject.toml `LocalMetadata` file is supported.
-        let metadata = self.current_local_metadata()?;
+        // Currently only pyproject.toml `LocalManifest` file is supported.
+        let manifest = self.current_local_manifest()?;
 
-        let package = Package::try_from_metadata(metadata.metadata())?;
+        let package = Package::try_from_manifest(&manifest)?;
 
         Ok(package)
     }
 
-    /// Get the current `LocalMetadata` based on the `Config` data.
-    pub fn current_local_metadata(&self) -> HuakResult<LocalMetadata> {
-        // The current metadata file is the first found in a search.
+    /// Get the current `LocalManifest` based on the `Config` data.
+    pub fn current_local_manifest(&self) -> HuakResult<LocalManifest> {
+        // The current manifest file is the first found in a search.
         let ws = resolve_first(&self.config.cwd, PathMarker::file("pyproject.toml"));
 
         // Currently only pyproject.toml is supported.
         let path = ws.root().join("pyproject.toml");
 
         if path.exists() {
-            LocalMetadata::new(path)
+            LocalManifest::new(path)
         } else {
-            Err(Error::MetadataFileNotFound)
+            Err(Error::ManifestFileFound)
         }
     }
 
@@ -216,10 +216,10 @@ fn resolve_local_toolchain(
         return resolver.from_dir(channel, toolchains);
     }
 
-    // Use workspace project metadata and return if a toolchain is listed.
-    if let Ok(metadata) = workspace.current_local_metadata() {
-        if let Some(table) = metadata
-            .metadata()
+    // Use workspace project manifest and return if a toolchain is listed.
+    if let Ok(manifest) = workspace.current_local_manifest() {
+        if let Some(table) = manifest
+            .manifest_data()
             .tool_table()
             .and_then(|it| it.get("huak"))
         {

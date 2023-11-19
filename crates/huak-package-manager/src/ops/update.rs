@@ -13,15 +13,15 @@ pub fn update_project_dependencies(
     options: &UpdateOptions,
 ) -> HuakResult<()> {
     let workspace = config.workspace();
-    let mut metadata = workspace.current_local_metadata()?;
+    let mut manifest = workspace.current_local_manifest()?;
     let python_env = workspace.resolve_python_environment()?;
 
-    // Collect dependencies to update if they are listed in the metadata file.
+    // Collect dependencies to update if they are listed in the manifest file.
     if let Some(it) = dependencies.as_ref() {
         let deps = dependency_iter(it)
             .filter_map(|dep| {
-                if metadata
-                    .metadata()
+                if manifest
+                    .manifest_data()
                     .contains_project_dependency_any(dep.name())
                 {
                     Some(dep)
@@ -37,13 +37,16 @@ pub fn update_project_dependencies(
 
         python_env.update_packages(&deps, &options.install_options, config)?;
     } else {
-        let mut deps = metadata
-            .metadata()
+        let mut deps = manifest
+            .manifest_data()
             .project_dependencies()
             .map_or(Vec::new(), |reqs| reqs.into_iter().collect::<Vec<_>>());
 
-        if let Some(gs) = metadata.metadata().project_optional_dependency_groups() {
-            if let Some(optional_deps) = metadata.metadata().project_optional_dependencies() {
+        if let Some(gs) = manifest
+            .manifest_data()
+            .project_optional_dependency_groups()
+        {
+            if let Some(optional_deps) = manifest.manifest_data().project_optional_dependencies() {
                 for g in gs {
                     // TODO(cnpryer): Perf
                     if let Some(it) = optional_deps.get(&g.to_string()) {
@@ -58,38 +61,43 @@ pub fn update_project_dependencies(
         python_env.update_packages(&deps, &options.install_options, config)?;
     }
 
-    let groups = metadata.metadata().project_optional_dependency_groups();
+    let groups = manifest
+        .manifest_data()
+        .project_optional_dependency_groups();
 
     for pkg in python_env.installed_packages()? {
         let dep = &Dependency::from_str(&pkg.to_string())?;
-        if metadata.metadata().contains_project_dependency(dep.name()) {
-            metadata
-                .metadata_mut()
+        if manifest
+            .manifest_data()
+            .contains_project_dependency(dep.name())
+        {
+            manifest
+                .manifest_data_mut()
                 .remove_project_dependency(dep.name());
-            metadata
-                .metadata_mut()
+            manifest
+                .manifest_data_mut()
                 .add_project_dependency(&dep.to_string());
         }
 
         if let Some(gs) = groups.as_ref() {
             for g in gs {
-                if metadata
-                    .metadata()
+                if manifest
+                    .manifest_data()
                     .contains_project_optional_dependency(dep.name(), g)
                 {
-                    metadata
-                        .metadata_mut()
+                    manifest
+                        .manifest_data_mut()
                         .remove_project_optional_dependency(dep.name(), g);
-                    metadata
-                        .metadata_mut()
+                    manifest
+                        .manifest_data_mut()
                         .add_project_optional_dependency(&dep.to_string(), g);
                 }
             }
         }
     }
 
-    metadata.metadata_mut().formatted();
-    metadata.write_file()?;
+    manifest.manifest_data_mut().formatted();
+    manifest.write_file()?;
 
     Ok(())
 }

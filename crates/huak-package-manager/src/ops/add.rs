@@ -13,11 +13,15 @@ pub fn add_project_dependencies(
     options: &AddOptions,
 ) -> HuakResult<()> {
     let workspace = config.workspace();
-    let mut metadata = workspace.current_local_metadata()?;
+    let mut manifest = workspace.current_local_manifest()?;
 
-    // Collect all dependencies that need to be added to the metadata file.
+    // Collect all dependencies that need to be added to the manifest file.
     let mut deps = dependency_iter(dependencies)
-        .filter(|dep| !metadata.metadata().contains_project_dependency(dep.name()))
+        .filter(|dep| {
+            !manifest
+                .manifest_data()
+                .contains_project_dependency(dep.name())
+        })
         .collect::<Vec<_>>();
 
     if deps.is_empty() {
@@ -27,7 +31,7 @@ pub fn add_project_dependencies(
     let python_env = workspace.resolve_python_environment()?;
     python_env.install_packages(&deps, &options.install_options, config)?;
 
-    // If there's no version data then get the installed version and add to metadata file.
+    // If there's no version data then get the installed version and add to manifest file.
     let packages = python_env.installed_packages()?; // TODO: Only run if versions weren't provided.
     for dep in &mut deps {
         if dep.requirement().version_or_url.is_none() {
@@ -40,15 +44,18 @@ pub fn add_project_dependencies(
             }
         }
 
-        if !metadata.metadata().contains_project_dependency(dep.name()) {
-            metadata
-                .metadata_mut()
+        if !manifest
+            .manifest_data()
+            .contains_project_dependency(dep.name())
+        {
+            manifest
+                .manifest_data_mut()
                 .add_project_dependency(&dep.to_string());
         }
     }
 
-    metadata.metadata_mut().formatted();
-    metadata.write_file()?;
+    manifest.manifest_data_mut().formatted();
+    manifest.write_file()?;
 
     Ok(())
 }
@@ -60,14 +67,14 @@ pub fn add_project_optional_dependencies(
     options: &AddOptions,
 ) -> HuakResult<()> {
     let workspace = config.workspace();
-    let mut metadata = workspace.current_local_metadata()?;
+    let mut manifest = workspace.current_local_manifest()?;
 
     // Collect all dependencies that need to be added.
     // TODO(cnpryer): Allow
     let mut deps = dependency_iter(dependencies)
         .filter(|dep| {
-            !metadata
-                .metadata()
+            !manifest
+                .manifest_data()
                 .contains_project_optional_dependency(dep.name(), group)
         })
         .collect::<Vec<Dependency>>();
@@ -79,7 +86,7 @@ pub fn add_project_optional_dependencies(
     let python_env = workspace.resolve_python_environment()?;
     python_env.install_packages(&deps, &options.install_options, config)?;
 
-    // If there's no version data then get the installed version and add to metadata file.
+    // If there's no version data then get the installed version and add to manifest file.
     let packages = python_env.installed_packages()?; // TODO: Only run if versions weren't provided.
     for dep in &mut deps {
         if dep.requirement().version_or_url.is_none() {
@@ -92,18 +99,18 @@ pub fn add_project_optional_dependencies(
             }
         }
 
-        if !metadata
-            .metadata()
+        if !manifest
+            .manifest_data()
             .contains_project_optional_dependency(dep.name(), group)
         {
-            metadata
-                .metadata_mut()
+            manifest
+                .manifest_data_mut()
                 .add_project_optional_dependency(&dep.to_string(), group);
         }
     }
 
-    metadata.metadata_mut().formatted();
-    metadata.write_file()?;
+    manifest.manifest_data_mut().formatted();
+    manifest.write_file()?;
 
     Ok(())
 }
@@ -145,10 +152,12 @@ mod tests {
         add_project_dependencies(&[String::from("ruff")], &config, &options).unwrap();
 
         let dep = Dependency::from_str("ruff").unwrap();
-        let metadata = ws.current_local_metadata().unwrap();
+        let manifest = ws.current_local_manifest().unwrap();
 
         assert!(venv.contains_module("ruff").unwrap());
-        assert!(metadata.metadata().contains_project_dependency(dep.name()));
+        assert!(manifest
+            .manifest_data()
+            .contains_project_dependency(dep.name()));
     }
 
     #[test]
@@ -184,11 +193,11 @@ mod tests {
             .unwrap();
 
         let dep = Dependency::from_str("isort").unwrap();
-        let metadata = ws.current_local_metadata().unwrap();
+        let manifest = ws.current_local_manifest().unwrap();
 
         assert!(venv.contains_module("isort").unwrap());
-        assert!(metadata
-            .metadata()
+        assert!(manifest
+            .manifest_data()
             .contains_project_optional_dependency(dep.name(), "dev"));
     }
 }

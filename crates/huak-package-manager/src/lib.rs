@@ -52,7 +52,7 @@ mod environment;
 mod error;
 mod fs;
 mod git;
-mod metadata;
+mod manifest;
 pub mod ops;
 mod package;
 mod python_environment;
@@ -65,9 +65,9 @@ pub use environment::{env_path_string, env_path_values, Environment};
 pub use error::{Error, HuakResult};
 pub use fs::{copy_dir, last_path_component, CopyDirOptions};
 pub use git::{default_python_gitignore, init as git_init};
-pub use metadata::{
+pub use manifest::{
     default_package_entrypoint_string, default_package_test_file_contents,
-    default_pyproject_toml_contents, LocalMetadata,
+    default_pyproject_toml_contents, LocalManifest,
 };
 pub use package::{importable_package_name, Package};
 pub use python_environment::{
