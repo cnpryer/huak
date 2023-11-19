@@ -34,6 +34,10 @@ pub enum Error {
     InternalError(String),
     #[error("a checksum is invalid: {0}")]
     InvalidChecksum(String),
+    #[error("a program is invalid: {0}")]
+    InvalidProgram(String),
+    #[error("a run command is invalid: {0}")]
+    InvalidRunCommand(String),
     #[error("a version number could not be parsed: {0}")]
     InvalidVersionString(String),
     #[error("a problem occurred with json deserialization: {0}")]

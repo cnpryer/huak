@@ -24,10 +24,10 @@ pub struct Environment {
 impl Environment {
     /// Initialize an `Environment`.
     #[must_use]
-    pub fn new() -> Environment {
-        let interpreters = Environment::resolve_python_interpreters();
+    pub fn new() -> Self {
+        let interpreters = Self::resolve_python_interpreters();
 
-        Environment { interpreters }
+        Self { interpreters }
     }
 
     /// Get an `Iterator` over the Python `Interpreter` `PathBuf`s found.

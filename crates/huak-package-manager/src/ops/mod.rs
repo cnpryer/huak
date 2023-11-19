@@ -57,7 +57,7 @@ if __name__ == "__main__":
 ///   `PATH` environment variable.
 /// - Adds `VIRTUAL_ENV` environment variable to the command pointing at the virtual environment's
 ///   root.
-fn make_venv_command(cmd: &mut Command, venv: &PythonEnvironment) -> HuakResult<()> {
+fn add_venv_to_command(cmd: &mut Command, venv: &PythonEnvironment) -> HuakResult<()> {
     let mut paths = env_path_values().unwrap_or_default();
 
     paths.insert(0, venv.executables_dir_path().clone());

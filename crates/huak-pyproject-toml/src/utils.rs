@@ -8,10 +8,12 @@ pub fn value_to_sanitized_string(value: &Value) -> String {
     }
 }
 
-pub(crate) fn sanitize_str(s: &str) -> String {
+#[must_use]
+pub fn sanitize_str(s: &str) -> String {
     s.trim_matches('\n')
         .trim()
         .trim_start_matches(['\\', '\'', '"'])
+        .trim_end_matches(['"', '\'', '\\'])
         .to_string()
 }
 

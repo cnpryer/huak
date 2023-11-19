@@ -168,6 +168,13 @@ dev = [
     "black ==22.8.0",
     "isort ==5.12.0",
 ]
+
+[tool.huak.task]
+string = "python -c 'print(\"string\")'"
+array = ["python", "-c", "print('array')"]
+inline-cmd = { cmd = "python -c 'print(\"cmd\")'" }
+inline-args = { args = ["python", "-c", "print('args')"] }
+inline-program = { program = "python", args = ["-c", "print('program')"], env = { TESTING_HUAK = "test"} }
 "#
         );
     }
@@ -238,6 +245,13 @@ dev = [
     "pytest == 7.4.3",
     "ruff",
 ]
+
+[tool.huak.task]
+string = "python -c 'print(\"string\")'"
+array = ["python", "-c", "print('array')"]
+inline-cmd = { cmd = "python -c 'print(\"cmd\")'" }
+inline-args = { args = ["python", "-c", "print('args')"] }
+inline-program = { program = "python", args = ["-c", "print('program')"], env = { TESTING_HUAK = "test"} }
 "#
         );
     }
@@ -282,6 +296,13 @@ dev = [
 new-group = [
     "test2",
 ]
+
+[tool.huak.task]
+string = "python -c 'print(\"string\")'"
+array = ["python", "-c", "print('array')"]
+inline-cmd = { cmd = "python -c 'print(\"cmd\")'" }
+inline-args = { args = ["python", "-c", "print('args')"] }
+inline-program = { program = "python", args = ["-c", "print('program')"], env = { TESTING_HUAK = "test"} }
 "#
         );
     }
@@ -317,6 +338,13 @@ dev = [
     "pytest == 7.4.3",
     "ruff",
 ]
+
+[tool.huak.task]
+string = "python -c 'print(\"string\")'"
+array = ["python", "-c", "print('array')"]
+inline-cmd = { cmd = "python -c 'print(\"cmd\")'" }
+inline-args = { args = ["python", "-c", "print('args')"] }
+inline-program = { program = "python", args = ["-c", "print('program')"], env = { TESTING_HUAK = "test"} }
 "#
         );
     }
@@ -353,6 +381,13 @@ email = "cnpryer@gmail.com"
 dev = [
     "pytest == 7.4.3",
 ]
+
+[tool.huak.task]
+string = "python -c 'print(\"string\")'"
+array = ["python", "-c", "print('array')"]
+inline-cmd = { cmd = "python -c 'print(\"cmd\")'" }
+inline-args = { args = ["python", "-c", "print('args')"] }
+inline-program = { program = "python", args = ["-c", "print('program')"], env = { TESTING_HUAK = "test"} }
 "#
         );
     }
