@@ -6,7 +6,7 @@ pub fn display_project_version(config: &Config) -> HuakResult<()> {
     let workspace = config.workspace();
     let package = workspace.current_package()?;
 
-    let Some(version) = package.metadata().project_version() else {
+    let Some(version) = package.manifest_data().project_version() else {
         return Err(Error::PackageVersionNotFound);
     };
 

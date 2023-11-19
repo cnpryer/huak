@@ -1,4 +1,4 @@
-use crate::{Error, HuakResult};
+use crate::{Error, HuakResult, LocalManifest};
 use huak_pyproject_toml::PyProjectToml;
 use lazy_static::lazy_static;
 use pep440_rs::{Operator, Version, VersionSpecifiers};
@@ -27,8 +27,8 @@ lazy_static! {
 pub struct Package {
     /// Information used to identify the `Package`.
     id: PackageId,
-    /// The `Package`'s core `PyProjectToml` metadata.
-    metadata: PyProjectToml,
+    /// The `Package`'s manifest data (TODO(cnpryer): Make just core)
+    manifest_data: PyProjectToml,
 }
 
 impl Package {
@@ -44,18 +44,18 @@ impl Package {
         &self.id.version
     }
 
-    /// Get a reference to the `Package`'s core `PyProjectToml` metadata.
+    /// Get a reference to the `Package`'s manifest data.
     #[must_use]
-    pub fn metadata(&self) -> &PyProjectToml {
-        &self.metadata
+    pub fn manifest_data(&self) -> &PyProjectToml {
+        &self.manifest_data
     }
 
-    pub fn try_from_metadata(metadata: &PyProjectToml) -> HuakResult<Self> {
-        let Some(name) = metadata.project_name() else {
+    pub fn try_from_manifest(manifest: &LocalManifest) -> HuakResult<Self> {
+        let Some(name) = manifest.manifest_data().project_name() else {
             return Err(Error::InternalError("missing project name".to_string()));
         };
 
-        let Some(version) = metadata.project_version() else {
+        let Some(version) = manifest.manifest_data().project_version() else {
             return Err(Error::InternalError("missing project version".to_string()));
         };
 
@@ -65,7 +65,7 @@ impl Package {
                 version: Version::from_str(&version)
                     .map_err(|e| Error::InvalidVersionString(e.to_string()))?,
             },
-            metadata: metadata.clone(),
+            manifest_data: manifest.manifest_data().clone(),
         })
     }
 
@@ -108,10 +108,10 @@ impl Package {
             version: version_specifer.version().to_owned(),
         };
 
-        let mut metadata = PyProjectToml::default();
-        metadata.set_project_name(&name);
+        let mut manifest_data = PyProjectToml::default();
+        manifest_data.set_project_name(&name);
 
-        let package = Package { id, metadata };
+        let package = Package { id, manifest_data };
 
         Ok(package)
     }

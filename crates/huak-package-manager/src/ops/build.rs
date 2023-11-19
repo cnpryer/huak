@@ -10,7 +10,7 @@ pub struct BuildOptions {
 
 pub fn build_project(config: &Config, options: &BuildOptions) -> HuakResult<()> {
     let workspace = config.workspace();
-    let mut metadata = workspace.current_local_metadata()?;
+    let mut manifest = workspace.current_local_manifest()?;
     let python_env = workspace.resolve_python_environment()?;
 
     // Install the `build` package if it isn't already installed.
@@ -19,9 +19,9 @@ pub fn build_project(config: &Config, options: &BuildOptions) -> HuakResult<()> 
         python_env.install_packages(&[&build_dep], &options.install_options, config)?;
     }
 
-    // Add the installed `build` package to the metadata file.
-    if !metadata
-        .metadata()
+    // Add the installed `build` package to the manifest file.
+    if !manifest
+        .manifest_data()
         .contains_project_dependency_any(build_dep.name())
     {
         for pkg in python_env
@@ -29,14 +29,14 @@ pub fn build_project(config: &Config, options: &BuildOptions) -> HuakResult<()> 
             .iter()
             .filter(|pkg| pkg.name() == build_dep.name())
         {
-            metadata
-                .metadata_mut()
+            manifest
+                .manifest_data_mut()
                 .add_project_optional_dependency(&pkg.to_string(), "dev");
         }
     }
 
-    metadata.metadata_mut().formatted();
-    metadata.write_file()?;
+    manifest.manifest_data_mut().formatted();
+    manifest.write_file()?;
 
     // Run `build`.
     let mut cmd = Command::new(python_env.python_path());

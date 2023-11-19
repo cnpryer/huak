@@ -10,7 +10,7 @@ pub struct TestOptions {
 
 pub fn test_project(config: &Config, options: &TestOptions) -> HuakResult<()> {
     let workspace = config.workspace();
-    let mut metadata = workspace.current_local_metadata()?;
+    let mut manifest = workspace.current_local_manifest()?;
     let python_env = workspace.resolve_python_environment()?;
 
     // Install `pytest` if it isn't already installed.
@@ -19,9 +19,9 @@ pub fn test_project(config: &Config, options: &TestOptions) -> HuakResult<()> {
         python_env.install_packages(&[&test_dep], &options.install_options, config)?;
     }
 
-    // Add the installed `pytest` package to the metadata file if it isn't already there.
-    if !metadata
-        .metadata()
+    // Add the installed `pytest` package to the manifest file if it isn't already there.
+    if !manifest
+        .manifest_data()
         .contains_project_dependency_any(test_dep.name())
     {
         for pkg in python_env
@@ -29,14 +29,14 @@ pub fn test_project(config: &Config, options: &TestOptions) -> HuakResult<()> {
             .iter()
             .filter(|pkg| pkg.name() == test_dep.name())
         {
-            metadata
-                .metadata_mut()
+            manifest
+                .manifest_data_mut()
                 .add_project_optional_dependency(&pkg.to_string(), "dev");
         }
     }
 
-    metadata.metadata_mut().formatted();
-    metadata.write_file()?;
+    manifest.manifest_data_mut().formatted();
+    manifest.write_file()?;
 
     // Run `pytest` with the package directory added to the command's `PYTHONPATH`.
     let mut cmd = Command::new(python_env.python_path());

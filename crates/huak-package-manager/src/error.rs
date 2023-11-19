@@ -44,10 +44,10 @@ pub enum Error {
     PEP440Error(#[from] pep440_rs::Pep440Error),
     #[error("a problem occurred with PEP508 parsing: {0}")]
     PEP508Error(#[from] pep508_rs::Pep508Error),
-    #[error("a metadata file already exists")]
-    MetadataFileFound,
-    #[error("a metadata file could not be found")]
-    MetadataFileNotFound,
+    #[error("a manifest file already exists")]
+    ManifestFileFound,
+    #[error("a manifest file could not be found")]
+    ManifestFileNotFound,
     #[error("a package version could not be found")]
     PackageVersionNotFound,
     #[error("a project already exists")]
