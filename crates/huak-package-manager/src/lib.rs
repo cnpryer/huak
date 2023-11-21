@@ -16,7 +16,7 @@
 //!```zsh
 //! ❯ huak help
 //!
-//! A Python package manager written in Rust inspired by Cargo.
+//! A Python package manager written in Rust and inspired by Cargo.
 //!
 //! Usage: huak [OPTIONS] <COMMAND>
 //!
@@ -24,27 +24,29 @@
 //!   activate    Activate the virtual environment
 //!   add         Add dependencies to the project
 //!   build       Build tarball and wheel for the project
-//!   completion  Generates a shell completion script for supported shells
 //!   clean       Remove tarball and wheel from the built project
+//!   completion  Generates a shell completion script for supported shells
 //!   fix         Auto-fix fixable lint conflicts
 //!   fmt         Format the project's Python code
 //!   init        Initialize the existing project
 //!   install     Install the dependencies of an existing project
 //!   lint        Lint the project's Python code
 //!   new         Create a new project at <path>
-//!   lish        Builds and uploads current project to a registry
+//!   publish     Builds and uploads current project to a registry
 //!   python      Manage Python installations
 //!   remove      Remove dependencies from the project
-//!   run         Run a command with Huak
+//!   run         Run a command within the project's environment context
 //!   test        Test the project's Python code
+//!   toolchain   Manage toolchains
 //!   update      Update the project's dependencies
 //!   version     Display the version of the project
 //!   help        Print this message or the help of the given subcommand(s)
 //!
-//!  Options:
-//!    -q, --quiet    
-//!    -h, --help     Print help
-//!    -V, --version  Print version
+//! Options:
+//!   -q, --quiet     
+//!       --no-color  
+//!   -h, --help      Print help
+//!   -V, --version   Print version
 //!```
 mod config;
 mod dependency;
