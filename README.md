@@ -34,10 +34,10 @@ The goal is to create an opinionated tool to support a reliably inviting onboard
 ## Installation
 
 ```
-❯ pip install huak
+pip install huak
 ```
 
-To install Huak from source use `Cargo`:
+To install Huak from source using Cargo:
 
 ```
 cargo install --git https://github.com/cnpryer/huak.git huak
