@@ -178,17 +178,17 @@ enum Commands {
 
 #[derive(Subcommand)]
 enum Python {
+    /// Install a Python interpreter.
+    Install {
+        /// The version of Python to install.
+        #[arg(required = true)]
+        version: RequestedVersion,
+    },
     /// List available Python interpreters.
     List,
     /// Use an available Python interpreter.
     Use {
         /// The version of Python to use.
-        #[arg(required = true)]
-        version: RequestedVersion,
-    },
-    /// Install a Python interpreter.
-    Install {
-        /// The version of Python to install.
         #[arg(required = true)]
         version: RequestedVersion,
     },
