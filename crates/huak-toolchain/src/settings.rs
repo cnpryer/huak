@@ -47,7 +47,7 @@ impl SettingsDb {
         let key_string = dunce::canonicalize(key)?.to_string_lossy().to_string();
         let value_string = dunce::canonicalize(value)?.to_string_lossy().to_string();
 
-        self.doc_mut()["scopes"][key_string] = toml_edit::value(value_string);
+        self.doc_mut()["scope"][key_string] = toml_edit::value(value_string);
 
         Ok(())
     }
@@ -58,7 +58,7 @@ impl SettingsDb {
             .to_string();
 
         self.doc_mut()
-            .get_mut("scopes")
+            .get_mut("scope")
             .and_then(|it| it.as_inline_table_mut()) // TODO(cnpryer): Don't inline
             .and_then(|it| it.remove(&key_string));
 
@@ -72,7 +72,7 @@ impl SettingsDb {
             .to_string();
 
         // TODO(cnpryer): Smarter escape
-        let entry = self.doc().get("scopes").and_then(|it| {
+        let entry = self.doc().get("scope").and_then(|it| {
             it.get(key_string)
                 .map(|v| (key, escape_str(&v.to_string())))
         });
@@ -85,7 +85,7 @@ impl SettingsDb {
     }
 
     pub fn remove_toolchain<T: AsRef<Path>>(&mut self, path: T) -> Result<(), Error> {
-        if let Some(scopes) = self.doc().get("scopes") {
+        if let Some(scopes) = self.doc().get("scope") {
             if let Some(values) = scopes.as_inline_table().map(|it| it.get_values()) {
                 let key_path = dunce::canonicalize(path.as_ref())?;
                 // TODO(cnpryer): Perf
@@ -159,7 +159,7 @@ mod tests {
 
         db.remove_scope(dir).unwrap();
 
-        let table = db.doc().get("scopes").unwrap();
+        let table = db.doc().get("scope").unwrap();
 
         assert!(table
             .as_inline_table()
@@ -191,7 +191,7 @@ mod tests {
 
         db.remove_toolchain(&toolchain).unwrap();
 
-        let table = db.doc().get("scopes").unwrap();
+        let table = db.doc().get("scope").unwrap();
 
         assert!(table
             .as_inline_table()

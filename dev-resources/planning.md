@@ -9,7 +9,7 @@ Like rustup's settings.toml, a settings.toml will be used to tie projects to too
 
 ## Motivation
 
-`huak toolchain use` requires persisted data in the user's environment to track what projects *use* which installed toolchains. settings.toml provides a place to store this data as "scopes" for installed toolchains.
+`huak toolchain use` requires persisted data in the user's environment to track what projects *use* which installed toolchains. settings.toml provides a place to store this data as "scope" for installed toolchains.
 
 ## Requirements
 
@@ -22,7 +22,7 @@ Like rustup's settings.toml, a settings.toml will be used to tie projects to too
 Huak's toolchain management system can allow for target directories to contain settings.toml files. Settings can live outside a toolchain directory containing settings data about how the toolchain might be used.
 
 ```toml
-[scopes]
+[scope]
 "/" = "default"  # Resolve to "default" for any paths under the root (sets "default" as default)
 "some/project/path" = "toolchain path"
 ```
