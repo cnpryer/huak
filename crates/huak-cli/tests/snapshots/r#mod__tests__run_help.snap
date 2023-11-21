@@ -9,7 +9,7 @@ info:
 success: true
 exit_code: 0
 ----- stdout -----
-Run a command within the project's environment context
+Run a command with Huak
 
 Usage: huak run [OPTIONS] [COMMAND]...
 

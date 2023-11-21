@@ -147,7 +147,7 @@ enum Commands {
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
-    /// Run a command within the project's environment context.
+    /// Run a command with Huak.
     Run {
         #[arg(trailing_var_arg = true)]
         command: Vec<String>,
