@@ -1,6 +1,7 @@
-use super::make_venv_command;
 use crate::{Config, Dependency, HuakResult, InstallOptions};
 use std::{process::Command, str::FromStr};
+
+use super::add_venv_to_command;
 
 pub struct FormatOptions {
     /// A values vector of format options typically used for passing on arguments.
@@ -56,8 +57,8 @@ pub fn format_project(config: &Config, options: &FormatOptions) -> HuakResult<()
     let mut cmd = Command::new(python_env.python_path());
     let mut ruff_cmd = Command::new(python_env.python_path());
     let mut ruff_args = vec!["-m", "ruff", "check", ".", "--select", "I", "--fix"];
-    make_venv_command(&mut cmd, &python_env)?;
-    make_venv_command(&mut ruff_cmd, &python_env)?;
+    add_venv_to_command(&mut cmd, &python_env)?;
+    add_venv_to_command(&mut ruff_cmd, &python_env)?;
     let mut args = vec!["-m", "ruff", "format", "."];
     if let Some(v) = options.values.as_ref() {
         args.extend(v.iter().map(String::as_str));

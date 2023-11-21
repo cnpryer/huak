@@ -35,7 +35,7 @@
 //!   lish        Builds and uploads current project to a registry
 //!   python      Manage Python installations
 //!   remove      Remove dependencies from the project
-//!   run         Run a command within the project's environment context
+//!   run         Run a command with Huak
 //!   test        Test the project's Python code
 //!   update      Update the project's dependencies
 //!   version     Display the version of the project

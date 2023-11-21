@@ -1,4 +1,4 @@
-use super::make_venv_command;
+use super::add_venv_to_command;
 use crate::{Config, Dependency, HuakResult, InstallOptions};
 use std::{process::Command, str::FromStr};
 
@@ -44,7 +44,7 @@ pub fn publish_project(config: &Config, options: &PublishOptions) -> HuakResult<
     if let Some(v) = options.values.as_ref() {
         args.extend(v.iter().map(String::as_str));
     }
-    make_venv_command(&mut cmd, &python_env)?;
+    add_venv_to_command(&mut cmd, &python_env)?;
     cmd.args(args).current_dir(workspace.root());
     config.terminal().run_command(&mut cmd)
 }

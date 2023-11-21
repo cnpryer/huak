@@ -66,8 +66,8 @@ pub use error::Error;
 use pep508_rs::Requirement;
 use std::{collections::HashMap, fmt::Display, path::Path, str::FromStr};
 use toml_edit::{Array, Document, Formatted, Item, Table, Value};
-pub use utils::value_to_sanitized_string;
-use utils::{format_array, format_table, sanitize_str};
+use utils::{format_array, format_table};
+pub use utils::{sanitize_str, value_to_sanitized_string};
 
 mod error;
 mod utils;

@@ -1,4 +1,4 @@
-use super::make_venv_command;
+use super::add_venv_to_command;
 use crate::{Config, Dependency, HuakResult, InstallOptions};
 use std::{process::Command, str::FromStr};
 
@@ -35,7 +35,7 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
 
         // Run `mypy` excluding the workspace's Python environment directory.
         let mut mypy_cmd = Command::new(python_env.python_path());
-        make_venv_command(&mut mypy_cmd, &python_env)?;
+        add_venv_to_command(&mut mypy_cmd, &python_env)?;
         mypy_cmd
             .args(vec!["-m", "mypy", ".", "--exclude", &python_env.name()?])
             .current_dir(workspace.root());
@@ -48,7 +48,7 @@ pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
     if let Some(v) = options.values.as_ref() {
         args.extend(v.iter().map(String::as_str));
     }
-    make_venv_command(&mut cmd, &python_env)?;
+    add_venv_to_command(&mut cmd, &python_env)?;
     cmd.args(args).current_dir(workspace.root());
     terminal.run_command(&mut cmd)?;
 

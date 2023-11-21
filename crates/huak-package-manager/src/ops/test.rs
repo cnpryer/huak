@@ -1,4 +1,4 @@
-use super::make_venv_command;
+use super::add_venv_to_command;
 use crate::{Config, Dependency, HuakResult, InstallOptions};
 use std::{process::Command, str::FromStr};
 
@@ -40,7 +40,7 @@ pub fn test_project(config: &Config, options: &TestOptions) -> HuakResult<()> {
 
     // Run `pytest` with the package directory added to the command's `PYTHONPATH`.
     let mut cmd = Command::new(python_env.python_path());
-    make_venv_command(&mut cmd, &python_env)?;
+    add_venv_to_command(&mut cmd, &python_env)?;
     let python_path = if workspace.root().join("src").exists() {
         workspace.root().join("src")
     } else {
