@@ -8,7 +8,9 @@ use crate::{
 };
 use huak_toolchain::{Channel, LocalToolchain, LocalToolchainResolver, SettingsDb};
 use huak_workspace::{resolve_first, PathMarker};
+use std::str::FromStr;
 use std::{path::PathBuf, process::Command};
+use toml_edit::Item;
 
 /// The `Workspace` is a struct for resolving things like the current `Package`
 /// or the current `PythonEnvironment`. It can also provide a snapshot of the `Environment`,
@@ -91,10 +93,13 @@ impl Workspace {
     /// Get the current `PythonEnvironment`. The current `PythonEnvironment` is one
     /// found by its configuration file or `Interpreter` nearest baseed on `Config` data.
     pub fn current_python_environment(&self) -> HuakResult<PythonEnvironment> {
-        let path = find_venv_root(&self.config.cwd, &self.root)?;
-        let env = PythonEnvironment::new(path)?;
+        let toolchain = self.resolve_local_toolchain(None);
+        let path = toolchain
+            .map(|it| it.root().join(".venv"))
+            .or(find_venv_root(&self.config.cwd, &self.root))?;
+        let py_env = PythonEnvironment::new(path)?;
 
-        Ok(env)
+        Ok(py_env)
     }
 
     /// Create a `PythonEnvironment` for the `Workspace`.
@@ -211,28 +216,27 @@ fn resolve_local_toolchain(
     }
 
     // If a channel is provided then search for it from huak's toolchain directory.
-    if let Some(channel) = channel.as_ref() {
+    if let Some(channel) = channel {
         let resolver = LocalToolchainResolver::new();
         return resolver.from_dir(channel, toolchains);
     }
 
-    // Use workspace project manifest and return if a toolchain is listed.
-    if let Ok(manifest) = workspace.current_local_manifest() {
-        if let Some(table) = manifest
-            .manifest_data()
-            .tool_table()
-            .and_then(|it| it.get("huak"))
-        {
-            if let Some(path) = table
-                .get("toolchain")
-                .map(std::string::ToString::to_string)
-                .map(PathBuf::from)
-            {
-                if path.exists() {
-                    return Some(LocalToolchain::new(path));
-                }
-            };
-        };
+    // Use workspace project manifest and return if a toolchain is listed. TODO(cnpryer): May not be channel
+    if let Some(manifest_channel) = workspace
+        .current_local_manifest()
+        .map(|it| {
+            it.manifest_data()
+                .tool_table()
+                .and_then(|tool| tool.get("huak"))
+                .and_then(Item::as_table)
+                .and_then(|table| table.get("toolchain"))
+                .and_then(Item::as_str) // TODO(cnpryer): Support non-string toolchain values
+                .and_then(|s| Channel::from_str(s).ok())
+        })
+        .unwrap_or_default()
+        .as_ref()
+    {
+        return resolve_local_toolchain(workspace, Some(manifest_channel));
     };
 
     // Attempt to retrieve the toolchain for the current workspace scope by resolving for
