@@ -158,6 +158,8 @@ impl Workspace {
 pub struct WorkspaceOptions {
     /// Inidcate the `Workspace` should use git.
     pub uses_git: bool,
+    /// Trailing argument values.
+    pub values: Option<Vec<String>>,
 }
 
 /// Search for a Python virtual environment.
