@@ -1,5 +1,5 @@
 ---
-source: crates/huak_cli/tests/mod.rs
+source: crates/huak-cli/tests/mod.rs
 info:
   program: huak
   args:
@@ -9,17 +9,34 @@ info:
 success: true
 exit_code: 0
 ----- stdout -----
-Initialize the existing project
+Initialize the current project
 
-Usage: huak init [OPTIONS]
+Usage: huak init [OPTIONS] [-- <TRAILING>...]
+
+Arguments:
+  [TRAILING]...  Pass trailing arguments with `--`
 
 Options:
-      --app       Use an application template
-      --lib       Use a library template [default]
-      --no-vcs    Don't initialize VCS in the project
-  -q, --quiet     
-      --no-color  
-  -h, --help      Print help
+      --app
+          Use an application template
+      --lib
+          Use a library template [default]
+      --no-vcs
+          Don't initialize VCS in the project
+      --manifest <MANIFEST>
+          Initialize with a project manifest
+      --no-env
+          Initialize without setting up a Python environment
+      --optional-dependencies <OPTIONAL_DEPENDENCIES>
+          Optional dependency groups to install
+  -f, --force
+          Force the initialization
+  -q, --quiet
+          
+      --no-color
+          
+  -h, --help
+          Print help
 
 ----- stderr -----
 

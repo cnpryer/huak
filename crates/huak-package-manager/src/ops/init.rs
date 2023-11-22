@@ -64,15 +64,14 @@ pub fn init_python_env(
 
     // TODO(cnpryer): Can't remember if clap parses "." as curr dir
     let mut manifest_path = manifest.unwrap_or(ws.root().join("pyproject.toml"));
-
     if manifest_path
         .file_name()
         .is_some_and(|it| !it.eq_ignore_ascii_case("pyproject.toml"))
     {
         return Err(Error::ManifestFileNotSupported(manifest_path));
-    } else {
-        manifest_path.set_file_name("pyproject.toml");
     }
+
+    manifest_path.set_file_name("pyproject.toml");
 
     let Ok(manifest) = LocalManifest::new(manifest_path) else {
         return config
@@ -131,6 +130,7 @@ pub fn init_python_env(
         return Ok(());
     }
 
+    // TODO(cnpryer): Relax this by attempting to use existing environments
     if force {
         // Remove the current Python virtual environment if one exists.
         match ws.current_python_environment() {

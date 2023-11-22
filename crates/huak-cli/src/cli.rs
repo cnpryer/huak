@@ -92,6 +92,7 @@ enum Commands {
         #[arg(long)]
         no_vcs: bool,
         /// Initialize with a project manifest.
+        #[arg(long)]
         manifest: Option<PathBuf>,
         // TODO(cnpryer): https://github.com/cnpryer/huak/issues/853
         // /// Initialize with requirements files.
@@ -100,8 +101,10 @@ enum Commands {
         // /// Initialize with development requirements files.
         // dev_requirements: Option<Vec<PathBuf>>,
         /// Initialize without setting up a Python environment.
+        #[arg(long)]
         no_env: bool,
         /// Optional dependency groups to install.
+        #[arg(long)]
         optional_dependencies: Option<Vec<String>>,
         /// Force the initialization.
         #[arg(short, long)]
@@ -512,6 +515,8 @@ fn fmt(config: &Config, options: &FormatOptions) -> HuakResult<()> {
     ops::format_project(config, options)
 }
 
+#[allow(clippy::too_many_arguments)]
+#[allow(clippy::fn_params_excessive_bools)]
 fn init(
     app: bool,
     _lib: bool,
@@ -530,7 +535,7 @@ fn init(
     };
 
     // If initialization failed because a manifest file already exists and the project
-    // initialization option 'with-env' is 'true' then we attempt to inititialize the
+    // initialization option 'no-env' is 'false' then we attempt to inititialize the
     // project's Python environment.
     if res
         .as_ref()
