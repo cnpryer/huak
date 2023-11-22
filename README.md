@@ -46,8 +46,6 @@ cargo install --git https://github.com/cnpryer/huak.git huak
 ## Usage
 
 ```console
-❯ huak help
-
 A Python package manager written in Rust and inspired by Cargo.
 
 Usage: huak [OPTIONS] <COMMAND>
@@ -60,8 +58,7 @@ Commands:
   completion  Generates a shell completion script for supported shells
   fix         Auto-fix fixable lint conflicts
   fmt         Format the project's Python code
-  init        Initialize the existing project
-  install     Install the dependencies of an existing project
+  init        Initialize the current project
   lint        Lint the project's Python code
   new         Create a new project at <path>
   publish     Builds and uploads current project to a registry

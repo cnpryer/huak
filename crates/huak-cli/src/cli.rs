@@ -80,7 +80,7 @@ enum Commands {
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
     },
-    /// Initialize the existing project.
+    /// Initialize the current project.
     Init {
         /// Use an application template.
         #[arg(long, conflicts_with = "lib")]
@@ -91,12 +91,24 @@ enum Commands {
         /// Don't initialize VCS in the project
         #[arg(long)]
         no_vcs: bool,
-    },
-    /// Install the dependencies of an existing project.
-    Install {
-        /// Install optional dependency groups
-        #[arg(long, num_args = 1..)]
-        groups: Option<Vec<String>>,
+        /// Initialize with a project manifest.
+        #[arg(long)]
+        manifest: Option<PathBuf>,
+        // TODO(cnpryer): https://github.com/cnpryer/huak/issues/853
+        // /// Initialize with requirements files.
+        // #[arg(short, long)]
+        // requirements: Option<Vec<PathBuf>>,
+        // /// Initialize with development requirements files.
+        // dev_requirements: Option<Vec<PathBuf>>,
+        /// Initialize without setting up a Python environment.
+        #[arg(long)]
+        no_env: bool,
+        /// Optional dependency groups to install.
+        #[arg(long)]
+        optional_dependencies: Option<Vec<String>>,
+        /// Force the initialization.
+        #[arg(short, long)]
+        force: bool,
         /// Pass trailing arguments with `--`.
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
@@ -337,14 +349,36 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
             };
             fmt(config, &options)
         }
-        Commands::Init { app, lib, no_vcs } => {
+        Commands::Init {
+            app,
+            lib,
+            no_vcs,
+            manifest,
+            no_env,
+            optional_dependencies,
+            trailing,
+            force,
+        } => {
             config.workspace_root = config.cwd.clone();
-            let options = WorkspaceOptions { uses_git: !no_vcs };
-            init(app, lib, config, &options)
-        }
-        Commands::Install { groups, trailing } => {
-            let options = InstallOptions { values: trailing };
-            install(groups, config, &options)
+            let workspace_options = WorkspaceOptions {
+                uses_git: !no_vcs,
+                values: None,
+            };
+
+            let install_options = InstallOptions { values: trailing }; // TODO(cnpryer)
+
+            // TODO(cnpryer): Use `WorkspaceOptions` where possible.
+            init(
+                app,
+                lib,
+                manifest,
+                no_env,
+                optional_dependencies,
+                force,
+                config,
+                &workspace_options,
+                &install_options,
+            )
         }
         Commands::Lint {
             fix,
@@ -373,7 +407,10 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
             no_vcs,
         } => {
             config.workspace_root = PathBuf::from(path);
-            let options = WorkspaceOptions { uses_git: !no_vcs };
+            let options = WorkspaceOptions {
+                uses_git: !no_vcs,
+                values: None,
+            };
             new(app, lib, config, &options)
         }
         Commands::Publish { trailing } => {
@@ -478,21 +515,44 @@ fn fmt(config: &Config, options: &FormatOptions) -> HuakResult<()> {
     ops::format_project(config, options)
 }
 
-fn init(app: bool, _lib: bool, config: &Config, options: &WorkspaceOptions) -> HuakResult<()> {
-    if app {
-        ops::init_app_project(config, options)
-    } else {
-        ops::init_lib_project(config, options)
-    }
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn install(
-    groups: Option<Vec<String>>,
+#[allow(clippy::too_many_arguments)]
+#[allow(clippy::fn_params_excessive_bools)]
+fn init(
+    app: bool,
+    _lib: bool,
+    manifest: Option<PathBuf>,
+    no_env: bool,
+    optional_dependencies: Option<Vec<String>>,
+    force: bool,
     config: &Config,
-    options: &InstallOptions,
+    workspace_options: &WorkspaceOptions,
+    install_options: &InstallOptions,
 ) -> HuakResult<()> {
-    ops::install_project_dependencies(groups.as_ref(), config, options)
+    let res = if app {
+        ops::init_app_project(config, workspace_options)
+    } else {
+        ops::init_lib_project(config, workspace_options)
+    };
+
+    // If initialization failed because a manifest file already exists and the project
+    // initialization option 'no-env' is 'false' then we attempt to inititialize the
+    // project's Python environment.
+    if res
+        .as_ref()
+        .err()
+        .map_or(true, |it| matches!(it, HuakError::ManifestFileFound))
+        && !no_env
+    {
+        ops::init_python_env(
+            manifest,
+            optional_dependencies,
+            force,
+            install_options,
+            config,
+        )
+    } else {
+        res
+    }
 }
 
 fn lint(config: &Config, options: &LintOptions) -> HuakResult<()> {

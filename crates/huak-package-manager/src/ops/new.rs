@@ -98,7 +98,10 @@ mod tests {
             terminal_options,
             ..Default::default()
         };
-        let options = WorkspaceOptions { uses_git: false };
+        let options = WorkspaceOptions {
+            uses_git: false,
+            values: None,
+        };
 
         new_lib_project(&config, &options).unwrap();
 
@@ -145,7 +148,10 @@ def test_version():
             terminal_options,
             ..Default::default()
         };
-        let options = WorkspaceOptions { uses_git: false };
+        let options = WorkspaceOptions {
+            uses_git: false,
+            values: None,
+        };
 
         new_app_project(&config, &options).unwrap();
 

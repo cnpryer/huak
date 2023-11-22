@@ -52,6 +52,8 @@ pub enum Error {
     ManifestFileFound,
     #[error("a manifest file could not be found")]
     ManifestFileNotFound,
+    #[error("a manifest file is not supported: {0}")]
+    ManifestFileNotSupported(PathBuf),
     #[error("a package version could not be found")]
     PackageVersionNotFound,
     #[error("a project already exists")]
