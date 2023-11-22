@@ -175,10 +175,7 @@ impl LocalToolchain {
                     let p = entry.path();
 
                     if p == self.bin().join(file_name) {
-                        tools.push(LocalTool {
-                            name: file_name.to_string(),
-                            path: self.bin().join(file_name),
-                        });
+                        tools.push(LocalTool::from(self.bin().join(file_name)));
                     }
                 }
             }

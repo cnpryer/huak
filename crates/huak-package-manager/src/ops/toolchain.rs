@@ -26,7 +26,16 @@ pub fn add_tool(tool: &LocalTool, channel: Option<&Channel>, config: &Config) ->
     // Resolve a toolchain if a channel is provided. Otherwise resolve the curerent.
     let toolchain = config.workspace().resolve_local_toolchain(channel)?;
 
-    let args = ["-m", "pip", "install", &tool.name];
+    add_tool_to_toolchain(tool, &toolchain, config)
+}
+
+// TODO(cnpryer): Refactor
+pub(crate) fn add_tool_to_toolchain(
+    tool: &LocalTool,
+    toolchain: &LocalToolchain,
+    config: &Config,
+) -> HuakResult<()> {
+    let args = ["-m", "pip", "install", tool.spec().unwrap_or(&tool.name)];
     let venv = PythonEnvironment::new(toolchain.root().join(".venv"))?;
 
     let mut terminal = config.terminal();
@@ -115,7 +124,7 @@ pub fn install_toolchain(
         return Err(Error::LocalToolchainExists(path));
     }
 
-    if let Err(e) = install(path.clone(), channel, config) {
+    if let Err(e) = install(&path, channel, config) {
         teardown(parent.join(&channel_string), config)?;
         Err(e)
     } else {
@@ -124,7 +133,56 @@ pub fn install_toolchain(
 }
 
 #[allow(clippy::too_many_lines)]
-fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
+pub(crate) fn install(path: &PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
+    let mut terminal = config.terminal();
+
+    let toolchain = match install_minimal_toolchain(path, channel, config) {
+        Ok(it) => it,
+        Err(Error::LocalToolchainExists(_)) => {
+            return terminal
+                .print_warning(format!("Toolchain already exists at {}", path.display()))
+        }
+        Err(e) => return Err(e),
+    };
+    let venv = PythonEnvironment::new(toolchain.root().join(".venv"))?;
+
+    // Register more tools to the toolchain
+    for name in ["ruff", "mypy", "pytest"] {
+        terminal.print_custom("Installing", name, Color::Green, true)?;
+
+        let mut cmd: Command = Command::new(venv.python_path());
+        cmd.current_dir(&config.cwd)
+            .args(["-m", "pip", "install", name]);
+
+        terminal.run_command(&mut cmd)?;
+
+        let Some(p) = venv.executable_module_path(name) else {
+            return Err(Error::PythonModuleNotFound(name.to_string()));
+        };
+
+        if toolchain.register_tool(&p, name, false).is_err() {
+            toolchain.register_tool(&p, name, true)?;
+            // TODO(cnpryer): Handle errors
+        }
+    }
+
+    terminal.print_custom(
+        "Finished",
+        format!(
+            "installed '{}' ({})",
+            toolchain.name(),
+            toolchain.root().display()
+        ),
+        Color::Green,
+        true,
+    )
+}
+
+pub(crate) fn install_minimal_toolchain(
+    path: &PathBuf,
+    channel: Channel,
+    config: &Config,
+) -> HuakResult<LocalToolchain> {
     let mut toolchain = LocalToolchain::new(path);
 
     toolchain.set_channel(channel);
@@ -137,12 +195,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
 
     // If 'python' is already installed we don't install it.
     if py.exists() {
-        terminal.print_warning(format!(
-            "Toolchain already exists at {}",
-            toolchain.bin().display()
-        ))?;
-
-        return Ok(());
+        return Err(Error::LocalToolchainExists(path.clone()));
     }
 
     for p in [toolchain.bin(), toolchain.downloads()] {
@@ -258,36 +311,7 @@ fn install(path: PathBuf, channel: Channel, config: &Config) -> HuakResult<()> {
         // TODO(cnpryer): Handle errors
     }
 
-    // Register more tools to the toolchain
-    for name in ["ruff", "mypy", "pytest"] {
-        terminal.print_custom("Installing", name, Color::Green, true)?;
-
-        let mut cmd: Command = Command::new(venv.python_path());
-        cmd.current_dir(&config.cwd)
-            .args(["-m", "pip", "install", name]);
-
-        terminal.run_command(&mut cmd)?;
-
-        let Some(p) = venv.executable_module_path(name) else {
-            return Err(Error::PythonModuleNotFound(name.to_string()));
-        };
-
-        if toolchain.register_tool(&p, name, false).is_err() {
-            toolchain.register_tool(&p, name, true)?;
-            // TODO(cnpryer): Handle errors
-        }
-    }
-
-    terminal.print_custom(
-        "Finished",
-        format!(
-            "installed '{}' ({})",
-            toolchain.name(),
-            toolchain.root().display()
-        ),
-        Color::Green,
-        true,
-    )
+    Ok(toolchain)
 }
 
 /// Resolve available toolchains and display their names as a list. Display the following with
@@ -347,6 +371,10 @@ pub fn remove_tool(tool: &LocalTool, channel: Option<&Channel>, config: &Config)
     let cmd = cmd.args(args).current_dir(&config.cwd);
 
     let tool = toolchain.tool(&tool.name);
+    let Some(path) = tool.path.as_ref() else {
+        return Err(Error::InternalError(format!("'{}' has no path", tool.name)));
+        // TODO(cnpryer)
+    };
 
     terminal.print_custom(
         "Updating",
@@ -358,7 +386,7 @@ pub fn remove_tool(tool: &LocalTool, channel: Option<&Channel>, config: &Config)
     terminal.set_verbosity(Verbosity::Quiet);
     terminal.run_command(cmd)?;
 
-    remove_path_with_scope(&tool.path, toolchain.root())?;
+    remove_path_with_scope(path, toolchain.root())?;
     terminal.set_verbosity(Verbosity::Normal);
 
     terminal.print_custom(
@@ -408,8 +436,13 @@ fn run(
                 .join(py_bin_name())
                 .join("python"),
         ))
+    } else if let Some(it) = tool.path {
+        Command::new(it)
     } else {
-        Command::new(tool.path)
+        return Err(Error::InternalError(format!(
+            "failed to run tool '{}",
+            tool.name
+        )));
     };
 
     cmd.args(args).current_dir(&config.cwd);
@@ -470,10 +503,7 @@ pub fn update_toolchain(
             .tools()
             .into_iter()
             .filter(|it| it.name != "python")
-            .chain([LocalTool {
-                name: "pip".to_string(),
-                path: toolchain.bin().join("pip"),
-            }])
+            .chain([])
             .collect()
     };
 
@@ -481,7 +511,11 @@ pub fn update_toolchain(
 
     let args = ["-m", "pip", "install", "--upgrade"];
     for tool in tools {
-        let mut cmd = Command::new(&py.path);
+        let Some(p) = py.path.as_ref() else {
+            return Err(Error::PythonNotFound);
+        };
+
+        let mut cmd = Command::new(p);
 
         terminal.print_custom("Updating", &tool.name, Color::Green, true)?;
         terminal.set_verbosity(Verbosity::Quiet);
