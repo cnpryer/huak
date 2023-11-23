@@ -21,6 +21,7 @@ Commands:
   fix         Auto-fix fixable lint conflicts
   fmt         Format the project's Python code
   init        Initialize the current project
+  install     Install a Python package (defaults to $HOME/.huak/bin)
   lint        Lint the project's Python code
   new         Create a new project at <path>
   publish     Builds and uploads current project to a registry

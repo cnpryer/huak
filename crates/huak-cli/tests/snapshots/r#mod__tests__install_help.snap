@@ -1,0 +1,32 @@
+---
+source: crates/huak-cli/tests/mod.rs
+info:
+  program: huak
+  args:
+    - install
+    - "--help"
+---
+success: true
+exit_code: 0
+----- stdout -----
+Install a Python package (defaults to $HOME/.huak/bin)
+
+Usage: huak install [OPTIONS] <PACKAGE>
+
+Arguments:
+  <PACKAGE>  The Python package to install
+
+Options:
+      --python-version <PYTHON_VERSION>
+          The Python version to use.  TODO(cnpryer): https://github.com/cnpryer/huak/issues/850
+      --package-index-url <PACKAGE_INDEX_URL>
+          The package index to use.  TODO(cnpryer): Deps (document this) [default: https://pypi.python.org/simple]
+  -q, --quiet
+          
+      --no-color
+          
+  -h, --help
+          Print help
+
+----- stderr -----
+
