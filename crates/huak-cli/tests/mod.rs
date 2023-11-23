@@ -49,10 +49,10 @@ mod tests {
         assert_cmd_snapshot!(Command::new("huak").arg("init").arg("--help"));
     }
 
-    // #[test]
-    // fn test_install_help() {
-    //     assert_cmd_snapshot!(Command::new("huak").arg("install").arg("--help"));
-    // }
+    #[test]
+    fn test_install_help() {
+        assert_cmd_snapshot!(Command::new("huak").arg("install").arg("--help"));
+    }
 
     #[test]
     fn test_lint_help() {

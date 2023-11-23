@@ -11,30 +11,38 @@ use std::{fmt::Display, path::PathBuf, str::FromStr};
 /// let path = PathBuf::new();
 /// let tool = LocalTool::new(&path);
 ///
-/// assert_eq!(&path, &tool.path);
+/// assert_eq!(path, tool.path.unwrap());
 /// ```
 #[derive(Clone, Debug)]
 pub struct LocalTool {
     pub name: String,
-    pub path: PathBuf,
+    pub path: Option<PathBuf>,
+    spec: Option<String>,
 }
 
 impl LocalTool {
     pub fn new<T: Into<PathBuf>>(path: T) -> Self {
         // TODO(cnpryer): More robust
-        let path = path.into();
+        Self::from(path.into())
+    }
 
+    #[must_use]
+    pub fn spec(&self) -> Option<&String> {
+        self.spec.as_ref()
+    }
+
+    #[must_use]
+    pub fn from_spec(name: String, spec: String) -> Self {
         Self {
-            name: name_from_path(&path)
-                .map(ToString::to_string)
-                .unwrap_or_default(),
-            path,
+            name,
+            path: None,
+            spec: Some(spec),
         }
     }
 
     #[must_use]
     pub fn exists(&self) -> bool {
-        self.path.exists()
+        self.path.as_ref().map_or(false, |it| it.exists())
     }
 }
 
@@ -49,5 +57,17 @@ impl FromStr for LocalTool {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(LocalTool::new(s))
+    }
+}
+
+impl From<PathBuf> for LocalTool {
+    fn from(value: PathBuf) -> Self {
+        LocalTool {
+            name: name_from_path(&value)
+                .map(ToString::to_string)
+                .unwrap_or_default(),
+            path: Some(value.clone()),
+            spec: None,
+        }
     }
 }

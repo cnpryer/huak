@@ -403,10 +403,9 @@ where
         cmd.envs(env);
     }
 
-    cmd.args(args).current_dir(&config.cwd);
-    dbg!(&cmd);
-
-    config.terminal().run_command(&mut cmd)
+    config
+        .terminal()
+        .run_command(cmd.args(args).current_dir(&config.cwd))
 }
 
 fn item_as_args(item: &Item) -> Option<Vec<String>> {

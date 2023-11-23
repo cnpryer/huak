@@ -3,8 +3,8 @@ use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::{self, Shell};
 use huak_home::huak_home_dir;
 use huak_package_manager::ops::{
-    self, AddOptions, BuildOptions, CleanOptions, FormatOptions, LintOptions, PublishOptions,
-    RemoveOptions, TestOptions, UpdateOptions,
+    self, install as install_op, AddOptions, BuildOptions, CleanOptions, FormatOptions,
+    LintOptions, PublishOptions, RemoveOptions, TestOptions, UpdateOptions,
 };
 use huak_package_manager::{
     Config, Error as HuakError, HuakResult, InstallOptions, TerminalOptions, Verbosity,
@@ -13,8 +13,10 @@ use huak_package_manager::{
 use huak_python_manager::RequestedVersion;
 use huak_toolchain::{Channel, LocalTool};
 use huak_workspace::{resolve_root, PathMarker};
+use pep508_rs::Requirement;
 use std::{env::current_dir, path::PathBuf, process::ExitCode, str::FromStr};
 use termcolor::ColorChoice;
+use url::Url;
 
 /// A Python package manager written in Rust inspired by Cargo.
 #[derive(Parser)]
@@ -112,6 +114,23 @@ enum Commands {
         /// Pass trailing arguments with `--`.
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
+    },
+    /// Install a Python package (defaults to $HOME/.huak/bin).
+    Install {
+        /// The Python package to install.
+        #[arg(required = true)]
+        package: Requirement,
+        /// The Python version to use.  TODO(cnpryer): https://github.com/cnpryer/huak/issues/850
+        #[arg(long, alias = "py", required = false)]
+        python_version: Option<RequestedVersion>,
+        /// The package index to use.  TODO(cnpryer): Deps (document this)
+        #[arg(
+            long,
+            alias = "index-url",
+            default_value = "https://pypi.python.org/simple",
+            required = false
+        )] // TODO(cnpryer): Names
+        package_index_url: Url,
     },
     /// Lint the project's Python code.
     Lint {
@@ -380,6 +399,11 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
                 &install_options,
             )
         }
+        Commands::Install {
+            package,
+            python_version,
+            package_index_url,
+        } => install(&package, python_version, &package_index_url, config),
         Commands::Lint {
             fix,
             no_types,
@@ -553,6 +577,15 @@ fn init(
     } else {
         res
     }
+}
+
+fn install(
+    package: &Requirement,
+    python_version: Option<RequestedVersion>,
+    package_index_url: &Url,
+    config: &Config,
+) -> HuakResult<()> {
+    install_op(package, python_version, package_index_url.as_str(), config)
 }
 
 fn lint(config: &Config, options: &LintOptions) -> HuakResult<()> {
