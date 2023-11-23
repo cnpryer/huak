@@ -11,7 +11,7 @@ use std::{fmt::Display, path::PathBuf, str::FromStr};
 /// let path = PathBuf::new();
 /// let tool = LocalTool::new(&path);
 ///
-/// assert_eq!(&path, &tool.path);
+/// assert_eq!(path, tool.path.unwrap());
 /// ```
 #[derive(Clone, Debug)]
 pub struct LocalTool {

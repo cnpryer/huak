@@ -59,7 +59,7 @@
 //! let py_bin = bin.join("python");
 //!
 //! assert_eq!(&py.name, "python");
-//! assert_eq!(py.path, py_bin);
+//! assert_eq!(py.path.unwrap(), py_bin);
 //! ```
 //!
 //! Use `toolchain.try_with_proxy_tool(tool)` to attempt to create a proxy file installed to the toolchain.
