@@ -93,10 +93,7 @@ impl Workspace {
     /// Get the current `PythonEnvironment`. The current `PythonEnvironment` is one
     /// found by its configuration file or `Interpreter` nearest baseed on `Config` data.
     pub fn current_python_environment(&self) -> HuakResult<PythonEnvironment> {
-        let toolchain = self.resolve_local_toolchain(None);
-        let path = toolchain
-            .map(|it| it.root().join(".venv"))
-            .or(find_venv_root(&self.config.cwd, &self.root))?;
+        let path = find_venv_root(&self.config.cwd, &self.root)?;
         let py_env = PythonEnvironment::new(path)?;
 
         Ok(py_env)
