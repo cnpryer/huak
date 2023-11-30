@@ -1,5 +1,5 @@
 use super::add_venv_to_command;
-use crate::{Config, Dependency, HuakResult, InstallOptions};
+use crate::{Config, Dependency, Error, HuakResult, InstallOptions, PythonEnvironment};
 use std::{process::Command, str::FromStr};
 
 pub struct LintOptions {
@@ -10,73 +10,49 @@ pub struct LintOptions {
 }
 
 pub fn lint_project(config: &Config, options: &LintOptions) -> HuakResult<()> {
-    let workspace = config.workspace();
-    let mut manifest = workspace.current_local_manifest()?;
-    let python_env = workspace.resolve_python_environment()?;
-
-    // Install `ruff` if it isn't already installed.
-    let ruff_dep = Dependency::from_str("ruff")?;
-    let mut lint_deps = vec![ruff_dep.clone()];
-    if !python_env.contains_module("ruff")? {
-        python_env.install_packages(&[&ruff_dep], &options.install_options, config)?;
-    }
+    let ws = config.workspace();
+    // TODO(cnpryer): We can technically do this without a current Python environment if we use toolchains.
+    let py_env = match ws.current_python_environment() {
+        Ok(it) if it.contains_module("ruff")? => it,
+        _ => {
+            match ws.resolve_local_toolchain(None) {
+                Ok(it) => PythonEnvironment::new(it.root().join(".venv"))?,
+                Err(Error::ToolchainNotFound) => {
+                    // Create a toolchain and return the Python environment it uses (with ruff installed)
+                    todo!()
+                }
+                Err(e) => return Err(e),
+            }
+        }
+    };
 
     let mut terminal = config.terminal();
 
     if options.include_types {
         // Install `mypy` if it isn't already installed.
         let mypy_dep = Dependency::from_str("mypy")?;
-        if !python_env.contains_module("mypy")? {
-            python_env.install_packages(&[&mypy_dep], &options.install_options, config)?;
+        if !py_env.contains_module("mypy")? {
+            py_env.install_packages(&[&mypy_dep], &options.install_options, config)?;
         }
 
-        // Keep track of the fact that `mypy` is a needed lint dep.
-        lint_deps.push(mypy_dep);
-
         // Run `mypy` excluding the workspace's Python environment directory.
-        let mut mypy_cmd = Command::new(python_env.python_path());
-        add_venv_to_command(&mut mypy_cmd, &python_env)?;
+        let mut mypy_cmd = Command::new(py_env.python_path());
+        add_venv_to_command(&mut mypy_cmd, &py_env)?;
         mypy_cmd
-            .args(vec!["-m", "mypy", ".", "--exclude", &python_env.name()?])
-            .current_dir(workspace.root());
+            .args(vec!["-m", "mypy", ".", "--exclude", &py_env.name()?])
+            .current_dir(ws.root());
         terminal.run_command(&mut mypy_cmd)?;
     }
 
     // Run `ruff`.
-    let mut cmd = Command::new(python_env.python_path());
+    let mut cmd = Command::new(py_env.python_path());
     let mut args = vec!["-m", "ruff", "check", "."];
     if let Some(v) = options.values.as_ref() {
         args.extend(v.iter().map(String::as_str));
     }
-    add_venv_to_command(&mut cmd, &python_env)?;
-    cmd.args(args).current_dir(workspace.root());
+    add_venv_to_command(&mut cmd, &py_env)?;
+    cmd.args(args).current_dir(ws.root());
     terminal.run_command(&mut cmd)?;
-
-    // Add installed lint deps (potentially both `mypy` and `ruff`) to manifest file if not already there.
-    let new_lint_deps = lint_deps
-        .iter()
-        .filter(|dep| {
-            !manifest
-                .manifest_data()
-                .contains_project_dependency_any(dep.name())
-        })
-        .map(Dependency::name)
-        .collect::<Vec<_>>();
-
-    if !new_lint_deps.is_empty() {
-        for pkg in python_env
-            .installed_packages()?
-            .iter()
-            .filter(|pkg| new_lint_deps.contains(&pkg.name()))
-        {
-            manifest
-                .manifest_data_mut()
-                .add_project_optional_dependency(&pkg.to_string(), "dev");
-        }
-    }
-
-    manifest.manifest_data_mut().formatted();
-    manifest.write_file()?;
 
     Ok(())
 }
