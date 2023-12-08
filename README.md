@@ -1,7 +1,6 @@
 
 [![pypi-release](https://img.shields.io/pypi/v/huak.svg)](https://pypi.org/project/huak/)
 [![ci](https://github.com/cnpryer/huak/actions/workflows/ci.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci.yaml)
-[![discord](https://img.shields.io/discord/1022879330470199347?color=7289DA&logo=discord)](https://discord.gg/St3menxFZT)
 
 # huak
 
