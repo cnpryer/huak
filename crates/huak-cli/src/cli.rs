@@ -321,7 +321,7 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
             let options = AddOptions {
                 install_options: InstallOptions { values: trailing },
             };
-            add(&dependencies, &options, group.as_ref(), config)
+            add(&dependencies, group.as_ref(), &options, config)
         }
         Commands::Build { trailing } => {
             let options = BuildOptions {
@@ -388,14 +388,14 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
 
             // TODO(cnpryer): Use `WorkspaceOptions` where possible.
             init(
-                &install_options,
-                &workspace_options,
                 manifest,
                 optional_dependencies,
                 app,
                 force,
                 lib,
                 no_env,
+                &install_options,
+                &workspace_options,
                 config,
             )
         }
@@ -403,7 +403,7 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
             package,
             python_version,
             package_index_url,
-        } => install(&package, &package_index_url, python_version, config),
+        } => install(&package, python_version, &package_index_url, config),
         Commands::Lint {
             fix,
             no_types,
@@ -470,7 +470,7 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
             let options = UpdateOptions {
                 install_options: InstallOptions { values: trailing },
             };
-            update(&options, dependencies, config)
+            update(dependencies, &options, config)
         }
         Commands::Version => version(config),
     }
@@ -509,8 +509,8 @@ fn activate(config: &Config) -> HuakResult<()> {
 
 fn add(
     dependencies: &[Dependency],
-    options: &AddOptions,
     group: Option<&String>,
+    options: &AddOptions,
     config: &Config,
 ) -> HuakResult<()> {
     let deps = dependencies
@@ -542,14 +542,14 @@ fn fmt(options: &FormatOptions, config: &Config) -> HuakResult<()> {
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::fn_params_excessive_bools)]
 fn init(
-    install_options: &InstallOptions,
-    workspace_options: &WorkspaceOptions,
     manifest: Option<PathBuf>,
     optional_dependencies: Option<Vec<String>>,
     app: bool,
     force: bool,
     no_env: bool,
     _lib: bool,
+    install_options: &InstallOptions,
+    workspace_options: &WorkspaceOptions,
     config: &Config,
 ) -> HuakResult<()> {
     let res = if app {
@@ -581,8 +581,8 @@ fn init(
 
 fn install(
     package: &Requirement,
-    package_index_url: &Url,
     python_version: Option<RequestedVersion>,
+    package_index_url: &Url,
     config: &Config,
 ) -> HuakResult<()> {
     install_op(package, python_version, package_index_url.as_str(), config)
@@ -645,8 +645,8 @@ fn toolchain(command: Toolchain, config: &Config) -> HuakResult<()> {
 }
 
 fn update(
-    options: &UpdateOptions,
     dependencies: Option<Vec<String>>,
+    options: &UpdateOptions,
     config: &Config,
 ) -> HuakResult<()> {
     ops::update_project_dependencies(dependencies, config, options)
