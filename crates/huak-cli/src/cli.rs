@@ -321,14 +321,14 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
             let options = AddOptions {
                 install_options: InstallOptions { values: trailing },
             };
-            add(&dependencies, group.as_ref(), config, &options)
+            add(&dependencies, group.as_ref(), &options, config)
         }
         Commands::Build { trailing } => {
             let options = BuildOptions {
                 values: trailing,
                 install_options: InstallOptions { values: None },
             };
-            build(config, &options)
+            build(&options, config)
         }
         Commands::Clean {
             include_pyc,
@@ -338,7 +338,7 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
                 include_pycache,
                 include_compiled_bytecode: include_pyc,
             };
-            clean(config, &options)
+            clean(&options, config)
         }
         Commands::Completion { shell } => {
             let options = CompletionOptions { shell };
@@ -351,7 +351,7 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
                 include_types: false,
                 install_options: InstallOptions { values: None },
             };
-            fix(config, &options)
+            fix(&options, config)
         }
         Commands::Fmt { check, trailing } => {
             let mut args = if check {
@@ -366,7 +366,7 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
                 values: Some(args),
                 install_options: InstallOptions { values: None },
             };
-            fmt(config, &options)
+            fmt(&options, config)
         }
         Commands::Init {
             app,
@@ -388,15 +388,15 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
 
             // TODO(cnpryer): Use `WorkspaceOptions` where possible.
             init(
-                app,
-                lib,
                 manifest,
-                no_env,
                 optional_dependencies,
+                app,
                 force,
-                config,
-                &workspace_options,
+                lib,
+                no_env,
                 &install_options,
+                &workspace_options,
+                config,
             )
         }
         Commands::Install {
@@ -435,14 +435,14 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
                 uses_git: !no_vcs,
                 values: None,
             };
-            new(app, lib, config, &options)
+            new(&options, app, lib, config)
         }
         Commands::Publish { trailing } => {
             let options = PublishOptions {
                 values: trailing,
                 install_options: InstallOptions { values: None },
             };
-            publish(config, &options)
+            publish(&options, config)
         }
         Commands::Python { command } => python(command, config),
         Commands::Remove {
@@ -452,7 +452,7 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
             let options = RemoveOptions {
                 install_options: InstallOptions { values: trailing },
             };
-            remove(&dependencies, config, &options)
+            remove(&dependencies, &options, config)
         }
         Commands::Run { command } => run(&command, config),
         Commands::Test { trailing } => {
@@ -460,7 +460,7 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
                 values: trailing,
                 install_options: InstallOptions { values: None },
             };
-            test(config, &options)
+            test(&options, config)
         }
         Commands::Toolchain { command } => toolchain(command, config),
         Commands::Update {
@@ -470,7 +470,7 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
             let options = UpdateOptions {
                 install_options: InstallOptions { values: trailing },
             };
-            update(dependencies, config, &options)
+            update(dependencies, &options, config)
         }
         Commands::Version => version(config),
     }
@@ -510,8 +510,8 @@ fn activate(config: &Config) -> HuakResult<()> {
 fn add(
     dependencies: &[Dependency],
     group: Option<&String>,
-    config: &Config,
     options: &AddOptions,
+    config: &Config,
 ) -> HuakResult<()> {
     let deps = dependencies
         .iter()
@@ -523,34 +523,34 @@ fn add(
     }
 }
 
-fn build(config: &Config, options: &BuildOptions) -> HuakResult<()> {
+fn build(options: &BuildOptions, config: &Config) -> HuakResult<()> {
     ops::build_project(config, options)
 }
 
-fn clean(config: &Config, options: &CleanOptions) -> HuakResult<()> {
+fn clean(options: &CleanOptions, config: &Config) -> HuakResult<()> {
     ops::clean_project(config, options)
 }
 
-fn fix(config: &Config, options: &LintOptions) -> HuakResult<()> {
+fn fix(options: &LintOptions, config: &Config) -> HuakResult<()> {
     ops::lint_project(config, options)
 }
 
-fn fmt(config: &Config, options: &FormatOptions) -> HuakResult<()> {
+fn fmt(options: &FormatOptions, config: &Config) -> HuakResult<()> {
     ops::format_project(config, options)
 }
 
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::fn_params_excessive_bools)]
 fn init(
-    app: bool,
-    _lib: bool,
     manifest: Option<PathBuf>,
-    no_env: bool,
     optional_dependencies: Option<Vec<String>>,
+    app: bool,
     force: bool,
-    config: &Config,
-    workspace_options: &WorkspaceOptions,
+    no_env: bool,
+    _lib: bool,
     install_options: &InstallOptions,
+    workspace_options: &WorkspaceOptions,
+    config: &Config,
 ) -> HuakResult<()> {
     let res = if app {
         ops::init_app_project(config, workspace_options)
@@ -592,7 +592,7 @@ fn lint(config: &Config, options: &LintOptions) -> HuakResult<()> {
     ops::lint_project(config, options)
 }
 
-fn new(app: bool, _lib: bool, config: &Config, options: &WorkspaceOptions) -> HuakResult<()> {
+fn new(options: &WorkspaceOptions, app: bool, _lib: bool, config: &Config) -> HuakResult<()> {
     if app {
         ops::new_app_project(config, options)
     } else {
@@ -600,7 +600,7 @@ fn new(app: bool, _lib: bool, config: &Config, options: &WorkspaceOptions) -> Hu
     }
 }
 
-fn publish(config: &Config, options: &PublishOptions) -> HuakResult<()> {
+fn publish(options: &PublishOptions, config: &Config) -> HuakResult<()> {
     ops::publish_project(config, options)
 }
 
@@ -612,7 +612,7 @@ fn python(command: Python, config: &Config) -> HuakResult<()> {
     }
 }
 
-fn remove(dependencies: &[String], config: &Config, options: &RemoveOptions) -> HuakResult<()> {
+fn remove(dependencies: &[String], options: &RemoveOptions, config: &Config) -> HuakResult<()> {
     ops::remove_project_dependencies(dependencies, config, options)
 }
 
@@ -620,7 +620,7 @@ fn run(command: &[String], config: &Config) -> HuakResult<()> {
     ops::run_command_str(&command.join(" "), config)
 }
 
-fn test(config: &Config, options: &TestOptions) -> HuakResult<()> {
+fn test(options: &TestOptions, config: &Config) -> HuakResult<()> {
     ops::test_project(config, options)
 }
 
@@ -646,8 +646,8 @@ fn toolchain(command: Toolchain, config: &Config) -> HuakResult<()> {
 
 fn update(
     dependencies: Option<Vec<String>>,
-    config: &Config,
     options: &UpdateOptions,
+    config: &Config,
 ) -> HuakResult<()> {
     ops::update_project_dependencies(dependencies, config, options)
 }
