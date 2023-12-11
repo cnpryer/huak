@@ -322,7 +322,10 @@ impl VenvConfig {
         let file =
             File::open(&path).unwrap_or_else(|_| panic!("failed to open {}", path.display()));
         let buff_reader = BufReader::new(file);
-        let lines = buff_reader.lines().flatten().collect::<Vec<String>>();
+        let lines = buff_reader
+            .lines()
+            .map_while(Result::ok)
+            .collect::<Vec<String>>();
 
         // Search for version = "X.X.X"
         let mut version = Version::from_str("0.0.0")?;
