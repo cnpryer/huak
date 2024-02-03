@@ -23,7 +23,7 @@ use termcolor::Color;
 /// already installed to the toolchain, and a version is provided that's different from the
 /// installed tool, then replace the installed tool with the desired version.
 pub fn add_tool(tool: &LocalTool, channel: Option<&Channel>, config: &Config) -> HuakResult<()> {
-    // Resolve a toolchain if a channel is provided. Otherwise resolve the curerent.
+    // Resolve a toolchain if a channel is provided. Otherwise resolve the current.
     let toolchain = config.workspace().resolve_local_toolchain(channel)?;
 
     add_tool_to_toolchain(tool, &toolchain, config)
@@ -360,7 +360,7 @@ pub fn remove_tool(tool: &LocalTool, channel: Option<&Channel>, config: &Config)
         unimplemented!()
     }
 
-    // Resolve a toolchain if a channel is provided. Otherwise resolve the curerent.
+    // Resolve a toolchain if a channel is provided. Otherwise resolve the current.
     let toolchain = config.workspace().resolve_local_toolchain(channel)?;
     let venv = PythonEnvironment::new(toolchain.root().join(".venv"))?;
 
@@ -492,7 +492,7 @@ pub fn update_toolchain(
     channel: Option<&Channel>,
     config: &Config,
 ) -> HuakResult<()> {
-    // Resolve a toolchain if a channel is provided. Otherwise resolve the curerent.
+    // Resolve a toolchain if a channel is provided. Otherwise resolve the current.
     let toolchain = config.workspace().resolve_local_toolchain(channel)?;
 
     let mut terminal = config.terminal();
