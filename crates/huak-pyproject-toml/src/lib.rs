@@ -184,13 +184,10 @@ impl PyProjectToml {
 
     #[must_use]
     pub fn project_dependencies(&self) -> Option<Vec<String>> {
-        let Some(array) = self
+        let array = self
             .project_table()
             .and_then(|it| it.get("dependencies"))
-            .and_then(Item::as_array)
-        else {
-            return None;
-        };
+            .and_then(Item::as_array)?;
 
         Some(
             array
@@ -245,13 +242,10 @@ impl PyProjectToml {
 
     #[must_use]
     pub fn project_optional_dependencies(&self) -> Option<HashMap<String, Vec<String>>> {
-        let Some(table) = self
+        let table = self
             .project_table()
             .and_then(|it| it.get("optional-dependencies"))
-            .and_then(Item::as_table)
-        else {
-            return None;
-        };
+            .and_then(Item::as_table)?;
 
         let mut deps = HashMap::new();
         let groups = table.iter().map(|(k, _)| k).collect::<Vec<_>>();

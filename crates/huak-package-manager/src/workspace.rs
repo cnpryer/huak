@@ -199,11 +199,7 @@ fn resolve_local_toolchain(
     channel: Option<&Channel>,
 ) -> Option<LocalToolchain> {
     let config = &workspace.config;
-
-    let Some(home) = config.home.as_ref() else {
-        return None;
-    };
-
+    let home = config.home.as_ref()?;
     let toolchains = home.join("toolchains");
     let settings = toolchains.join("settings.toml");
 

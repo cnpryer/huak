@@ -36,6 +36,7 @@ class Release(NamedTuple):
     checksum: str
     url: str
 
+    # TODO(cnpryer): avoid this
     def to_rust_string(self) -> str:
         (major, minor, patch) = self.version.split(".")
         version = f"Version::new({major}, {minor}, {patch})"
@@ -58,11 +59,12 @@ def get_checksum(url: str) -> str | None:
     return res.text.strip()
 
 
-path = FILE.parent / "generated_python_releases.parquet"
+# TODO(cnpryer): structured json
+path = FILE.parent / "generated_python_releases.json"
 generated = (
     pl.DataFrame({"url": [], "string": []}, schema={"url": pl.Utf8, "string": pl.Utf8})
     if not path.exists()
-    else pl.read_parquet(path)
+    else pl.read_json(path)
 )
 new_releases = {"url": [], "string": []}
 
@@ -177,5 +179,5 @@ path = ROOT / "crates" / CRATE / "src" / "releases.rs"
 path.write_text(module)
 
 new_releases = pl.DataFrame(new_releases, schema={"url": pl.Utf8, "string": pl.Utf8})
-path = FILE.parent / "generated_python_releases.parquet"
-pl.concat((generated, new_releases)).write_parquet(path)
+path = FILE.parent / "generated_python_releases.json"
+pl.concat((generated, new_releases)).write_json(path)
