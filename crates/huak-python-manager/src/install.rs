@@ -168,24 +168,24 @@ mod tests {
         let py = bin.join("python");
         let py3 = bin.join("python3");
         let py312 = bin.join("python3.12");
-        let pys = [py.clone(), py3, py312];
+        let pythons = [py.clone(), py3, py312];
         let module = bin.join("module");
 
         std::fs::create_dir_all(&bin).unwrap();
 
-        for file in pys.iter().chain([&module]) {
+        for file in pythons.iter().chain([&module]) {
             let mut file = File::create(file).unwrap();
             file.write_all(&[]).unwrap();
         }
 
         let release_dir = PythonReleaseDir::new(dir);
 
-        let ibin = release_dir.bin_path();
-        let ipy = ibin.join("python");
+        let release_bin = release_dir.bin_path();
+        let release_py = release_bin.join("python");
 
-        assert_eq!(bin, ibin);
-        assert_eq!(py, ipy);
-        assert_eq!(module, ibin.join("module"));
+        assert_eq!(bin, release_bin);
+        assert_eq!(py, release_py);
+        assert_eq!(module, release_bin.join("module"));
     }
 
     #[cfg(windows)]
@@ -197,23 +197,23 @@ mod tests {
         let parent = dir.join("install");
         let bin = parent.join("Scripts");
         let py = parent.join("python.exe");
-        let pys = [py.clone()];
+        let pythons = [py.clone()];
         let module = bin.join("module.exe");
 
         std::fs::create_dir_all(&bin).unwrap();
 
-        for file in pys.iter().chain([&module]) {
+        for file in pythons.iter().chain([&module]) {
             let mut file = File::create(file).unwrap();
             file.write_all(&[]).unwrap();
         }
 
         let release_dir = PythonReleaseDir::new(dir);
 
-        let ibin = release_dir.bin_path();
-        let ipy = release_dir.python_path(None);
+        let release_bin = release_dir.bin_path();
+        let release_py = release_dir.python_path(None);
 
-        assert_eq!(bin, ibin);
-        assert_eq!(py, ipy);
-        assert_eq!(module, ibin.join("module.exe"));
+        assert_eq!(bin, release_bin);
+        assert_eq!(py, release_py);
+        assert_eq!(module, release_bin.join("module.exe"));
     }
 }

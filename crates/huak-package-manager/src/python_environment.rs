@@ -655,7 +655,7 @@ mod tests {
     fn python_search() {
         let dir = tempdir().unwrap();
         std::fs::write(dir.path().join("python3.11"), "").unwrap();
-        let path_vals = vec![dir.path().to_str().unwrap().to_string()];
+        let path_vals = [dir.path().to_str().unwrap().to_string()];
         std::env::set_var("PATH", path_vals.join(":"));
         let mut interpreter_paths = python_paths();
 

@@ -551,9 +551,7 @@ pub fn use_toolchain(channel: &Channel, config: &Config) -> HuakResult<()> {
 }
 
 fn resolve_installed_toolchains(config: &Config) -> Option<Vec<LocalToolchain>> {
-    let Some(home) = config.home.clone() else {
-        return None;
-    };
+    let home = config.home.clone()?;
 
     let Ok(toolchains) = std::fs::read_dir(home.join("toolchains")) else {
         return None;
