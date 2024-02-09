@@ -559,7 +559,7 @@ dependencies = [
  "human-panic",
  "insta-cmd",
  "openssl",
- "pep508_rs",
+ "pep508_rs 0.3.0",
  "tempfile",
  "termcolor",
  "thiserror",
@@ -591,7 +591,7 @@ dependencies = [
  "indexmap 2.1.0",
  "lazy_static",
  "pep440_rs 0.4.0",
- "pep508_rs",
+ "pep508_rs 0.3.0",
  "pyproject-toml",
  "regex",
  "serde",
@@ -608,7 +608,7 @@ dependencies = [
 name = "huak-pyproject-toml"
 version = "0.0.0"
 dependencies = [
- "pep508_rs",
+ "pep508_rs 0.3.0",
  "tempfile",
  "thiserror",
  "toml_edit 0.21.0",
@@ -1052,6 +1052,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pep508_rs"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "910c513bea0f4f833122321c0f20e8c704e01de98692f6989c2ec21f43d88b1e"
+dependencies = [
+ "once_cell",
+ "pep440_rs 0.4.0",
+ "regex",
+ "thiserror",
+ "tracing",
+ "unicode-width",
+ "url",
+]
+
+[[package]]
 name = "percent-encoding"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1092,7 +1107,7 @@ checksum = "569e259cd132eb8cec5df8b672d187c5260f82ad352156b5da9549d4472e64b0"
 dependencies = [
  "indexmap 2.1.0",
  "pep440_rs 0.3.12",
- "pep508_rs",
+ "pep508_rs 0.2.4",
  "serde",
  "toml 0.7.8",
 ]
