@@ -13,6 +13,12 @@ rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 
+[package.metadata.wix]
+upgrade-guid = "249CBA9B-C8CA-4619-8CEE-80F10F66E636"
+path-guid = "204168AD-B6CA-43A6-A78B-8F1C721B2A57"
+license = false
+eula = false
+
 [dependencies]
 clap.workspace = true
 clap_complete = "4.4.1"
