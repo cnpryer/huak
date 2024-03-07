@@ -1,0 +1,6 @@
+[submodule "uv"]
+	path = uv
+	url = https://github.com/astral-sh/uv.git
+[submodule "ruff"]
+	path = ruff
+	url = https://github.com/astral-sh/ruff.git
