@@ -1,0 +1,23 @@
+---
+source: crates/huak_cli/tests/mod.rs
+info:
+  program: huak
+  args:
+    - freeze
+    - "--help"
+---
+success: true
+exit_code: 0
+----- stdout -----
+Add requirements.txt from pyproject.toml's dependencies
+
+Usage: huak freeze [OPTIONS]
+
+Options:
+  -n, --name <name>  Pass custom name of `requirements.txt`, by default it's `requirements.txt`
+  -q, --quiet        
+      --no-color     
+  -h, --help         Print help
+
+----- stderr -----
+

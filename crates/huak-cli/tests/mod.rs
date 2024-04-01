@@ -34,6 +34,11 @@ mod tests {
     }
 
     #[test]
+    fn test_fix_freeze() {
+        assert_cmd_snapshot!(Command::new("huak").arg("freeze").arg("--help"));
+    }
+
+    #[test]
     fn test_fmt_help() {
         assert_cmd_snapshot!(Command::new("huak").arg("fmt").arg("--help"));
     }
