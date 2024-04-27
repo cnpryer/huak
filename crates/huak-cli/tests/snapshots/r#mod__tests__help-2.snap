@@ -20,6 +20,7 @@ Commands:
   completion  Generates a shell completion script for supported shells
   fix         Auto-fix fixable lint conflicts
   fmt         Format the project's Python code
+  freeze      Add requirements.txt from pyproject.toml's dependencies
   init        Initialize the current project
   install     Install a Python package (defaults to $HOME/.huak/bin)
   lint        Lint the project's Python code

@@ -14,8 +14,11 @@ use huak_python_manager::RequestedVersion;
 use huak_toolchain::{Channel, LocalTool};
 use huak_workspace::{resolve_root, PathMarker};
 use pep508_rs::Requirement;
+use std::fs::File;
+use std::io::Write;
 use std::{env::current_dir, path::PathBuf, process::ExitCode, str::FromStr};
 use termcolor::ColorChoice;
+use toml::Value;
 use url::Url;
 
 /// A Python package manager written in Rust inspired by Cargo.
@@ -81,6 +84,12 @@ enum Commands {
         /// Pass trailing arguments with `--`.
         #[arg(last = true)]
         trailing: Option<Vec<String>>,
+    },
+    /// Add requirements.txt from pyproject.toml's dependencies.
+    Freeze {
+        /// Pass custom name of `requirements.txt`, by default it's `requirements.txt`.
+        #[arg(short, long, value_name = "name")]
+        name: Option<String>,
     },
     /// Initialize the current project.
     Init {
@@ -353,6 +362,10 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
             };
             fix(&options, config)
         }
+        Commands::Freeze { name } => match name {
+            Some(name) => freeze(name.as_str()),
+            None => freeze("requirements.txt"),
+        },
         Commands::Fmt { check, trailing } => {
             let mut args = if check {
                 vec!["--check".to_string()]
@@ -533,6 +546,36 @@ fn clean(options: &CleanOptions, config: &Config) -> HuakResult<()> {
 
 fn fix(options: &LintOptions, config: &Config) -> HuakResult<()> {
     ops::lint_project(config, options)
+}
+
+fn freeze(name: &str) -> HuakResult<()> {
+    // Read the TOML file
+    let file_content =
+        std::fs::read_to_string("pyproject.toml").expect("Failed to read pyproject.toml");
+
+    // Parse the TOML content
+    let value = file_content.parse::<Value>().expect("Failed to parse TOML");
+
+    // Extract the dependencies
+    let dependencies = value
+        .get("project")
+        .and_then(|project| project.get("dependencies"))
+        .and_then(|deps| deps.as_array())
+        .expect("Failed to find or invalid format for dependencies");
+
+    // Open the output file
+    let mut output = File::create(name)?;
+
+    // Write each dependency to the file
+    for dep in dependencies {
+        if let Some(dep_str) = dep.as_str() {
+            writeln!(&mut output, "{}", dep_str.replace(" ", ""))?;
+        }
+    }
+
+    println!("Dependencies extracted successfully.");
+
+    Ok(())
 }
 
 fn fmt(options: &FormatOptions, config: &Config) -> HuakResult<()> {
