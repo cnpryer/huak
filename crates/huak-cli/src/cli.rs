@@ -115,10 +115,12 @@ enum Commands {
         /// The Python package to install.
         #[arg(required = true)]
         package: Requirement,
-        /// The Python version to use.  TODO(cnpryer): <https://github.com/cnpryer/huak/issues/850>
+        // TODO(cnpryer): <https://github.com/cnpryer/huak/issues/850>
+        /// The Python version to use.
         #[arg(long, alias = "py", required = false)]
         python_version: Option<RequestedVersion>,
-        /// The package index to use.  TODO(cnpryer): Deps (document this)
+        // TODO(cnpryer): Deps (document this)
+        /// The package index to use.
         #[arg(
             long,
             alias = "index-url",
