@@ -8,8 +8,8 @@ const DEFAULT_MANIFEST_FILE_NAME: &str = "pyproject.toml";
 /// A `LocalManifest` struct used to manage local manifest files such as the pyproject.toml (<https://peps.python.org/pep-0621/>).
 pub struct LocalManifest {
     /// The manifest's data including core metadata about the project.
-    /// See https://packaging.python.org/en/latest/specifications/core-metadata/.
-    manifest_data: PyProjectToml, // TODO: https://github.com/cnpryer/huak/issues/574
+    /// See <https://packaging.python.org/en/latest/specifications/core-metadata/>.
+    manifest_data: PyProjectToml, // TODO: <https://github.com/cnpryer/huak/issues/574>
     /// The path to the `LocalManifest` file.
     path: PathBuf,
 }

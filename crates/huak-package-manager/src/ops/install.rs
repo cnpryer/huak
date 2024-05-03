@@ -5,7 +5,7 @@ use pep508_rs::Requirement;
 use super::toolchain::{add_tool_to_toolchain, install_minimal_toolchain};
 use crate::{Config, Error, HuakResult};
 
-// TODO(cnpryer): https://github.com/cnpryer/huak/issues/850
+// TODO(cnpryer): <https://github.com/cnpryer/huak/issues/850>
 pub fn install(
     package: &Requirement,
     python_version: Option<RequestedVersion>,

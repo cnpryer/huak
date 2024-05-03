@@ -123,19 +123,6 @@ impl Display for Package {
     }
 }
 
-/// A wrapper for implementing iterables on `Package`s.
-struct PackageIter<'a> {
-    iter: std::slice::Iter<'a, Package>,
-}
-
-impl<'a> Iterator for PackageIter<'a> {
-    type Item = &'a Package;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
-    }
-}
-
 /// Two `Package`s are currently considered partially equal if their names are the same.
 /// NOTE: This may change in the future.
 impl PartialEq for Package {

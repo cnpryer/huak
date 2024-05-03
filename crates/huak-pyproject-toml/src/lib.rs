@@ -314,7 +314,7 @@ impl PyProjectToml {
     pub fn contains_project_optional_dependency(&self, dependency: &str, group: &str) -> bool {
         // TODO(cnpryer): Perf
         self.project_optional_dependencies().map_or(false, |it| {
-            it.get(&group.to_string()).map_or(false, |g| {
+            it.get(group).map_or(false, |g| {
                 g.iter().any(|s| matches_dependency(s, dependency))
             })
         })

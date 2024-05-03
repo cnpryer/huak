@@ -14,6 +14,7 @@ use huak_python_manager::RequestedVersion;
 use huak_toolchain::{Channel, LocalTool};
 use huak_workspace::{resolve_root, PathMarker};
 use pep508_rs::Requirement;
+use std::fmt::Display;
 use std::{env::current_dir, path::PathBuf, process::ExitCode, str::FromStr};
 use termcolor::ColorChoice;
 use url::Url;
@@ -114,7 +115,7 @@ enum Commands {
         /// The Python package to install.
         #[arg(required = true)]
         package: Requirement,
-        /// The Python version to use.  TODO(cnpryer): https://github.com/cnpryer/huak/issues/850
+        /// The Python version to use.  TODO(cnpryer): <https://github.com/cnpryer/huak/issues/850>
         #[arg(long, alias = "py", required = false)]
         python_version: Option<RequestedVersion>,
         /// The package index to use.  TODO(cnpryer): Deps (document this)
@@ -372,7 +373,7 @@ fn exec_command(cmd: Commands, config: &mut Config) -> HuakResult<()> {
             trailing,
             force,
         } => {
-            config.workspace_root = config.cwd.clone();
+            config.workspace_root.clone_from(&config.cwd);
             let workspace_options = WorkspaceOptions {
                 uses_git: !no_vcs,
                 values: None,
@@ -679,8 +680,8 @@ impl FromStr for Dependency {
     }
 }
 
-impl ToString for Dependency {
-    fn to_string(&self) -> String {
-        self.0.clone()
+impl Display for Dependency {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
