@@ -32,7 +32,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@nightly
       - uses: Swatinem/rust-cache@v2
-      - uses: actions/setup-python@v1
+      - uses: actions/setup-python@v5
       # We install instead of just build for insta-cmd TODO(cnpryer)
       - name: Install huak
         run: cargo install --path crates/huak-cli --locked
