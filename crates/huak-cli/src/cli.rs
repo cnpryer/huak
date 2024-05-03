@@ -96,12 +96,6 @@ enum Commands {
         /// Initialize with a project manifest.
         #[arg(long)]
         manifest: Option<PathBuf>,
-        // TODO(cnpryer): https://github.com/cnpryer/huak/issues/853
-        // /// Initialize with requirements files.
-        // #[arg(short, long)]
-        // requirements: Option<Vec<PathBuf>>,
-        // /// Initialize with development requirements files.
-        // dev_requirements: Option<Vec<PathBuf>>,
         /// Initialize without setting up a Python environment.
         #[arg(long)]
         no_env: bool,
