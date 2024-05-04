@@ -1,5 +1,5 @@
 
-[![pypi-release](https://img.shields.io/pypi/v/huak.svg)](https://pypi.org/project/huak/)
+<!-- [![pypi-release](https://img.shields.io/pypi/v/huak.svg)](https://pypi.org/project/huak/) -->
 [![ci](https://github.com/cnpryer/huak/actions/workflows/ci.yaml/badge.svg)](https://github.com/cnpryer/huak/actions/workflows/ci.yaml)
 
 # huak
@@ -26,21 +26,19 @@ The goal is to create an opinionated tool to support a reliably inviting onboard
 
 - [Installation](#installation)
 - [Usage](#usage)
-- [Documentation](#documentation)
 - [Goals and Motivation](#goals)
 - [Contributing](#contributing)
 
 ## Installation
 
-```
-pip install huak
-```
 
 To install Huak from source using Cargo:
 
 ```
 cargo install --git https://github.com/cnpryer/huak.git huak
 ```
+
+> ⚠️ WARNING: The PyPI distribution is outdated.
 
 ## Usage
 
@@ -77,11 +75,6 @@ Options:
   -h, --help      Print help
   -V, --version   Print version
 ```
-
-## Documentation
-
-- [User Guide](https://cnpryer.github.io/huak/user_guide/)
-- [Development](/docs/development.md)
 
 ## Goals
 
