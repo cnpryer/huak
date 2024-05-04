@@ -32,8 +32,6 @@ The goal is to create an opinionated tool to support a reliably inviting onboard
 
 ## Installation
 
-WARNING: The PyPI distribution is outdated. See from source install using Cargo.
-
 ```
 pip install huak
 ```
