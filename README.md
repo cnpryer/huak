@@ -26,6 +26,7 @@ The goal is to create an opinionated tool to support a reliably inviting onboard
 
 - [Installation](#installation)
 - [Usage](#usage)
+- [Documentation](https://cnpryer.github.io/huak/user_guide/)
 - [Goals and Motivation](#goals)
 - [Contributing](#contributing)
 
